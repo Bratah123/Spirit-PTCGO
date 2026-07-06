@@ -1,0 +1,14 @@
+{
+  "newbie": [
+    [{"name": "Welcome Tokens", "rewardType": "Tokens", "rewardAmount": 100}],
+    [{"name": "Booster Pack", "rewardType": "RandomBooster", "rewardAmount": 1}],
+    [{"name": "Event Ticket", "rewardType": "TournamentTicket", "rewardAmount": 1}]
+  ],
+  "standard": [
+    [{"name": "Tokens", "rewardType": "Tokens", "rewardAmount": 50}],
+    [{"name": "Tokens", "rewardType": "Tokens", "rewardAmount": 75}],
+    [{"name": "Event Ticket", "rewardType": "TournamentTicket", "rewardAmount": 1}],
+    [{"name": "Tokens", "rewardType": "Tokens", "rewardAmount": 100}],
+    [{"name": "Booster Pack", "rewardType": "RandomBooster", "rewardAmount": 1}]
+  ]
+}

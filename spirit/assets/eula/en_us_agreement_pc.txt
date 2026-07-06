@@ -1,0 +1,18 @@
+SPIRIT PTCGO PRIVATE SERVER - END USER LICENSE AGREEMENT
+
+1. Acceptance of Terms
+By using this private server, you agree to... well, nothing really, it's a private server.
+Enjoy the game!
+
+2. Usage
+Don't be a jerk.
+Don't try to hack the server (it's already hacked enough).
+
+3. Disclaimer
+This is a fan project. We are not affiliated with The Pokémon Company, Nintendo, or Creatures Inc.
+All assets and trademarks belong to their respective owners.
+
+4. Privacy
+We don't collect your data, except for your username and a hash of your password to let you log in.
+
+Have fun!

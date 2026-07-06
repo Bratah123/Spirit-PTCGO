@@ -1,0 +1,32 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="68de790c-724a-530f-acff-7bc437f639e5",
+    key="SWSH10",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.GarchompV.Name",
+    display_name="Garchomp V",
+    searchable_by=["Garchomp V", "Basic", "V", "GarchompV"],
+    subtypes=["Basic", "V"],
+    collector_number=117,
+    set_code="SWSH10",
+    rarity=Rarities.RareHoloV,
+    hp=200,
+    elements=[PokemonTypes.DRAGON],
+    stage=PokemonStage.BASIC,
+    retreat_cost=0,
+    family_id=445,
+    abilities=[
+        Attack(
+            title="Dragon Claw",
+            cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
+            damage=120,
+        ),
+        Attack(
+            title="Sonic Strike",
+            game_text="Discard 3 Energy from this Pok\u00e9mon. This attack does 220 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
+            effect=unimplemented,
+        ),
+    ],
+)

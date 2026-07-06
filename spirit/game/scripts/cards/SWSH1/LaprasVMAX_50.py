@@ -1,0 +1,31 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="e91cd9dc-d345-5326-868d-93ee8b466e4a",
+    key="SWSH1",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.LaprasVMAX.Name",
+    display_name="Lapras VMAX",
+    searchable_by=["Lapras VMAX", "VMAX", "LaprasVMAX"],
+    subtypes=["VMAX"],
+    collector_number=50,
+    set_code="SWSH1",
+    rarity=Rarities.RareHoloVMAX,
+    hp=320,
+    elements=[PokemonTypes.WATER],
+    stage=PokemonStage.VMAX,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.LIGHTNING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.LaprasV.Name",
+    family_id=131,
+    abilities=[
+        Attack(
+            title="G-Max Pump",
+            game_text="This attack does 30 more damage for each Water Energy attached to this Pok\u00e9mon.",
+            cost={PokemonTypes.COLORLESS: 3},
+            damage=90,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+    ],
+)

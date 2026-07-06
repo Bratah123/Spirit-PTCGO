@@ -1,0 +1,14 @@
+# SpiritPTCGO server runtime dependencies.
+# Quick start:  python -m venv venv  &&  <activate venv>  &&  pip install -r requirements.txt
+# (the run.bat / run.sh launchers do all of this for you automatically)
+
+protobuf>=6.33.6      # runtime for the compiled *_pb2 Warg message classes
+SQLAlchemy>=2.0.0     # ORM over the SQLite database
+UnityPy>=1.25.0       # reads/writes Unity .unity3d asset bundles (card/cosmetic injection)
+Pillow>=10.0.0        # PNG card & cosmetic texture processing / energy-pip cropping
+cryptography>=42.0.0  # self-signed TLS cert generation (spirit/network/generate_cert.py)
+requests>=2.31.0      # set-importer download tool (spirit/tools/import_set.py)
+
+# NOTE: grpcio-tools is NOT needed to RUN the server — the protobuf classes under
+# spirit/protobuf/ are already compiled and committed. Install it only if you want to
+# regenerate them from the .proto sources:  pip install grpcio-tools==1.80.0

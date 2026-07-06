@@ -1,0 +1,1585 @@
+[
+  {
+    "name": "SM10",
+    "externalId": "UNB",
+    "number": 880,
+    "count": 214,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "52d0fa9f-01eb-400e-9b05-79bd8f38f68f",
+      "0e06358b-d8f1-46c9-b015-a7257656d400",
+      "ba320888-0bce-4b0f-b620-e29c79f48572"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK7A",
+    "externalId": "TK-Bisharp",
+    "number": 584,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY6",
+    "externalId": "ROS",
+    "number": 650,
+    "count": 108,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "da2e77f4-790a-406d-b5e8-256ef08ee15c",
+      "cdacbad0-5d11-4abf-b582-89085b1aa29e",
+      "f270f8c8-37cb-492e-ad42-c3d4b1cf555d"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_HGSS",
+    "externalId": "PR-HS",
+    "number": 428,
+    "count": 25,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "XY2",
+    "externalId": "FLF",
+    "number": 600,
+    "count": 106,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "a32d53bd-0b6c-4d0a-b0f3-a5d217c40067",
+      "186f10f1-ab34-44b9-b7ae-a8bcede77b0a",
+      "20168ca6-9df9-4c28-81f8-3867123e7820"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK5B",
+    "externalId": "TK-Excadrill",
+    "number": 476,
+    "count": 30,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "DM",
+    "externalId": "DRM",
+    "number": 840,
+    "count": 70,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM6",
+    "externalId": "FLI",
+    "number": 820,
+    "count": 131,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "fa4e63cd-60fb-47a5-82e0-dbdbe730fb8f",
+      "f2450fcb-855f-4679-ae86-feccbf015dad",
+      "b95130dc-68ca-48c1-a346-ffdbab512659"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW10",
+    "externalId": "PLB",
+    "number": 570,
+    "count": 101,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "202c3c6f-52ce-44a9-be4a-9fbafeba1b8a",
+      "6cd6c729-dfc4-4b75-b77f-2f1cd1a92edc",
+      "e9280182-e111-4d05-be55-fb2bd7d9599d"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH7",
+    "externalId": "EVS",
+    "number": 1010,
+    "count": 203,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "f39010e4-50ad-49ce-b12c-b53fe7728f8b",
+      "f76e9e92-ee44-41ee-9bdd-39de28a8ee8b",
+      "ff7e22f0-a3fc-4814-a550-f62f727d5eb2"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW4",
+    "externalId": "NXD",
+    "number": 510,
+    "count": 99,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "4cb161f8-b2a8-420e-b34d-2d77deaee1ca",
+      "ff6f37dc-d276-448b-8a8e-29396d46b42e",
+      "ee042e88-d033-4340-9e6a-d8abe9822724"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW7",
+    "externalId": "BCR",
+    "number": 540,
+    "count": 149,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "cc6964d3-dc92-4ed1-b750-c46cda5d5769",
+      "7182cb94-129a-4feb-8250-76da80f6b658",
+      "25f78f78-5219-4bd5-9789-40b1fcd13904"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH3",
+    "externalId": "DAA",
+    "number": 950,
+    "count": 189,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "6d88c061-be51-48c6-9b0c-8dd99fe2ee21",
+      "719306db-9266-40da-ab41-d29d1d7acddb",
+      "59e228f8-d344-419a-8f26-a79404bcffc8"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH_Energy",
+    "externalId": "SWSHEnergy",
+    "number": 921,
+    "count": 9,
+    "filter": false,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH12",
+    "externalId": "SIT",
+    "number": 1090,
+    "count": 215,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "d2bc865d-d154-44b5-84fd-b2648ccb9cec",
+      "dd9acf67-e5bb-4158-adbc-d4f7320c91c3",
+      "f752871f-70d1-42c3-b820-3a70a5be3523"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK8A",
+    "externalId": "TK-Latios",
+    "number": 586,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM11",
+    "externalId": "UNM",
+    "number": 890,
+    "count": 236,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "faaf247b-f482-447c-8b7a-7c6141e34a37",
+      "26679751-3462-4e3d-a10c-59608ba57d12",
+      "66b6bf79-40eb-412b-bb08-e6c8ae1217f5"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK9B",
+    "externalId": "TK-Suicune",
+    "number": 589,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM7",
+    "externalId": "CES",
+    "number": 830,
+    "count": 168,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "7a170647-29cf-437b-b76c-84924ee95615",
+      "6a23d54e-afc8-4eb2-82ec-5c00daf164e5",
+      "69589189-3eb1-4135-9295-36766395a182"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TATM",
+    "externalId": "DCR",
+    "number": 641,
+    "count": 34,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "13dd6c58-d504-4221-a9ad-e85f63bc4a95",
+      "075d5c69-3d85-4b02-a165-6c30289e221c",
+      "2ffd3a88-a5fa-446c-888d-e7c90d53cd33"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY9",
+    "externalId": "BKP",
+    "number": 690,
+    "count": 122,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "079b1e97-7101-42c1-b656-0bc883ad3349",
+      "3077c328-e0ce-4467-a4bb-394665d56a46",
+      "723e4fb5-927e-4657-a541-660449b30710"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SV1",
+    "externalId": "SVI",
+    "number": 1120,
+    "count": 3,
+    "filter": false,
+    "block": "SV",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": true,
+    "promo": false
+  },
+  {
+    "name": "SWSH35",
+    "externalId": "CPA",
+    "number": 960,
+    "count": 73,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW6",
+    "externalId": "DRX",
+    "number": 530,
+    "count": 124,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "5c59b3e6-cdd1-492b-a4ec-8a3b2149f7ad",
+      "a5970058-a849-46d4-832c-aa405db13efc",
+      "be5b2226-a3ae-404f-9184-10506d13f51d"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TwentiethAnn",
+    "externalId": "GEN",
+    "number": 700,
+    "count": 83,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "96c94e9f-d723-4846-9311-0fb1fd7c2ee4",
+      "c47f6637-b38e-41c9-aacb-da3ca50a3c78",
+      "3abc948d-daa5-412a-98c7-0fc6507cd414"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH6",
+    "externalId": "CRE",
+    "number": 1000,
+    "count": 198,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "7f4d4657-e743-4fb1-9ed7-5c0f8052f965",
+      "f51bda1c-55af-4a00-832a-255d52fe4e6c",
+      "e037eaab-7acb-49f1-997b-727f543fc2c2"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY0",
+    "externalId": "KSS",
+    "number": 592,
+    "count": 39,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "HGSS_Energy",
+    "externalId": "HSEnergy",
+    "number": 429,
+    "count": 9,
+    "filter": false,
+    "block": "HGSS",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW5",
+    "externalId": "DEX",
+    "number": 520,
+    "count": 108,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "8be30642-3851-437e-b65b-156b190cb7d0",
+      "6f5c2e49-2399-4b32-b753-7c42937af312",
+      "9528b3c7-7453-465b-82e0-86cfaa193cb0"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SL",
+    "externalId": "SLG",
+    "number": 790,
+    "count": 73,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW8",
+    "externalId": "PLS",
+    "number": 550,
+    "count": 135,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "deb4bdf1-b838-4abf-baa1-5dae6eb74b55",
+      "ef82f86a-d275-4724-ae2e-d58daddbac73",
+      "b1888ebd-ee47-4c54-bc06-86a09a1adeb1"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH2",
+    "externalId": "RCL",
+    "number": 940,
+    "count": 192,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "516eb280-58dc-11ea-8678-1866da0cc068",
+      "7b13b540-58dc-11ea-8678-1866da0cc068",
+      "22a47950-58e9-11ea-a477-1866da0cc068"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "HGSS1",
+    "externalId": "HS",
+    "number": 430,
+    "count": 123,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "ac14e591-d717-4ab8-bda0-6b9a2a0ba0da",
+      "e9877f6e-5766-11e1-81f9-782bcb9e3ead",
+      "2bc0568a-5491-42ac-89c7-48b12e458b29"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM_Energy",
+    "externalId": "SMEnergy",
+    "number": 741,
+    "count": 9,
+    "filter": false,
+    "block": "SM",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM8",
+    "externalId": "LOT",
+    "number": 850,
+    "count": 214,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "d5f17596-a2c2-4841-a28c-f355ee3ac4a6",
+      "15e538de-7882-481f-9920-0364eb477e13",
+      "0dba63e9-c97c-4451-acba-d276b28e6522"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Ann25thR",
+    "externalId": "N/A",
+    "number": 1020,
+    "count": 25,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW1",
+    "externalId": "BLW",
+    "number": 480,
+    "count": 114,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "e94ff4ae-5766-11e1-81f9-782bcb9e3ead",
+      "e94fa68e-5766-11e1-81f9-782bcb9e3ead",
+      "8a92fba6-054a-4f8e-bb08-8c36d7a0f3e6"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM3",
+    "externalId": "BUS",
+    "number": 780,
+    "count": 147,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "28b445dc-ad0a-4e7c-96f3-94eb4c5400d9",
+      "69857e66-336d-4297-8987-00591d5dd054",
+      "ced342d9-686a-464d-a073-66194b6a8c69"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_SV",
+    "externalId": "SVP",
+    "number": 1110,
+    "count": 3,
+    "filter": false,
+    "block": "SV",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": true,
+    "promo": true
+  },
+  {
+    "name": "TK10B",
+    "externalId": "TK-AlolanRaichu",
+    "number": 739,
+    "count": 30,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY5",
+    "externalId": "PRC",
+    "number": 640,
+    "count": 160,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "24409e90-7cba-49b4-9dd1-0a019aaa6233",
+      "6f59ff37-d6c9-4b0b-9613-371a3f4643b0",
+      "e7185f51-11f3-4598-b6af-8dfa94731bf1"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "HGSS2",
+    "externalId": "UL",
+    "number": 440,
+    "count": 95,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "e9a9112e-5766-11e1-81f9-782bcb9e3ead",
+      "e99b7c9e-5766-11e1-81f9-782bcb9e3ead",
+      "ef9dd0c2-41c6-483d-a203-4a31c1402d2e"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY8",
+    "externalId": "BKT",
+    "number": 680,
+    "count": 162,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "8fc50987-32fe-4600-9320-36d172c4c391",
+      "4bb07f27-8a1c-444e-bdc2-cd59637fcb05",
+      "f2fefccc-85d2-4f88-89e9-6a2443cbad6d"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK5A",
+    "externalId": "TK-Zoroark",
+    "number": 475,
+    "count": 30,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "COL",
+    "externalId": "CL",
+    "number": 470,
+    "count": 95,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "f20bb468-4639-472a-b3f2-73dacc1db5f8",
+      "f1073168-5da3-11e1-b19c-d9628f8696f0",
+      "f10b7735-5da3-11e1-b7da-d9628f8696f0"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK6B",
+    "externalId": "TK-Sylveon",
+    "number": 583,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_BW",
+    "externalId": "PR-BLW",
+    "number": 478,
+    "count": 37,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "XY12",
+    "externalId": "EVO",
+    "number": 730,
+    "count": 108,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "263b9074-9eee-4ec2-9b66-5a796c60a59c",
+      "0be682f5-eecb-4226-afb7-7d0fd2cbc65f",
+      "b835737d-5bb2-474b-901e-b2ac6a0e420f"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Free_Energy",
+    "externalId": "Energy",
+    "number": 1,
+    "count": 9,
+    "filter": false,
+    "block": "NONE",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY_Energy",
+    "externalId": "XYEnergy",
+    "number": 591,
+    "count": 9,
+    "filter": false,
+    "block": "XY",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW2",
+    "externalId": "EPO",
+    "number": 490,
+    "count": 98,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "e95c29ae-5766-11e1-81f9-782bcb9e3ead",
+      "e967c26e-5766-11e1-81f9-782bcb9e3ead",
+      "94be779a-55d0-41aa-b14a-7da136784443"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "RSP",
+    "externalId": "RSP",
+    "number": 620,
+    "count": 13,
+    "filter": true,
+    "block": "RSP",
+    "legalFormats": [],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "SM12",
+    "externalId": "CEC",
+    "number": 910,
+    "count": 236,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "57994dfb-5d40-48b2-b12f-fc830ac97466",
+      "9a954124-39ec-4a08-9230-146641281fe7",
+      "9664c6c3-5361-4b4f-985a-b84650c9cd6c"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM4",
+    "externalId": "CIN",
+    "number": 800,
+    "count": 111,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "fbbc62e7-e44d-4c75-bb56-f466e814c0dd",
+      "2aed77ae-ce74-4b54-8913-80d1b804da83",
+      "9a89a445-e9f2-49d9-b930-87708e8e9727"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK9A",
+    "externalId": "TK-PikachuLibre",
+    "number": 588,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH5",
+    "externalId": "BST",
+    "number": 990,
+    "count": 163,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "74ff21d3-0f49-4e3c-82ab-e04c89107e3d",
+      "715120f7-16cd-4a4b-9d60-5f7da120b895",
+      "772f32f3-3edb-4a54-b48e-cf67bbf9e183"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "HGSS3",
+    "externalId": "UD",
+    "number": 450,
+    "count": 90,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "f11f2691-5da3-11e1-8852-d9628f8696f0",
+      "f1254128-5da3-11e1-87b0-d9628f8696f0",
+      "de237c84-a219-4033-a3a8-4b2bf3ad589b"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "McDonalds",
+    "externalId": "MCD",
+    "number": 781,
+    "count": 0,
+    "filter": false,
+    "block": "NONE",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW9",
+    "externalId": "PLF",
+    "number": 560,
+    "count": 116,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "684b6d64-b232-4c8e-adf1-8cbf08ea6ee1",
+      "1ed26baf-a6af-40e1-bd60-0872229c5937",
+      "1f4c7073-070f-4a09-b372-6733dee28631"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY1",
+    "externalId": "XY",
+    "number": 593,
+    "count": 146,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "f25e3351-0456-4ed5-a4d2-e1a6d9195991",
+      "7c2d4c41-da8c-4f0e-b28e-fdd93fa83bba",
+      "3b44805e-5e32-4c3c-be2d-9ebd4db6ba8b"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "PGO",
+    "externalId": "PGO",
+    "number": 1070,
+    "count": 78,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY4",
+    "externalId": "PHF",
+    "number": 630,
+    "count": 119,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "9c15a7d5-ad93-4451-9bfb-22964e79c28d",
+      "1e6bd4af-4b0d-4d8f-ad4d-de62bfc14ef2",
+      "418670f1-f5ba-427f-a248-a9623f2cabae"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH9",
+    "externalId": "BRS",
+    "number": 1050,
+    "count": 172,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "3c7c759a-07b3-4faa-a39c-12d81768c90f",
+      "6a0e79bf-6180-4ac9-82d1-50f623392e4f",
+      "6babc68f-1317-4940-8057-e73e2526bb5c"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_SWSH",
+    "externalId": "PR-SW",
+    "number": 920,
+    "count": 3,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "TK10A",
+    "externalId": "TK-Lycanroc",
+    "number": 738,
+    "count": 30,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH10",
+    "externalId": "ASR",
+    "number": 1060,
+    "count": 189,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "ecbe38ce-d997-4ec1-85b3-0946a6f2d5fb",
+      "ced2418d-338e-4122-894b-c5cafee762e5",
+      "b2f7d49f-c494-4da1-82dc-013ee2661a03"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM2",
+    "externalId": "GRI",
+    "number": 760,
+    "count": 145,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "5bf33781-2d3b-436f-b64a-c443a881e2d5",
+      "b1812a7e-33b2-4b75-8784-b6c314ed6579",
+      "d2bc5cf7-0424-40f4-9538-5efb8d711bc1"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "CEL25",
+    "externalId": "CEL",
+    "number": 1030,
+    "count": 24,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK7B",
+    "externalId": "TK-Wigglytuff",
+    "number": 585,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY7",
+    "externalId": "AOR",
+    "number": 660,
+    "count": 98,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "33792f9a-4414-4410-aab6-4eedfec262e4",
+      "ff70bb66-88b3-43b0-afa5-10e68ef7c951",
+      "92bf2550-806b-4259-a987-eb4859d62490"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY11",
+    "externalId": "STS",
+    "number": 720,
+    "count": 114,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "426e8b06-2f70-48b4-9574-6a40f32954d4",
+      "b27273cc-f7b5-4888-8766-8fdb6a7413c7",
+      "17a306c7-89fd-4164-8166-5716c0eb5a3b"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_SM",
+    "externalId": "PR-SM",
+    "number": 740,
+    "count": 4,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "DV",
+    "externalId": "DRV",
+    "number": 531,
+    "count": 20,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "c1105ac7-7a92-4422-9ce6-b48950ec1329",
+      "7665cb3e-3d68-44f7-a6f0-08927dbea498",
+      "3e0f2d76-a07d-4925-b921-f3f615db8ab5"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH45",
+    "externalId": "SHF",
+    "number": 980,
+    "count": 72,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK6A",
+    "externalId": "TK-Noivern",
+    "number": 582,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "CZ",
+    "externalId": "CRZ",
+    "number": 1100,
+    "count": 159,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "Promo_XY",
+    "externalId": "PR-XY",
+    "number": 590,
+    "count": 176,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": true
+  },
+  {
+    "name": "HGSS4",
+    "externalId": "TM",
+    "number": 460,
+    "count": 102,
+    "filter": true,
+    "block": "HGSS",
+    "legalFormats": [
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "f140439c-5da3-11e1-883c-d9628f8696f0",
+      "f13e95eb-5da3-11e1-9ecf-d9628f8696f0",
+      "fdd2f237-268d-4905-b72e-0babb8da6c81"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH1",
+    "externalId": "SSH",
+    "number": 930,
+    "count": 202,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "dda232de-88ca-403b-a620-6c6a5fd2f8dc",
+      "b9ada049-e20c-40bb-9eb3-d29a55dd50de",
+      "406fdd48-5098-4218-acbc-c6f0e8fd2be5"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW11",
+    "externalId": "LTR",
+    "number": 580,
+    "count": 113,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "9df1ec58-f7f9-41f2-8f12-d286e377a17d",
+      "11d9cf23-03e6-4a3b-941e-cc9c5d4c6598",
+      "9421b458-0c7f-4dc1-a022-8717768c07b4"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY3",
+    "externalId": "FFI",
+    "number": 610,
+    "count": 111,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "b12ae887-df56-4cf4-92bc-1848a909d017",
+      "0202c8b1-84b1-4b82-ba97-4ca8a2d1d839",
+      "184dcdb5-979b-4d55-98ee-04ea71bee2af"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM9",
+    "externalId": "TEU",
+    "number": 860,
+    "count": 181,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "3e339fb7-edf8-4ea8-9ccd-220129a65bc0",
+      "50891cc1-5708-4fd7-aabc-4c00b7d9b38b",
+      "a9bcfb59-2a51-4721-8b1a-f444aa1208c5"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "HF",
+    "externalId": "HIF",
+    "number": 900,
+    "count": 68,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "GUM",
+    "externalId": "DET",
+    "number": 870,
+    "count": 18,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH4",
+    "externalId": "VIV",
+    "number": 970,
+    "count": 185,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "1a39085a-1f02-49e2-8475-07f8e2277daa",
+      "8174837c-4bd2-4b0b-9b5e-2f8468de70d4",
+      "690b2842-494e-4632-9570-866868682bb9"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "TK8B",
+    "externalId": "TK-Latias",
+    "number": 587,
+    "count": 30,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "XY10",
+    "externalId": "FCO",
+    "number": 710,
+    "count": 124,
+    "filter": true,
+    "block": "XY",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "7805b4f3-f704-4089-bf90-3a7d9f139560",
+      "faf513d3-cf82-42b1-b637-559649e1885b",
+      "c0d81c25-5e40-4538-9ca1-d0e73d728ab6"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM5",
+    "externalId": "UPR",
+    "number": 810,
+    "count": 156,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "37f42e65-ec42-4efe-9504-d5711dab7e44",
+      "806d55e6-09b5-422f-9b70-4283b9df2b68",
+      "60b2c9b6-85af-49ef-9c4e-66ab3d5798f7"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW_Energy",
+    "externalId": "BLWEnergy",
+    "number": 479,
+    "count": 9,
+    "filter": false,
+    "block": "BW",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH8",
+    "externalId": "FST",
+    "number": 1040,
+    "count": 264,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "098d38b0-7793-4953-8033-4bd4f0d20d06",
+      "2b67d944-b668-4f34-8928-68d51e1357e9",
+      "cbac7938-3776-4378-ad54-8bbc58345b0b"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "BW3",
+    "externalId": "NVI",
+    "number": 500,
+    "count": 101,
+    "filter": true,
+    "block": "BW",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "6b33d420-73cc-40d4-ada5-88a7d68063a9"
+    ],
+    "featuredArchetypes": [
+      "0cc3dea5-a4c8-4fef-8cbb-2532c7796875",
+      "ae6de2d7-d81b-426f-8a07-d1c3ecc41566",
+      "a3784711-bd14-4974-9c20-d63ab52a0871"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SWSH11",
+    "externalId": "LOR",
+    "number": 1080,
+    "count": 196,
+    "filter": true,
+    "block": "SWSH",
+    "legalFormats": [
+      "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "356d30a8-c9c7-4e56-b6d8-c9c79b3dbd6b",
+      "7b64dae8-310e-4743-a2df-d7a05cb09f7f",
+      "23c79159-5746-42d2-8cde-441df3ff9d1a"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "SM1",
+    "externalId": "SUM",
+    "number": 750,
+    "count": 149,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "1bba7b69-6088-40da-8d06-419860d57bee",
+      "20df1ec9-8b25-43fb-9671-999308e3685c",
+      "8cbda4f4-f511-46a2-97ab-59cdfba803e6"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  },
+  {
+    "name": "CUSTOM",
+    "externalId": "CUSTOM",
+    "number": 9999,
+    "count": 1,
+    "filter": true,
+    "block": "SM",
+    "legalFormats": [
+      "98c83df9-ec82-4193-84a8-104115ce4e25"
+    ],
+    "featuredArchetypes": [
+      "1bba7b69-6088-40da-8d06-419860d57bee",
+      "20df1ec9-8b25-43fb-9671-999308e3685c",
+      "8cbda4f4-f511-46a2-97ab-59cdfba803e6"
+    ],
+    "visibleUnfilterable": false,
+    "promo": false
+  }
+]

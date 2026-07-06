@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dwd.Protobuf.cake.item;
+
+import "dwd/Protobuf/base.proto";
+
+// Equivalent to dwd.Protobuf.cake.item.AllAvatarArchetypesFound
+message AllAvatarArchetypesFound {
+    repeated dwd.Protobuf.Archetype archetypes = 1;
+    string checksum = 2;
+}

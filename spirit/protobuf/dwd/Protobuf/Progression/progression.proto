@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package dwd.Protobuf.Progression;
+
+import "dwd/Protobuf/base.proto";
+
+message Scenario {
+    dwd.Protobuf.UUID scenarioID = 1;
+    repeated dwd.Protobuf.Attribute attributes = 2;
+    repeated dwd.Protobuf.UUID children = 3;
+    string entryRequirements = 4;
+    string completionRequirements = 5;
+}
+
+message AllScenarios {
+    repeated Scenario completed = 1;
+    repeated Scenario available = 2;
+    repeated Scenario unavailable = 3;
+    repeated Scenario roots = 4;
+}

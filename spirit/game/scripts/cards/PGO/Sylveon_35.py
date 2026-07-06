@@ -1,0 +1,37 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="952c22cb-ebfb-552c-b4e8-947c865d54e0",
+    key="PGO",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Sylveon.Name",
+    display_name="Sylveon",
+    searchable_by=["Sylveon", "Stage 1", "Sylveon"],
+    subtypes=["Stage 1"],
+    collector_number=35,
+    set_code="PGO",
+    rarity=Rarities.RareHolo,
+    hp=120,
+    elements=[PokemonTypes.PSYCHIC],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=1,
+    weakness_type=PokemonTypes.METAL,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Eevee.Name",
+    family_id=133,
+    abilities=[
+        Attack(
+            title="Souvenir",
+            game_text="Search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck.",
+            cost={PokemonTypes.PSYCHIC: 1},
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Wonder Flash",
+            game_text="If your opponent's Active Pok\u00e9mon is a Dragon Pok\u00e9mon, this attack does 90 more damage.",
+            cost={PokemonTypes.COLORLESS: 3},
+            damage=90,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+    ],
+)

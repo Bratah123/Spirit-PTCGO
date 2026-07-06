@@ -1,0 +1,21 @@
+SPIRIT PTCGO PRIVATE SERVER - PRIVACY POLICY
+
+1. Information We Collect
+We collect the following information:
+- Username: Used to identify your account.
+- Password Hash: Used to securely authenticate your account. We do not store plain-text passwords.
+
+2. How We Use Your Information
+Your information is only used to provide access to the private server and its features.
+
+3. Information Sharing
+We do not share your information with any third parties.
+
+4. Data Security
+We use industry-standard hashing (bcrypt) to protect your password.
+
+5. Changes to This Policy
+We may update this policy from time to time. Any changes will be posted on this page.
+
+Contact
+If you have any questions, well, you know where to find me.

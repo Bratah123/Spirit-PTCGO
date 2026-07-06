@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package dwd.Protobuf;
+
+// Equivalent to dwd.Protobuf.UUID
+message UUID {
+    fixed64 lo = 1;
+    fixed64 hi = 2;
+}
+
+// Equivalent to dwd.Protobuf.KeyObjectPair
+message KeyObjectPair {
+    string key = 1;
+    Object value = 2;
+}
+
+// Equivalent to dwd.Protobuf.Object
+message Object {
+    enum Type {
+        UNKNOWN = 0;
+        ARRAY = 1;
+        DICT = 2;
+        STRING = 3;
+        BOOL = 4;
+        INT = 5;
+        FLOAT = 6;
+        UUID = 7;
+        JSON = 8;
+    }
+
+    Type objectType = 1;
+    repeated Object arrayValue = 2;
+    repeated KeyObjectPair dictionaryValue = 3;
+    string stringValue = 4;
+    bool boolValue = 5;
+    int32 intValue = 6;
+    float floatValue = 7;
+    UUID guidValue = 8;
+}
+
+// Equivalent to dwd.Protobuf.Attribute
+message Attribute {
+    sint32 name = 1;
+    Object value = 2;
+    Object originalValue = 3;
+    Object modValue = 4;
+}
+
+// Equivalent to dwd.Protobuf.Archetype
+message Archetype {
+    UUID guid = 1;
+    repeated Attribute attributes = 2;
+}

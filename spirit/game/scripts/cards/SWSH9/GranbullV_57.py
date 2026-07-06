@@ -1,0 +1,37 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="e103d602-43ea-5c22-85fe-332fce7cfcb0",
+    key="SWSH9",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.GranbullV.Name",
+    display_name="Granbull V",
+    searchable_by=["Granbull V", "Basic", "V", "GranbullV"],
+    subtypes=["Basic", "V"],
+    collector_number=57,
+    set_code="SWSH9",
+    rarity=Rarities.RareHoloV,
+    hp=210,
+    elements=[PokemonTypes.PSYCHIC],
+    stage=PokemonStage.BASIC,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.METAL,
+    family_id=210,
+    abilities=[
+        Attack(
+            title="Chomp",
+            game_text="This attack does 10 more damage for each damage counter on this Pok\u00e9mon.",
+            cost={PokemonTypes.COLORLESS: 2},
+            damage=30,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Bull Dash",
+            game_text="This Pok\u00e9mon also does 30 damage to itself.",
+            cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
+            damage=190,
+            effect=unimplemented,
+        ),
+    ],
+)

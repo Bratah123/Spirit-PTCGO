@@ -1,0 +1,34 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="d21fafd9-95be-55db-88e0-51508533fc03",
+    key="SWSH12",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.HisuianLilligant.Name",
+    display_name="Hisuian Lilligant",
+    searchable_by=["Hisuian Lilligant", "Stage 1", "HisuianLilligant"],
+    subtypes=["Stage 1"],
+    collector_number=10,
+    set_code="SWSH12",
+    rarity=Rarities.Rare,
+    hp=120,
+    elements=[PokemonTypes.GRASS],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=1,
+    weakness_type=PokemonTypes.FIRE,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Petilil.Name",
+    family_id=548,
+    abilities=[
+        Attack(
+            title="Swelling Scent",
+            game_text="Search your deck for up to 2 Grass Energy cards and attach them to your Benched Pok\u00e9mon in any way you like. Then, shuffle your deck.",
+            cost={},
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Spiral Kick",
+            cost={PokemonTypes.COLORLESS: 2},
+            damage=50,
+        ),
+    ],
+)

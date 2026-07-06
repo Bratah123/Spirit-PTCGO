@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpiritPTCGO Admin</title>
+<style>
+  :root {
+    --bg: #10141c; --panel: #1a2130; --panel2: #212a3d; --line: #2d3950;
+    --text: #e8edf6; --muted: #8fa0bd; --accent: #ffcb05; --accent2: #3d7dca;
+    --good: #4caf7d; --bad: #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: var(--panel); border-bottom: 2px solid var(--accent); }
+  header h1 { font-size: 18px; letter-spacing: .5px; }
+  header h1 span { color: var(--accent); }
+  header .stats { margin-left: auto; color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 4px; padding: 10px 22px 0; background: var(--panel); }
+  nav button { background: none; border: none; color: var(--muted); padding: 9px 18px; font-size: 14px; cursor: pointer; border-radius: 8px 8px 0 0; }
+  nav button.active { background: var(--bg); color: var(--accent); font-weight: 600; }
+  main { padding: 22px; max-width: 1200px; margin: 0 auto; }
+  section { display: none; }
+  section.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  .card h2 { font-size: 15px; margin-bottom: 12px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
+  tr:hover td { background: var(--panel2); }
+  input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent2); }
+  textarea { width: 100%; font-family: Consolas, monospace; }
+  label { color: var(--muted); font-size: 12px; display: block; margin-bottom: 3px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+  .row > div { display: flex; flex-direction: column; }
+  button.btn { background: var(--accent2); border: none; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  button.btn:hover { filter: brightness(1.15); }
+  button.btn.warn { background: var(--bad); }
+  button.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  button.mini { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 5px; padding: 3px 9px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+  button.mini:hover { color: var(--text); border-color: var(--accent2); }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill.on { background: rgba(76,175,125,.15); color: var(--good); }
+  .pill.off { background: rgba(224,92,92,.15); color: var(--bad); }
+  .pill.tag { background: rgba(61,125,202,.18); color: #7fb1e8; margin-right: 3px; }
+  code { background: var(--bg); padding: 2px 7px; border-radius: 5px; font-size: 12px; color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .stat { background: var(--panel2); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat .n { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .stat .l { color: var(--muted); font-size: 12px; }
+  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--good); padding: 12px 18px; border-radius: 8px; display: none; z-index: 10; }
+  #toast.err { border-left-color: var(--bad); }
+  .muted { color: var(--muted); font-size: 12px; }
+
+  /* ---- Versus ladder ---- */
+  .season-pill { border: 1px solid var(--line); background: var(--panel2); color: var(--muted); border-radius: 20px; padding: 5px 16px; cursor: pointer; font-size: 13px; }
+  .season-pill.sel { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .ladder { margin: 4px 0 16px 6px; }
+  .milestone { display: flex; gap: 18px; padding-bottom: 26px; position: relative; align-items: flex-start; }
+  .milestone::before { content: ''; position: absolute; left: 29px; top: 60px; bottom: 0; width: 2px; background: var(--line); }
+  .milestone:last-child::before { display: none; }
+  .ms-badge { width: 60px; height: 60px; border-radius: 50%; background: var(--panel2); border: 2px solid var(--accent); display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; z-index: 1; }
+  .ms-badge input { width: 46px; background: none; border: none; text-align: center; font-weight: 700; font-size: 16px; color: var(--accent); padding: 0; }
+  .ms-badge input:focus { outline: none; }
+  .ms-badge .pts { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: -3px; }
+  .ms-body { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 60px; }
+  .reward-chip { display: flex; align-items: center; gap: 9px; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px 6px 6px; }
+  .reward-chip img { height: 58px; width: 42px; object-fit: cover; border-radius: 4px; display: block; background: #0b0e14; }
+  .reward-chip .coin { width: 42px; height: 42px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 21px; background: radial-gradient(circle at 35% 30%, #ffe98a, #d4a017 70%); box-shadow: inset 0 0 0 3px rgba(0,0,0,.18); }
+  .reward-chip .rc-name { font-size: 12px; max-width: 150px; line-height: 1.3; }
+  .reward-chip .rc-amt { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .chip-x { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .chip-x:hover { color: var(--bad); }
+  .add-chip { border: 1px dashed var(--line); color: var(--muted); background: none; border-radius: 9px; padding: 18px 16px; cursor: pointer; font-size: 13px; }
+  .add-chip:hover { color: var(--accent); border-color: var(--accent); }
+  .ms-del { align-self: center; }
+  .tier-box { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 4px; margin-bottom: 16px; background: rgba(255,255,255,.015); }
+  .tier-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .tier-head h3 { font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: .8px; flex: 1; }
+  .ms-warn { color: var(--bad); font-size: 11px; width: 100%; }
+
+  /* ---- Reward picker modal ---- */
+  #pickerOverlay { position: fixed; inset: 0; background: rgba(5,8,13,.75); display: none; z-index: 30; align-items: center; justify-content: center; }
+  #pickerOverlay.open { display: flex; }
+  .picker { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; width: min(780px, 94vw); max-height: 88vh; display: flex; flex-direction: column; }
+  .picker .p-head { display: flex; align-items: center; padding: 14px 18px 0; }
+  .picker .p-head h3 { font-size: 15px; color: var(--accent); flex: 1; }
+  .type-tiles { display: flex; gap: 10px; padding: 12px 18px 0; }
+  .type-tile { flex: 1; background: var(--panel2); border: 2px solid var(--line); border-radius: 10px; padding: 11px; text-align: center; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; }
+  .type-tile .ico { font-size: 26px; display: block; margin-bottom: 3px; }
+  .type-tile.sel { border-color: var(--accent); color: var(--accent); }
+  .picker-body { padding: 14px 18px; overflow-y: auto; flex: 1; min-height: 220px; }
+  .thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; margin-top: 12px; }
+  .thumb { background: var(--panel2); border: 2px solid transparent; border-radius: 8px; padding: 7px; text-align: center; cursor: pointer; }
+  .thumb img { width: 100%; aspect-ratio: 63/88; object-fit: contain; border-radius: 4px; background: #0b0e14; display: block; }
+  .thumb.product img { aspect-ratio: auto; height: 92px; }
+  .thumb.sel { border-color: var(--accent); }
+  .thumb .t-name { font-size: 11px; margin-top: 5px; line-height: 1.25; height: 27px; overflow: hidden; }
+  .thumb .t-sub { font-size: 10px; color: var(--muted); }
+  .picker .p-foot { display: flex; gap: 12px; align-items: flex-end; padding: 12px 18px; border-top: 1px solid var(--line); }
+  .preset { background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 7px 13px; cursor: pointer; font-size: 13px; }
+  .preset:hover, .preset.sel { border-color: var(--accent); color: var(--accent); }
+  .filter-chip { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 12px; margin-right: 5px; }
+  .filter-chip.sel { border-color: var(--accent2); color: #7fb1e8; }
+
+  /* ---- Login overlay + tournament prize rows ---- */
+  #loginOverlay { position: fixed; inset: 0; background: rgba(5,8,13,.92); display: none; z-index: 40; align-items: center; justify-content: center; }
+  #loginOverlay.open { display: flex; }
+  .prize-row { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; margin-bottom: 10px; background: rgba(255,255,255,.015); }
+  .prize-range { display: flex; flex-direction: column; gap: 4px; flex: none; }
+  .prize-range input { width: 70px; }
+  .prize-rewards { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Spirit<span>PTCGO</span> &nbsp;Admin Dashboard</h1>
+  <div class="stats" id="headerStats"></div>
+  <div class="stats" id="whoami"></div>
+  <button class="mini" id="logoutBtn" style="display:none" onclick="logout()">Log out</button>
+</header>
+<nav>
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="accounts">Accounts</button>
+  <button data-tab="codes">Redemption Codes</button>
+  <button data-tab="versus">Versus Seasons</button>
+  <button data-tab="tournaments">Tournaments</button>
+  <button data-tab="shop">Shop</button>
+  <button data-tab="pages">Dynamic Pages</button>
+  <button data-tab="trades">Trades</button>
+</nav>
+<main>
+
+<section id="tab-overview" class="active">
+  <div class="card"><h2>Server Overview</h2><div class="grid" id="overviewGrid"></div></div>
+  <div class="card"><h2>Card Sets (booster-eligible sets need &gt;10 scripts)</h2>
+    <table id="setsTable"><thead><tr><th>Set</th><th>Scripted Cards</th><th>Booster Eligible</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<section id="tab-accounts">
+  <div class="card"><h2>Accounts</h2>
+    <div class="muted">Debug tools. "Give 4× all cards" grants 4 <b>tradable</b> copies of every card (basic energy excluded) for testing the trade system. The player sees them on their next collection refresh / login.</div>
+    <table id="accountsTable"><thead><tr><th>Username</th><th>Screen Name</th><th>Account ID</th><th>Admin</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<section id="tab-codes">
+  <div class="card">
+    <h2>Generate Code</h2>
+    <div class="row">
+      <div><label>Code (blank = auto)</label><input id="codeInput" placeholder="SPIRIT-XXXX-XXXX-XXXX" style="width:220px"></div>
+      <div><label>How many</label><input id="codeCount" type="number" value="1" min="1" style="width:80px"></div>
+      <div><label>Max uses (0 = unlimited)</label><input id="codeMaxUses" type="number" value="1" min="0" style="width:120px"></div>
+      <div><label>Coins</label><input id="codeCoins" type="number" value="0" style="width:90px"></div>
+      <div><label>Gems</label><input id="codeGems" type="number" value="0" style="width:90px"></div>
+      <div><label>Tickets</label><input id="codeTickets" type="number" value="0" style="width:90px"></div>
+    </div>
+    <div class="row">
+      <div><button class="btn ghost" onclick="openRewardPicker('codes')">🎴 Add card / product reward…</button></div>
+      <div><button class="btn" onclick="createCode()">Generate Code</button></div>
+    </div>
+    <div id="rewardItems" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+    <div id="rewardPreview" class="muted" style="margin-top:8px"></div>
+  </div>
+  <div class="card"><h2>Existing Codes</h2>
+    <table id="codesTable"><thead><tr><th>Code</th><th>Reward</th><th>Uses</th><th>Status</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<section id="tab-versus">
+  <div class="card">
+    <h2>Versus Seasons</h2>
+    <div class="row" id="seasonPills"></div>
+    <div class="row">
+      <div><label>Season ID</label><input id="vsSeasonId" style="width:150px" oninput="vsField('seasonID', this.value)"></div>
+      <div><label>Description</label><input id="vsDesc" style="width:250px" oninput="vsDescInput(this.value)"></div>
+      <div><label>Starts</label><input id="vsStart" type="datetime-local" onchange="vsField('startTime', localToMs(this.value))"></div>
+      <div><label>Ends</label><input id="vsEnd" type="datetime-local" onchange="vsField('endTime', localToMs(this.value))"></div>
+      <div><button class="btn" onclick="saveSeasons()">Save Seasons</button></div>
+      <div><span id="vsDirty" class="pill off" style="display:none">unsaved changes</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Reward Ladder</h2>
+    <div class="muted" style="margin-bottom:14px">Players earn ladder points per Versus match (win &gt; loss). When their season points cross a milestone, its rewards are granted automatically — tokens go to the wallet, cards and products go to the collection. The ladder is split into <b>tiers</b>: the in-game screen shows one tier at a time and auto-advances to the tier holding the player's next milestone. Click a milestone's number to edit its point threshold. The game renders up to 3 reward arts per milestone (cards fan out, packs show a single tile); a milestone with several rewards must include at least one card or product.</div>
+    <div id="tiersWrap"></div>
+    <button class="btn ghost" onclick="addTier()">+ Add tier</button>
+  </div>
+</section>
+
+<section id="tab-tournaments">
+  <div class="card">
+    <h2>Tournaments (in-game Events tab)</h2>
+    <div class="muted" style="margin-bottom:12px">Tournaments appear on the client's <b>Events</b> screen while entries are open. Players pay the entry fee to queue; when the queue fills to the bracket size, a live single-elimination bracket starts and pays the <b>prize rows by final PLACE</b> (1 = champion). The win/loss caps and leaderboard below additionally drive the (currently UI-less) async run system.</div>
+    <div class="row" id="tourPills"></div>
+    <div class="row">
+      <div><label>Name (internal)</label><input id="tName" style="width:170px" oninput="tField('name', this.value)"></div>
+      <div><label>Title (shown to players)</label><input id="tTitle" style="width:200px" oninput="tField('title', this.value)"></div>
+      <div><label>Description</label><input id="tDesc" style="width:280px" oninput="tField('description', this.value)"></div>
+      <div><label>Max runs / player (0 = ∞)</label><input id="tMaxRuns" type="number" min="0" style="width:100px" onchange="tField('maxRuns', parseInt(this.value) || 0)"></div>
+    </div>
+    <div class="row">
+      <div><label>Bracket size</label>
+        <select id="tMaxSize" onchange="tField('maxSize', parseInt(this.value) || 8)">
+          <option value="2">2 players</option>
+          <option value="4">4 players</option>
+          <option value="8" selected>8 players</option>
+        </select></div>
+      <div><label>Format badge</label>
+        <select id="tFormat" onchange="tField('format', this.value)">
+          <option value="Unlimited" selected>Unlimited</option>
+          <option value="ThemeDeck">ThemeDeck</option>
+          <option value="Modified">Modified</option>
+          <option value="Expanded">Expanded</option>
+          <option value="Legacy">Legacy</option>
+        </select></div>
+      <div><label>Round length (min, display)</label><input id="tRoundLength" type="number" min="1" style="width:90px" onchange="tField('roundLength', parseInt(this.value) || 30)"></div>
+      <div><label>Delay between rounds (s)</label><input id="tRoundDelay" type="number" min="3" style="width:90px" onchange="tField('delayBetweenRounds', parseInt(this.value) || 10)"></div>
+    </div>
+    <div class="row">
+      <div><label>Preview from</label><input id="tPreview" type="datetime-local" onchange="tField('previewTime', localToMs(this.value))"></div>
+      <div><label>Entries open</label><input id="tStart" type="datetime-local" onchange="tField('startTime', localToMs(this.value))"></div>
+      <div><label>Entries close</label><input id="tEntryClose" type="datetime-local" onchange="tField('entryClosingTime', localToMs(this.value))"></div>
+      <div><label>Resolution (rank rewards)</label><input id="tResolve" type="datetime-local" onchange="tField('resolutionTime', localToMs(this.value))"></div>
+      <div><label>Disappears</label><input id="tDisappear" type="datetime-local" onchange="tField('disappearTime', localToMs(this.value))"></div>
+    </div>
+    <div class="row">
+      <div><button class="btn" onclick="saveTournament()">Save Tournament</button></div>
+      <div><button class="mini" id="tToggleBtn" onclick="toggleTournament()">Disable</button></div>
+      <div><button class="mini" onclick="deleteTournament()">Delete</button></div>
+      <div><span id="tDirty" class="pill off" style="display:none">unsaved changes</span></div>
+      <div class="muted" id="tMeta"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Run Rules &amp; Entry Fee</h2>
+    <div class="row">
+      <div><label>Max wins (0 = off)</label><input id="tMaxWins" type="number" min="0" style="width:90px" onchange="tRunField('maxWins', parseInt(this.value) || 0)"></div>
+      <div><label>Max losses (0 = off)</label><input id="tMaxLosses" type="number" min="0" style="width:90px" onchange="tRunField('maxLosses', parseInt(this.value) || 0)"></div>
+      <div><label>Max games (0 = off)</label><input id="tMaxGames" type="number" min="0" style="width:90px" onchange="tRunField('maxGames', parseInt(this.value) || 0)"></div>
+      <div><label>&nbsp;</label><label><input type="checkbox" id="tDeckSwitch" onchange="tRunField('allowDeckSwitching', this.checked)"> Allow deck switching between games</label></div>
+    </div>
+    <div class="row">
+      <div><label>Entry fee: Coins (0 = not offered)</label><input id="tFeeTokens" type="number" min="0" style="width:100px" onchange="tFeesChanged()"></div>
+      <div><label>Gems</label><input id="tFeeGems" type="number" min="0" style="width:100px" onchange="tFeesChanged()"></div>
+      <div><label>Tickets</label><input id="tFeeTickets" type="number" min="0" style="width:100px" onchange="tFeesChanged()"></div>
+      <div class="muted" style="align-self:center">All fees at 0 = free entry. The Events bracket charges every non-zero fee together (gems show as Coins in-client); the async system lets the player pick one.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Prizes — Events bracket: row = final PLACE range (1 = champion); async runs: row = final win count</h2>
+    <div id="tRunPrizes"></div>
+    <button class="btn ghost" onclick="addPrizeRow('run')">+ Add prize row</button>
+  </div>
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <div class="row">
+      <div><label>Points per win</label><input id="tWinValue" type="number" style="width:90px" onchange="tLbField('winValue', parseInt(this.value) || 0)"></div>
+      <div><label>Points per loss</label><input id="tLossValue" type="number" style="width:90px" onchange="tLbField('lossValue', parseInt(this.value) || 0)"></div>
+      <div><button class="mini" onclick="viewStandings()">View current standings</button></div>
+    </div>
+    <h2 style="margin-top:10px">Leaderboard Prizes (row matching the player's final rank)</h2>
+    <div id="tLbPrizes"></div>
+    <button class="btn ghost" onclick="addPrizeRow('leaderboard')">+ Add prize row</button>
+    <div id="tStandings" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="tab-shop">
+  <div class="card">
+    <h2>Add / Edit Shop Item</h2>
+    <div class="row">
+      <div><label>Product</label><select id="shopProduct" style="width:340px"></select></div>
+      <div><label>Display name</label><input id="shopName" style="width:200px"></div>
+      <div><label>Currency</label>
+        <select id="shopCurrency" style="width:140px">
+          <option value="-1784319558">Coins (Tokens)</option>
+          <option value="2012906479">Gems</option>
+          <option value="-992199324">Tickets</option>
+        </select></div>
+      <div><label>Price</label><input id="shopPrice" type="number" value="200" style="width:100px"></div>
+      <div><label>Sort</label><input id="shopSort" type="number" value="0" style="width:70px"></div>
+    </div>
+    <div class="row">
+      <div><label>&nbsp;</label><label><input type="checkbox" id="shopEnabled" checked> Enabled</label></div>
+      <div><label>&nbsp;</label><label><input type="checkbox" id="shopFeatured"> Featured</label></div>
+      <div><label>&nbsp;</label><label><input type="checkbox" id="shopTop"> Top Selling</label></div>
+      <div><button class="btn" onclick="saveShopItem()">Save Item</button></div>
+      <div><button class="btn ghost" onclick="clearShopForm()">Clear</button></div>
+      <input type="hidden" id="shopItemId">
+    </div>
+    <div class="muted">Booster packs for every set with &gt;10 scripted cards are offered automatically; items added here override or extend that list.</div>
+  </div>
+  <div class="card"><h2>Shop Items</h2>
+    <table id="shopTable"><thead><tr><th>Product</th><th>Price</th><th>Flags</th><th>Status</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<section id="tab-pages">
+  <div class="card">
+    <h2>Add / Edit Dynamic Page</h2>
+    <div class="row">
+      <div><label>Type</label>
+        <select id="pageType" style="width:150px"><option value="landing">Landing page</option><option value="maintenance">Maintenance</option></select></div>
+      <div><label>Sort order</label><input id="pageSort" type="number" value="1" style="width:80px"></div>
+      <div><label>&nbsp;</label><label><input type="checkbox" id="pageEnabled" checked> Enabled</label></div>
+      <div><button class="btn ghost" onclick="loadPageTemplate()">Insert template</button></div>
+      <div><button class="btn" onclick="savePage()">Save Page</button></div>
+      <input type="hidden" id="pageId">
+    </div>
+    <label>Page content JSON (client DynamicLandingPages page object)</label>
+    <textarea id="pageContent" rows="14" spellcheck="false"></textarea>
+  </div>
+  <div class="card"><h2>Pages</h2>
+    <table id="pagesTable"><thead><tr><th>ID</th><th>Type</th><th>Sort</th><th>Summary</th><th>Status</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<section id="tab-trades">
+  <div class="card"><h2>Recent Trade Offers</h2>
+    <table id="tradesTable"><thead><tr><th>Offer</th><th>Sender</th><th>Recipient</th><th>Offering</th><th>Requesting</th><th>Status</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+</main>
+
+<div id="pickerOverlay" onclick="if(event.target===this) closePicker()">
+  <div class="picker">
+    <div class="p-head">
+      <h3 id="pickerTitle">Add Reward</h3>
+      <button class="mini" onclick="closePicker()">✕ Close</button>
+    </div>
+    <div class="type-tiles" id="pickerTiles">
+      <button class="type-tile" data-ptype="tokens" onclick="pickerSetType('tokens')"><span class="ico">🪙</span>Tokens</button>
+      <button class="type-tile" data-ptype="card" onclick="pickerSetType('card')"><span class="ico">🎴</span>Card</button>
+      <button class="type-tile" data-ptype="product" onclick="pickerSetType('product')"><span class="ico">📦</span>Pack / Product</button>
+    </div>
+    <div class="picker-body" id="pickerBody"></div>
+    <div class="p-foot">
+      <div><label>Count</label><input id="pickerCount" type="number" value="1" min="1" style="width:80px"></div>
+      <div style="flex:1" class="muted" id="pickerSelInfo"></div>
+      <button class="btn" id="pickerAddBtn" onclick="pickerAdd()" disabled>Add Reward</button>
+    </div>
+  </div>
+</div>
+
+<div id="loginOverlay">
+  <div class="picker" style="width:min(380px, 94vw)">
+    <div class="p-head"><h3>Admin Login</h3></div>
+    <div class="picker-body" style="min-height:0">
+      <div class="muted" style="margin-bottom:12px">Sign in with a game account that has admin rights. If no admin exists yet, the first valid login becomes the admin.</div>
+      <label>Username</label>
+      <input id="loginUser" style="width:100%; margin-bottom:10px" autocomplete="username">
+      <label>Password</label>
+      <input id="loginPass" type="password" style="width:100%" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()">
+      <div id="loginError" class="ms-warn" style="margin-top:10px"></div>
+    </div>
+    <div class="p-foot">
+      <div style="flex:1"></div>
+      <button class="btn" onclick="doLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let PRODUCTS = [], REWARD = {products:{}};
+
+function toast(msg, err=false) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3000);
+}
+async function api(path, body) {
+  const opts = body ? {method:'POST', body: JSON.stringify(body)} : {};
+  const res = await fetch('/admin/api/' + path, opts);
+  const data = await res.json();
+  if (res.status === 401) { showLogin(); throw new Error(data.error || 'authentication required'); }
+  if (!data.ok) throw new Error(data.error || 'request failed');
+  return data;
+}
+
+/* ---------------- Auth ---------------- */
+function showLogin() {
+  $('#loginOverlay').classList.add('open');
+  setTimeout(() => $('#loginUser').focus(), 50);
+}
+async function doLogin() {
+  $('#loginError').textContent = '';
+  try {
+    const res = await fetch('/admin/api/login', {
+      method: 'POST',
+      body: JSON.stringify({username: $('#loginUser').value.trim(), password: $('#loginPass').value})
+    });
+    const data = await res.json();
+    if (!data.ok) { $('#loginError').textContent = data.error || 'Login failed'; return; }
+    $('#loginOverlay').classList.remove('open');
+    $('#loginPass').value = '';
+    $('#whoami').textContent = data.username;
+    $('#logoutBtn').style.display = '';
+    bootData();
+  } catch(e) { $('#loginError').textContent = e.message; }
+}
+async function logout() {
+  try { await fetch('/admin/api/logout', {method: 'POST'}); } catch(e) {}
+  location.reload();
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CURRENCY_NAMES = {'-1784319558':'Coins','2012906479':'Gems','-992199324':'Tickets'};
+const TYPE_NAMES = {21:'Booster', 4:'Deck', 22:'Coin', 24:'Sleeve', 23:'Deck Box', 6:'Currency'};
+
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('section').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $('#tab-' + b.dataset.tab).classList.add('active');
+});
+
+async function loadOverview() {
+  try {
+    const d = await api('overview');
+    $('#headerStats').textContent = `${d.accounts} accounts · ${d.codes} codes · ${d.shop_items} shop items`;
+    $('#overviewGrid').innerHTML = [
+      ['Accounts', d.accounts], ['Redemption Codes', d.codes], ['Shop Items', d.shop_items],
+      ['Dynamic Pages', d.pages], ['Trade Offers', d.trades], ['Eligible Sets', d.eligible_sets.length]
+    ].map(([l,n]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+    const rows = Object.entries(d.set_counts).sort((a,b) => a[0].localeCompare(b[0]));
+    $('#setsTable tbody').innerHTML = rows.map(([code,count]) =>
+      `<tr><td><code>${esc(code)}</code></td><td>${count}</td>
+       <td>${d.eligible_sets.includes(code) ? '<span class="pill on">yes</span>' : '<span class="pill off">no</span>'}</td></tr>`).join('');
+  } catch(e) { toast('Overview: ' + e.message, true); }
+}
+
+async function loadProducts() {
+  try {
+    const d = await api('products');
+    PRODUCTS = d.products;
+    $('#shopProduct').innerHTML = PRODUCTS.map(p =>
+      `<option value="${p.guid}">[${esc(p.key)}] ${esc(p.name || p.guid)} (${TYPE_NAMES[p.product_type] || p.product_type})</option>`).join('');
+  } catch(e) { toast('Products: ' + e.message, true); }
+}
+
+/* guid -> {name, image} resolution for reward chips (cards + products) */
+let CARD_META = {};
+function metaFor(guid) {
+  const g = String(guid || '').toLowerCase();
+  if (CARD_META[g]) return CARD_META[g];
+  const p = PRODUCTS.find(p => p.guid.toLowerCase() === g);
+  if (p) return {name: p.name || p.guid, image: p.image ? `/products/${p.image}.png` : null, product: true};
+  return null;
+}
+async function resolveCardMeta(guids) {
+  const missing = [...new Set(guids.map(g => String(g).toLowerCase()))].filter(g => !metaFor(g));
+  if (!missing.length) return false;
+  try {
+    const d = await api('cards/lookup', {guids: missing});
+    for (const [g, c] of Object.entries(d.cards)) {
+      CARD_META[g] = {name: c.name ? `${c.name} (${c.set} ${c.number})` : g, image: c.image};
+    }
+    for (const g of missing) if (!CARD_META[g]) CARD_META[g] = {name: g.slice(0, 8) + '…', image: null};
+    return true;
+  } catch(e) { return false; }
+}
+
+/* ---------------- Accounts ---------------- */
+async function loadAccounts() {
+  try {
+    const d = await api('accounts');
+    $('#accountsTable tbody').innerHTML = d.accounts.map(a => `
+      <tr><td>${esc(a.username)}</td><td>${esc(a.screen_name)}</td>
+      <td class="muted">${esc(a.account_id)}</td>
+      <td>${a.is_admin ? '<span class="pill on">admin</span>' : '<span class="muted">—</span>'}</td>
+      <td><button class="mini" onclick="grantAllCards('${esc(a.account_id)}', this)">Give 4× all cards</button>
+          <button class="mini" onclick="setAdmin('${esc(a.account_id)}', ${!a.is_admin})">${a.is_admin ? 'Revoke admin' : 'Make admin'}</button></td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">No accounts.</td></tr>';
+  } catch(e) { toast('Accounts: ' + e.message, true); }
+}
+async function setAdmin(account_id, is_admin) {
+  if (!confirm((is_admin ? 'Grant' : 'Revoke') + ' dashboard admin rights for this account?')) return;
+  try { await api('accounts/set-admin', {account_id, is_admin}); toast('Updated'); loadAccounts(); }
+  catch(e) { toast(e.message, true); }
+}
+async function grantAllCards(account_id, btn) {
+  if (!confirm('Give 4 tradable copies of every card to this account?')) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Granting…'; }
+  try {
+    const d = await api('accounts/grant-all-cards', {account_id, count: 4});
+    toast(`Granted 4× of ${d.granted} cards`);
+  } catch(e) { toast(e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Give 4× all cards'; } }
+}
+
+/* ---------------- Codes ---------------- */
+function rewardSummary(r) {
+  const parts = [];
+  for (const [g,c] of Object.entries(r.products || {})) {
+    const m = metaFor(g);
+    parts.push(`${c}× ${m ? m.name : g.slice(0,8) + '…'}`);
+  }
+  if (r.coins) parts.push(r.coins + ' coins');
+  if (r.gems) parts.push(r.gems + ' gems');
+  if (r.tickets) parts.push(r.tickets + ' tickets');
+  return parts.length ? parts.map(x => `<span class="pill tag">${esc(x)}</span>`).join('') : '<span class="muted">empty</span>';
+}
+function updateRewardItems() {
+  $('#rewardItems').innerHTML = Object.entries(REWARD.products).map(([g, c]) => {
+    const m = metaFor(g) || {name: g.slice(0,8) + '…', image: null};
+    const art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
+    return `<div class="reward-chip">${art}<span class="rc-name">${esc(m.name)}</span>
+      <span class="rc-amt">×${c}</span>
+      <button class="chip-x" onclick="removeRewardItem('${esc(g)}')">✕</button></div>`;
+  }).join('');
+}
+function removeRewardItem(guid) {
+  delete REWARD.products[guid];
+  updateRewardItems();
+}
+function currentReward() {
+  return {
+    products: REWARD.products,
+    coins: parseInt($('#codeCoins').value || 0),
+    gems: parseInt($('#codeGems').value || 0),
+    tickets: parseInt($('#codeTickets').value || 0)
+  };
+}
+async function createCode() {
+  try {
+    await api('codes', {
+      code: $('#codeInput').value.trim() || undefined,
+      count: parseInt($('#codeCount').value || 1),
+      max_uses: parseInt($('#codeMaxUses').value || 1),
+      reward: currentReward()
+    });
+    REWARD = {products:{}}; $('#rewardPreview').textContent = ''; $('#codeInput').value = '';
+    updateRewardItems();
+    toast('Code created'); loadCodes(); loadOverview();
+  } catch(e) { toast(e.message, true); }
+}
+async function loadCodes() {
+  try {
+    const d = await api('codes');
+    const guids = d.codes.flatMap(c => Object.keys((c.reward_json || {}).products || {}));
+    if (await resolveCardMeta(guids)) { /* meta now cached for the render below */ }
+    $('#codesTable tbody').innerHTML = d.codes.map(c => `
+      <tr><td><code>${esc(c.code_string)}</code></td>
+      <td>${rewardSummary(c.reward_json || {})}</td>
+      <td>${c.current_uses} / ${c.max_uses === 0 ? '∞' : c.max_uses}</td>
+      <td>${c.enabled ? '<span class="pill on">active</span>' : '<span class="pill off">disabled</span>'}</td>
+      <td><button class="mini" onclick="toggleCode('${esc(c.code_string)}', ${!c.enabled})">${c.enabled ? 'Disable' : 'Enable'}</button>
+          <button class="mini" onclick="deleteCode('${esc(c.code_string)}')">Delete</button></td></tr>`).join('');
+  } catch(e) { toast('Codes: ' + e.message, true); }
+}
+async function toggleCode(code, enabled) {
+  try { await api('codes/update', {code, enabled}); loadCodes(); } catch(e) { toast(e.message, true); }
+}
+async function deleteCode(code) {
+  if (!confirm('Delete code ' + code + '?')) return;
+  try { await api('codes/delete', {code}); toast('Deleted'); loadCodes(); loadOverview(); } catch(e) { toast(e.message, true); }
+}
+
+/* ---------------- Shop ---------------- */
+async function loadShop() {
+  try {
+    const d = await api('shop');
+    $('#shopTable tbody').innerHTML = d.items.map(i => {
+      const p = PRODUCTS.find(p => p.guid === i.product_guid);
+      const flags = [i.featured && 'Featured', i.top_selling && 'Top'].filter(Boolean)
+        .map(f => `<span class="pill tag">${f}</span>`).join('') || '<span class="muted">—</span>';
+      return `<tr><td>${esc(i.display_name || (p ? p.name : i.product_guid))}<div class="muted">${esc(i.product_guid)}</div></td>
+        <td>${i.price} ${CURRENCY_NAMES[i.currency] || i.currency}</td>
+        <td>${flags}</td>
+        <td>${i.enabled ? '<span class="pill on">on</span>' : '<span class="pill off">off</span>'}</td>
+        <td><button class="mini" onclick='editShopItem(${JSON.stringify(i)})'>Edit</button>
+            <button class="mini" onclick="toggleShopItem(${i.id})">${i.enabled ? 'Disable' : 'Enable'}</button>
+            <button class="mini" onclick="deleteShopItem(${i.id})">Delete</button></td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="muted">No custom shop items — auto boosters only.</td></tr>';
+  } catch(e) { toast('Shop: ' + e.message, true); }
+}
+function editShopItem(i) {
+  $('#shopItemId').value = i.id; $('#shopProduct').value = i.product_guid;
+  $('#shopName').value = i.display_name; $('#shopCurrency').value = i.currency;
+  $('#shopPrice').value = i.price; $('#shopSort').value = i.sort_order;
+  $('#shopEnabled').checked = i.enabled; $('#shopFeatured').checked = i.featured; $('#shopTop').checked = i.top_selling;
+}
+function clearShopForm() {
+  $('#shopItemId').value = ''; $('#shopName').value = ''; $('#shopPrice').value = 200; $('#shopSort').value = 0;
+  $('#shopEnabled').checked = true; $('#shopFeatured').checked = false; $('#shopTop').checked = false;
+}
+async function saveShopItem() {
+  try {
+    await api('shop', {
+      id: $('#shopItemId').value ? parseInt($('#shopItemId').value) : undefined,
+      product_guid: $('#shopProduct').value,
+      display_name: $('#shopName').value,
+      currency: parseInt($('#shopCurrency').value),
+      price: parseInt($('#shopPrice').value || 0),
+      sort_order: parseInt($('#shopSort').value || 0),
+      enabled: $('#shopEnabled').checked,
+      featured: $('#shopFeatured').checked,
+      top_selling: $('#shopTop').checked
+    });
+    toast('Shop item saved'); clearShopForm(); loadShop(); loadOverview();
+  } catch(e) { toast(e.message, true); }
+}
+async function toggleShopItem(id) {
+  try { await api('shop/toggle', {id}); loadShop(); } catch(e) { toast(e.message, true); }
+}
+async function deleteShopItem(id) {
+  if (!confirm('Delete shop item?')) return;
+  try { await api('shop/delete', {id}); loadShop(); loadOverview(); } catch(e) { toast(e.message, true); }
+}
+
+/* ---------------- Pages ---------------- */
+function loadPageTemplate() {
+  $('#pageContent').value = JSON.stringify({
+    template: "LandingPageRight",
+    startTime: 0,
+    endTime: 4102444800000,
+    labels: { GameText: { token: "promo_text", bundle: { en_US: "Welcome to SpiritPTCGO!" } } },
+    images: { GameBackground: { localeImageMap: { en_US: "swsh12_vulpix_landingpage" } } },
+    actions: {
+      UpsellButton: { name: "NavigateToScene", value: { scene: "Shop" } },
+      CodeRedeemButton: { name: "NavigateToScene", value: { scene: "ShopCodeRedemption" } }
+    }
+  }, null, 2);
+}
+async function savePage() {
+  let content;
+  try { content = JSON.parse($('#pageContent').value); }
+  catch(e) { return toast('Invalid JSON: ' + e.message, true); }
+  try {
+    await api('pages', {
+      id: $('#pageId').value ? parseInt($('#pageId').value) : undefined,
+      page_type: $('#pageType').value,
+      sort_order: parseInt($('#pageSort').value || 0),
+      enabled: $('#pageEnabled').checked,
+      content_json: content
+    });
+    toast('Page saved'); $('#pageId').value = ''; $('#pageContent').value = '';
+    loadPages(); loadOverview();
+  } catch(e) { toast(e.message, true); }
+}
+async function loadPages() {
+  try {
+    const d = await api('pages');
+    $('#pagesTable tbody').innerHTML = d.pages.map(p => {
+      const text = p.content_json?.labels?.GameText?.bundle?.en_US || p.content_json?.template || '';
+      return `<tr><td>${p.id}</td><td>${esc(p.page_type)}</td><td>${p.sort_order}</td>
+        <td>${esc(String(text).slice(0,80))}</td>
+        <td>${p.enabled ? '<span class="pill on">on</span>' : '<span class="pill off">off</span>'}</td>
+        <td><button class="mini" onclick='editPage(${JSON.stringify(p)})'>Edit</button>
+            <button class="mini" onclick="deletePage(${p.id})">Delete</button></td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="muted">No dynamic pages yet.</td></tr>';
+  } catch(e) { toast('Pages: ' + e.message, true); }
+}
+function editPage(p) {
+  $('#pageId').value = p.id; $('#pageType').value = p.page_type; $('#pageSort').value = p.sort_order;
+  $('#pageEnabled').checked = p.enabled;
+  $('#pageContent').value = JSON.stringify(p.content_json, null, 2);
+}
+async function deletePage(id) {
+  if (!confirm('Delete page ' + id + '?')) return;
+  try { await api('pages/delete', {id}); loadPages(); loadOverview(); } catch(e) { toast(e.message, true); }
+}
+
+/* ---------------- Trades ---------------- */
+async function loadTrades() {
+  try {
+    const d = await api('trades');
+    const fmt = o => Object.entries(o || {}).map(([g,c]) => `${c}× ${g.slice(0,8)}…`).join(', ') || '—';
+    $('#tradesTable tbody').innerHTML = d.trades.map(t => `
+      <tr><td class="muted">${esc(t.offer_id.slice(0,8))}…</td><td>${esc(t.sender_id.slice(0,8))}…</td>
+      <td>${t.recipient_id ? esc(t.recipient_id.slice(0,8)) + '…' : '<span class="pill tag">public</span>'}</td>
+      <td>${esc(fmt(t.offering))}</td><td>${esc(fmt(t.requesting))}</td>
+      <td><span class="pill ${t.status === 'open' ? 'on' : 'tag'}">${esc(t.status)}</span></td></tr>`).join('')
+      || '<tr><td colspan="6" class="muted">No trade offers.</td></tr>';
+  } catch(e) { toast('Trades: ' + e.message, true); }
+}
+
+/* ---------------- Versus Seasons ---------------- */
+let SEASONS = [], VS_SEL = 0;
+
+function msToLocal(ms) {
+  const d = new Date(ms || 0);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+function localToMs(v) { return v ? new Date(v).getTime() : 0; }
+
+function vsDirty(on) { $('#vsDirty').style.display = on ? 'inline-block' : 'none'; }
+function vsSeason() { return SEASONS[VS_SEL]; }
+function vsField(field, value) { vsSeason()[field] = value; vsDirty(true); if (field === 'seasonID') renderSeasonPills(); }
+function vsDescInput(v) { vsSeason().description = {id: v}; vsDirty(true); }
+
+function defaultSeason(n) {
+  return {seasonID: `Season${n}`, startTime: Date.now(), endTime: 4102444800000,
+          description: {id: `SpiritPTCGO Season ${n}`}, resetRewardID: "", _tiers: [{ms: []}]};
+}
+function parseTiers(season) {
+  const tiers = (season.tiers || []).map(t => ({
+    ms: Object.entries(t.rewards || {})
+      .map(([pts, rewards]) => ({points: parseInt(pts) || 0, rewards}))
+      .sort((a, b) => a.points - b.points)
+  }));
+  return tiers.length ? tiers : [{ms: []}];
+}
+
+async function loadVersus() {
+  try {
+    const d = await api('versus-seasons');
+    SEASONS = (d.seasons || []).map(s => ({...s, _tiers: parseTiers(s)}));
+    if (!SEASONS.length) SEASONS = [defaultSeason(1)];
+    VS_SEL = Math.min(VS_SEL, SEASONS.length - 1);
+    vsDirty(false);
+    renderVersus();
+    const guids = SEASONS.flatMap(s => s._tiers.flatMap(t => t.ms.flatMap(m => m.rewards)))
+      .filter(r => r.rewardType === 'Archetype' && r.rewardProductID)
+      .map(r => r.rewardProductID);
+    if (await resolveCardMeta(guids)) renderVersus();
+  } catch(e) { toast('Versus: ' + e.message, true); }
+}
+
+function renderSeasonPills() {
+  $('#seasonPills').innerHTML = SEASONS.map((s, i) =>
+    `<button class="season-pill ${i === VS_SEL ? 'sel' : ''}" onclick="selectSeason(${i})">${esc(s.seasonID || '(unnamed)')}</button>`
+  ).join('') +
+  `<button class="mini" onclick="addSeason()">+ New season</button>` +
+  (SEASONS.length > 1 ? `<button class="mini" onclick="deleteSeason()">Delete selected</button>` : '');
+}
+function selectSeason(i) { VS_SEL = i; renderVersus(); }
+function addSeason() { SEASONS.push(defaultSeason(SEASONS.length + 1)); VS_SEL = SEASONS.length - 1; vsDirty(true); renderVersus(); }
+function deleteSeason() {
+  if (!confirm(`Delete season "${vsSeason().seasonID}" from the config?`)) return;
+  SEASONS.splice(VS_SEL, 1); VS_SEL = 0; vsDirty(true); renderVersus();
+}
+
+function rewardChipHTML(r, ti, mi, ri) {
+  let art, label;
+  const amt = r.rewardAmount || 0;
+  if (r.rewardType === 'Archetype') {
+    const m = metaFor(r.rewardProductID) || {name: r.name || 'Unknown', image: null};
+    art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
+    label = `<span class="rc-name">${esc(m.name)}</span><span class="rc-amt">×${Math.max(1, amt)}</span>`;
+  } else {
+    art = '<div class="coin">🪙</div>';
+    label = `<span class="rc-name">${esc(r.name || 'Tokens')}</span><span class="rc-amt">${amt}</span>`;
+  }
+  return `<div class="reward-chip">${art}${label}
+    <button class="chip-x" title="Remove reward" onclick="removeVsReward(${ti},${mi},${ri})">✕</button></div>`;
+}
+
+function milestoneHTML(m, ti, mi) {
+  const hasArchetype = m.rewards.some(r => r.rewardType === 'Archetype' && r.rewardProductID);
+  const warn = m.rewards.length >= 2 && !hasArchetype
+    ? '<div class="ms-warn">⚠ A milestone with several rewards must include a card or product — the game crashes rendering an all-tokens group.</div>' : '';
+  return `
+    <div class="milestone">
+      <div class="ms-badge">
+        <input type="number" min="1" value="${m.points}" onchange="msPoints(${ti},${mi}, this.value)">
+        <span class="pts">pts</span>
+      </div>
+      <div class="ms-body">
+        ${m.rewards.map((r, ri) => rewardChipHTML(r, ti, mi, ri)).join('')}
+        <button class="add-chip" onclick="openRewardPicker('versus', ${ti}, ${mi})">+ Reward</button>
+        ${warn}
+      </div>
+      <button class="mini ms-del" onclick="delMilestone(${ti},${mi})">✕ Milestone</button>
+    </div>`;
+}
+
+function renderVersus() {
+  renderSeasonPills();
+  const s = vsSeason();
+  $('#vsSeasonId').value = s.seasonID || '';
+  $('#vsDesc').value = (s.description && s.description.id) || '';
+  $('#vsStart').value = msToLocal(s.startTime);
+  $('#vsEnd').value = msToLocal(s.endTime);
+  $('#tiersWrap').innerHTML = s._tiers.map((t, ti) => `
+    <div class="tier-box">
+      <div class="tier-head">
+        <h3>Tier ${ti + 1}</h3>
+        ${s._tiers.length > 1 ? `<button class="mini" onclick="delTier(${ti})">✕ Tier</button>` : ''}
+      </div>
+      <div class="ladder">
+        ${t.ms.map((m, mi) => milestoneHTML(m, ti, mi)).join('')
+          || '<div class="muted" style="margin-bottom:12px">No milestones in this tier yet.</div>'}
+      </div>
+      <button class="btn ghost" style="margin-bottom:12px" onclick="addMilestone(${ti})">+ Add milestone</button>
+    </div>`).join('');
+}
+
+function msPoints(ti, mi, v) {
+  const t = vsSeason()._tiers[ti];
+  t.ms[mi].points = Math.max(1, parseInt(v) || 1);
+  t.ms.sort((a, b) => a.points - b.points);
+  vsDirty(true); renderVersus();
+}
+function lastPoints(tiers) {
+  const all = tiers.flatMap(t => t.ms.map(m => m.points));
+  return all.length ? Math.max(...all) : 0;
+}
+function addTier() {
+  vsSeason()._tiers.push({ms: []});
+  vsDirty(true); renderVersus();
+}
+function delTier(ti) {
+  const t = vsSeason()._tiers[ti];
+  if (t.ms.length && !confirm(`Delete Tier ${ti + 1} and its ${t.ms.length} milestone(s)?`)) return;
+  vsSeason()._tiers.splice(ti, 1);
+  vsDirty(true); renderVersus();
+}
+function addMilestone(ti) {
+  const last = lastPoints(vsSeason()._tiers);
+  vsSeason()._tiers[ti].ms.push({points: last ? last * 2 : 10, rewards: []});
+  vsDirty(true); renderVersus();
+}
+function delMilestone(ti, mi) { vsSeason()._tiers[ti].ms.splice(mi, 1); vsDirty(true); renderVersus(); }
+function removeVsReward(ti, mi, ri) { vsSeason()._tiers[ti].ms[mi].rewards.splice(ri, 1); vsDirty(true); renderVersus(); }
+
+async function saveSeasons() {
+  const out = SEASONS.map(s => ({
+    seasonID: s.seasonID, startTime: s.startTime, endTime: s.endTime,
+    description: s.description, resetRewardID: s.resetRewardID || "",
+    tiers: s._tiers.map(t => ({
+      rewards: Object.fromEntries(t.ms
+        .filter(m => m.points > 0 && m.rewards.length)
+        .sort((a, b) => a.points - b.points)
+        .map(m => [String(m.points), m.rewards]))
+    })).filter(t => Object.keys(t.rewards).length)
+  }));
+  try {
+    await api('versus-seasons', {seasons: out});
+    vsDirty(false);
+    toast('Versus seasons saved & reloaded');
+  } catch(e) { toast(e.message, true); }
+}
+
+/* ---------------- Async Tournaments ---------------- */
+let TOURS = [], T_SEL = 0;
+
+function defaultTournament(n) {
+  const now = Date.now(), day = 86400000;
+  return {tournament_id: null, enabled: true, entries: 0, definition: {
+    name: `Tournament ${n}`, title: `Tournament ${n}`, description: "",
+    img: "", background: "", url: "", prizeBy: "wins",
+    previewTime: now, startTime: now, entryClosingTime: now + 7 * day,
+    resolutionTime: now + 8 * day, disappearTime: now + 14 * day,
+    maxRuns: 0,
+    maxSize: 8, format: "Unlimited", matchStructure: "SingleElimination",
+    roundLength: 30, delayBetweenRounds: 10,
+    run: {entryFee: [], allowDeckSwitching: true, maxWins: 3, maxLosses: 3, maxGames: 0, prizeTable: []},
+    leaderboard: {runs: 0, winValue: 3, lossValue: 1, prizeTable: []}
+  }};
+}
+function tSel() { return TOURS[T_SEL]; }
+function tDef() { return tSel().definition; }
+function tDirty(on) { $('#tDirty').style.display = on ? 'inline-block' : 'none'; }
+function tField(field, value) { tDef()[field] = value; tDirty(true); if (field === 'name') renderTourPills(); }
+function tRunField(field, value) { tDef().run[field] = value; tDirty(true); }
+function tLbField(field, value) { tDef().leaderboard[field] = value; tDirty(true); }
+function tFeesChanged() {
+  const fees = [];
+  const add = (cur, id) => { const n = parseInt($(id).value) || 0; if (n > 0) fees.push({currency: cur, amount: n}); };
+  add('Tokens', '#tFeeTokens'); add('Gems', '#tFeeGems'); add('Tickets', '#tFeeTickets');
+  tDef().run.entryFee = fees; tDirty(true);
+}
+
+async function loadTournaments() {
+  try {
+    const d = await api('tournaments');
+    TOURS = d.tournaments || [];
+    if (!TOURS.length) TOURS = [defaultTournament(1)];
+    T_SEL = Math.min(T_SEL, TOURS.length - 1);
+    tDirty(false);
+    renderTournaments();
+    const guids = TOURS.flatMap(t => [t.definition.run, t.definition.leaderboard]
+      .flatMap(x => (x && x.prizeTable || []).flatMap(p => p.rewards || [])))
+      .filter(r => r.rewardType === 'Archetype' && r.rewardProductID)
+      .map(r => r.rewardProductID);
+    if (await resolveCardMeta(guids)) renderTournaments();
+  } catch(e) { toast('Tournaments: ' + e.message, true); }
+}
+function renderTourPills() {
+  $('#tourPills').innerHTML = TOURS.map((t, i) =>
+    `<button class="season-pill ${i === T_SEL ? 'sel' : ''}" onclick="selectTournament(${i})">
+       ${esc(t.definition.name || '(unnamed)')}${t.enabled ? '' : ' 🚫'}</button>`).join('') +
+    `<button class="mini" onclick="addTournament()">+ New tournament</button>`;
+}
+function selectTournament(i) { T_SEL = i; renderTournaments(); }
+function addTournament() { TOURS.push(defaultTournament(TOURS.length + 1)); T_SEL = TOURS.length - 1; tDirty(true); renderTournaments(); }
+
+function prizeRowHTML(kind, p, i) {
+  const unit = kind === 'run' ? 'place/wins' : 'rank';
+  return `<div class="prize-row">
+    <div class="prize-range">
+      <label>${unit} from</label><input type="number" min="0" value="${p.start}" onchange="prizeRange('${kind}',${i},'start',this.value)">
+      <label>to</label><input type="number" min="0" value="${p.end}" onchange="prizeRange('${kind}',${i},'end',this.value)">
+    </div>
+    <div class="prize-rewards">
+      ${(p.rewards || []).map((r, ri) => tourRewardChipHTML(kind, r, i, ri)).join('')}
+      <button class="add-chip" style="padding:10px 14px" onclick="openRewardPicker('${kind === 'run' ? 'trun' : 'tlb'}', ${i})">+ Reward</button>
+    </div>
+    <button class="mini ms-del" onclick="delPrizeRow('${kind}',${i})">✕ Row</button>
+  </div>`;
+}
+function tourRewardChipHTML(kind, r, i, ri) {
+  let art, label;
+  const amt = r.rewardAmount || 0;
+  if (r.rewardType === 'Archetype') {
+    const m = metaFor(r.rewardProductID) || {name: r.name || 'Unknown', image: null};
+    art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
+    label = `<span class="rc-name">${esc(m.name)}</span><span class="rc-amt">×${Math.max(1, amt)}</span>`;
+  } else {
+    art = '<div class="coin">🪙</div>';
+    label = `<span class="rc-name">${esc(r.name || 'Tokens')}</span><span class="rc-amt">${amt}</span>`;
+  }
+  return `<div class="reward-chip">${art}${label}
+    <button class="chip-x" onclick="removeTourReward('${kind}',${i},${ri})">✕</button></div>`;
+}
+function prizeTableOf(kind) {
+  return kind === 'run' ? tDef().run.prizeTable : tDef().leaderboard.prizeTable;
+}
+function prizeRange(kind, i, field, v) { prizeTableOf(kind)[i][field] = Math.max(0, parseInt(v) || 0); tDirty(true); }
+function addPrizeRow(kind) {
+  const table = prizeTableOf(kind);
+  const last = table.length ? table[table.length - 1].end : (kind === 'run' ? -1 : 0);
+  table.push({start: last + 1, end: last + 1, rewards: []});
+  tDirty(true); renderTournaments();
+}
+function delPrizeRow(kind, i) { prizeTableOf(kind).splice(i, 1); tDirty(true); renderTournaments(); }
+function removeTourReward(kind, i, ri) { prizeTableOf(kind)[i].rewards.splice(ri, 1); tDirty(true); renderTournaments(); }
+
+function renderTournaments() {
+  renderTourPills();
+  const t = tSel(), d = t.definition, run = d.run || {}, lb = d.leaderboard || {};
+  $('#tName').value = d.name || '';
+  $('#tTitle').value = (d.title && d.title.id) || d.title || '';
+  $('#tDesc').value = (d.description && d.description.id) || d.description || '';
+  $('#tMaxRuns').value = d.maxRuns || 0;
+  $('#tMaxSize').value = String(d.maxSize || 8);
+  $('#tFormat').value = d.format || 'Unlimited';
+  $('#tRoundLength').value = d.roundLength || 30;
+  $('#tRoundDelay').value = d.delayBetweenRounds || 10;
+  $('#tPreview').value = msToLocal(d.previewTime);
+  $('#tStart').value = msToLocal(d.startTime);
+  $('#tEntryClose').value = msToLocal(d.entryClosingTime);
+  $('#tResolve').value = msToLocal(d.resolutionTime);
+  $('#tDisappear').value = msToLocal(d.disappearTime);
+  $('#tMaxWins').value = run.maxWins || 0;
+  $('#tMaxLosses').value = run.maxLosses || 0;
+  $('#tMaxGames').value = run.maxGames || 0;
+  $('#tDeckSwitch').checked = run.allowDeckSwitching !== false;
+  const fee = cur => (run.entryFee || []).find(f => f.currency === cur);
+  $('#tFeeTokens').value = (fee('Tokens') || {}).amount || 0;
+  $('#tFeeGems').value = (fee('Gems') || {}).amount || 0;
+  $('#tFeeTickets').value = (fee('Tickets') || {}).amount || 0;
+  $('#tWinValue').value = lb.winValue ?? 3;
+  $('#tLossValue').value = lb.lossValue ?? 1;
+  $('#tRunPrizes').innerHTML = (run.prizeTable || []).map((p, i) => prizeRowHTML('run', p, i)).join('')
+    || '<div class="muted" style="margin-bottom:10px">No run prizes yet.</div>';
+  $('#tLbPrizes').innerHTML = (lb.prizeTable || []).map((p, i) => prizeRowHTML('leaderboard', p, i)).join('')
+    || '<div class="muted" style="margin-bottom:10px">No leaderboard prizes yet.</div>';
+  $('#tToggleBtn').textContent = t.enabled ? 'Disable' : 'Enable';
+  $('#tMeta').textContent = t.tournament_id
+    ? `${t.tournament_id} · ${t.entries || 0} entries · ${t.enabled ? 'enabled' : 'disabled'}`
+    : 'not saved yet';
+  $('#tStandings').innerHTML = '';
+}
+
+async function saveTournament() {
+  const t = tSel();
+  const d = t.definition;
+  d.title = String($('#tTitle').value || d.name);
+  d.description = String($('#tDesc').value || '');
+  try {
+    const res = await api('tournaments', {
+      tournament_id: t.tournament_id || undefined,
+      definition: d,
+      enabled: t.enabled
+    });
+    t.tournament_id = res.tournament.tournament_id;
+    tDirty(false);
+    toast('Tournament saved & live');
+    renderTournaments();
+  } catch(e) { toast(e.message, true); }
+}
+async function toggleTournament() {
+  const t = tSel();
+  if (!t.tournament_id) { t.enabled = !t.enabled; tDirty(true); renderTournaments(); return; }
+  try {
+    const res = await api('tournaments/toggle', {tournament_id: t.tournament_id});
+    t.enabled = res.tournament.enabled;
+    toast(t.enabled ? 'Tournament enabled' : 'Tournament disabled');
+    renderTournaments();
+  } catch(e) { toast(e.message, true); }
+}
+async function deleteTournament() {
+  const t = tSel();
+  if (!t.tournament_id) { TOURS.splice(T_SEL, 1); if (!TOURS.length) TOURS = [defaultTournament(1)]; T_SEL = 0; renderTournaments(); return; }
+  if (!confirm(`Delete tournament "${t.definition.name}" and ALL its entries?`)) return;
+  try {
+    await api('tournaments/delete', {tournament_id: t.tournament_id});
+    toast('Deleted'); T_SEL = 0; loadTournaments();
+  } catch(e) { toast(e.message, true); }
+}
+async function viewStandings() {
+  const t = tSel();
+  if (!t.tournament_id) return toast('Save the tournament first', true);
+  try {
+    const d = await api('tournaments/standings/' + t.tournament_id);
+    $('#tStandings').innerHTML = d.standings.length
+      ? `<table><thead><tr><th>Rank</th><th>Player</th><th>Points</th></tr></thead><tbody>` +
+        d.standings.map(s => `<tr><td>${s.rank}</td><td>${esc(s.displayName)}</td><td>${s.points}</td></tr>`).join('') +
+        `</tbody></table>`
+      : '<div class="muted">No entrants yet.</div>';
+  } catch(e) { toast(e.message, true); }
+}
+
+/* ---------------- Reward picker modal ---------------- */
+let PICKER = {mode: null, tierIndex: null, msIndex: null, type: 'card', sel: null};
+
+function openRewardPicker(mode, tierIndex, msIndex) {
+  const tokensOk = mode === 'versus' || mode === 'trun' || mode === 'tlb';
+  PICKER = {mode, tierIndex, msIndex, type: tokensOk ? 'tokens' : 'card', sel: null};
+  $('#pickerTitle').textContent =
+    mode === 'versus' ? 'Add Milestone Reward' :
+    mode === 'trun' ? 'Add Run Prize' :
+    mode === 'tlb' ? 'Add Leaderboard Prize' : 'Add Code Reward';
+  document.querySelector('[data-ptype="tokens"]').style.display = tokensOk ? '' : 'none';
+  $('#pickerCount').value = 1;
+  $('#pickerOverlay').classList.add('open');
+  pickerSetType(PICKER.type);
+}
+function closePicker() { $('#pickerOverlay').classList.remove('open'); }
+
+function pickerSetType(t) {
+  PICKER.type = t; PICKER.sel = null;
+  document.querySelectorAll('.type-tile').forEach(b => b.classList.toggle('sel', b.dataset.ptype === t));
+  const body = $('#pickerBody');
+  if (t === 'tokens') {
+    body.innerHTML = `
+      <label>Token amount</label>
+      <div class="row" style="margin-top:6px">
+        <input id="tokenAmount" type="number" value="10" min="1" style="width:110px" oninput="pickerTokensChanged()">
+        ${[5, 10, 20, 50, 100].map(n => `<button class="preset" onclick="$('#tokenAmount').value=${n};pickerTokensChanged()">${n}</button>`).join('')}
+      </div>
+      <div class="muted">Granted straight to the player's coin wallet when the milestone is crossed.</div>`;
+    PICKER.sel = {kind: 'tokens'};
+  } else if (t === 'card') {
+    body.innerHTML = `
+      <input id="cardSearch" placeholder="Search cards by name, set or GUID… (e.g. Lugia, SWSH12)" style="width:100%" oninput="cardSearchDebounced()">
+      <div class="thumb-grid" id="cardGrid"></div>
+      <div class="muted" id="cardHint" style="margin-top:8px">Type at least 2 characters to search the loaded card scripts.</div>`;
+    setTimeout(() => $('#cardSearch').focus(), 50);
+  } else {
+    body.innerHTML = `
+      <div id="productFilters">${['All', 'Booster', 'Deck', 'Coin', 'Sleeve', 'Deck Box']
+        .map((n, i) => `<button class="filter-chip ${i === 0 ? 'sel' : ''}" onclick="productFilter(this, '${n}')">${n}</button>`).join('')}</div>
+      <div class="thumb-grid" id="productGrid"></div>`;
+    renderProductGrid('All');
+  }
+  pickerValidate();
+}
+function pickerTokensChanged() { pickerValidate(); }
+
+let _cardSearchTimer;
+function cardSearchDebounced() {
+  clearTimeout(_cardSearchTimer);
+  _cardSearchTimer = setTimeout(runCardSearch, 300);
+}
+async function runCardSearch() {
+  const q = $('#cardSearch').value.trim();
+  if (q.length < 2) { $('#cardGrid').innerHTML = ''; return; }
+  try {
+    const d = await api('cards/search', {query: q});
+    $('#cardHint').textContent = d.cards.length ? '' : 'No matches.';
+    PICKER.items = {};
+    $('#cardGrid').innerHTML = d.cards.map(c => {
+      PICKER.items[c.guid] = {guid: c.guid, name: `${c.name} (${c.set} ${c.number})`, image: c.image};
+      const img = c.image ? `<img src="${esc(c.image)}" loading="lazy" onerror="this.style.visibility='hidden'">`
+                          : `<img style="visibility:hidden">`;
+      return `<div class="thumb" onclick="pickerSelect(this, '${esc(c.guid)}')">
+        ${img}<div class="t-name">${esc(c.name)}</div><div class="t-sub">${esc(c.set)} · #${c.number}</div></div>`;
+    }).join('');
+  } catch(e) { toast(e.message, true); }
+}
+
+function productFilter(btn, name) {
+  document.querySelectorAll('#productFilters .filter-chip').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderProductGrid(name);
+}
+function renderProductGrid(filter) {
+  const typeByName = {'Booster': 21, 'Deck': 4, 'Coin': 22, 'Sleeve': 24, 'Deck Box': 23};
+  const items = PRODUCTS.filter(p => filter === 'All' || p.product_type === typeByName[filter]);
+  PICKER.items = {};
+  $('#productGrid').innerHTML = items.map(p => {
+    PICKER.items[p.guid] = {guid: p.guid, name: p.name || p.guid, image: p.image ? `/products/${p.image}.png` : null};
+    const img = p.image ? `<img src="/products/${esc(p.image)}.png" loading="lazy" onerror="this.style.visibility='hidden'">`
+                        : `<img style="visibility:hidden">`;
+    return `<div class="thumb product" onclick="pickerSelect(this, '${esc(p.guid)}')">
+      ${img}<div class="t-name">${esc(p.name || p.guid)}</div><div class="t-sub">${esc(p.key)} · ${TYPE_NAMES[p.product_type] || p.product_type}</div></div>`;
+  }).join('') || '<div class="muted">No products of this type.</div>';
+}
+
+function pickerSelect(el, guid) {
+  document.querySelectorAll('.thumb.sel').forEach(t => t.classList.remove('sel'));
+  el.classList.add('sel');
+  PICKER.sel = {kind: 'archetype', ...(PICKER.items[guid] || {guid})};
+  pickerValidate();
+}
+function pickerValidate() {
+  const ok = PICKER.sel && (PICKER.sel.kind !== 'archetype' || PICKER.sel.guid);
+  $('#pickerAddBtn').disabled = !ok;
+  $('#pickerSelInfo').textContent = PICKER.sel && PICKER.sel.kind === 'archetype' ? `Selected: ${PICKER.sel.name}` : '';
+}
+
+function pickerAdd() {
+  const count = Math.max(1, parseInt($('#pickerCount').value) || 1);
+  if (PICKER.sel.kind === 'tokens') {
+    const n = Math.max(1, parseInt($('#tokenAmount').value) || 1);
+    dispatchReward({name: `${n} Tokens`, rewardType: 'Tokens', rewardAmount: n, rewardCurrency: 'prizeTrainerCoin'});
+  } else {
+    const {guid, name, image} = PICKER.sel;
+    CARD_META[guid.toLowerCase()] = CARD_META[guid.toLowerCase()] || {name, image};
+    if (PICKER.mode === 'codes') {
+      REWARD.products[guid] = (REWARD.products[guid] || 0) + count;
+      updateRewardItems();
+    } else {
+      dispatchReward({name, rewardType: 'Archetype', rewardAmount: count,
+                      rewardProductID: guid, rewardDescription: {id: name}, flavor: name});
+    }
+  }
+  closePicker();
+}
+function dispatchReward(reward) {
+  if (PICKER.mode === 'versus') {
+    vsSeason()._tiers[PICKER.tierIndex].ms[PICKER.msIndex].rewards.push(reward);
+    vsDirty(true); renderVersus();
+  } else if (PICKER.mode === 'trun' || PICKER.mode === 'tlb') {
+    prizeTableOf(PICKER.mode === 'trun' ? 'run' : 'leaderboard')[PICKER.tierIndex].rewards.push(reward);
+    tDirty(true); renderTournaments();
+  }
+}
+
+async function bootData() {
+  await loadProducts();
+  loadOverview(); loadAccounts(); loadCodes(); loadShop(); loadPages(); loadTrades(); loadVersus(); loadTournaments();
+}
+(async function init() {
+  try {
+    const s = await fetch('/admin/api/session').then(r => r.json());
+    if (!s.authenticated) return showLogin();
+    $('#whoami').textContent = s.username;
+    $('#logoutBtn').style.display = '';
+  } catch(e) { return showLogin(); }
+  bootData();
+})();
+</script>
+</body>
+</html>

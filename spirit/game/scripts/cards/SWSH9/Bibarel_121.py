@@ -1,0 +1,35 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="18aff19b-238e-52b3-8ec8-a4b592d043a1",
+    key="SWSH9",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Bibarel.Name",
+    display_name="Bibarel",
+    searchable_by=["Bibarel", "Stage 1", "Bibarel"],
+    subtypes=["Stage 1"],
+    collector_number=121,
+    set_code="SWSH9",
+    rarity=Rarities.RareHolo,
+    hp=120,
+    elements=[PokemonTypes.COLORLESS],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.FIGHTING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Bidoof.Name",
+    family_id=399,
+    abilities=[
+        Ability(
+            title="Industrious Incisors",
+            game_text="Once during your turn, you may draw cards until you have 5 cards in your hand.",
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Tail Smash",
+            game_text="Flip a coin. If tails, this attack does nothing.",
+            cost={PokemonTypes.COLORLESS: 3},
+            damage=100,
+            effect=unimplemented,
+        ),
+    ],
+)

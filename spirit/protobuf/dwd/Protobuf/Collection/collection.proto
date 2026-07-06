@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package dwd.Protobuf.Collection;
+
+import "dwd/Protobuf/base.proto";
+
+// Equivalent to dwd.Protobuf.Collection.ArchetypesFound
+message ArchetypesFound {
+    repeated dwd.Protobuf.Archetype archetypes = 1;
+    string checksum = 2;
+    string key = 3;
+}

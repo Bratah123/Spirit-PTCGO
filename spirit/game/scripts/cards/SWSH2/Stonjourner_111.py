@@ -1,0 +1,35 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="1ac0697d-0170-5fc3-b035-8f31594901c1",
+    key="SWSH2",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Stonjourner.Name",
+    display_name="Stonjourner",
+    searchable_by=["Stonjourner", "Basic", "Stonjourner"],
+    subtypes=["Basic"],
+    collector_number=111,
+    set_code="SWSH2",
+    rarity=Rarities.RareHolo,
+    hp=140,
+    elements=[PokemonTypes.FIGHTING],
+    stage=PokemonStage.BASIC,
+    retreat_cost=4,
+    weakness_type=PokemonTypes.GRASS,
+    family_id=874,
+    abilities=[
+        Attack(
+            title="Mega Kick",
+            cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
+            damage=80,
+        ),
+        Attack(
+            title="Power Press",
+            game_text="If this Pok\u00e9mon has at least 1 extra Energy attached (in addition to this attack's cost), this attack does 60 more damage.",
+            cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
+            damage=120,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+    ],
+)

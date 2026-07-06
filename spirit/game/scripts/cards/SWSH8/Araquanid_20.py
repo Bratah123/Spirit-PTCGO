@@ -1,0 +1,35 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="9a29aab5-cc35-5543-afe8-bd6f441356df",
+    key="SWSH8",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Araquanid.Name",
+    display_name="Araquanid",
+    searchable_by=["Araquanid", "Stage 1", "Araquanid"],
+    subtypes=["Stage 1"],
+    collector_number=20,
+    set_code="SWSH8",
+    rarity=Rarities.Rare,
+    hp=120,
+    elements=[PokemonTypes.GRASS],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.FIRE,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Dewpider.Name",
+    family_id=751,
+    abilities=[
+        Attack(
+            title="Bug Bite",
+            cost={PokemonTypes.GRASS: 1},
+            damage=30,
+        ),
+        Attack(
+            title="Bubble Launch",
+            game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
+            cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
+            damage=110,
+            effect=unimplemented,
+        ),
+    ],
+)

@@ -1,0 +1,37 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="af98160a-b9bc-53aa-92ca-5ede1e0ad8e9",
+    key="SWSH7",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.VolcaronaV.Name",
+    display_name="Volcarona V",
+    searchable_by=["Volcarona V", "Basic", "V", "VolcaronaV"],
+    subtypes=["Basic", "V"],
+    collector_number=21,
+    set_code="SWSH7",
+    rarity=Rarities.RareHoloV,
+    hp=210,
+    elements=[PokemonTypes.FIRE],
+    stage=PokemonStage.BASIC,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.WATER,
+    family_id=637,
+    abilities=[
+        Attack(
+            title="Surging Flames",
+            game_text="This attack does 20 more damage for each basic Energy card in your discard pile. Then, shuffle those Energy cards into your deck.",
+            cost={PokemonTypes.FIRE: 1},
+            damage=20,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Fire Blast",
+            game_text="Discard an Energy from this Pok\u00e9mon.",
+            cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
+            damage=160,
+            effect=unimplemented,
+        ),
+    ],
+)

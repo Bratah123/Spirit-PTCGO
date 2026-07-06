@@ -1,0 +1,36 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="e7a0a6ef-bc85-5897-a9f5-ff5142325f63",
+    key="SWSH10",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.HisuianSamurott.Name",
+    display_name="Hisuian Samurott",
+    searchable_by=["Hisuian Samurott", "Stage 2", "HisuianSamurott"],
+    subtypes=["Stage 2"],
+    collector_number=100,
+    set_code="SWSH10",
+    rarity=Rarities.RareHolo,
+    hp=170,
+    elements=[PokemonTypes.DARKNESS],
+    stage=PokemonStage.STAGE2,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.GRASS,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Dewott.Name",
+    family_id=501,
+    abilities=[
+        Ability(
+            title="Wily Stance",
+            game_text="You must discard a card from your hand in order to use this Ability. Once during your turn, you may draw 3 cards.",
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Dark Mastery",
+            game_text="This attack does 20 more damage for each Energy attached to all of your Pok\u00e9mon.",
+            cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
+            damage=60,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+    ],
+)

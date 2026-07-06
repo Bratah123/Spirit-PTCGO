@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package dwd.Protobuf;
+
+// Equivalent to dwd.Protobuf.ProtoMessage
+message ProtoMessage {
+    string messageName = 1;
+    int32 messageTag = 2; // TwosComplement? This is usually just int32 in proto3
+}

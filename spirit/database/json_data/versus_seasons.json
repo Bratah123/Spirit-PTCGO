@@ -1,0 +1,235 @@
+[
+  {
+    "seasonID": "Season1",
+    "startTime": 0,
+    "endTime": 4102444800000,
+    "description": {
+      "id": "SpiritPTCGO Season 1"
+    },
+    "tiers": [
+      {
+        "rewards": {
+          "10": [
+            {
+              "name": "200 Tokens",
+              "rewardType": "Tokens",
+              "rewardAmount": 200,
+              "rewardProductID": null,
+              "rewardCurrency": "prizeTrainerCoin",
+              "rewardDescription": {
+                "id": ""
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "15": [
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 5,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "20": [
+            {
+              "name": "Sword & Shield - Lost Origins",
+              "rewardType": "Archetype",
+              "rewardAmount": 5,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Lost Origins"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "25": [
+            {
+              "name": "Sword & Shield - Silver Tempest",
+              "rewardType": "Archetype",
+              "rewardAmount": 5,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Silver Tempest"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "30": [
+            {
+              "name": "Mew VMAX (SWSH8 269)",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "c7bbdd12-2615-5812-97c3-4560a7c991bc",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Mew VMAX (SWSH8 269)"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ]
+        }
+      },
+      {
+        "rewards": {
+          "50": [
+            {
+              "name": "1000 Tokens",
+              "rewardType": "Tokens",
+              "rewardAmount": 1000,
+              "rewardProductID": null,
+              "rewardCurrency": "prizeTrainerCoin",
+              "rewardDescription": {
+                "id": ""
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "55": [
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 10,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "60": [
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 10,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "65": [
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 10,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "70": [
+            {
+              "name": "Genesect V (SWSH8 255)",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "cb9ff20d-68e5-541f-a08d-1d155c7e6605",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Genesect V (SWSH8 255)"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ]
+        }
+      },
+      {
+        "rewards": {
+          "100": [
+            {
+              "name": "2000 Tokens",
+              "rewardType": "Tokens",
+              "rewardAmount": 2000,
+              "rewardProductID": null,
+              "rewardCurrency": "prizeTrainerCoin",
+              "rewardDescription": {
+                "id": ""
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "105": [
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 15,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "110": [
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 15,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "115": [
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 15,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ],
+          "120": [
+            {
+              "name": "Mew V (SWSH8 251)",
+              "rewardType": "Archetype",
+              "rewardAmount": 4,
+              "rewardProductID": "c82b5795-bfbc-5f38-8d71-24e0324a27f8",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Mew V (SWSH8 251)"
+              },
+              "rewardReason": "",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "resetRewardID": ""
+  }
+]
