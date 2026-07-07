@@ -69,7 +69,10 @@
   .reward-chip img { height: 58px; width: 42px; object-fit: cover; border-radius: 4px; display: block; background: #0b0e14; }
   .reward-chip .coin { width: 42px; height: 42px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 21px; background: radial-gradient(circle at 35% 30%, #ffe98a, #d4a017 70%); box-shadow: inset 0 0 0 3px rgba(0,0,0,.18); }
   .reward-chip .rc-name { font-size: 12px; max-width: 150px; line-height: 1.3; }
-  .reward-chip .rc-amt { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .reward-chip .rc-amt { color: var(--accent); font-weight: 700; font-size: 12px; min-width: 26px; text-align: center; }
+  .rc-step { display: flex; align-items: center; gap: 3px; }
+  .rc-pm { width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel); color: var(--accent); font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+  .rc-pm:hover { border-color: var(--accent); }
   .chip-x { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; }
   .chip-x:hover { color: var(--bad); }
   .add-chip { border: 1px dashed var(--line); color: var(--muted); background: none; border-radius: 9px; padding: 18px 16px; cursor: pointer; font-size: 13px; }
@@ -704,7 +707,7 @@ function defaultSeason(n) {
 function parseTiers(season) {
   const tiers = (season.tiers || []).map(t => ({
     ms: Object.entries(t.rewards || {})
-      .map(([pts, rewards]) => ({points: parseInt(pts) || 0, rewards}))
+      .map(([pts, rewards]) => ({points: parseInt(pts) || 0, rewards: expandRewards(rewards)}))
       .sort((a, b) => a.points - b.points)
   }));
   return tiers.length ? tiers : [{ms: []}];
@@ -739,19 +742,46 @@ function deleteSeason() {
   SEASONS.splice(VS_SEL, 1); VS_SEL = 0; vsDirty(true); renderVersus();
 }
 
-function rewardChipHTML(r, ti, mi, ri) {
-  let art, label;
-  const amt = r.rewardAmount || 0;
+/* The client shows a reward's quantity by COUNTING duplicate entries in the
+   milestone array (rewardAmount is ignored for Archetype rewards), so identical
+   products/cards are stored as N entries. Group them into one stepper chip. */
+function groupRewards(rewards) {
+  const groups = [], byKey = {};
+  (rewards || []).forEach((r, idx) => {
+    const key = r.rewardType === 'Archetype'
+      ? 'A:' + String(r.rewardProductID || '').toLowerCase()
+      : 'T:' + idx;                       // tokens never merge — they carry their own amount
+    if (byKey[key] === undefined) { byKey[key] = groups.length; groups.push({reward: r, indices: []}); }
+    groups[byKey[key]].indices.push(idx);
+  });
+  return groups;
+}
+function expandRewards(rewards) {
+  const out = [];
+  (rewards || []).forEach(r => {
+    if (r.rewardType === 'Archetype' && (r.rewardAmount || 1) > 1) {
+      const n = Math.max(1, r.rewardAmount | 0);
+      for (let k = 0; k < n; k++) out.push({...r, rewardAmount: 1});
+    } else { out.push(r); }
+  });
+  return out;
+}
+function rewardGroupChip(g, stepPrefix, removePrefix) {
+  const r = g.reward, n = g.indices.length;
   if (r.rewardType === 'Archetype') {
     const m = metaFor(r.rewardProductID) || {name: r.name || 'Unknown', image: null};
-    art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
-    label = `<span class="rc-name">${esc(m.name)}</span><span class="rc-amt">×${Math.max(1, amt)}</span>`;
-  } else {
-    art = '<div class="coin">🪙</div>';
-    label = `<span class="rc-name">${esc(r.name || 'Tokens')}</span><span class="rc-amt">${amt}</span>`;
+    const art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
+    return `<div class="reward-chip">${art}<span class="rc-name">${esc(m.name)}</span>
+      <span class="rc-step">
+        <button class="rc-pm" title="Remove one" onclick="${stepPrefix},-1)">−</button>
+        <span class="rc-amt">×${n}</span>
+        <button class="rc-pm" title="Add one" onclick="${stepPrefix},1)">+</button>
+      </span>
+      <button class="chip-x" title="Remove all" onclick="${removePrefix})">✕</button></div>`;
   }
-  return `<div class="reward-chip">${art}${label}
-    <button class="chip-x" title="Remove reward" onclick="removeVsReward(${ti},${mi},${ri})">✕</button></div>`;
+  return `<div class="reward-chip"><div class="coin">🪙</div>
+    <span class="rc-name">${esc(r.name || 'Tokens')}</span><span class="rc-amt">${r.rewardAmount || 0}</span>
+    <button class="chip-x" title="Remove" onclick="${removePrefix})">✕</button></div>`;
 }
 
 function milestoneHTML(m, ti, mi) {
@@ -765,7 +795,8 @@ function milestoneHTML(m, ti, mi) {
         <span class="pts">pts</span>
       </div>
       <div class="ms-body">
-        ${m.rewards.map((r, ri) => rewardChipHTML(r, ti, mi, ri)).join('')}
+        ${groupRewards(m.rewards).map((g, gi) => rewardGroupChip(g,
+            `vsRewardStep(${ti},${mi},${gi}`, `vsRewardRemoveGroup(${ti},${mi},${gi}`)).join('')}
         <button class="add-chip" onclick="openRewardPicker('versus', ${ti}, ${mi})">+ Reward</button>
         ${warn}
       </div>
@@ -820,7 +851,19 @@ function addMilestone(ti) {
   vsDirty(true); renderVersus();
 }
 function delMilestone(ti, mi) { vsSeason()._tiers[ti].ms.splice(mi, 1); vsDirty(true); renderVersus(); }
-function removeVsReward(ti, mi, ri) { vsSeason()._tiers[ti].ms[mi].rewards.splice(ri, 1); vsDirty(true); renderVersus(); }
+function vsRewardStep(ti, mi, gi, delta) {
+  const rewards = vsSeason()._tiers[ti].ms[mi].rewards;
+  const g = groupRewards(rewards)[gi]; if (!g) return;
+  if (delta > 0) rewards.push({...g.reward, rewardAmount: 1});
+  else rewards.splice(g.indices[g.indices.length - 1], 1);
+  vsDirty(true); renderVersus();
+}
+function vsRewardRemoveGroup(ti, mi, gi) {
+  const rewards = vsSeason()._tiers[ti].ms[mi].rewards;
+  const g = groupRewards(rewards)[gi]; if (!g) return;
+  g.indices.slice().sort((a, b) => b - a).forEach(idx => rewards.splice(idx, 1));
+  vsDirty(true); renderVersus();
+}
 
 async function saveSeasons() {
   const out = SEASONS.map(s => ({
@@ -874,6 +917,8 @@ async function loadTournaments() {
   try {
     const d = await api('tournaments');
     TOURS = d.tournaments || [];
+    TOURS.forEach(t => [t.definition && t.definition.run, t.definition && t.definition.leaderboard]
+      .forEach(x => (x && x.prizeTable || []).forEach(p => { p.rewards = expandRewards(p.rewards); })));
     if (!TOURS.length) TOURS = [defaultTournament(1)];
     T_SEL = Math.min(T_SEL, TOURS.length - 1);
     tDirty(false);
@@ -902,25 +947,25 @@ function prizeRowHTML(kind, p, i) {
       <label>to</label><input type="number" min="0" value="${p.end}" onchange="prizeRange('${kind}',${i},'end',this.value)">
     </div>
     <div class="prize-rewards">
-      ${(p.rewards || []).map((r, ri) => tourRewardChipHTML(kind, r, i, ri)).join('')}
+      ${groupRewards(p.rewards).map((g, gi) => rewardGroupChip(g,
+          `tourRewardStep('${kind}',${i},${gi}`, `tourRewardRemoveGroup('${kind}',${i},${gi}`)).join('')}
       <button class="add-chip" style="padding:10px 14px" onclick="openRewardPicker('${kind === 'run' ? 'trun' : 'tlb'}', ${i})">+ Reward</button>
     </div>
     <button class="mini ms-del" onclick="delPrizeRow('${kind}',${i})">✕ Row</button>
   </div>`;
 }
-function tourRewardChipHTML(kind, r, i, ri) {
-  let art, label;
-  const amt = r.rewardAmount || 0;
-  if (r.rewardType === 'Archetype') {
-    const m = metaFor(r.rewardProductID) || {name: r.name || 'Unknown', image: null};
-    art = m.image ? `<img src="${esc(m.image)}" onerror="this.remove()">` : '<div class="coin">🎴</div>';
-    label = `<span class="rc-name">${esc(m.name)}</span><span class="rc-amt">×${Math.max(1, amt)}</span>`;
-  } else {
-    art = '<div class="coin">🪙</div>';
-    label = `<span class="rc-name">${esc(r.name || 'Tokens')}</span><span class="rc-amt">${amt}</span>`;
-  }
-  return `<div class="reward-chip">${art}${label}
-    <button class="chip-x" onclick="removeTourReward('${kind}',${i},${ri})">✕</button></div>`;
+function tourRewardStep(kind, i, gi, delta) {
+  const rewards = prizeTableOf(kind)[i].rewards;
+  const g = groupRewards(rewards)[gi]; if (!g) return;
+  if (delta > 0) rewards.push({...g.reward, rewardAmount: 1});
+  else rewards.splice(g.indices[g.indices.length - 1], 1);
+  tDirty(true); renderTournaments();
+}
+function tourRewardRemoveGroup(kind, i, gi) {
+  const rewards = prizeTableOf(kind)[i].rewards;
+  const g = groupRewards(rewards)[gi]; if (!g) return;
+  g.indices.slice().sort((a, b) => b - a).forEach(idx => rewards.splice(idx, 1));
+  tDirty(true); renderTournaments();
 }
 function prizeTableOf(kind) {
   return kind === 'run' ? tDef().run.prizeTable : tDef().leaderboard.prizeTable;
@@ -933,7 +978,6 @@ function addPrizeRow(kind) {
   tDirty(true); renderTournaments();
 }
 function delPrizeRow(kind, i) { prizeTableOf(kind).splice(i, 1); tDirty(true); renderTournaments(); }
-function removeTourReward(kind, i, ri) { prizeTableOf(kind)[i].rewards.splice(ri, 1); tDirty(true); renderTournaments(); }
 
 function renderTournaments() {
   renderTourPills();
@@ -1132,21 +1176,24 @@ function pickerAdd() {
       REWARD.products[guid] = (REWARD.products[guid] || 0) + count;
       updateRewardItems();
     } else {
-      dispatchReward({name, rewardType: 'Archetype', rewardAmount: count,
-                      rewardProductID: guid, rewardDescription: {id: name}, flavor: name});
+      // one entry per copy — the client renders the quantity from array length
+      const base = {name, rewardType: 'Archetype', rewardAmount: 1,
+                    rewardProductID: guid, rewardDescription: {id: name}, flavor: name};
+      dispatchRewards(Array.from({length: count}, () => ({...base})));
     }
   }
   closePicker();
 }
-function dispatchReward(reward) {
+function dispatchRewards(rewards) {
   if (PICKER.mode === 'versus') {
-    vsSeason()._tiers[PICKER.tierIndex].ms[PICKER.msIndex].rewards.push(reward);
+    vsSeason()._tiers[PICKER.tierIndex].ms[PICKER.msIndex].rewards.push(...rewards);
     vsDirty(true); renderVersus();
   } else if (PICKER.mode === 'trun' || PICKER.mode === 'tlb') {
-    prizeTableOf(PICKER.mode === 'trun' ? 'run' : 'leaderboard')[PICKER.tierIndex].rewards.push(reward);
+    prizeTableOf(PICKER.mode === 'trun' ? 'run' : 'leaderboard')[PICKER.tierIndex].rewards.push(...rewards);
     tDirty(true); renderTournaments();
   }
 }
+function dispatchReward(reward) { dispatchRewards([reward]); }
 
 async function bootData() {
   await loadProducts();

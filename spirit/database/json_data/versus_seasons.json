@@ -245,7 +245,7 @@
             {
               "name": "Sword & Shield - Fusion Strike",
               "rewardType": "Archetype",
-              "rewardAmount": 10,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -253,13 +253,121 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 9
             }
           ],
           "60": [
             {
               "name": "Sword & Shield - Evolving Skies",
               "rewardType": "Archetype",
-              "rewardAmount": 10,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -267,13 +375,121 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Sword & Shield - Evolving Skies",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b317777",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Evolving Skies"
+              },
+              "rewardReason": "",
+              "index": 9
             }
           ],
           "65": [
             {
               "name": "Sword & Shield - Chilling Reign",
               "rewardType": "Archetype",
-              "rewardAmount": 10,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -281,6 +497,114 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Sword & Shield - Chilling Reign",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b316666",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Chilling Reign"
+              },
+              "rewardReason": "",
+              "index": 9
             }
           ],
           "70": [
@@ -319,7 +643,7 @@
             {
               "name": "Pokemon Go - Pokemon Go",
               "rewardType": "Archetype",
-              "rewardAmount": 15,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -327,13 +651,181 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 9
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 10
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 11
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 12
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 13
+            },
+            {
+              "name": "Pokemon Go - Pokemon Go",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b314545",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Pokemon Go - Pokemon Go"
+              },
+              "rewardReason": "",
+              "index": 14
             }
           ],
           "110": [
             {
               "name": "Sword & Shield - Rebel Clash",
               "rewardType": "Archetype",
-              "rewardAmount": 15,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -341,13 +833,181 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 9
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 10
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 11
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 12
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 13
+            },
+            {
+              "name": "Sword & Shield - Rebel Clash",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b312222",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Rebel Clash"
+              },
+              "rewardReason": "",
+              "index": 14
             }
           ],
           "115": [
             {
               "name": "Sword & Shield - Fusion Strike",
               "rewardType": "Archetype",
-              "rewardAmount": 15,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -355,6 +1015,174 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 4
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 5
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 6
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 7
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 8
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 9
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 10
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 11
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 12
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 13
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 14
             }
           ],
           "120": [
