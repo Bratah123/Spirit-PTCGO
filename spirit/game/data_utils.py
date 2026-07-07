@@ -133,6 +133,9 @@ class Ability:
         self.condition = condition
         # Assigned by the owning CardDefinition; must match SelectableAction.actionID.
         self.ability_id: Optional[str] = None
+        # True when granted by an attached Tool (Forest Seal Stone): the ability
+        # lives on the tool, not the Pokemon, so Path to the Peak can't lock it.
+        self.is_granted: bool = False
 
     def on_use(self, fn: Callable) -> Callable:
         """Decorator alternative to the effect= parameter."""
@@ -414,6 +417,7 @@ class PokemonToolCardDef(TrainerCardDef):
         for idx, a in enumerate(self.granted_abilities):
             if not a.ability_id:
                 a.ability_id = ability_id_for(self.guid, idx)
+            a.is_granted = True
             ABILITIES_BY_ID[a.ability_id] = a
 
 class EnergyCardDef(CardDefinition):

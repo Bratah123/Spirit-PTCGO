@@ -211,6 +211,7 @@ class EffectContext:
         is_attack: Optional[bool] = None,
         ignore_target_effects: bool = False,
         ignore_weakness: bool = False,
+        as_counters: bool = False,
     ) -> int:
         """Damages a Pokemon (default: the attack's printed damage onto the
         opponent's Active) and returns the final amount after modifiers.
@@ -219,6 +220,9 @@ class EffectContext:
         (bench damage in the TCG is unmodified unless the card says otherwise).
         ignore_target_effects (Max Miracle) skips passives riding the target.
         ignore_weakness (Spit Innocently) skips only the Weakness stage.
+        as_counters plays the counter-drop FX (PlaceDamageEffect, m.p) instead
+        of the attack lunge (CakeAttackEffect) -- "put N damage counters"
+        effects (Lost Mine, Glistening Droplets).
         """
         target = target if target is not None else self.defender
         if target is None:
@@ -249,29 +253,40 @@ class EffectContext:
         remaining = max(0, current - calc.amount)
         target.set_attribute(AttrID.HP, remaining)
 
-        title = self.ability.title if self.ability else ""
-        attacker_types = self.attacker.get_attribute(AttrID.POKEMON_TYPES) or []
-        type_name = CLIENT_TYPE_NAMES.get(attacker_types[0], "Colorless") \
-            if attacker_types else "Colorless"
-        # m.m reads current HP when it plays, so the damage popup must precede
-        # the HP AttributeModified for its knockout check to see pre-hit HP.
-        self._queue(self.session._build_msg(
-            OutboundMsg.CAKE_ATTACK_EFFECT.value,
-            {
-                "gameID": self.game_id,
-                "damageSource": self.attacker.entity_id,
-                "entityID": target.entity_id,
-                "weaknessTriggered": calc.weakness_hit,
-                "resistanceTrigger": calc.resistance_hit,
-                "damageType": [type_name],
-                "attackName": {"id": title},
-                "damageAmount": calc.amount,
-                "damageModification": 0,
-                "visualType": VISUAL_DAMAGING,
-            },
-        ))
+        # m.p/m.m both read current HP when they play, so the damage FX must
+        # precede the HP AttributeModified for the knockout check to see
+        # pre-hit HP.
+        if as_counters:
+            # PlaceDamageEffect (UNSET condition => generic counter-drop, not
+            # the poison/burn overlay); leave _dealt_opponent_damage False so
+            # the attacker tucks via the non-damaging orb aimed at the targets.
+            self._queue(self.session._place_damage_effect_msg(
+                target.entity_id, calc.amount))
+            if target.entity_id not in self.visual_targets:
+                self.visual_targets.append(target.entity_id)
+        else:
+            title = self.ability.title if self.ability else ""
+            attacker_types = self.attacker.get_attribute(AttrID.POKEMON_TYPES) or []
+            type_name = CLIENT_TYPE_NAMES.get(attacker_types[0], "Colorless") \
+                if attacker_types else "Colorless"
+            self._queue(self.session._build_msg(
+                OutboundMsg.CAKE_ATTACK_EFFECT.value,
+                {
+                    "gameID": self.game_id,
+                    "damageSource": self.attacker.entity_id,
+                    "entityID": target.entity_id,
+                    "weaknessTriggered": calc.weakness_hit,
+                    "resistanceTrigger": calc.resistance_hit,
+                    "damageType": [type_name],
+                    "attackName": {"id": title},
+                    "damageAmount": calc.amount,
+                    "damageModification": 0,
+                    "visualType": VISUAL_DAMAGING,
+                },
+            ))
         if target.owning_player_id != self.attacker.owning_player_id:
-            self._dealt_opponent_damage = True
+            if not as_counters:
+                self._dealt_opponent_damage = True
             self.session.stat_add(self.player_id, "damagedealt", calc.amount)
             self.session.credit_card_damage(self.player_id, self.attacker, calc.amount)
             if is_attack:
@@ -493,7 +508,7 @@ class EffectContext:
                 continue
             await self.deal_damage(
                 amount=counters * 10, target=by_id[entity_id],
-                apply_modifiers=False, is_attack=False,
+                apply_modifiers=False, is_attack=False, as_counters=True,
             )
 
     # ------------------------------------------------------------------
@@ -1090,6 +1105,13 @@ class EffectContext:
         )
         return True
 
+    async def flush_choreography(self):
+        """Sends and clears the currently queued choreography brackets, so a
+        following dialog resolves only after both clients see them land
+        (Escape Rope: the opponent's swap shows before the player decides)."""
+        await self.session._flush_effect_runs(self)
+        self._messages.clear()
+
     async def discard_stadium(self) -> Optional[BoardEntity]:
         """Discards the in-play Stadium to its owner's discard; returns it or None."""
         stadium = self.stadium_in_play()
@@ -1284,7 +1306,7 @@ async def resolve_triggered_ability(
     """Runs a triggered ability (on-play/on-evolve/on-knocked-out/between-turns)
     with the full activation choreography; returns its ctx, or None when the
     ability didn't run (locked, or no scripted effect)."""
-    if ability_locked(session.board_state, pokemon):
+    if ability_locked(session.board_state, pokemon) and not ability.is_granted:
         return None
     if ability.effect is None or ability.effect is unimplemented:
         if ability.effect is unimplemented:

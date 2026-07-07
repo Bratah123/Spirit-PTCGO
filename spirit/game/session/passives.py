@@ -159,7 +159,9 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
                     continue
                 ability = ABILITIES_BY_ID.get(entry.get("abilityID"))
                 if ability is not None and ability.passive is not None:
-                    triples.append((ability.passive, pokemon, True))
+                    # A Tool-granted ability's passive rides the tool, not the
+                    # Pokemon, so Path to the Peak can't switch it off.
+                    triples.append((ability.passive, pokemon, not ability.is_granted))
             for attachment in _descendants(pokemon):
                 if isinstance(attachment, PokemonEntity):
                     continue  # tucked pre-evolutions contribute nothing

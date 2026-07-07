@@ -532,16 +532,24 @@ async def evolution_incense(ctx):
 
 
 async def escape_rope(ctx):
-    """Each player switches their Active with a Benched Pokemon; the
-    opponent switches first (no Bench, no switch)."""
-    for pid in (ctx.opponent_id, ctx.player_id):
-        bench = ctx.opponent_bench() if pid == ctx.opponent_id else ctx.my_bench()
-        if not bench:
-            continue
+    """Each player switches their Active with a Benched Pokemon; the opponent
+    chooses first and their swap is shown to both clients before the Escape
+    Rope player decides (no Bench, no switch)."""
+    opp_bench = ctx.opponent_bench()
+    if opp_bench:
         target = await ctx.choose_pokemon(
-            bench, "Choose your new Active Pokémon", player_id=pid
+            opp_bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id
         )
-        await ctx.switch_active(pid, target or bench[0])
+        await ctx.switch_active(ctx.opponent_id, target or opp_bench[0])
+        # Flush the opponent's swap so both clients see it land before the
+        # Escape Rope player is prompted for their own switch.
+        await ctx.flush_choreography()
+    my_bench = ctx.my_bench()
+    if my_bench:
+        target = await ctx.choose_pokemon(
+            my_bench, "Choose your new Active Pokémon", player_id=ctx.player_id
+        )
+        await ctx.switch_active(ctx.player_id, target or my_bench[0])
 
 
 async def lost_vacuum(ctx):
@@ -760,7 +768,7 @@ async def mirage_gate(ctx):
     picks = await ctx.choose_cards(
         reps, 2, minimum=0,
         prompt="Choose up to 2 basic Energy cards of different types.",
-        display_cards=reps,
+        display_cards=deck_cards,
     )
     for energy in picks:
         label = labels[energy.entity_id]

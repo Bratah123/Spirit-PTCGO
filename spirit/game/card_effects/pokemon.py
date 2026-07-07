@@ -493,9 +493,20 @@ def is_energy_card(card) -> bool:
     return card.get_attribute(AttrID.CARD_TYPE) == CardType.ENERGY.value
 
 
+def energy_provides_type(card, type_value) -> bool:
+    """Whether one attached energy can provide `type_value` (special energies
+    declare provided types via ENERGY_INFO, not POKEMON_TYPES — Aurora)."""
+    if not is_energy_card(card):
+        return False
+    info = card.get_attribute(AttrID.ENERGY_INFO) or {}
+    for option in info.get("options", []):
+        if type_value in option:
+            return True
+    return type_value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
+
 def is_lightning_energy(card) -> bool:
-    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
-    return is_energy_card(card) and PokemonTypes.LIGHTNING.value in types
+    return energy_provides_type(card, PokemonTypes.LIGHTNING.value)
 
 
 def is_pokemon_gx(archetype_id) -> bool:
