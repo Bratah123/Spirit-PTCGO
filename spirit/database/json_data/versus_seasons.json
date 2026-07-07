@@ -27,7 +27,7 @@
             {
               "name": "Sword & Shield - Fusion Strike",
               "rewardType": "Archetype",
-              "rewardAmount": 5,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -35,13 +35,61 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Fusion Strike",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b3116c4",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Fusion Strike"
+              },
+              "rewardReason": "",
+              "index": 4
             }
           ],
           "20": [
             {
               "name": "Sword & Shield - Lost Origins",
               "rewardType": "Archetype",
-              "rewardAmount": 5,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -49,13 +97,61 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Lost Origins",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Lost Origins"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Lost Origins",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Lost Origins"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Lost Origins",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Lost Origins"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Lost Origins",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311100",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Lost Origins"
+              },
+              "rewardReason": "",
+              "index": 4
             }
           ],
           "25": [
             {
               "name": "Sword & Shield - Silver Tempest",
               "rewardType": "Archetype",
-              "rewardAmount": 5,
+              "rewardAmount": 1,
               "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -63,6 +159,54 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Sword & Shield - Silver Tempest",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Silver Tempest"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Sword & Shield - Silver Tempest",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Silver Tempest"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Sword & Shield - Silver Tempest",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Silver Tempest"
+              },
+              "rewardReason": "",
+              "index": 3
+            },
+            {
+              "name": "Sword & Shield - Silver Tempest",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "d017c195-83c5-c74e-0638-25128b311200",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Sword & Shield - Silver Tempest"
+              },
+              "rewardReason": "",
+              "index": 4
             }
           ],
           "30": [
@@ -217,7 +361,7 @@
             {
               "name": "Mew V (SWSH8 251)",
               "rewardType": "Archetype",
-              "rewardAmount": 4,
+              "rewardAmount": 1,
               "rewardProductID": "c82b5795-bfbc-5f38-8d71-24e0324a27f8",
               "rewardCurrency": "",
               "rewardDescription": {
@@ -225,6 +369,42 @@
               },
               "rewardReason": "",
               "index": 0
+            },
+            {
+              "name": "Mew V (SWSH8 251)",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "c82b5795-bfbc-5f38-8d71-24e0324a27f8",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Mew V (SWSH8 251)"
+              },
+              "rewardReason": "",
+              "index": 1
+            },
+            {
+              "name": "Mew V (SWSH8 251)",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "c82b5795-bfbc-5f38-8d71-24e0324a27f8",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Mew V (SWSH8 251)"
+              },
+              "rewardReason": "",
+              "index": 2
+            },
+            {
+              "name": "Mew V (SWSH8 251)",
+              "rewardType": "Archetype",
+              "rewardAmount": 1,
+              "rewardProductID": "c82b5795-bfbc-5f38-8d71-24e0324a27f8",
+              "rewardCurrency": "",
+              "rewardDescription": {
+                "id": "Mew V (SWSH8 251)"
+              },
+              "rewardReason": "",
+              "index": 3
             }
           ]
         }
