@@ -236,21 +236,31 @@ class EffectContext:
         if is_attack is None:
             is_attack = self.is_attack_effect()
 
-        calc = compute_damage(
-            self.board, self.attacker, target, base,
-            is_attack=is_attack, apply_modifiers=apply_modifiers,
-            ignore_target_effects=ignore_target_effects,
-            ignore_weakness=ignore_weakness,
-        )
-        if calc.prevented:
-            logging.info(
-                f"[Effects {self.game_id}] Damage to {target.entity_id} "
-                f"prevented by a passive effect."
+        if as_counters:
+            # Damage counters are RAW -- not "damage from an attack", so they
+            # skip the damage pipeline: no Weakness/Resistance, no damage-taken
+            # reduction, no damage-prevention (Miltank's Miracle Body, "take 30
+            # less damage" only apply to attack DAMAGE). But placing counters
+            # IS an attack EFFECT, so an attack-effect shield (Snorlax's Unfazed
+            # Fat) prevents them: the target stays a legal pick but takes 0.
+            dealt = 0 if self.effects_blocked(target) else base
+        else:
+            calc = compute_damage(
+                self.board, self.attacker, target, base,
+                is_attack=is_attack, apply_modifiers=apply_modifiers,
+                ignore_target_effects=ignore_target_effects,
+                ignore_weakness=ignore_weakness,
             )
-            return 0
+            if calc.prevented:
+                logging.info(
+                    f"[Effects {self.game_id}] Damage to {target.entity_id} "
+                    f"prevented by a passive effect."
+                )
+                return 0
+            dealt = calc.amount
 
         current = target.get_attribute(AttrID.HP, 0)
-        remaining = max(0, current - calc.amount)
+        remaining = max(0, current - dealt)
         target.set_attribute(AttrID.HP, remaining)
 
         # m.p/m.m both read current HP when they play, so the damage FX must
@@ -261,7 +271,7 @@ class EffectContext:
             # the poison/burn overlay); leave _dealt_opponent_damage False so
             # the attacker tucks via the non-damaging orb aimed at the targets.
             self._queue(self.session._place_damage_effect_msg(
-                target.entity_id, calc.amount))
+                target.entity_id, dealt))
             if target.entity_id not in self.visual_targets:
                 self.visual_targets.append(target.entity_id)
         else:
@@ -279,7 +289,7 @@ class EffectContext:
                     "resistanceTrigger": calc.resistance_hit,
                     "damageType": [type_name],
                     "attackName": {"id": title},
-                    "damageAmount": calc.amount,
+                    "damageAmount": dealt,
                     "damageModification": 0,
                     "visualType": VISUAL_DAMAGING,
                 },
@@ -287,15 +297,15 @@ class EffectContext:
         if target.owning_player_id != self.attacker.owning_player_id:
             if not as_counters:
                 self._dealt_opponent_damage = True
-            self.session.stat_add(self.player_id, "damagedealt", calc.amount)
-            self.session.credit_card_damage(self.player_id, self.attacker, calc.amount)
+            self.session.stat_add(self.player_id, "damagedealt", dealt)
+            self.session.credit_card_damage(self.player_id, self.attacker, dealt)
             if is_attack:
-                self.session.stat_max(self.player_id, "biggestattack", calc.amount)
+                self.session.stat_max(self.player_id, "biggestattack", dealt)
         self._queue_hp_update(target)
 
         if remaining <= 0 and target not in self.knockouts:
             self.knockouts.append(target)
-        return calc.amount
+        return dealt
 
     async def knock_out(self, target: Optional[PokemonEntity]) -> bool:
         """Knocks a Pokemon Out directly (an attack EFFECT, not damage)."""
@@ -507,8 +517,7 @@ class EffectContext:
             if counters <= 0 or entity_id not in by_id:
                 continue
             await self.deal_damage(
-                amount=counters * 10, target=by_id[entity_id],
-                apply_modifiers=False, is_attack=False, as_counters=True,
+                amount=counters * 10, target=by_id[entity_id], as_counters=True,
             )
 
     # ------------------------------------------------------------------
