@@ -26,6 +26,17 @@ def get_account_settings(account_id):
         return {}
 
 
+def get_screen_name(account_id):
+    """The account's display name (screen_name, falling back to username)."""
+    try:
+        with db_session() as session:
+            account = session.query(Account).filter_by(account_id=account_id).first()
+            return (account.screen_name or account.username) if account else ""
+    except Exception as e:
+        logging.error(f"Error reading screen name for {account_id}: {e}")
+        return ""
+
+
 def merge_account_settings(account_id, new_settings):
     """Merges incoming {settingNumber: value} into the stored settings and persists."""
     try:

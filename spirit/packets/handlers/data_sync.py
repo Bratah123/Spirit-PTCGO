@@ -248,32 +248,17 @@ def _write_attr(attr, vt, vd, coerce=False):
 
 
 def _card_final_attrs(card_data, key):
-    """Cached archetype attrs per card; the cache key tracks whether localizations were loaded yet."""
-    cache_key = (card_data.guid, key, bool(CACHED_LOCALIZATIONS_DICT))
+    """Cached archetype attrs per card. The NAME attr must stay exactly
+    {"id": <token>}: LocalizableTextAnalyzer takes the LAST primitive in the
+    JSON object as the loc ID, so any extra key hijacks the display name.
+    Search works via the loc override (token -> display_name) -- the pie
+    indexer indexes the RESOLVED name, never a raw attribute field."""
+    cache_key = (card_data.guid, key)
     attrs = _CARD_ATTRS_CACHE.get(cache_key)
     if attrs is not None:
         return attrs
 
     attrs = card_data.to_archetype_attributes(key)
-    if CACHED_LOCALIZATIONS_DICT:
-        # Industry Hack: inject the localized name so the pie SQLite indexer
-        # indexes the human-readable name for full text search.
-        name_key = str(AttrID.NAME.value)
-        aval = attrs.get(name_key)
-        if aval and aval.get("type") == "json":
-            try:
-                j_val = json.loads(aval.get("value"))
-                token_id = j_val.get("id", "")
-                loc_text = CACHED_LOCALIZATIONS_DICT.get(token_id.lower(), token_id)
-                search_terms = [loc_text.lower()]
-                if getattr(card_data, "searchable_by", None):
-                    search_terms.extend(s.lower() for s in card_data.searchable_by)
-                j_val["search_text"] = " ".join(search_terms)
-                attrs = dict(attrs)
-                attrs[name_key] = dict(aval, value=json.dumps(j_val))
-            except Exception:
-                pass
-
     _CARD_ATTRS_CACHE[cache_key] = attrs
     return attrs
 

@@ -1,6 +1,6 @@
 from spirit.game.attributes import AttrID
 from spirit.database import versus_data
-from spirit.database.player_data import get_account_settings, merge_account_settings
+from spirit.database.player_data import get_account_settings, get_screen_name, merge_account_settings
 from spirit.game.season_manager import VersusSeasonManager
 
 # Client setting numbers inside the account-settings dict (attr 10230, K.L.GetSetting)
@@ -28,6 +28,7 @@ def build_account_attributes(account_id):
         account_id, season.season_id if season else "")
     return [
         {"name": AttrID.ACCOUNT_SETTINGS.value, "value": get_account_settings(account_id)},
+        {"name": AttrID.SCREEN_NAME.value, "value": get_screen_name(account_id)},
         {"name": AttrID.FRIEND_CHAT_MODE.value, "value": "OpenChat"},
         {"name": AttrID.FRIEND_MODE.value, "value": "Open"},
         {"name": AttrID.FRIEND_TRADE_MODE.value, "value": "Free"},

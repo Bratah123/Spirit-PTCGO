@@ -143,6 +143,9 @@ class AttrID(IntEnum):
     # Server-persisted client settings dict (Dictionary<int,int>; K.L.GetSetting(n))
     ACCOUNT_SETTINGS = 10230
 
+    # Account screen name (string; H.J.UserScreenName falls back to this outside a match)
+    SCREEN_NAME = 10360
+
 class Rarities(IntEnum):
     Common = 0
     Uncommon = 1
