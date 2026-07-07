@@ -196,17 +196,32 @@ class CardEntity(BoardEntity):
     # on draw); prize cards are never introduced until taken.
     HIDDEN_FROM_OWNER_AREAS = ("deck", "prizePile")
 
+    # Zones whose cards are public knowledge to BOTH players. During live play a
+    # non-owner learns these on sight (EntityIntroduced), but the reconnect SGS
+    # is the SOLE source of truth for a fresh client, so they MUST serialize
+    # face-up regardless of viewer or the reconnecting player sees card backs.
+    PUBLIC_AREAS = ("activePokemonArea", "bench", "discard", "lostZone",
+                    "activeStadium", "activeTrainer")
+
+    def _containing_area_name(self) -> Optional[str]:
+        """Name of the PlayArea this card ultimately sits in, walking up through
+        any Pokemon it is attached to."""
+        node = self.parent
+        while node is not None:
+            if isinstance(node, PlayArea):
+                return node.get_attribute(AttrID.NAME)
+            node = node.parent
+        return None
+
     def is_hidden_from(self, viewer_id: Optional[str]) -> bool:
-        """A card's identity is hidden from non-owners always, and from its
-        owner too while it sits in a hidden-knowledge zone (deck/prizes)."""
+        """A card's identity is hidden from non-owners unless it sits in a public
+        zone; from its owner only while in a hidden-knowledge zone (deck/prizes)."""
         if viewer_id is None:
             return False
+        area_name = self._containing_area_name()
         if viewer_id != self.owning_player_id:
-            return True
-        return (
-            self.parent is not None
-            and self.parent.get_attribute(AttrID.NAME) in self.HIDDEN_FROM_OWNER_AREAS
-        )
+            return area_name not in self.PUBLIC_AREAS
+        return area_name in self.HIDDEN_FROM_OWNER_AREAS
 
 
 class PokemonEntity(CardEntity):

@@ -199,6 +199,11 @@ class GameSession:
         # account_ids that have reconnected and are awaiting their PlayerReady so
         # we re-send SerializedGameState (+ replay their pending offer) to them.
         self._reconnecting: set = set()
+        # account_ids with an OUTSTANDING disconnect the opponent was told about
+        # (a "Disconnection!" dialog is showing on their screen). Pairs 1:1 with a
+        # later PlayerReconnected; gates both so eviction races / duplicate
+        # ReconnectToGame never orphan a stuck dialog or double the popup.
+        self._disconnected: set = set()
         # detached account_id -> grace-window timer task (awards the win on expiry).
         self._grace_tasks: Dict[str, asyncio.Task] = {}
 
@@ -651,9 +656,14 @@ class GameSession:
             return
         if self.game_phase == GamePhase.GAME_OVER:
             return
+        # Detach + (re)arm grace ALWAYS (liveness), but the opponent-facing dialog
+        # message is guarded: a 2nd PlayerDisconnected while one is still outstanding
+        # stacks a 2nd "Disconnection!" popup the client can no longer dismiss (m.q
+        # overwrites its single dialog reference, orphaning the first on-screen).
+        already_notified = account_id in self._disconnected
         logging.info(
-            f"[Session {self.game_id}] Player {account_id} disconnected — "
-            f"detaching (grace {RECONNECT_GRACE_SECONDS}s)."
+            f"[Session {self.game_id}] Player {account_id} disconnected — detaching "
+            f"(grace {RECONNECT_GRACE_SECONDS}s, already_notified={already_notified})."
         )
         player.client_handler = None
         self._reconnecting.discard(account_id)
@@ -661,8 +671,12 @@ class GameSession:
         if existing is not None and not existing.done():
             existing.cancel()
         self._grace_tasks[account_id] = self._spawn(self._disconnect_grace(account_id))
+        if already_notified:
+            return
+        self._disconnected.add(account_id)
         # PlayerDisconnected (m.q): shows the opponent the "disconnected, waiting Ns"
         # dialog and freezes the chess clock until PlayerReconnected.
+        logging.info(f"[Session {self.game_id}] -> PlayerDisconnected to opponents of {account_id}.")
         await self._notify_opponents_connection(
             account_id, OutboundMsg.PLAYER_DISCONNECTED.value,
             {"waitTime": RECONNECT_GRACE_SECONDS * 1000},
@@ -719,20 +733,37 @@ class GameSession:
         player = self.players.get(account_id)
         if not isinstance(player, NetworkPlayer) or not player.connected:
             return
-        await self.send_serialized_game_state(only_player_id=account_id)
-        # The client never re-requests its offer, so replay whatever it owed a reply to.
-        offer = player._pending_offer
-        if offer is not None:
-            name, value, flags = offer
-            await player.send_packet(name, value, flags)
-            logging.info(
-                f"[Session {self.game_id}] Replayed pending offer to reconnected {account_id}."
+        # Resync the board + replay the pending offer. Never let a serialization
+        # error swallow the PlayerReconnected below — that would strand the
+        # opponent's "Disconnection!" dialog on-screen forever.
+        try:
+            await self.send_serialized_game_state(only_player_id=account_id)
+            offer = player._pending_offer
+            if offer is not None:
+                name, value, flags = offer
+                await player.send_packet(name, value, flags)
+                logging.info(
+                    f"[Session {self.game_id}] Replayed pending offer to reconnected {account_id}."
+                )
+        except Exception as e:
+            logging.exception(
+                f"[Session {self.game_id}] Error resyncing state to reconnected {account_id}: {e}"
             )
         # PlayerReconnected (m.r): dismisses the opponent's wait dialog and restarts
-        # the chess clock now that this player is fully back on the board.
-        await self._notify_opponents_connection(
-            account_id, OutboundMsg.PLAYER_RECONNECTED.value,
-        )
+        # the chess clock. Paired 1:1 with the outstanding disconnect — a duplicate
+        # ReconnectToGame still resyncs the board above but must NOT fire a second
+        # Reconnection popup, so only send it when a disconnect is actually pending.
+        if account_id in self._disconnected:
+            self._disconnected.discard(account_id)
+            logging.info(f"[Session {self.game_id}] -> PlayerReconnected to opponents of {account_id}.")
+            await self._notify_opponents_connection(
+                account_id, OutboundMsg.PLAYER_RECONNECTED.value,
+            )
+        else:
+            logging.info(
+                f"[Session {self.game_id}] Reconnect resync for {account_id} with no outstanding "
+                f"disconnect (duplicate ReconnectToGame) — no PlayerReconnected sent."
+            )
 
     async def run_gameplay_sequence(self):
         """Sequential gameplay workflow starting from the pre-game coin flip."""
@@ -3045,6 +3076,13 @@ class GameSession:
 
         slot = self.board_state.bench_slot_of(target)
 
+        # Damage counters carry through evolution: capture what the
+        # pre-evolution had taken (before attachments move off it) so it can be
+        # transferred onto the evolution card, which otherwise enters at full HP.
+        damage_taken = max(
+            0, effective_max_hp(self.board_state, target) - target.get_attribute(AttrID.HP, 0)
+        )
+
         moves = []
         if not self.board_state.move_card(card.entity_id, area.entity_id, slot):
             return
@@ -3059,6 +3097,15 @@ class GameSession:
         self.board_state.attach_card(target.entity_id, card.entity_id)
         moves.append(self._entity_moved_msg(target.entity_id, card.entity_id, position))
 
+        # The counters now live on the evolution; clear the tucked-under
+        # pre-evolution's HP so its stale damage isn't re-rendered on inspect.
+        self.reset_pokemon_damage(target)
+        if damage_taken:
+            card.set_attribute(
+                AttrID.HP,
+                max(0, effective_max_hp(self.board_state, card) - damage_taken),
+            )
+
         # The Evolve executor (M.k) plays the spin FX itself; its ctor requires
         # the "From"/"Into" data effects and crashes without them.
         data_effects = [
@@ -3068,6 +3115,13 @@ class GameSession:
         await self._send_play_sequence(
             player_id, GameSequence.EVOLVE, data_effects + moves, [card]
         )
+
+        # Push the transferred damage so the evolution renders its HP tracker.
+        if damage_taken:
+            envelope = self._sequence_envelope(
+                EMPTY_SEQUENCE_ID, self._hp_attribute_msg(card)
+            )
+            await self.broadcast_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
 
         # Freshly entered play: cannot evolve again this turn.
         self.turn_state.mark_entered_play(card.entity_id)
