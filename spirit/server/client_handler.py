@@ -6,6 +6,7 @@ from spirit.network.protocol import WargProtocol, WargFlags
 from spirit.packets.router import PacketRouter
 from spirit.game.models.player import Player
 from spirit.game.session.manager import GameSessionManager
+from spirit.game.session.constants import GamePhase
 from spirit.packets.handlers.social import SocialHandler
 
 _log = logging.getLogger(__name__)
@@ -115,12 +116,18 @@ class ClientHandler:
             except Exception as e:
                 logging.error(f"[TCP] [{self.addr}] Error cleaning tournament queues on disconnect: {e}")
 
-            # Notify friends that we are offline
+            # Detach from any active game (keep the session alive for reconnect);
+            # tear down only finished/stale sessions.
             if self.player:
                 try:
-                    GameSessionManager().remove_session_by_player_id(self.player.account_id)
+                    manager = GameSessionManager()
+                    session = manager.get_session_by_player_id(self.player.account_id)
+                    if session is not None and session.game_phase != GamePhase.GAME_OVER:
+                        await session.on_player_disconnect(self.player.account_id)
+                    else:
+                        manager.remove_session_by_player_id(self.player.account_id)
                 except Exception as e:
-                    logging.error(f"[TCP] [{self.addr}] Error removing active sessions on disconnect: {e}")
+                    logging.error(f"[TCP] [{self.addr}] Error handling game session on disconnect: {e}")
 
                 try:
                     social_handler = SocialHandler(self)

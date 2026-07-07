@@ -465,6 +465,16 @@ class OutboundMsg(str, Enum):
     # Source: PlayerNotInGame.cs
     PLAYER_NOT_IN_GAME = "PlayerNotInGame"
 
+    # Source: PlayerStillInGame.cs (drives PlayerStillInGameObserver -> ReconnectToGame at login)
+    PLAYER_STILL_IN_GAME = "PlayerStillInGame"
+
+    # In-match opponent-disconnect indicator (client cmd m.q): shows the no-button
+    # "opponent disconnected, waiting Ns" dialog and stops the chess clock.
+    # {accountID: <dropped player>, waitTime: <ms>}. PlayerReconnected (m.r)
+    # dismisses it and restarts the clock. {accountID: <returned player>}.
+    PLAYER_DISCONNECTED = "PlayerDisconnected"
+    PLAYER_RECONNECTED = "PlayerReconnected"
+
     # Source: NetworkStatusIndicatorConfiguration.cs
     NETWORK_STATUS_INDICATOR_CONFIGURATION = "NetworkStatusIndicatorConfiguration"
 

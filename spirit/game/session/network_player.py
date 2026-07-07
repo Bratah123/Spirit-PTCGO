@@ -13,6 +13,12 @@ class NetworkPlayer(GamePlayer):
         self.client_handler = client_handler
 
     @property
+    def connected(self) -> bool:
+        """True while a live socket is bound; False after a disconnect detach."""
+        handler = self.client_handler
+        return handler is not None and getattr(handler, "running", False)
+
+    @property
     def screen_name(self) -> str:
         """Returns the screen_name or username of the underlying TCP player."""
         player_profile = getattr(self.client_handler, "player", None) if self.client_handler else None
@@ -45,6 +51,10 @@ class NetworkPlayer(GamePlayer):
         return get_default_avatar_items_list()
 
     async def send_packet(self, name: str, value: Dict[str, Any], flags: int = 0):
+        # Detached (disconnected) player: drop sends until they reconnect. The
+        # full board is re-serialized on reconnect, so missed packets don't matter.
+        if self.client_handler is None:
+            return
         packet = value.copy()
         packet["messageName"] = name
         try:

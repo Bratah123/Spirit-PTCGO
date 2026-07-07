@@ -11,6 +11,9 @@ class GamePlayer(abc.ABC):
         self.deck_data: Dict[str, Any] = deck_data
         self.entity_id: str = ""  # assigned by server upon board setup
         self.pending_choice_future: Optional[asyncio.Future] = None
+        # (name, value, flags) of the offer currently awaiting a reply, replayed
+        # verbatim on reconnect since the client never re-requests it.
+        self._pending_offer: Optional[tuple] = None
 
     @property
     def active_deck(self) -> Dict[str, Any]:
@@ -69,11 +72,13 @@ class GamePlayer(abc.ABC):
         """Prompts the player with a custom choice and waits for their action in-line."""
         loop = asyncio.get_running_loop()
         self.pending_choice_future = loop.create_future()
-        
+
         # Send prompt packet to player
+        self._pending_offer = (name, payload, 0)
         await self.send_packet(name, payload)
-        
+
         try:
             return await self.pending_choice_future
         finally:
             self.pending_choice_future = None
+            self._pending_offer = None

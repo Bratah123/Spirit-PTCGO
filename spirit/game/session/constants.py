@@ -129,6 +129,14 @@ GAME_OPTION_TOKENS_KEY = "Tokens"
 TOKEN_GX = "GXToken"
 TOKEN_VSTAR = "VSTARToken"
 
+# MatchFound gameOption flag that makes the client rebuild the match model from
+# gameOptions and jump straight to the playmat scene (F.w.handleReconnecting).
+GAME_OPTION_RECONNECTING_KEY = "Reconnecting"
+GAME_OPTION_RECONNECTING_VALUE = "true"
+# Grace window a detached player has to reconnect before the game is awarded to
+# the connected opponent (via the concede/end_game flow).
+RECONNECT_GRACE_SECONDS = 90
+
 
 # Prompt sort types (informational on the wire; the client routes selection
 # messages by class name, not sortType)

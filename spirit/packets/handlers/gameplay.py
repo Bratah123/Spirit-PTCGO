@@ -42,7 +42,16 @@ class GameplayHandler(BaseHandler):
     @handle(InboundMsg.RECONNECT_TO_GAME)
     async def handle_reconnect_to_game(self, message, request_id, flags):
         account_id = self.client.player.account_id
+        game_id = message.get("gameID")
         logging.info(f"[Gameplay] Player {self.client.player.username} requests ReconnectToGame: {message}")
+
+        session = GameSessionManager().get_session_by_player_id(account_id)
+        if session is None or (game_id and session.game_id != game_id):
+            logging.warning(f"[Gameplay] ReconnectToGame for {account_id}: no matching active session")
+            await self.send({"messageName": OutboundMsg.PLAYER_NOT_IN_GAME.value})
+            return
+
+        await session.reconnect_player(self.client, account_id)
 
     @handle(InboundMsg.RESIGN_GAME)
     async def handle_resign_game(self, message, request_id, flags):

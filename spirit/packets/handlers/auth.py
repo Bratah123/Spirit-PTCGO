@@ -10,6 +10,8 @@ from .base import BaseHandler, handle
 from spirit.server.state import PENDING_TICKETS, sweep_expired_tickets
 from .social import SocialHandler
 from spirit.game.models.player import Player
+from spirit.game.session.manager import GameSessionManager
+from spirit.game.session.constants import GamePhase
 from spirit.database.async_utils import run_db
 from spirit.database.daily_rewards import process_daily_login
 from spirit.game.daily_rewards import DailyRewardManager
@@ -112,6 +114,17 @@ class AuthHandler(BaseHandler):
         account = await run_db(_get_or_create_account, mobile_id, "mobile_password")
         await self._send_auth_success(request_id, account)
 
+    @staticmethod
+    def _active_game(account_id):
+        """Returns the account's live (non-finished) GameSession, or None."""
+        session = GameSessionManager().get_session_by_player_id(account_id)
+        if session is not None and session.game_phase != GamePhase.GAME_OVER:
+            return session
+        return None
+
+    def _has_active_game(self, account_id) -> bool:
+        return self._active_game(account_id) is not None
+
     async def _send_auth_success(self, request_id, account_data):
         # Concurrent Login Prevention
         account_id = account_data['account_id']
@@ -119,9 +132,15 @@ class AuthHandler(BaseHandler):
 
         other_client = self.online_client(account_id, exclude_self=True)
         if other_client:
-            logging.warning(f"[TCP] [{self.client.addr}] Prevented concurrent login: User '{username}' is already logged in on client {other_client.addr}")
-            await self._send_auth_failed(request_id, "The account you are trying to login is already online.")
-            return
+            # An active (non-finished) game session means this is a reconnect:
+            # evict the stale/ghost socket and continue, instead of rejecting.
+            if self._has_active_game(account_id):
+                logging.info(f"[TCP] [{self.client.addr}] Reconnect for '{username}': evicting stale in-game client {other_client.addr}")
+                await other_client.disconnect()
+            else:
+                logging.warning(f"[TCP] [{self.client.addr}] Prevented concurrent login: User '{username}' is already logged in on client {other_client.addr}")
+                await self._send_auth_failed(request_id, "The account you are trying to login is already online.")
+                return
 
         # One thread hop for the whole DB-heavy login load (player profile,
         # account attributes, daily login progress).
@@ -168,10 +187,19 @@ class AuthHandler(BaseHandler):
             "cohortFeatures": []
         }, 0)
 
-        # PlayerNotInGame
-        await self.client.send_packet({
-            "messageName": OutboundMsg.PLAYER_NOT_IN_GAME.value
-        }, 0)
+        # PlayerStillInGame drives the client's reconnect (PlayerStillInGameObserver
+        # -> ReconnectToGame) when an unfinished session survives for this account;
+        # otherwise the normal PlayerNotInGame.
+        active_session = self._active_game(account_id)
+        if active_session is not None:
+            await self.client.send_packet({
+                "messageName": OutboundMsg.PLAYER_STILL_IN_GAME.value,
+                "gameID": active_session.game_id,
+            }, 0)
+        else:
+            await self.client.send_packet({
+                "messageName": OutboundMsg.PLAYER_NOT_IN_GAME.value
+            }, 0)
 
         # NetworkStatusIndicatorConfiguration
         await self.client.send_packet({
