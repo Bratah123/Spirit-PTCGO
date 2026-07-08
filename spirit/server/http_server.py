@@ -85,8 +85,26 @@ def _asset_path_cache_put(filename, path):
             ASSET_PATH_CACHE.popitem(last=False)
 
 class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    # HTTP/1.1 keep-alive reuses one TCP connection for many asset bundles
+    # (remote clients otherwise pay a handshake per card set). Requires an
+    # accurate Content-Length on EVERY response; timeout reaps idle sockets.
+    protocol_version = "HTTP/1.1"
+    timeout = 60
+
+    def handle(self):
+        # Idle keep-alive sockets get RST by the remote client/NAT; swallow the
+        # benign disconnect instead of letting socketserver dump a traceback.
+        try:
+            super().handle()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError):
+            self.close_connection = True
+
     def log_message(self, format, *args):
         logging.info(f"[HTTP] {self.client_address[0]} - - [{self.log_date_time_string()}] {format%args}")
+
+    def log_error(self, format, *args):
+        # Routine keep-alive reaping (idle timeout / reset) surfaces here — keep it out of INFO.
+        logging.debug(f"[HTTP] {self.client_address[0]} - {format % args}")
 
     def serve_admin(self, method, parsed_path, body=None):
         """Delegates /admin requests to the Admin Dashboard API."""
@@ -217,10 +235,12 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def send_json_response(self, data):
         """Helper to send standard JSON responses"""
+        payload = json.dumps(data).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        self.wfile.write(payload)
 
     def handle_patch_manifest(self):
         """Source Logic: client_source/pie/pie-src/CheckForPatchBehavior.cs"""
@@ -243,18 +263,22 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def handle_manifest_version(self):
         """Source Logic: LoadManifestVersion.cs"""
         logging.info(f"[HTTP] Sending Manifest Version: {manifest_manager.manifest_version}")
+        payload = str(manifest_manager.manifest_version).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
-        self.wfile.write(str(manifest_manager.manifest_version).encode('utf-8'))
+        self.wfile.write(payload)
 
     def handle_asset_manifest(self):
         """Source Logic: LoadManifest.cs (Requires GZip compression)"""
         logging.info("[HTTP] Sending Full Asset Manifest (GZipped)...")
+        payload = manifest_manager.generate_manifest()
         self.send_response(200)
         self.send_header('Content-type', 'application/x-gzip')
+        self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
-        self.wfile.write(manifest_manager.generate_manifest())
+        self.wfile.write(payload)
 
     def handle_cdn_asset(self, path):
         """Serves .unity3d files using a Robust Matcher to handle client path mangling."""
@@ -411,6 +435,7 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         else:
             logging.warning(f"[HTTP] Asset Not Found on Disk: {filename}")
             self.send_response(404)
+            self.send_header('Content-Length', '0')
             self.end_headers()
 
     def handle_config(self):
@@ -472,10 +497,12 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             </body>
             </html>
             """
+            payload = html.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
+            self.send_header('Content-Length', str(len(payload)))
             self.end_headers()
-            self.wfile.write(html.encode('utf-8'))
+            self.wfile.write(payload)
         elif self.command == 'POST':
             # 1. Parse Credentials
             if post_data is None:
@@ -505,26 +532,32 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 # 4. Redirect with Ticket
                 host = self.headers.get("Host", state.SERVER_HOST)
+                body = f"ticket={ticket}\n?ticket={ticket}\n&ticket={ticket}".encode('utf-8')
                 self.send_response(302)
                 self.send_header('Location', f'http://{host}/cas/sso/login?ticket={ticket}')
                 self.send_header('Content-type', 'text/html')
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
-                self.wfile.write(f"ticket={ticket}\n?ticket={ticket}\n&ticket={ticket}".encode('utf-8'))
+                self.wfile.write(body)
             else:
                 # 5. Failure
                 logging.warning(f"[HTTP] Invalid password for user: {username}")
+                body = b"Authentication Failed. Check your credentials."
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
-                self.wfile.write(b"Authentication Failed. Check your credentials.")
+                self.wfile.write(body)
 
 
     def handle_default(self):
         """Fallback for unhandled assets or telemetry to prevent freezing"""
+        payload = b"{}"
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
-        self.wfile.write(b"{}")
+        self.wfile.write(payload)
 
 class AssetHTTPServer:
     def __init__(self, host='0.0.0.0', port=config.HTTP_PORT):
