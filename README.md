@@ -84,6 +84,9 @@ The reason is that the login handshake redirects the client to a follow-up addre
    assetURL=http://your.public.ip.or.domain:8000/
    ```
 
+> **Hosting on a VPS?** See [`deploy/`](deploy/README.md) Not needed for local
+> development only for reliable remote hosting.
+
 ## Custom Card Creation
 
 SpiritPTCGO supports a modular card injection system. You add a custom card by dropping an image and a python script into the designated folders, and the server handles the Unity AssetBundle generation automatically on startup. A card is two things: a **data definition** (its name, HP, cost, weakness, etc.) and, if you want it to actually *do* something in a match, a bit of **scripted behavior**. We'll cover both.
