@@ -231,6 +231,9 @@ original_game_cache/
 # Spirit Assets
 spirit/assets/bundleCache/en_US_*/
 !spirit/assets/cards/
+# Static localization reference data must ship with the repo (server loads it at
+# startup; a git-clone deploy has no other source). Runtime account/user DBs stay ignored.
+!spirit/database/game_data/LocalizationDB-UTF8.db
 spirit/assets/externalCache/
 
 # AI Files :)

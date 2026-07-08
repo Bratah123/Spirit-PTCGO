@@ -1,0 +1,36 @@
+# Spirit-PTCGO asset edge — Caddy alternative to nginx-spirit.conf.
+#
+# Caddy's reverse_proxy streams the upstream body with proper flushing and
+# handles slow/interrupted clients far more robustly than Python's single
+# wfile.write(), which fixes most truncation on its own. Byte-range RESPONSE
+# caching, however, needs the third-party Souin cache plugin (Caddy has no
+# built-in proxy cache). If you want on-disk caching + range serving, either:
+#   - use the nginx config instead (built-in, recommended), or
+#   - build Caddy with Souin: xcaddy build --with github.com/darkweak/souin/plugins/caddy
+#
+# Run the Python asset server with SPIRIT_HTTP_PORT=8001 first.
+# Start: caddy run --config deploy/Caddyfile
+
+{
+    # Plain HTTP on 8000 to match the existing AssetURL (http://host:8000/).
+    auto_https off
+}
+
+:8000 {
+    encode zstd gzip
+
+    # --- Optional: uncomment if you built Caddy with the Souin cache plugin ---
+    # cache {
+    #     ttl 8760h
+    #     storage badger
+    # }
+
+    reverse_proxy 127.0.0.1:8001 {
+        header_up Host {http.request.host}
+        flush_interval -1          # stream large bundles without buffering delay
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+}
