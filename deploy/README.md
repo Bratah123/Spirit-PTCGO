@@ -16,7 +16,7 @@ client ──HTTP :8000──> nginx (cache + range) ──> Python asset server
 Run the Python server on 8001 so nginx can own the public port:
 
 ```bash
-SPIRIT_HTTP_PORT=8001 SPIRIT_PUBLIC_HOST=YOUR_VPS_IP python -m spirit.main
+sudo SPIRIT_HTTP_PORT=8001 SPIRIT_PUBLIC_HOST=YOUR_VPS_IP bash ./run.sh
 ```
 
 `AssetURL` is built from the client's `Host` header, so it keeps resolving to
@@ -33,7 +33,7 @@ sudo mkdir -p /var/cache/spirit_assets && sudo chown www-data:www-data /var/cach
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Then start the game server on 8001 (command above). Firewall: open `8000` (nginx)
+Then start the game server on 8001 (**command above**). Firewall: open `8000` (nginx)
 and `39389` (TCP game server); keep `8001` closed — nginx reaches Python over loopback.
 
 ### Caddy (simpler; streams robustly, but response caching needs the Souin plugin)
