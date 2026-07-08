@@ -16,7 +16,7 @@ client ──HTTP :8000──> nginx (cache + range) ──> Python asset server
 Run the Python server on 8001 so nginx can own the public port:
 
 ```bash
-sudo SPIRIT_HTTP_PORT=8001 SPIRIT_PUBLIC_HOST=YOUR_VPS_IP bash ./run.sh
+sudo SPIRIT_HTTP_PORT=8001 SPIRIT_PUBLIC_HOST=YOUR_VPS_IP bash run.sh
 ```
 
 `AssetURL` is built from the client's `Host` header, so it keeps resolving to
