@@ -13,6 +13,8 @@ class ScriptLoader:
         self.cards: List[Card] = []
         self.cards_by_guid: Dict[str, Card] = {}
         self.cards_by_key: Dict[str, Card] = {}
+        # script filename stem (e.g. "Watchog_79") -> archetype GUID
+        self.cards_by_stem: Dict[str, str] = {}
 
     def load_all(self, force=False):
         """Loads all card scripts once; cached thereafter unless force=True.
@@ -25,6 +27,7 @@ class ScriptLoader:
         self.cards = []
         self.cards_by_guid = {}
         self.cards_by_key = {}
+        self.cards_by_stem = {}
         
         logging.info(f"[Scripts] Loading card scripts from {self.scripts_dir}...")
         
@@ -75,6 +78,7 @@ class ScriptLoader:
                 self.cards.append(card_obj)
                 self.cards_by_guid[guid] = card_obj
                 self.cards_by_key[key] = card_obj
+                self.cards_by_stem[os.path.splitext(os.path.basename(file_path))[0]] = guid
             else:
                 logging.warning(f"[Scripts] Script {file_path} does not define a 'card' object.")
                 

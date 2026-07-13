@@ -65,17 +65,72 @@ def prize_value(archetype_id: Optional[str]) -> int:
     )
 
 
+def _string_attr(definition: Optional["CardDefinition"], attr_id: AttrID) -> Optional[str]:
+    spec = definition.extra_attributes.get(str(attr_id.value)) if definition else None
+    return spec.get("value") if isinstance(spec, dict) else None
+
+
+# EVOLUTION_LOGIC_NAME -> CardDefinition index, rebuilt lazily when new card
+# scripts register (reprints share a name; any def in the line works).
+_LOGIC_NAME_INDEX: Dict[str, "CardDefinition"] = {}
+_LOGIC_NAME_INDEX_SIZE = -1
+
+
+def evolves_from_chain(archetype_id: Optional[str]) -> List[str]:
+    """EVOLUTION_LOGIC_NAME lineage below a card, direct pre-evolution first
+    (Blastoise -> ["Wartortle", "Squirtle"]), walking EVOLUTION_LOGIC_FROM."""
+    global _LOGIC_NAME_INDEX_SIZE
+    if _LOGIC_NAME_INDEX_SIZE != len(CARD_DEFS_BY_GUID):
+        _LOGIC_NAME_INDEX.clear()
+        for d in CARD_DEFS_BY_GUID.values():
+            logic_name = _string_attr(d, AttrID.EVOLUTION_LOGIC_NAME)
+            if logic_name:
+                _LOGIC_NAME_INDEX.setdefault(logic_name, d)
+        _LOGIC_NAME_INDEX_SIZE = len(CARD_DEFS_BY_GUID)
+    chain: List[str] = []
+    definition = def_for(archetype_id)
+    for _ in range(8):  # depth cap doubles as a cycle guard
+        from_name = _string_attr(definition, AttrID.EVOLUTION_LOGIC_FROM)
+        if not from_name or from_name in chain:
+            break
+        chain.append(from_name)
+        definition = _LOGIC_NAME_INDEX.get(from_name)
+    return chain
+
+
+def evolves_from(archetype_id: Optional[str], base_logic_name: str) -> bool:
+    """Whether a card's evolution line includes `base_logic_name` anywhere
+    below it (Rare Candy: Stage2 over a Basic two steps down)."""
+    return base_logic_name in evolves_from_chain(archetype_id)
+
+
 class Triggers:
     """Events the game session fires scripted abilities on (Ability.trigger)."""
     ON_PLAY = "on_play"  # the Pokemon is played from hand onto the bench
     ON_EVOLVE = "on_evolve"  # the Pokemon evolves into this card
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
+    # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
+    # ctx carries damaged_by / damage_amount / pre_hit_hp.
+    ON_DAMAGED_BY_ATTACK = "on_damaged_by_attack"
+    # Either player manually attached an Energy from hand (Arctozolt); ctx
+    # carries attaching_player_id / attached_energy / energy_receiver.
+    ON_ENERGY_ATTACHED = "on_energy_attached"
+    # This Pokemon moved into the Active spot (Cinderace Libero); fires at
+    # most once per entity per turn.
+    ON_MOVE_TO_ACTIVE = "on_move_to_active"
+    # Another of the owner's Pokemon was Knocked Out (Exp. Share); fires
+    # BEFORE the KO'd stack moves (energies still attached); ctx carries
+    # ko_pokemon / ko_from_attack / ko_attacker.
+    ON_ALLY_KNOCKED_OUT = "on_ally_knocked_out"
 
 
 class Activations:
     """How a non-triggered ability is used (Ability.activation)."""
     ONCE_PER_TURN = "once_per_turn"  # offered as a selectable action, once per turn
+    # Usable any number of times per turn; MUST pair with a condition= that
+    # gates no-op uses, or the offer never disappears.
+    UNLIMITED = "unlimited"
 
 # PIE_ABILITIES abilityType doubles as the JsonFx type hint: it must be a
 # PieAbilityDescription subclass CLASS NAME (DwdModelAnalyzer.TypeHintedClasses
@@ -111,9 +166,14 @@ class Ability:
         vstar: bool = False,
         passive: Optional[Any] = None,
         condition: Optional[Callable] = None,
-        shared_once_per_turn: Optional[str] = None
+        shared_once_per_turn: Optional[str] = None,
+        ends_turn: bool = False,
+        usable_from: Optional[str] = None
     ):
         self.title = title
+        # 'hand' | 'discard': offered as an OutOfPlay action while the card
+        # sits in that zone instead of in play (Beedrill, Luxio).
+        self.usable_from = usable_from
         self.game_text = game_text
         self.ability_type = ability_type
         self.effect = effect
@@ -121,9 +181,11 @@ class Ability:
         # lock shared by name across every copy in play (Dark Asset).
         # None = the plain per-entity limit.
         self.shared_once_per_turn = shared_once_per_turn
-        # A Triggers value: the session runs `effect` on that event instead of
-        # offering the ability as a selectable action.
+        # A Triggers value (or a tuple/list of them): the session runs `effect`
+        # on that event instead of offering the ability as a selectable action.
         self.trigger = trigger
+        # "If you use this Ability, your turn ends" (Rotom V Instant Charge).
+        self.ends_turn = ends_turn
         # An Activations value: the ability is offered as a selectable action.
         self.activation = activation
         # VSTAR Powers are usable once per game and flip the playmat marker.
@@ -141,6 +203,15 @@ class Ability:
         """Decorator alternative to the effect= parameter."""
         self.effect = fn
         return fn
+
+    def has_trigger(self, trigger: str) -> bool:
+        """Whether this ability fires on `trigger` (self.trigger may be a
+        single Triggers value or a tuple/list of them)."""
+        if self.trigger is None:
+            return False
+        if isinstance(self.trigger, (tuple, list, set, frozenset)):
+            return trigger in self.trigger
+        return self.trigger == trigger
 
     def to_dict(self) -> dict:
         d = {
@@ -169,7 +240,8 @@ class Attack(Ability):
         effect: Optional[Any] = None,
         vstar: bool = False,
         locks_next_turn: bool = False,
-        condition: Optional[Callable] = None
+        condition: Optional[Callable] = None,
+        usable_first_turn: bool = False
     ):
         super().__init__(title, game_text, ability_type, effect, vstar=vstar,
                          condition=condition)
@@ -178,6 +250,8 @@ class Attack(Ability):
         self.damage_operator = damage_operator
         # "During your next turn, this Pokemon can't use <this attack>."
         self.locks_next_turn = locks_next_turn
+        # Exempt from the "going first can't attack on turn 1" rule (Indeedee).
+        self.usable_first_turn = usable_first_turn
 
     def to_dict(self) -> dict:
         d = super().to_dict()
@@ -278,10 +352,17 @@ class PokemonCardDef(CardDefinition):
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
-        attributes: Optional[dict] = None
+        attributes: Optional[dict] = None,
+        passive: Optional[Any] = None,
+        unplayable_from_hand: bool = False
     ):
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes)
-        
+        # Card-level continuous effect while this Pokemon is top-level in play
+        # (attack-rules passives, e.g. Swanna); distinct from Ability(passive=).
+        self.passive = passive
+        # Shedinja: never offered as a hand bench-play (enters play by effect).
+        self.unplayable_from_hand = unplayable_from_hand
+
         # Add Pokemon-specific defaults to extra_attributes
         self.extra_attributes.update({
             str(AttrID.CARD_TYPE.value): {"type": "int", "value": CardType.POKEMON.value},
@@ -407,12 +488,15 @@ class PokemonToolCardDef(TrainerCardDef):
     """`passive` is the tool's continuous effect while attached (a
     passives.Passive); `effect` stays unused for plain stat tools.
     `granted_abilities` are Abilities the tool grants its holder while
-    attached (Forest Seal Stone)."""
+    attached (Forest Seal Stone). `attach_to(pokemon_entity) -> bool`
+    restricts legal attach targets (Hero's Medal)."""
     def __init__(self, passive: Optional[Any] = None,
-                 granted_abilities: Optional[List[Ability]] = None, **kwargs):
+                 granted_abilities: Optional[List[Ability]] = None,
+                 attach_to: Optional[Callable] = None, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        self.attach_to = attach_to
         self.granted_abilities: List[Ability] = granted_abilities or []
         for idx, a in enumerate(self.granted_abilities):
             if not a.ability_id:

@@ -279,6 +279,9 @@ class BoardState:
         # Set by GameSession once both exist; damage/condition lookups read it
         # defensively (getattr(board, "turn_state", None)) for bare test boards.
         self.turn_state = None
+        # Effect-granted TempPassive entries (passives.py); pruned by
+        # TurnState.begin_turn expiry and GameSession.clear_pokemon_effects.
+        self.temporary_passives: List[Any] = []
 
         self._initialize_board()
 
@@ -455,13 +458,18 @@ class BoardState:
         )
 
     def basic_pokemon_in_hand(self, player_id: str) -> List['PokemonEntity']:
-        """All Basic Pokemon entities currently in the player's hand."""
+        """All Basic Pokemon entities currently in the player's hand that may
+        be played from it (Shedinja's unplayable_from_hand is excluded, so it
+        neither satisfies the mulligan check nor offers as a placement)."""
+        from spirit.game.data_utils import def_for  # circular-import guard
         hand_area = self.find_player_area(player_id, "hand")
         if not hand_area:
             return []
         basics: List[PokemonEntity] = []
         for c in hand_area.children:
             if isinstance(c, PokemonEntity) and self._is_basic_pokemon(c):
+                if getattr(def_for(c.archetype_id), "unplayable_from_hand", False):
+                    continue
                 basics.append(c)
         return basics
 
