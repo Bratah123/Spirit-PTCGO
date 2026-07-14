@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack, recoil_attack
 
 card = PokemonCardDef(
     guid="54717133-93ac-5126-b97d-98e5a2323066",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=150,
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Max Take Down",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 3},
             damage=270,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

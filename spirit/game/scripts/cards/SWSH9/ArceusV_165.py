@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+trinity_charge = search_attach_energy(
+    is_basic_energy_card, count=3,
+    target_pred=lambda p: is_pokemon_v(p.archetype_id),
+    prompt="Choose up to 3 basic Energy cards to attach to your Pokémon V.",
+)
 
 card = PokemonCardDef(
     guid="dd482d08-91fb-55ca-bee4-bffb8820ce77",
@@ -20,9 +28,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Trinity Charge",
-            game_text="Search your deck for up to 3 basic Energy cards and attach them to your Pok\u00e9mon V in any way you like. Then, shuffle your deck.",
+            game_text="Search your deck for up to 3 basic Energy cards and attach them to your Pokémon V in any way you like. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=trinity_charge,
         ),
         Attack(
             title="Power Edge",

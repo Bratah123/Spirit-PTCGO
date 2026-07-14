@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 card = PokemonCardDef(
     guid="ae931c91-5f26-58ef-a751-ea6360a3d3b9",
@@ -21,10 +22,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Dazzle Blast",
-            game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
+            game_text="Your opponent's Active Pokémon is now Confused.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Electric Ball",

@@ -1,6 +1,23 @@
-from spirit.game.card_effects.pokemon import condition_attack
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.session.effects import is_evolution_pokemon
+
+
+async def spider_net(ctx):
+    """On evolve: you may gust one of the opponent's Benched Evolution Pokemon."""
+    candidates = [p for p in ctx.opponent_bench() if is_evolution_pokemon(p)]
+    if not candidates:
+        return
+    if not await ctx.ask_yes_no(
+            "Switch 1 of your opponent's Benched Evolution Pokémon with their Active Pokémon?"):
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose the opponent's new Active Pokémon"
+    )
+    if target is not None:
+        await ctx.switch_active(ctx.opponent_id, target)
+
 
 card = PokemonCardDef(
     guid="41922bdd-3fa5-526a-aaa3-1c10938a5733",
@@ -22,12 +39,13 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Spider Net",
-            game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may switch 1 of your opponent's Benched Evolution Pok\u00e9mon with their Active Pok\u00e9mon.",
-            effect=unimplemented,
+            game_text="When you play this Pokémon from your hand to evolve 1 of your Pokémon during your turn, you may switch 1 of your opponent's Benched Evolution Pokémon with their Active Pokémon.",
+            trigger=Triggers.ON_EVOLVE,
+            effect=spider_net,
         ),
         Attack(
             title="Poison Sting",
-            game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
+            game_text="Your opponent's Active Pokémon is now Poisoned.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             effect=condition_attack(SpecialConditions.POISONED),

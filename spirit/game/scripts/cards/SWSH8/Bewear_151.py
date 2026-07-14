@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 card = PokemonCardDef(
     guid="b2217a27-ab61-5380-861e-be283847729a",
@@ -21,10 +22,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Split Spiral Punch",
-            game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
+            game_text="Your opponent's Active Pokémon is now Confused.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Strength",
