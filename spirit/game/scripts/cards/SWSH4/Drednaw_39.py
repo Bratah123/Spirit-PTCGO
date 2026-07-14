@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def vise_wave(ctx):
+    await ctx.deal_damage()
+    if ctx.played_trainer_this_turn("Nessa") > 0:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="8211a077-8f07-5888-bb8a-b48536041281",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="If you played Nessa from your hand during this turn, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=vise_wave,
         ),
         Attack(
             title="Surf",

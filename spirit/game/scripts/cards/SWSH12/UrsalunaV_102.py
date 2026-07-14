@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 card = PokemonCardDef(
     guid="3fc8d7a1-d601-5b59-9dac-3e8e196f790c",
@@ -21,7 +23,7 @@ card = PokemonCardDef(
         Ability(
             title="Hard Coat",
             game_text="This Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=takes_less_passive(30),
         ),
         Attack(
             title="Peat Shoulder",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 3},
             damage=220,
             damage_operator="-",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("self"), -10, base=220),
         ),
     ],
 )

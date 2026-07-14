@@ -1,5 +1,31 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def natural_cure(ctx):
+    """Whenever you attach an Energy card from your hand to this Pokémon, remove all Special Conditions from it."""
+    if ctx.attaching_player_id != ctx.player_id or ctx.energy_receiver is not ctx.source:
+        return
+    await ctx.cure_all_conditions(ctx.source)
+
+
+async def blissful_blast(ctx):
+    """10, plus 30 more for each Energy attached to this Pokémon. If you did any damage, you may attach up to 3 Energy from your discard pile to this Pokémon."""
+    amount = 10 + 30 * count_energy("self")(ctx)
+    dealt = await ctx.deal_damage(amount)
+    if dealt <= 0:
+        return
+    if not await ctx.ask_yes_no("Attach up to 3 Energy cards from your discard pile to this Pokémon?"):
+        return
+    energies = [c for c in ctx.discard_pile() if is_energy_card(c)]
+    picks = await ctx.choose_cards(
+        energies, 3, minimum=1,
+        prompt="Choose up to 3 Energy cards to attach to this Pokémon.")
+    for card in picks:
+        await ctx.attach_energy(card, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="5f5a84cd-0975-5d4f-80d3-74e35ea05a66",
@@ -21,7 +47,8 @@ card = PokemonCardDef(
         Ability(
             title="Natural Cure",
             game_text="Whenever you attach an Energy card from your hand to this Pok\u00e9mon, remove all Special Conditions from it.",
-            effect=unimplemented,
+            trigger=Triggers.ON_ENERGY_ATTACHED,
+            effect=natural_cure,
         ),
         Attack(
             title="Blissful Blast",
@@ -29,7 +56,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=blissful_blast,
         ),
     ],
 )

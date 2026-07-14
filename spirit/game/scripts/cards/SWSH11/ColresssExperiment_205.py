@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import colresss_experiment
 
 card = SupporterCardDef(
     guid="e9933893-f67c-5952-ba97-58c973305aa9",
@@ -11,5 +12,5 @@ card = SupporterCardDef(
     collector_number=205,
     set_code="SWSH11",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    effect=colresss_experiment,
 )

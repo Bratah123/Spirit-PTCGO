@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.support_common import distribute_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def tri_recharge(ctx):
+    heads = await ctx.flip_coins(3, "Tri Recharge")
+    count = sum(1 for h in heads if h)
+    bench = ctx.my_bench()
+    energy = [c for c in ctx.discard_pile() if is_basic_energy_card(c)]
+    if count <= 0 or not bench or not energy:
+        return
+    picks = await ctx.choose_cards(
+        energy, count, minimum=1,
+        prompt=f"Choose up to {count} basic Energy to attach to your Benched Pokémon.",
+    )
+    if picks:
+        await distribute_energy(ctx, picks, bench)
 
 card = PokemonCardDef(
     guid="2e3d360d-1824-5683-a6dd-f783b5d47288",
@@ -23,7 +41,7 @@ card = PokemonCardDef(
             title="Tri Recharge",
             game_text="Flip 3 coins. Attach a number of basic Energy cards up to the number of heads from your discard pile to your Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=tri_recharge,
         ),
         Attack(
             title="Psychic",
@@ -31,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 30, base=10),
         ),
     ],
 )

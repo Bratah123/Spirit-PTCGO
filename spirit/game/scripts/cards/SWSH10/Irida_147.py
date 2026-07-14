@@ -1,4 +1,5 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.card_effects.trainers import irida
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 
 card = SupporterCardDef(
@@ -11,5 +12,5 @@ card = SupporterCardDef(
     collector_number=147,
     set_code="SWSH10",
     rarity=Rarities.RareHolo,
-    effect=unimplemented
+    effect=irida
 )

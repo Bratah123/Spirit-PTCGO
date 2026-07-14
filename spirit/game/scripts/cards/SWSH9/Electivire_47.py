@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if, damage_all_opponents
+
+
+def _magmortar_bench_damaged(ctx) -> bool:
+    for p in ctx.my_bench():
+        if p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Magmortar" \
+                and p.get_attribute(AttrID.HP, ctx.max_hp(p)) < ctx.max_hp(p):
+            return True
+    return False
 
 card = PokemonCardDef(
     guid="9dbb9c63-3178-59b6-8f77-653b43c1d4d2",
@@ -25,13 +34,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_magmortar_bench_damaged, 90),
         ),
         Attack(
             title="High-Voltage Current",
             game_text="This attack does 50 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(50),
         ),
     ],
 )

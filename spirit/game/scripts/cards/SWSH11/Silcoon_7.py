@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def entangling_string(ctx):
+    heads = await ctx.flip_coins(1, "Entangling String")
+    if heads[0]:
+        lock_defender_attacks(ctx)
 
 card = PokemonCardDef(
     guid="17bf77ac-5e9f-582f-a0a5-87a9695f77a0",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Entangling String",
             game_text="Flip a coin. If heads, during your opponent's next turn, the Defending Pok\u00e9mon can't attack.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=entangling_string,
         ),
         Attack(
             title="Ram",

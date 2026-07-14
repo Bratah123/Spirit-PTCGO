@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.session.effects import is_evolution_pokemon
+
+
+async def bullet_straight_punch(ctx):
+    await ctx.deal_damage(ignore_resistance=True)
+
 
 card = PokemonCardDef(
     guid="0a044504-7a6b-5b24-a6ff-66a9b0c31acd",
@@ -24,14 +31,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_evolution_pokemon), 50, base=20),
         ),
         Attack(
             title="Bullet Straight Punch",
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=bullet_straight_punch,
         ),
     ],
 )

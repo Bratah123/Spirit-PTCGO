@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_pokemon_card
 
 card = PokemonCardDef(
     guid="f6dac522-9795-5252-a8e4-f98403244f6a",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Bail Out",
             game_text="Put up to 2 Pok\u00e9mon from your discard pile into your hand.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=recover_from_discard(is_pokemon_card, count=2, to="hand"),
         ),
         Attack(
             title="Solar Beam",

@@ -1,5 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
+
+async def silence(ctx):
+    """Choose 1 of the opponent's Active Pokemon's attacks; it can't be used
+    during their next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    entries = [e for e in (defender.get_attribute(AttrID.PIE_ABILITIES) or [])
+               if isinstance(e, dict) and e.get("abilityType") == "Attack"
+               and e.get("abilityID")]
+    if not entries:
+        return
+    titles = [e.get("title", {}).get("id", "Attack") for e in entries]
+    idx = await ctx.choose("Choose an attack to Silence", titles)
+    entry = entries[idx]
+    ctx.session.turn_state.attack_locks[(defender.entity_id, entry["abilityID"])] = \
+        ctx.session.turn_state.turn_number + 1
+
 
 card = PokemonCardDef(
     guid="b651cb52-3dac-5464-9504-ecf2a75e8ebd",
@@ -24,7 +45,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of your opponent's Active Pok\u00e9mon's attacks. During your opponent's next turn, that Pok\u00e9mon can't use that attack.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=silence,
         ),
         Attack(
             title="Merciless Strike",
@@ -32,7 +53,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage("defender"), 90),
         ),
     ],
 )

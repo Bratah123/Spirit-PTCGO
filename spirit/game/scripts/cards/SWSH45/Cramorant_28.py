@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 card = PokemonCardDef(
     guid="00748805-c540-5a3a-b701-0f06e4267459",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Spit-Out Shot",
             game_text="This attack does 50 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2},
-            effect=unimplemented,
+            effect=snipe_attack(50, pool="bench", count=1),
         ),
     ],
 )

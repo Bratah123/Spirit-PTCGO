@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def counter(ctx):
+    """30, plus that much more damage if this Pokémon was damaged by an
+    attack during the opponent's last turn."""
+    bonus = ctx.damage_taken_last_turn(ctx.attacker)
+    await ctx.deal_damage(30 + bonus)
+
 
 card = PokemonCardDef(
     guid="51c24cbc-a9ff-595a-982a-aff88886960b",
@@ -25,14 +34,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=counter,
         ),
         Attack(
             title="Max Pyro Ball",
             game_text="Your opponent's Active Pok\u00e9mon is now Burned.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=170,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED),
         ),
     ],
 )

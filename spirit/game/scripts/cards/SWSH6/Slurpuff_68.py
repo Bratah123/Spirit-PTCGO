@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def follow_the_scent(ctx):
+    heads = await ctx.flip_coins(3, "Follow the Scent")
+    count = sum(1 for h in heads if h)
+    discard = ctx.discard_pile()
+    if count <= 0 or not discard:
+        return
+    picks = await ctx.choose_cards(
+        discard, count, minimum=1,
+        prompt=f"Choose up to {count} cards from your discard pile to put into your hand.",
+    )
+    if picks:
+        await ctx.put_in_hand(picks, reveal=False)
 
 card = PokemonCardDef(
     guid="c055fdce-d988-5206-aeec-a15fa7e9730f",
@@ -23,7 +37,7 @@ card = PokemonCardDef(
             title="Follow the Scent",
             game_text="Flip 3 coins. Put a number of cards up to the number of heads from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=follow_the_scent,
         ),
         Attack(
             title="Fairy Wind",

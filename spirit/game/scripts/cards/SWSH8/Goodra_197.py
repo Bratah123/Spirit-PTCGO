@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import energy_attach_tax_passive
 
 card = PokemonCardDef(
     guid="bb0a1c6d-4123-5c55-be80-e9291bcb78cc",
@@ -21,7 +22,7 @@ card = PokemonCardDef(
         Ability(
             title="Slimy Room",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, whenever your opponent tries to attach an Energy card from their hand to a Pok\u00e9mon, they must flip a coin. If tails, your opponent discards that Energy card instead of attaching it, and this doesn't use up their Energy attachment for the turn.",
-            effect=unimplemented,
+            passive=energy_attach_tax_passive(opponents_only=True, while_active=True),
         ),
         Attack(
             title="Buster Tail",

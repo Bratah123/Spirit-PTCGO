@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class WarmingUpPassive(Passive):
+    def max_hp_bonus(self, pokemon, carrier):
+        if pokemon is not carrier_pokemon(carrier):
+            return 0
+        for child in carrier.children:
+            definition = def_for(getattr(child, "archetype_id", None) or "")
+            if definition is not None and definition.display_name == "Burning Scarf":
+                return 100
+        return 0
+
 
 card = PokemonCardDef(
     guid="5484aedf-88dd-5122-b7db-ed05a849e5e6",
@@ -22,7 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="Warming Up",
             game_text="If this Pok\u00e9mon has a Burning Scarf attached, it gets +100 HP.",
-            effect=unimplemented,
+            passive=WarmingUpPassive(),
         ),
         Attack(
             title="Fire Mane",

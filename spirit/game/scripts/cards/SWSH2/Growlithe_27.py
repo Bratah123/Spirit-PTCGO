@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
+
+async def _put_discard_card_in_hand(ctx):
+    discard = ctx.discard_pile()
+    if not discard:
+        return
+    picks = await ctx.choose_cards(
+        discard, 1, minimum=1,
+        prompt="Choose a card from your discard pile to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
 
 card = PokemonCardDef(
     guid="32995129-62da-5065-b2c7-ca1ae5bb1e1b",
@@ -22,7 +34,7 @@ card = PokemonCardDef(
             title="Odor Sleuth",
             game_text="Flip a coin. If heads, put a card from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=flip_or_nothing(then=_put_discard_card_in_hand),
         ),
         Attack(
             title="Fire Claws",

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def ominous_prose(ctx):
+    """Opponent reveals their hand. If 4+ cards, choose all but 3 to shuffle
+    into their deck."""
+    hand = await ctx.reveal_hand(of_player=ctx.opponent_id, to_player=ctx.player_id)
+    if len(hand) < 4:
+        return
+    count = len(hand) - 3
+    picks = await ctx.choose_cards(
+        hand, count, minimum=count,
+        prompt="Choose cards to shuffle into your opponent's deck.",
+        player_id=ctx.player_id,
+    )
+    await ctx.shuffle_into_deck(picks, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="5ed2291a-5cbc-5c99-98fb-b3478a403378",
@@ -24,14 +41,14 @@ card = PokemonCardDef(
             title="Ominous Prose",
             game_text="Your opponent reveals their hand. If they have 4 or more cards in their hand, choose all but 3, and your opponent shuffles the chosen cards into their deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=ominous_prose,
         ),
         Attack(
             title="Psybeam",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

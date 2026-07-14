@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.support_common import gust_then
+
+
+async def _alluring_dance_confuse(ctx, new_active):
+    await ctx.apply_special_condition(new_active, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="3747552a-4458-5823-a691-604aecc92702",
@@ -21,9 +27,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Alluring Dance",
-            game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with their Active Pok\u00e9mon. The new Active Pok\u00e9mon is now Confused.",
+            game_text="Switch 1 of your opponent's Benched Pokémon with their Active Pokémon. The new Active Pokémon is now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=gust_then(_alluring_dance_confuse),
         ),
         Attack(
             title="Super Psy Bolt",

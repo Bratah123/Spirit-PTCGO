@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.passives_common import condition_immunity_passive
+
+
+def _bench_damaged(ctx) -> bool:
+    return any(
+        p.get_attribute(AttrID.HP, 0) < ctx.max_hp(p) for p in ctx.my_bench()
+    )
+
 
 card = PokemonCardDef(
     guid="5e272b8d-b1dd-52f8-ae29-9cb4afc5952d",
@@ -23,7 +32,7 @@ card = PokemonCardDef(
         Ability(
             title="Antibacterial Skin",
             game_text="This Pok\u00e9mon can't be affected by any Special Conditions.",
-            effect=unimplemented,
+            passive=condition_immunity_passive(),
         ),
         Attack(
             title="Vengeful Stomp",
@@ -31,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_bench_damaged, 120),
         ),
     ],
 )

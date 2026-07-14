@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+def _opponent_prizes_taken_last_turn(ctx):
+    return ctx.session.turn_state.prizes_taken_last_turn.get(ctx.opponent_id, 0)
+
 
 card = PokemonCardDef(
     guid="7ab3100a-7b75-5273-96b3-bb2e66a4f4dc",
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_opponent_prizes_taken_last_turn, 100, base=20),
         ),
         Attack(
             title="Pitch-Black Fangs",

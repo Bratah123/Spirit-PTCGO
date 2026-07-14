@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.passives_common import is_in_active_spot
 
 card = PokemonCardDef(
     guid="e41e0702-a821-5f0f-9f08-18a070a4e3a8",
@@ -20,9 +23,13 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Fiery Cheering",
-            game_text="Attach a basic Energy card from your discard pile to 1 of your Benched Pok\u00e9mon.",
+            game_text="Attach a basic Energy card from your discard pile to 1 of your Benched Pokémon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_basic_energy_card, count=1,
+                target=lambda p: not is_in_active_spot(p),
+                prompt="Choose a basic Energy card to attach to a Benched Pokémon",
+            ),
         ),
         Attack(
             title="Flare",

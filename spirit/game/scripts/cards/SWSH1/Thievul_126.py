@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def thief(ctx):
+    """20 damage. Reveal the opponent's hand and put a card found there on
+    the bottom of their deck."""
+    await ctx.deal_damage()
+    opponent_hand = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    if not opponent_hand:
+        return
+    picks = await ctx.choose_cards(
+        opponent_hand, 1, minimum=1,
+        prompt="Choose a card to put on the bottom of your opponent's deck",
+    )
+    for card_entity in picks:
+        await ctx.put_on_bottom_of_deck(card_entity)
+
 
 card = PokemonCardDef(
     guid="040476cc-db4a-5574-90d8-894d101e3325",
@@ -24,7 +40,7 @@ card = PokemonCardDef(
             game_text="Your opponent reveals their hand. Choose a card you find there and put it on the bottom of their deck.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=thief,
         ),
         Attack(
             title="Darkness Fang",

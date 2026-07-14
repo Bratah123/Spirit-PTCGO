@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+async def yoga_kick(ctx):
+    """40 damage, not affected by Weakness or Resistance."""
+    await ctx.deal_damage(40, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="922383e2-f4b3-5832-aa12-7f6b54f8f1aa",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness or Resistance.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=40,
-            effect=unimplemented,
+            effect=yoga_kick,
         ),
         Attack(
             title="Psychic",
@@ -32,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 20, base=60),
         ),
     ],
 )

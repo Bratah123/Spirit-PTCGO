@@ -179,6 +179,9 @@ PROMPT_TAKE_PRIZE = "Choose a Prize card to take"
 PROMPT_CHOOSE_NEW_ACTIVE = "Choose a Pokémon to be your new Active Pokémon"
 PROMPT_REVEAL_BASIC_FROM_PRIZE = "You may reveal a Basic Pokémon from your Prize cards."
 
+# Bench-shrink ruling (Collapsed Stadium): the owner picks the excess to discard.
+PROMPT_DISCARD_BENCH = "Choose a Benched Pokémon to discard"
+
 # Pokemon Checkup (sleep flip) texts.
 TEXT_SLEEP_CHECK = "Asleep Check"
 TEXT_WOKE_UP = "Woke up!"
@@ -193,3 +196,13 @@ TEXT_STILL_BURNED = "Still Burned!"
 TEXT_CONFUSION_CHECK = "Confusion Check"
 TEXT_CONFUSION_PROCEEDS = "Attack proceeds!"
 TEXT_CONFUSION_HURT = "Hurt itself in confusion!"
+
+# Smokescreen-family attack-attempt flip texts.
+TEXT_ATTACK_FLIP_CHECK = "Attack Check"
+TEXT_ATTACK_FLIP_PROCEEDS = "Attack proceeds!"
+TEXT_ATTACK_FLIP_FAILS = "The attack didn't happen!"
+
+# Energy-attach tax flip texts (Slimy Room).
+TEXT_ATTACH_TAX_CHECK = "Energy Attach Check"
+TEXT_ATTACH_TAX_OK = "Attached!"
+TEXT_ATTACH_TAX_DISCARD = "Discarded instead!"

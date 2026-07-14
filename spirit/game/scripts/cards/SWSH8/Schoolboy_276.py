@@ -1,5 +1,15 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.attacks_common import count_prizes_remaining
+
+_opponent_prizes_remaining = count_prizes_remaining("opponent")
+
+
+async def schoolboy(ctx):
+    await ctx.draw_cards(2)
+    if _opponent_prizes_remaining(ctx) in (1, 3, 5):
+        await ctx.draw_cards(2)
+
 
 card = SupporterCardDef(
     guid="136b91ff-ef5b-5a4a-a133-8f45dfb8251b",
@@ -11,5 +21,5 @@ card = SupporterCardDef(
     collector_number=276,
     set_code="SWSH8",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    effect=schoolboy
 )

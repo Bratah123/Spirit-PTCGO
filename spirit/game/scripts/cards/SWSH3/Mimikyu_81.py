@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import (
+    healing_block_passive, opposing_pokemon, is_in_active_spot,
+)
 
 card = PokemonCardDef(
     guid="8bc14fdc-7fda-5b30-bcfa-52bbffcd937f",
@@ -22,7 +25,9 @@ card = PokemonCardDef(
         Ability(
             title="Heal Jamming",
             game_text="Your opponent's Benched Pok\u00e9mon can't be healed.",
-            effect=unimplemented,
+            passive=healing_block_passive(
+                lambda p, c: opposing_pokemon(p, c) and not is_in_active_spot(p)
+            ),
         ),
         Attack(
             title="Claw Slash",

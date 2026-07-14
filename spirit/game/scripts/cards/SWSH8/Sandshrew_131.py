@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench, has_attack_titled
+
+
+async def dig_it_up(ctx):
+    """Look at the top card of your deck. You may discard that card."""
+    top = ctx.deck_top(1)
+    if not top:
+        return
+    card = top[0]
+    idx = await ctx.present_card_choice(
+        card, "Discard this card?", ["Discard", "Keep on top"])
+    if idx == 0:
+        await ctx.discard_cards([card])
+
 
 card = PokemonCardDef(
     guid="abd22956-53b9-5d80-a68a-71fab1b8a078",
@@ -22,7 +36,7 @@ card = PokemonCardDef(
             title="Dig It Up",
             game_text="Look at the top card of your deck. You may discard that card.",
             cost={PokemonTypes.FIGHTING: 1},
-            effect=unimplemented,
+            effect=dig_it_up,
         ),
         Attack(
             title="Let's All Rollout",
@@ -30,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_bench("mine", has_attack_titled("Let's All Rollout")), 20),
         ),
     ],
 )

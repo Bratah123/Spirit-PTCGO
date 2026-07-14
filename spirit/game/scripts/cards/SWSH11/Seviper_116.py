@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.trainers import is_darkness_pokemon
 
 card = PokemonCardDef(
     guid="d1dc3ce1-d055-5cf0-a510-ede30fc3df28",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Darkness Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=switch_self_attack(bench_predicate=is_darkness_pokemon),
         ),
     ],
 )

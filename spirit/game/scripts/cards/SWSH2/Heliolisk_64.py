@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def eerie_impulse(ctx):
+    """Flip a coin. If heads, discard an Energy from 1 of your opponent's Pokémon."""
+    heads = await ctx.flip_coins(1, "Eerie Impulse")
+    if not heads[0]:
+        return
+    candidates = [p for p in ctx.opponent_pokemon_in_play() if ctx.attached_energies(p)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose 1 of your opponent's Pokémon to discard an Energy from"
+    )
+    if target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(target, 1)
+
 
 card = PokemonCardDef(
     guid="e0500056-9f3d-5a4f-b36c-a1a25ca198b6",
@@ -23,14 +40,14 @@ card = PokemonCardDef(
             title="Eerie Impulse",
             game_text="Flip a coin. If heads, discard an Energy from 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
-            effect=unimplemented,
+            effect=eerie_impulse,
         ),
         Attack(
             title="Thunder",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

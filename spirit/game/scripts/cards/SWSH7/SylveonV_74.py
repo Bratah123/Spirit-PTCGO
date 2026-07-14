@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = PokemonCardDef(
     guid="0cd8c808-01c6-5400-a253-479759a45716",
@@ -21,7 +23,9 @@ card = PokemonCardDef(
         Ability(
             title="Dream Gift",
             game_text="Once during your turn, you may search your deck for an Item card, reveal it, and put it into your hand. Then, shuffle your deck. If you use this Ability, your turn ends.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            ends_turn=True,
+            effect=search_to_hand(predicate=is_item_card, count=1, minimum=0, reveal=True),
         ),
         Attack(
             title="Magical Shot",

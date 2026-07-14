@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = PokemonCardDef(
     guid="bb9def3a-b727-524f-a567-f9996ea18cf2",
@@ -22,7 +24,10 @@ card = PokemonCardDef(
             title="Lucky Find",
             game_text="Search your deck for up to 2 Item cards, reveal them, and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(
+                is_item_card, count=2,
+                prompt="Choose up to 2 Item cards to put into your hand.",
+            ),
         ),
         Attack(
             title="Power Gem",

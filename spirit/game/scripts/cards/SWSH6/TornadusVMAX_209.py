@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def max_wind_spirit(ctx):
+    """120, +120 more if a Stadium is in play; then discard that Stadium."""
+    stadium = ctx.stadium_in_play()
+    amount = 120 + (120 if stadium is not None else 0)
+    await ctx.deal_damage(amount)
+    if stadium is not None:
+        await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="a2fceaef-bffb-51ba-8bc4-852bd4d7cadf",
@@ -31,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=max_wind_spirit,
         ),
     ],
 )

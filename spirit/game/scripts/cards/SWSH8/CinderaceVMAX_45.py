@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="07ae4cdd-fbf2-5da7-8616-adebdd551406",
@@ -24,7 +25,8 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Burned. During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 3},
             damage=230,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED),
+            locks_next_turn=True,
         ),
     ],
 )

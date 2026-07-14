@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+
+collect = draw_attack(1)
 
 card = PokemonCardDef(
     guid="39bb4d6d-0249-5916-b48f-bfcc170a6fd9",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Collect",
             game_text="Draw a card.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=collect,
         ),
         Attack(
             title="Icy Snow",

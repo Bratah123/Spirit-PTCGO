@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import bonus_if, condition_attack
+
+
+def _benched_fire_has_damage(ctx):
+    for pokemon in ctx.my_bench():
+        types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+        if PokemonTypes.FIRE.value in types and \
+                pokemon.get_attribute(AttrID.HP, 0) < ctx.max_hp(pokemon):
+            return True
+    return False
+
 
 card = PokemonCardDef(
     guid="b5390f15-4b6f-521f-8da2-e26b96f23813",
@@ -20,18 +31,18 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Searing Flame",
-            game_text="Your opponent's Active Pok\u00e9mon is now Burned.",
+            game_text="Your opponent's Active Pokémon is now Burned.",
             cost={PokemonTypes.FIRE: 1},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED),
         ),
         Attack(
             title="Vengeful Flame",
-            game_text="If your Benched Fire Pok\u00e9mon have any damage counters on them, this attack does 100 more damage.",
+            game_text="If your Benched Fire Pokémon have any damage counters on them, this attack does 100 more damage.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_benched_fire_has_damage, 100),
         ),
     ],
 )

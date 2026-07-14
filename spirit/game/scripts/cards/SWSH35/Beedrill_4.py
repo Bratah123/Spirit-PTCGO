@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 card = PokemonCardDef(
     guid="d1eafda6-4d85-591b-a209-874b59185f69",
@@ -21,10 +22,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Poison Jab",
-            game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
+            game_text="Your opponent's Active Pokémon is now Poisoned.",
             cost={PokemonTypes.GRASS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

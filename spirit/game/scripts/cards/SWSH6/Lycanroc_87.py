@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+
+
+def _is_single_strike(card) -> bool:
+    return "Single Strike" in subtypes_for(card.archetype_id)
+
 
 card = PokemonCardDef(
     guid="ae03ce97-984b-53be-9073-c92cb23cb52b",
@@ -25,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_discard("mine", _is_single_strike), 10, base=80),
         ),
     ],
 )

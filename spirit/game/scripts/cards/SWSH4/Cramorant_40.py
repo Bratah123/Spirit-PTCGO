@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.effects import full_stack
+
+
+async def continuous_gulp_missile(ctx):
+    """Discard any number of Benched Arrokuda; 60 damage for each discarded."""
+    arrokuda = [p for p in ctx.my_bench()
+                if p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Arrokuda"]
+    picks = []
+    if arrokuda:
+        picks = await ctx.choose_cards(
+            arrokuda, len(arrokuda), minimum=0,
+            prompt="Choose Arrokuda to discard from your Bench",
+        )
+    for pokemon in picks:
+        await ctx.discard_cards(full_stack(pokemon))
+    await ctx.deal_damage(60 * len(picks))
+
 
 card = PokemonCardDef(
     guid="7752b7b3-69e9-52ab-932f-c48d09aedd76",
@@ -25,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=continuous_gulp_missile,
         ),
     ],
 )

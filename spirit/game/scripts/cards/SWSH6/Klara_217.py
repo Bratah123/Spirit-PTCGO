@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import klara
 
 card = SupporterCardDef(
     guid="fa417a1f-87bd-5997-aad1-a0a4adb79e8d",
@@ -11,5 +12,5 @@ card = SupporterCardDef(
     collector_number=217,
     set_code="SWSH6",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    effect=klara
 )

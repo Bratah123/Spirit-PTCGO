@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.session.passives import Passive
+
+
+class ChromashiftPassive(Passive):
+    """The holder's live types become its attached basic Energies' types."""
+
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        if pokemon is not carrier:
+            return types
+        energy_types = []
+        for child in carrier.children:
+            if not is_basic_energy_card(child):
+                continue
+            for t in child.get_attribute(AttrID.POKEMON_TYPES) or []:
+                if t not in energy_types:
+                    energy_types.append(t)
+        return energy_types or types
 
 card = PokemonCardDef(
     guid="743c4a25-d2e0-553f-882b-a16401198f9b",
@@ -21,7 +39,7 @@ card = PokemonCardDef(
         Ability(
             title="Chromashift",
             game_text="This Pok\u00e9mon is the same type as any basic Energy attached to it. (If it has 2 or more different types of basic Energy attached, this Pok\u00e9mon is each of those types.)",
-            effect=unimplemented,
+            passive=ChromashiftPassive(),
         ),
         Attack(
             title="Spinning Attack",

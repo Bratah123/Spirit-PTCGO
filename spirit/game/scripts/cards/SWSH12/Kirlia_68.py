@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import discard_then_draw, requires_hand
 
 card = PokemonCardDef(
     guid="858d9b3b-6269-5934-8887-10a22a8b5a24",
@@ -22,7 +23,10 @@ card = PokemonCardDef(
         Ability(
             title="Refinement",
             game_text="You must discard a card from your hand in order to use this Ability. Once during your turn, you may draw 2 cards.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_hand(n=1),
+            effect=discard_then_draw(1, 2, optional=False,
+                                      prompt="Discard a card to use Refinement"),
         ),
         Attack(
             title="Slap",

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def pressure_shot(ctx):
+    """180. This Pokemon also does 10 damage to itself for each damage
+    counter on it."""
+    await ctx.deal_damage()
+    counters = damage_counters_on("self")(ctx)
+    if counters:
+        await ctx.deal_damage(counters * 10, target=ctx.attacker, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="e4f64fa3-e6fe-5828-9ef9-c0e8d6bfff72",
@@ -24,14 +36,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 50 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.FIGHTING: 1},
             damage=50,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=50),
         ),
         Attack(
             title="Pressure Shot",
             game_text="This Pok\u00e9mon also does 10 damage to itself for each damage counter on it.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=180,
-            effect=unimplemented,
+            effect=pressure_shot,
         ),
     ],
 )

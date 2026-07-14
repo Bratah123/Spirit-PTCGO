@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+async def hurried_gait(ctx):
+    """Once during your turn, you may draw a card."""
+    if await ctx.ask_yes_no("Draw a card?"):
+        await ctx.draw_cards(1)
+
+
+def _same_hand_size(ctx):
+    return ctx.hand_size() == ctx.hand_size(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="b2d9bd21-030a-5bcd-887e-93db6255c9cb",
@@ -23,7 +35,8 @@ card = PokemonCardDef(
         Ability(
             title="Hurried Gait",
             game_text="Once during your turn, you may draw a card.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=hurried_gait,
         ),
         Attack(
             title="Extrasensory",
@@ -31,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_same_hand_size, 80),
         ),
     ],
 )

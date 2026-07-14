@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard, recoil_attack
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _is_fighting_pokemon(card):
+    return is_pokemon_card(card) and \
+        PokemonTypes.FIGHTING.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="7313c25e-63b7-52bf-82c1-69dd4e02e6d5",
@@ -25,14 +33,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_discard("mine", pred=_is_fighting_pokemon), 20),
         ),
         Attack(
             title="Dynamite Punch",
             game_text="This Pok\u00e9mon also does 50 damage to itself.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=200,
-            effect=unimplemented,
+            effect=recoil_attack(50),
         ),
     ],
 )

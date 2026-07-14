@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def max_beating(ctx):
+    """Discard up to 3 Grass Energy from this Pokemon; +50 damage per card discarded."""
+    picks = await ctx.discard_energy_from(
+        ctx.attacker, 3, minimum=0,
+        predicate=lambda c: energy_provides_type(c, PokemonTypes.GRASS.value),
+        prompt="Choose up to 3 Grass Energy to discard from this Pokémon.",
+    )
+    await ctx.deal_damage(130 + 50 * len(picks))
+
 
 card = PokemonCardDef(
     guid="f2d5f72b-3b42-5e7d-8876-d3c18c4f3605",
@@ -30,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 3, PokemonTypes.COLORLESS: 1},
             damage=130,
             damage_operator="+",
-            effect=unimplemented,
+            effect=max_beating,
         ),
     ],
 )

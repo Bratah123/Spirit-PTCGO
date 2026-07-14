@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.passives_common import ability_lock_passive
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_water_pokemon
+
+
+def _has_memory_capsule(carrier):
+    for child in carrier.children:
+        d = def_for(child.archetype_id)
+        if d and d.display_name == "Memory Capsule":
+            return True
+    return False
+
+
+def _water_locked(pokemon, carrier):
+    return _has_memory_capsule(carrier) and is_water_pokemon(pokemon)
 
 card = PokemonCardDef(
     guid="ef51ea27-9a73-5ffa-8faf-1cb81b807524",
@@ -22,7 +36,7 @@ card = PokemonCardDef(
         Ability(
             title="Thunderous Awakening",
             game_text="If this Pok\u00e9mon has a Memory Capsule attached, Water Pok\u00e9mon in play (both yours and your opponent's) have no Abilities.",
-            effect=unimplemented,
+            passive=ability_lock_passive(_water_locked),
         ),
         Attack(
             title="Electric Ball",

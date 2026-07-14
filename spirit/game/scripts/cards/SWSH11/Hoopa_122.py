@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_darkness_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.DARKNESS)
+
 
 card = PokemonCardDef(
     guid="c7318a02-a813-5c6c-8a1c-12eb05a05d07",
@@ -22,7 +29,10 @@ card = PokemonCardDef(
             title="Hand of Djinn",
             game_text="Search your deck for a Darkness Energy card and attach it to 1 of your Pok\u00e9mon. Then, shuffle your deck.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(
+                _is_darkness_energy, count=1,
+                prompt="Choose a Darkness Energy card to attach.",
+            ),
         ),
         Attack(
             title="Tyrannical Hole",

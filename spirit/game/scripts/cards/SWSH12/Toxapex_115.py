@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import bonus_if, defender_has_condition
 
 card = PokemonCardDef(
     guid="9539d98d-3ded-5237-90a1-979ed1936e40",
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_has_condition(SpecialConditions.POISONED), 120),
         ),
         Attack(
             title="Spike Shot",

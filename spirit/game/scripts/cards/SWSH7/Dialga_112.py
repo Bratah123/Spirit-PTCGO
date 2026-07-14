@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def chrono_wind(ctx):
+    """80 damage; if the Defending Pokemon is a Pokemon V it can't attack next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and is_pokemon_v(defender.archetype_id):
+        lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="08afc319-a853-519a-a76d-c623406d483a",
@@ -22,7 +32,7 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon is a Pok\u00e9mon V, it can't attack during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            effect=unimplemented,
+            effect=chrono_wind,
         ),
         Attack(
             title="Heavy Impact",

@@ -1,5 +1,29 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.session.passives import Passive
+
+
+class FightingInstinctPassive(Passive):
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier:
+            return cost
+        owner = carrier.owning_player_id
+        opponent = next((pid for pid in board.player_ids if pid != owner), None)
+        if opponent is None or "Colorless" not in cost:
+            return cost
+        discount = sum(
+            1 for p in board.pokemon_in_play(opponent) if is_pokemon_v(p.archetype_id)
+        )
+        if discount <= 0:
+            return cost
+        remaining = cost["Colorless"] - discount
+        if remaining > 0:
+            cost["Colorless"] = remaining
+        else:
+            del cost["Colorless"]
+        return cost
+
 
 card = PokemonCardDef(
     guid="0e11a207-a236-54aa-93c4-486ec1c139d8",
@@ -21,14 +45,14 @@ card = PokemonCardDef(
         Ability(
             title="Fighting Instinct",
             game_text="This Pok\u00e9mon's attacks cost Colorless less for each of your opponent's Pok\u00e9mon V in play.",
-            effect=unimplemented,
+            passive=FightingInstinctPassive(),
         ),
         Attack(
             title="Thunderous Kick",
             game_text="Before doing damage, discard a Special Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=170,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(special_only=True, after_damage=False),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
 
 card = PokemonCardDef(
     guid="4ff36885-2d95-57cd-a596-e9890ab209d3",
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             cost={},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.hand_size() == 0, 150, base=10),
         ),
         Attack(
             title="Sharp Fang",

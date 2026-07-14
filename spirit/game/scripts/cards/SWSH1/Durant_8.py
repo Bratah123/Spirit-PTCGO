@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+async def bite_together(ctx):
+    """30, +60 more if another Durant is on your Bench."""
+    name = ctx.attacker.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+    on_bench = any(p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == name for p in ctx.my_bench())
+    await ctx.deal_damage(90 if on_bench else 30)
 
 card = PokemonCardDef(
     guid="f1844eb9-f5db-5ff6-a7e2-a3bd202dfbcf",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bite_together,
         ),
     ],
 )

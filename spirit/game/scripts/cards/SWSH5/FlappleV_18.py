@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import raise_defender_attack_cost_next_turn
 
 card = PokemonCardDef(
     guid="438cc4c7-a3b8-5418-a12f-b4208ae66712",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon's attacks cost ColorlessColorless more.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=raise_defender_attack_cost_next_turn(extra=2),
         ),
         Attack(
             title="Wing Attack",

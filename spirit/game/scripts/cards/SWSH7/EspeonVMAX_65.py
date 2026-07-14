@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy, damage_per
+from spirit.game.card_effects.passives_common import attack_effect_shield_passive
+from spirit.game.models.board import BoardState
+
+
+def _solar_revelation_protects(target, carrier):
+    return (
+        target.owning_player_id == carrier.owning_player_id
+        and bool(BoardState.attached_energies(target))
+    )
+
 
 card = PokemonCardDef(
     guid="10695936-872f-5081-ac1c-c5acd13d7400",
@@ -23,7 +34,7 @@ card = PokemonCardDef(
         Ability(
             title="Solar Revelation",
             game_text="Prevent all effects of attacks from your opponent's Pok\u00e9mon done to all of your Pok\u00e9mon that have Energy attached.(Existing effects are not removed. Damage is not an effect.)",
-            effect=unimplemented,
+            passive=attack_effect_shield_passive(_solar_revelation_protects),
         ),
         Attack(
             title="Max Mindstorm",
@@ -31,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy("opponent"), 60),
         ),
     ],
 )

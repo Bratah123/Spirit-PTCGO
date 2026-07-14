@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def damaging_spark(ctx):
+    """120, plus 30 to each damaged opposing Benched Pokemon (no W/R on Bench)."""
+    await ctx.deal_damage()
+    for target in ctx.opponent_bench():
+        if target.get_attribute(AttrID.HP, 0) < ctx.max_hp(target):
+            await ctx.deal_damage(30, target=target, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="484d8cc2-b2ee-5885-b55f-eb84ab1b52e6",
@@ -20,17 +30,17 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Dazzle Blast",
-            game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
+            game_text="Your opponent's Active Pokémon is now Confused.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Damaging Spark",
-            game_text="This attack also does 30 damage to each of your opponent's Benched Pok\u00e9mon that has any damage counters on it. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack also does 30 damage to each of your opponent's Benched Pokémon that has any damage counters on it. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=damaging_spark,
         ),
     ],
 )

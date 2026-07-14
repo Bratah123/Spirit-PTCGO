@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive, effective_max_hp
+
+_DARUMA_HEADBUTT_COST = {"Water": 2, "Colorless": 1}
+
+
+class _DarumaHeadbuttAltCostPassive(Passive):
+    """Daruma Headbutt can be paid with [W] alone once this Pokemon has any
+    damage counters on it."""
+
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier or cost != _DARUMA_HEADBUTT_COST:
+            return cost
+        if pokemon.get_attribute(AttrID.HP, 0) >= effective_max_hp(board, pokemon):
+            return cost
+        return {"Water": 1}
+
 
 card = PokemonCardDef(
     guid="dce827bf-e986-5405-9ac9-749e4fc12b9f",
@@ -18,20 +35,20 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.METAL,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.GalarianDarumaka.Name",
     family_id=554,
+    passive=_DarumaHeadbuttAltCostPassive(),
     abilities=[
         Attack(
             title="Powder Snow",
-            game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
+            game_text="Your opponent's Active Pokémon is now Asleep.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Daruma Headbutt",
-            game_text="If this Pok\u00e9mon has any damage counters on it, this attack can be used for Water.",
+            game_text="If this Pokémon has any damage counters on it, this attack can be used for Water.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
         ),
     ],
 )

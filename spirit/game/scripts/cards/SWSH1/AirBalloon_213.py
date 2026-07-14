@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import AirBalloonPassive
 
 card = PokemonToolCardDef(
     guid="faf92ae5-83b9-5ffb-949b-baf09dbbacbb",
@@ -11,5 +12,5 @@ card = PokemonToolCardDef(
     collector_number=213,
     set_code="SWSH1",
     rarity=Rarities.RareSecret,
-    effect=unimplemented
+    passive=AirBalloonPassive()
 )

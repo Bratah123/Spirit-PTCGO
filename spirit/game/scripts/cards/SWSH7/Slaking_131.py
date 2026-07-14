@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+def _no_stadium_in_play(board, player_id, pokemon):
+    stadium_area = board.find_global_area("activeStadium")
+    return not (stadium_area and stadium_area.children)
+
 
 card = PokemonCardDef(
     guid="74cdc778-8cf6-5bd3-9c32-a42fd67dfb5d",
@@ -22,7 +29,6 @@ card = PokemonCardDef(
         Ability(
             title="Act Freely",
             game_text="If a Stadium is in play, this Pok\u00e9mon can't attack.",
-            effect=unimplemented,
         ),
         Attack(
             title="Rout",
@@ -30,7 +36,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            condition=_no_stadium_in_play,
+            effect=damage_per(count_bench("opponent"), 30, base=120),
         ),
     ],
 )

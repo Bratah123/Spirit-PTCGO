@@ -1,5 +1,24 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_supporter_card
+
+
+async def pokegear_30(ctx):
+    """Look at the top 7 cards of the deck; may reveal a Supporter found
+    there and put it into hand. Shuffle the rest back into the deck."""
+    top = ctx.deck_top(7)
+    if not top:
+        return
+    candidates = [c for c in top if is_supporter_card(c)]
+    if candidates:
+        picks = await ctx.choose_cards(
+            candidates, 1, minimum=0,
+            prompt="Choose a Supporter card to put into your hand.",
+            display_cards=top,
+        )
+        await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
 
 card = ItemCardDef(
     guid="307f7f44-275a-52a2-8f2e-300fd37739e1",
@@ -11,5 +30,5 @@ card = ItemCardDef(
     collector_number=174,
     set_code="SWSH1",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=pokegear_30
 )

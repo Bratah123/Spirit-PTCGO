@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 card = PokemonCardDef(
     guid="078d1bb9-3aef-5095-990d-46022d273fed",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Big Shield",
             game_text="All of your Pok\u00e9mon take 30 less damage from your opponent's attacks (after applying Weakness and Resistance). You can't apply more than 1 Big Shield Ability at a time.",
-            effect=unimplemented,
+            passive=takes_less_passive(30, protects="team", stack_key="BigShield"),
         ),
         Attack(
             title="Power Edge",

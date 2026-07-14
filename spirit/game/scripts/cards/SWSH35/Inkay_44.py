@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import bonus_if, defender_has_condition
 
 card = PokemonCardDef(
     guid="2b98d304-57b8-5825-9d87-37364a80ee33",
@@ -25,11 +26,11 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Attack from Behind",
-            game_text="If your opponent's Active Pok\u00e9mon is Confused, this attack does 50 more damage.",
+            game_text="If your opponent's Active Pokémon is Confused, this attack does 50 more damage.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_has_condition(SpecialConditions.CONFUSED), 50),
         ),
     ],
 )

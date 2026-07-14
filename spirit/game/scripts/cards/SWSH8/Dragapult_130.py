@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+
+
+def _is_fusion_strike(card):
+    return "Fusion Strike" in subtypes_for(card.archetype_id)
+
 
 card = PokemonCardDef(
     guid="e4088b77-781f-50f0-93e7-4c8db08f5c7d",
@@ -26,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play("mine", pred=_is_fusion_strike), 30),
         ),
         Attack(
             title="Speed Attack",

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def matching_look(ctx):
+    """Each player reveals the top 2 cards of their deck, then draws those cards."""
+    await ctx.draw_cards(2, player_id=ctx.player_id)
+    await ctx.draw_cards(2, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="d4fd59cd-de2b-5e64-83f7-46e2ba727d47",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Matching Look",
             game_text="Each player reveals the top 2 cards of their deck, then draws those cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=matching_look,
         ),
         Attack(
             title="Tackle",

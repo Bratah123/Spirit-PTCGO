@@ -1,4 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             title="Magnetic Tension",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with their Active Pok\u00e9mon. This attack does 40 damage to the new Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=gust_attack(damage_to_new_active=40),
         ),
         Attack(
             title="Iron Tackle",
             game_text="This Pok\u00e9mon also does 20 damage to itself.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(20),
         ),
     ],
 )

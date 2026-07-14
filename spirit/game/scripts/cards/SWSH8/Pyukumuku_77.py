@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def pitch_a_pyukumuku(ctx):
+    """From hand: you may reveal this and put it on the bottom of the deck,
+    then draw a card."""
+    if not await ctx.ask_yes_no("Reveal this Pokémon and put it on the bottom of your deck?"):
+        return
+    await ctx.reveal_cards([ctx.source])
+    if await ctx.put_on_bottom_of_deck(ctx.source):
+        await ctx.draw_cards(1)
+
 
 card = PokemonCardDef(
     guid="95ee77dc-dd7e-56af-b800-bcd502432ae7",
@@ -21,7 +32,10 @@ card = PokemonCardDef(
         Ability(
             title="Pitch a Pyukumuku",
             game_text="Once during your turn, if this Pok\u00e9mon is in your hand, you may reveal it and put it on the bottom of your deck. If you do, draw a card. You can't use more than 1 Pitch a Pyukumuku Ability each turn.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            usable_from="hand",
+            shared_once_per_turn="Pitch a Pyukumuku",
+            effect=pitch_a_pyukumuku,
         ),
         Attack(
             title="Knuckle Punch",

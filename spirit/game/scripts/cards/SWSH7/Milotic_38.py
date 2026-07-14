@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.passives_common import trainer_effect_shield_passive
+
+
+def _you_or_your_hand(entity, carrier):
+    # "done to you or your hand": player-level effects plus cards in hand;
+    # effects on your Pokemon (Boss's Orders, damage) are NOT prevented.
+    if entity is None:
+        return True
+    parent = getattr(entity, "parent", None)
+    return bool(parent) and parent.get_attribute(AttrID.NAME) == "hand"
 
 card = PokemonCardDef(
     guid="11050f75-e444-53ac-af9b-8803477130eb",
@@ -22,7 +33,7 @@ card = PokemonCardDef(
         Ability(
             title="Dew Guard",
             game_text="Whenever your opponent plays a Supporter card from their hand, prevent all effects of that card done to you or your hand.",
-            effect=unimplemented,
+            passive=trainer_effect_shield_passive(protects=_you_or_your_hand),
         ),
         Attack(
             title="Double Smash",
@@ -30,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=70,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=70),
         ),
     ],
 )

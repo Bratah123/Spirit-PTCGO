@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import bench_has_room, fossil_search, is_rare_fossil
 
 card = SupporterCardDef(
     guid="1713c760-1937-5afc-88bf-f07996103dd8",
@@ -11,5 +12,6 @@ card = SupporterCardDef(
     collector_number=149,
     set_code="SWSH4",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=fossil_search(is_rare_fossil),
+    condition=bench_has_room,
 )

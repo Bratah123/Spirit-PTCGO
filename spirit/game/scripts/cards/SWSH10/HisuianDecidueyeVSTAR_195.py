@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+async def star_of_fortune(ctx):
+    if await ctx.ask_yes_no("Draw cards until you have 8 cards in your hand?"):
+        await ctx.draw_until(8)
+
+
+async def somersault_feathers(ctx):
+    discarded = await ctx.discard_from_hand(
+        3, minimum=0, predicate=is_energy_card,
+        prompt="Discard up to 3 Energy cards from your hand.",
+    )
+    await ctx.deal_damage(160 + 30 * len(discarded))
+
 
 card = PokemonCardDef(
     guid="dbe58393-7634-5707-9f52-90033c4d4ca1",
@@ -22,7 +37,8 @@ card = PokemonCardDef(
         Ability(
             title="Star of Fortune",
             game_text="During your turn, you may draw cards until you have 8 cards in your hand. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            vstar=True,
+            effect=star_of_fortune,
         ),
         Attack(
             title="Somersault Feathers",
@@ -30,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=160,
             damage_operator="+",
-            effect=unimplemented,
+            effect=somersault_feathers,
         ),
     ],
 )

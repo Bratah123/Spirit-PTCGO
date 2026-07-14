@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.session.effects import is_supporter_card
+
+
+def _no_supporter_in_discard(ctx) -> bool:
+    return not any(is_supporter_card(c) for c in ctx.discard_pile())
+
 
 card = PokemonCardDef(
     guid="90334fc1-7871-5630-8b70-5661f2027844",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_no_supporter_in_discard, 130),
         ),
     ],
 )

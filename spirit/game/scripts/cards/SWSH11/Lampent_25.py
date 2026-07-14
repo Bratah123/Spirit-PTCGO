@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def flickering_glow(ctx):
+    """Flip a coin. If heads, discard an Energy from the opponent's Active."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if heads:
+        target = ctx.opponent_active()
+        if target is not None and not ctx.effects_blocked(target):
+            await ctx.discard_energy_from(
+                target, 1, prompt="Choose Energy to discard from the Defending Pokémon")
+
 
 card = PokemonCardDef(
     guid="1aaae65c-7532-5af7-b35d-75a50561a62d",
@@ -24,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1},
             damage=20,
-            effect=unimplemented,
+            effect=flickering_glow,
         ),
     ],
 )

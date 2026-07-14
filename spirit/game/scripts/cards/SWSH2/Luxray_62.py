@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _evolved_this_turn(ctx) -> bool:
+    state = ctx.session.turn_state
+    return state.entered_play_turn.get(ctx.attacker.entity_id) == state.turn_number
+
 
 card = PokemonCardDef(
     guid="51e8cc99-599e-5f84-8f56-6faa4e14d357",
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_evolved_this_turn, 100),
         ),
         Attack(
             title="Head Bolt",

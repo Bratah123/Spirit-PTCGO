@@ -1,5 +1,27 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class _SkyCircusPassive(Passive):
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier:
+            return cost
+        state = getattr(board, "turn_state", None)
+        if state and any(name == "Bird Keeper" for _, name, _ in state.trainers_played):
+            return {}
+        return cost
+
+
+async def _feather_slice(ctx):
+    bonus = False
+    if ctx.hand_size() > 0 and await ctx.ask_yes_no(
+        "You may discard a card from your hand. If you do, this attack does 70 more damage."
+    ):
+        picks = await ctx.discard_from_hand(1, prompt="Discard a card for Feather Slice")
+        bonus = bool(picks)
+    await ctx.deal_damage(70 + (70 if bonus else 0))
+
 
 card = PokemonCardDef(
     guid="c6823dda-d344-58f4-a5e0-827f2070747e",
@@ -23,7 +45,7 @@ card = PokemonCardDef(
         Ability(
             title="Sky Circus",
             game_text="If you played Bird Keeper from your hand during this turn, ignore all Energy in this Pok\u00e9mon's attack costs.",
-            effect=unimplemented,
+            passive=_SkyCircusPassive(),
         ),
         Attack(
             title="Feather Slice",
@@ -31,7 +53,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_feather_slice,
         ),
     ],
 )

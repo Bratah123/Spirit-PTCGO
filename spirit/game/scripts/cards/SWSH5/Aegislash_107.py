@@ -1,4 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.pokemon import stance_change, stance_change_condition
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -23,14 +25,16 @@ card = PokemonCardDef(
         Ability(
             title="Stance Change",
             game_text="Once during your turn, you may switch this Pok\u00e9mon with an Aegislash in your hand. Any attached cards, damage counters, Special Conditions, turns in play, and any other effects remain on the new Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=stance_change_condition,
+            effect=stance_change,
         ),
         Attack(
             title="Full Metal Blade",
             game_text="Discard 2 Metal Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=210,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2, energy_type=PokemonTypes.METAL),
         ),
     ],
 )

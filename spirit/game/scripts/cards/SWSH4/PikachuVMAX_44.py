@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def g_max_volt_tackle(ctx):
+    energies = ctx.attached_energies(ctx.attacker)
+    if energies and await ctx.ask_yes_no(
+        "Discard all Energy from this Pokémon? If you do, this attack does 150 more damage."
+    ):
+        await ctx.discard_energy_from(ctx.attacker, 99)
+        await ctx.deal_damage(270)
+    else:
+        await ctx.deal_damage(120)
+
 
 card = PokemonCardDef(
     guid="941b5fbc-9f1f-5760-8b8f-601aadf968a8",
@@ -25,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 3},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=g_max_volt_tackle,
         ),
     ],
 )

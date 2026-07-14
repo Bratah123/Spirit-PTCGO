@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+def _is_water_energy_card(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.WATER.value in types
+
 
 card = PokemonCardDef(
     guid="341e6658-ed19-5f21-a01e-a721d6cde541",
@@ -22,7 +31,10 @@ card = PokemonCardDef(
             title="Draw Up",
             game_text="Attach up to 3 Water Energy cards from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=_is_water_energy_card, count=3, minimum=0, target="self",
+                prompt="Choose up to 3 Water Energy cards to attach to this Pokémon",
+            ),
         ),
         Attack(
             title="Ocean Waves",
@@ -30,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 4},
             damage=120,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=120),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
 
 card = PokemonCardDef(
     guid="726bf353-6f66-50d3-85bd-485349171e7d",
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             game_text="Attach an Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1},
             damage=30,
-            effect=unimplemented,
+            effect=attach_from_discard(),
         ),
         Attack(
             title="Heavy Impact",

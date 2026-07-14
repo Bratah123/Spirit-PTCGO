@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def lunar_pain(ctx):
+    """Double the number of damage counters on each of your opponent's Pokemon."""
+    for pokemon in ctx.opponent_pokemon_in_play():
+        current = (ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)) // 10
+        if current > 0:
+            await ctx.deal_damage(current * 10, target=pokemon, as_counters=True)
 
 card = PokemonCardDef(
     guid="4fd81eeb-9609-5689-b7c6-1c7892dd1f28",
@@ -24,14 +33,14 @@ card = PokemonCardDef(
             title="Lunar Pain",
             game_text="Double the number of damage counters on each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=lunar_pain,
         ),
         Attack(
             title="Psychic Shot",
             game_text="This attack also does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=130,
-            effect=unimplemented,
+            effect=snipe_attack(30, also_base=True),
         ),
     ],
 )

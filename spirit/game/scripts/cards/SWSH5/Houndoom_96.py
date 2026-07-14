@@ -1,5 +1,43 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _is_single_strike_energy(card):
+    return is_energy_card(card) and "Single Strike" in subtypes_for(card.archetype_id)
+
+
+def _is_single_strike_pokemon(pokemon):
+    return "Single Strike" in subtypes_for(pokemon.archetype_id)
+
+
+async def single_strike_roar(ctx):
+    """Once per turn: you may search for a Single Strike Energy card and
+    attach it to 1 of your Single Strike Pokémon; if you did, put 2 damage
+    counters on that Pokémon."""
+    if not await ctx.ask_yes_no(
+        "Search your deck for a Single Strike Energy card and attach it to "
+        "1 of your Single Strike Pokémon?"
+    ):
+        return
+    picks = await ctx.search_deck(
+        _is_single_strike_energy, count=1, minimum=0,
+        prompt="Choose a Single Strike Energy card to attach.",
+    )
+    await ctx.shuffle_deck()
+    if not picks:
+        return
+    candidates = [p for p in ctx.my_pokemon_in_play() if _is_single_strike_pokemon(p)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose a Single Strike Pokémon to attach the Energy to"
+    )
+    if target is None:
+        return
+    await ctx.attach_energy(picks[0], target)
+    await ctx.deal_damage(20, target=target, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="3eff2979-a56e-557e-a44c-9a592c10c030",
@@ -22,7 +60,8 @@ card = PokemonCardDef(
         Ability(
             title="Single Strike Roar",
             game_text="Once during your turn, you may search your deck for a Single Strike Energy card and attach it to 1 of your Single Strike Pok\u00e9mon. Then, shuffle your deck. If you attached Energy to a Pok\u00e9mon in this way, put 2 damage counters on that Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=single_strike_roar,
         ),
         Attack(
             title="Darkness Fang",

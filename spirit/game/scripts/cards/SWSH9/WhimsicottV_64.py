@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def fluff_gets_in_the_way(ctx):
+    """20. If the Defending Pokémon is a Basic Pokémon, it can't attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and is_basic_pokemon(defender):
+        lock_defender_attacks(ctx)
 
 card = PokemonCardDef(
     guid="0b1665e3-c8dc-5143-8894-199d40a96cfa",
@@ -23,14 +34,14 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon is a Basic Pok\u00e9mon, it can't attack during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            effect=unimplemented,
+            effect=fluff_gets_in_the_way,
         ),
         Attack(
             title="Cotton Guard",
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
     ],
 )

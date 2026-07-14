@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, lock_all_attacks
+from spirit.game.session.legal_actions import energy_provided_count
+
+
+def _both_actives_energy(ctx):
+    total = 0
+    for pokemon in (ctx.my_active(), ctx.opponent_active()):
+        if pokemon is None:
+            continue
+        for energy in ctx.attached_energies(pokemon):
+            total += energy_provided_count(energy)
+    return total
+
+
+async def _deep_crush(ctx):
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="2b73e21f-77dd-5462-8012-bea5eb1a13f1",
@@ -25,14 +43,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_both_actives_energy, 20),
         ),
         Attack(
             title="Deep Crush",
             game_text="During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=160,
-            effect=unimplemented,
+            effect=_deep_crush,
         ),
     ],
 )

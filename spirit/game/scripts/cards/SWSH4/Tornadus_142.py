@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    discard_opponent_energy_attack, self_energy_discard_attack,
+)
+
+jet_draft = discard_opponent_energy_attack(count=1, special_only=True)
+air_slash = self_energy_discard_attack(count=1)
 
 card = PokemonCardDef(
     guid="fc885401-bf16-559d-8499-c7859f532971",
@@ -24,14 +30,14 @@ card = PokemonCardDef(
             game_text="Discard a Special Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=jet_draft,
         ),
         Attack(
             title="Air Slash",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
-            effect=unimplemented,
+            effect=air_slash,
         ),
     ],
 )

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def wind_pressure(ctx):
+    """If the opponent has 5 or fewer cards in hand, this attack does nothing."""
+    if ctx.hand_size(ctx.opponent_id) <= 5:
+        return
+    await ctx.deal_damage()
 
 card = PokemonCardDef(
     guid="7cdebca0-68b2-5f6e-95f8-eeb18af13a79",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             game_text="If your opponent has 5 or fewer cards in their hand, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=250,
-            effect=unimplemented,
+            effect=wind_pressure,
         ),
     ],
 )

@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def frozen_awakening(ctx):
+    """Search your deck for a card that evolves from this Pokemon and evolve it. Then shuffle."""
+    logic_name = ctx.source.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+    picks = await ctx.search_deck(
+        lambda c: logic_name and c.get_attribute(AttrID.EVOLUTION_LOGIC_FROM) == logic_name,
+        count=1, minimum=0,
+        prompt="Choose a card that evolves from this Pokémon.",
+    )
+    if picks:
+        await ctx.evolve_pokemon(ctx.source, picks[0])
+    await ctx.shuffle_deck()
+
+
+async def heavy_snow(ctx):
+    """120. Discard a Stadium in play."""
+    await ctx.deal_damage()
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="1eab7ad0-a61b-5e65-9943-87337804002b",
@@ -22,14 +42,14 @@ card = PokemonCardDef(
             title="Frozen Awakening",
             game_text="Search your deck for a card that evolves from this Pok\u00e9mon and put it onto this Pok\u00e9mon to evolve it. Then, shuffle your deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=frozen_awakening,
         ),
         Attack(
             title="Heavy Snow",
             game_text="Discard a Stadium in play.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            effect=heavy_snow,
         ),
     ],
 )

@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+
+_is_metal = lambda p: PokemonTypes.METAL.value in (p.get_attribute(AttrID.POKEMON_TYPES) or [])
 
 card = PokemonCardDef(
     guid="d0b9de5e-00ae-5081-bf9c-9ce431db2ed4",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(_is_metal), 90),
         ),
     ],
 )

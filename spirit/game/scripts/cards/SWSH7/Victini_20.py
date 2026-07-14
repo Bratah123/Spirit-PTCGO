@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = PokemonCardDef(
     guid="11f07bd1-dd96-53c4-90df-7e68a0a23e00",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             game_text="You may search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=search_to_hand(count=2, minimum=0, reveal=False),
         ),
     ],
 )

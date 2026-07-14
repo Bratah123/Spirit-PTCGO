@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def amazing_burst(ctx):
+    """Discard all basic Energy from this Pokemon; 80 damage per TYPE discarded."""
+    picks = await ctx.discard_energy_from(
+        ctx.attacker, 99, predicate=is_basic_energy_card,
+        prompt="Discard all Basic Energy from this Pokémon.",
+    )
+    types = set()
+    for card in picks:
+        for t in (card.get_attribute(AttrID.POKEMON_TYPES) or []):
+            types.add(t)
+    await ctx.deal_damage(80 * len(types))
+
 
 card = PokemonCardDef(
     guid="69e23074-b5cb-5986-b844-6de666c4c606",
@@ -25,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.LIGHTNING: 1, PokemonTypes.FIGHTING: 1},
             damage=80,
             damage_operator="x",
-            effect=unimplemented,
+            effect=amazing_burst,
         ),
     ],
 )

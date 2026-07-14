@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, CLIENT_SPECIAL_CONDITION_NAMES, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class AllJustADreamPassive(Passive):
+    def modify_prizes_for_knockout(self, pokemon, ctx, count, carrier):
+        if pokemon is not carrier or not ctx.is_attack_effect():
+            return count
+        attacker = getattr(ctx, "attacker", None)
+        if attacker is None or attacker.owning_player_id == pokemon.owning_player_id:
+            return count
+        conditions = pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or []
+        if CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.ASLEEP] not in conditions:
+            return count
+        return 0
+
 
 card = PokemonCardDef(
     guid="aaac1bf0-77c7-5481-b9e9-356d2a7f0ea5",
@@ -20,15 +36,15 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="All Just a Dream",
-            game_text="If this Pok\u00e9mon is Asleep and is Knocked Out by damage from an attack from your opponent's Pok\u00e9mon, your opponent can't take any Prize cards for it.",
-            effect=unimplemented,
+            game_text="If this Pokémon is Asleep and is Knocked Out by damage from an attack from your opponent's Pokémon, your opponent can't take any Prize cards for it.",
+            passive=AllJustADreamPassive(),
         ),
         Attack(
             title="Collapse",
-            game_text="This Pok\u00e9mon is now Asleep.",
+            game_text="This Pokémon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(self_conditions=(SpecialConditions.ASLEEP,)),
         ),
     ],
 )

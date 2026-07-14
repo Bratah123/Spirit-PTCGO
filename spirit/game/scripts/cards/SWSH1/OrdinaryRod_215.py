@@ -1,4 +1,5 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import ordinary_rod
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +12,5 @@ card = ItemCardDef(
     collector_number=215,
     set_code="SWSH1",
     rarity=Rarities.RareSecret,
-    effect=unimplemented
+    effect=ordinary_rod
 )

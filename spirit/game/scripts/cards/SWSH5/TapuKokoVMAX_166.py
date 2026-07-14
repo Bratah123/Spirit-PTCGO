@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def max_shock(ctx):
+    """Printed damage; if you have more Prizes remaining, paralyze the Active."""
+    await ctx.deal_damage()
+    if ctx.prizes_taken(ctx.player_id) < ctx.prizes_taken(ctx.opponent_id):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="f247e83c-c051-5d5a-9c73-2611af48bcad",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             game_text="If you have more Prize cards remaining than your opponent, their Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=180,
-            effect=unimplemented,
+            effect=max_shock,
         ),
     ],
 )

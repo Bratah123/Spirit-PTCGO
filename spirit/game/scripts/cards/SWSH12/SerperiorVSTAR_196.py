@@ -1,5 +1,30 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+
+
+async def regal_blender(ctx):
+    """Printed damage, then you may move any amount of Energy between your
+    Pokémon in any way you like."""
+    await ctx.deal_damage()
+    mine = ctx.my_pokemon_in_play()
+    if len(mine) > 1 and await ctx.ask_yes_no(
+        "Move any amount of Energy from your Pokémon to your other Pokémon?"
+    ):
+        await ctx.move_energy_freely(mine, mine)
+
+
+async def star_winder(ctx):
+    """60 damage for each Energy attached to this Pokémon, then switch this
+    Pokémon with 1 of your Benched Pokémon."""
+    await ctx.deal_damage(60 * count_energy("self")(ctx))
+    bench = ctx.my_bench()
+    if bench:
+        target = await ctx.choose_pokemon(
+            bench, "Choose your new Active Pokémon"
+        ) or bench[0]
+        await ctx.switch_active(ctx.player_id, target)
+
 
 card = PokemonCardDef(
     guid="2001a560-502f-5dad-a7e9-448fac25ad49",
@@ -24,7 +49,7 @@ card = PokemonCardDef(
             game_text="You may move any amount of Energy from your Pok\u00e9mon to your other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=190,
-            effect=unimplemented,
+            effect=regal_blender,
         ),
         Attack(
             title="Star Winder",
@@ -32,7 +57,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            vstar=True,
+            effect=star_winder,
         ),
     ],
 )

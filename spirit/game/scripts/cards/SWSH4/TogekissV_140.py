@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.session.effects import is_evolution_pokemon
 
 card = PokemonCardDef(
     guid="4a6f95d4-106c-5327-a59b-915801c50f58",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_evolution_pokemon), 70),
         ),
         Attack(
             title="Speed Wing",

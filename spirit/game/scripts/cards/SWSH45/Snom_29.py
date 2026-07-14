@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
+call_for_family = search_to_bench()
 
 card = PokemonCardDef(
     guid="a2028a69-bb2c-547e-90e4-9e7b2a12deff",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for a Basic Pok\u00e9mon and put it onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=call_for_family,
         ),
     ],
 )

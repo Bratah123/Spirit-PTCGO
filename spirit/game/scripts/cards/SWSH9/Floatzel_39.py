@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_item_card
 
 card = PokemonCardDef(
     guid="6aa24680-bc8d-5639-863a-e12e0e6c6e39",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Floatify",
             game_text="Put up to 2 Item cards from your discard pile into your hand.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=recover_from_discard(is_item_card, count=2, to="hand"),
         ),
         Attack(
             title="Water Gun",

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_scaled_damage
+from spirit.game.card_effects.pokemon import is_energy_card
 
 card = PokemonCardDef(
     guid="edf3398f-8777-5e83-a7a1-6261b49f092e",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="x",
-            effect=unimplemented,
+            effect=mill_scaled_damage(5, 100, pred=is_energy_card),
         ),
     ],
 )

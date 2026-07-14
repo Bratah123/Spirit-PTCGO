@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class LostBlockPassive(Passive):
+    def prize_destination(self, pokemon, ctx, carrier):
+        if pokemon.owning_player_id == carrier.owning_player_id:
+            return "lostZone"
+        return None
+
 
 card = PokemonCardDef(
     guid="c19dbbcf-dd24-59a0-b223-b8a3ad95f377",
@@ -22,7 +31,7 @@ card = PokemonCardDef(
         Ability(
             title="Lost Block",
             game_text="Your opponent puts any Prize cards they would take in the Lost Zone instead of into their hand.",
-            effect=unimplemented,
+            passive=LostBlockPassive(),
         ),
         Attack(
             title="Dynamic Chop",

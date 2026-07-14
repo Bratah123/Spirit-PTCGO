@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def hazard_star(ctx):
+    if await ctx.ask_yes_no(
+        "Make your opponent's Active Pokémon Paralyzed and Poisoned?"
+    ):
+        defender = ctx.opponent_active()
+        if defender is not None:
+            await ctx.apply_special_condition(defender, SpecialConditions.PARALYZED)
+            await ctx.apply_special_condition(
+                defender, SpecialConditions.POISONED, poison_counters=3
+            )
+
+
+async def big_bang_arm(ctx):
+    counters = (ctx.max_hp(ctx.attacker) - ctx.attacker.get_attribute(AttrID.HP, 0)) // 10
+    await ctx.deal_damage(max(0, 250 - 10 * counters))
+
 
 card = PokemonCardDef(
     guid="074ceea7-aae2-59b9-ab1c-3de4efe41100",
@@ -22,7 +40,9 @@ card = PokemonCardDef(
         Ability(
             title="Hazard Star",
             game_text="During your turn, you may make your opponent's Active Pok\u00e9mon Paralyzed and Poisoned. During Pok\u00e9mon Checkup, put 3 damage counters on that Pok\u00e9mon instead of 1. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            vstar=True,
+            effect=hazard_star,
         ),
         Attack(
             title="Big Bang Arm",
@@ -30,7 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=250,
             damage_operator="-",
-            effect=unimplemented,
+            effect=big_bang_arm,
         ),
     ],
 )

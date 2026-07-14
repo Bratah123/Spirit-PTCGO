@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class MentalShroudPassive(Passive):
+    """If Uxie and Azelf are also in play, your Pokemon have no Weakness."""
+
+    def modify_weakness(self, calc, carrier):
+        if calc.target.owning_player_id != carrier.owning_player_id:
+            return
+        present = {
+            p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+            for p in calc.board.pokemon_in_play(carrier.owning_player_id)
+        }
+        if {"Uxie", "Azelf"} <= present:
+            calc.weakness_applies = False
+
 
 card = PokemonCardDef(
     guid="b492025b-05a7-5886-a8e5-1c7b35e60b31",
@@ -21,8 +37,8 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Mental Shroud",
-            game_text="If you have Uxie and Azelf in play, each of your Pok\u00e9mon has no Weakness.",
-            effect=unimplemented,
+            game_text="If you have Uxie and Azelf in play, each of your Pokémon has no Weakness.",
+            passive=MentalShroudPassive(),
         ),
         Attack(
             title="Zen Headbutt",

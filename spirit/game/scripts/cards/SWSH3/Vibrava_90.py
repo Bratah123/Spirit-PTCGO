@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
 
 card = PokemonCardDef(
     guid="c54c0388-b430-5cd5-b5c1-1d4da58e7fcd",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             game_text="This attack also does 10 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
-            effect=unimplemented,
+            effect=spread_damage(10, side="opponent", also_base=True),
         ),
     ],
 )

@@ -32,6 +32,7 @@ from .constants import (
 )
 from .passives import (
     ability_locked,
+    can_attack_despite_conditions,
     can_evolve_early,
     effective_attack_cost,
     effective_bench_capacity,
@@ -142,10 +143,26 @@ class TurnState:
     attach_restrictions: Dict[str, int] = field(default_factory=dict)
     # Entities whose ON_MOVE_TO_ACTIVE trigger already fired this turn.
     on_move_to_active_fired: Set[str] = field(default_factory=set)
+    # Whether the turn player used their once-per-turn attack-coin re-flip
+    # (Glimwood Tangle); only actually re-flipping consumes it.
+    attack_coin_reroll_used: bool = False
+    # entity_id -> (through_turn, flip_title): a Smokescreen-family check --
+    # this entity must flip a coin to attack, tails cancels the attack.
+    attack_flip_checks: Dict[str, Tuple[int, str]] = field(default_factory=dict)
+    # Entities whose attacks ignore effects on the opponent's Active THIS turn
+    # (Phoebe); cleared every begin_turn.
+    ignore_target_effects_entities: Set[str] = field(default_factory=set)
+    # player_id -> attack titles that player declared on THEIR previous turn
+    # ("If 1 of your Pokemon used Yoga Loop during your last turn...").
+    attack_titles_prev_turn_by_player: Dict[str, List[str]] = field(default_factory=dict)
 
     def begin_turn(self, player_id: str, board: Optional[Any] = None):
         """Advances to the next turn, resets the once-per-turn flags, rotates
         the two-turn history, and prunes expired turn-scoped effects."""
+        if self.active_player_id:
+            self.attack_titles_prev_turn_by_player[self.active_player_id] = [
+                title for _, _, title in self.attacks_used
+            ]
         self.turn_number += 1
         self.active_player_id = player_id
         self.supporter_played = False
@@ -175,6 +192,7 @@ class TurnState:
         self.turn_draw_entity_ids_last_turn = self.turn_draw_entity_ids
         self.turn_draw_entity_ids = set()
         self.on_move_to_active_fired = set()
+        self.attack_coin_reroll_used = False
         self.play_locks = {
             pid: kept for pid, locks in self.play_locks.items()
             if (kept := [(p, exp) for p, exp in locks
@@ -184,6 +202,11 @@ class TurnState:
             eid: exp for eid, exp in self.attach_restrictions.items()
             if exp >= self.turn_number
         }
+        self.attack_flip_checks = {
+            eid: entry for eid, entry in self.attack_flip_checks.items()
+            if entry[0] >= self.turn_number
+        }
+        self.ignore_target_effects_entities = set()
         if board is not None:
             board.temporary_passives = [
                 tp for tp in (getattr(board, "temporary_passives", None) or [])
@@ -232,6 +255,22 @@ class TurnState:
 
     def attach_restricted(self, entity_id: str) -> bool:
         return self.turn_number <= self.attach_restrictions.get(entity_id, -1)
+
+    def set_attack_flip_check(self, entity_id: str, through_turn: Optional[int] = None,
+                              title: str = ""):
+        """Requires a coin flip before `entity_id` attacks (tails = the attack
+        doesn't happen); default lifetime: through the opponent's next turn."""
+        self.attack_flip_checks[entity_id] = (
+            self.turn_number + 1 if through_turn is None else through_turn,
+            title,
+        )
+
+    def attack_flip_check(self, entity_id: str) -> Optional[str]:
+        """The flip title when `entity_id` must flip to attack this turn, else None."""
+        entry = self.attack_flip_checks.get(entity_id)
+        if entry is not None and self.turn_number <= entry[0]:
+            return entry[1]
+        return None
 
     def may_evolve_target(self, entity_id: str) -> bool:
         """A Pokemon may evolve only if it has been in play since a previous
@@ -379,6 +418,11 @@ def compute_legal_actions(
             if stage == PokemonStage.BASIC.value:
                 if getattr(def_for(card.archetype_id), "unplayable_from_hand", False):
                     continue  # Shedinja: enters play only via an effect
+                # Fossils stay Item cards in hand: Item locks gate the bench play.
+                if card.get_attribute(AttrID.TRAINER_TYPE) is not None \
+                        and (state.play_locked(player_id, card)
+                             or trainer_play_blocked(board, player_id, card)):
+                    continue
                 if bench_has_space:
                     # The bench area is the drop target; without it the drag
                     # dead-ends at the ActionsNode and nothing highlights.
@@ -435,7 +479,8 @@ def compute_legal_actions(
                 continue
             definition = def_for(card.archetype_id)
             condition = getattr(definition, "condition", None)
-            if condition is not None and not condition(board, player_id):
+            if condition is not None \
+                    and not trainer_condition_met(condition, board, player_id, card):
                 continue
             if trainer_type == TrainerType.ITEM.value:
                 entries.append(_target_map_entry(
@@ -471,10 +516,18 @@ def compute_legal_actions(
     entries.extend(_ability_entries(board, state, player_id, game_id, in_play))
     entries.extend(_out_of_zone_ability_entries(board, state, player_id, game_id))
     entries.extend(_stadium_ability_entries(board, state, player_id, game_id))
-    if not _active_immobilized(board, player_id):
-        # The turn-1 attack gate lives in _attack_entries (usable_first_turn).
-        entries.extend(_attack_entries(board, state, player_id, game_id))
+    # Asleep/Paralyzed gates attacks per-attack (Attack(usable_despite_conditions)).
+    immobilized = _active_immobilized(board, player_id)
+    entries.extend(_attack_entries(board, state, player_id, game_id, immobilized))
+    if not immobilized:
         entries.extend(_retreat_entry(board, state, player_id, game_id))
+    # A turn kept alive past an attack (Fluffy Barrage's second strike) stays
+    # in the attack phase: only attacking (or End Turn) remains legal.
+    if state.attacks_used:
+        entries = [
+            e for e in entries
+            if e["selectableAction"]["description"] == ACTION_USE_ATTACK
+        ]
     return entries
 
 
@@ -642,6 +695,15 @@ def _retreat_entry(
     )]
 
 
+def trainer_condition_met(condition, board: BoardState, player_id: str, card) -> bool:
+    """condition(board, player_id[, card]) -- 3-arg variants get the specific
+    hand copy (Nugget's turn-draw provenance is per-card)."""
+    code = getattr(condition, "__code__", None)
+    if code is not None and code.co_argcount >= 3:
+        return bool(condition(board, player_id, card))
+    return bool(condition(board, player_id))
+
+
 def _same_stadium_in_play(board: BoardState, card: TrainerEntity) -> bool:
     """A Stadium is unplayable if one with the same archetype is in play."""
     stadium_area = board.find_global_area("activeStadium")
@@ -652,12 +714,16 @@ def _same_stadium_in_play(board: BoardState, card: TrainerEntity) -> bool:
 
 
 def _attack_entries(
-    board: BoardState, state: TurnState, player_id: str, game_id: str
+    board: BoardState, state: TurnState, player_id: str, game_id: str,
+    immobilized: bool = False,
 ) -> List[Dict[str, Any]]:
     """Usable attacks of the Active Pokemon (energy requirement met)."""
     active = board.active_pokemon(player_id)
     if not active:
         return []
+    # A passive (Windup Arm) can exempt the whole Pokemon from the gate.
+    if immobilized and can_attack_despite_conditions(board, active):
+        immobilized = False
     abilities = active.get_attribute(AttrID.PIE_ABILITIES) or []
     if not isinstance(abilities, list):
         logging.warning(
@@ -677,6 +743,9 @@ def _attack_entries(
         if state.attack_locked(active.entity_id, ability_id):
             continue
         definition = ABILITIES_BY_ID.get(ability_id)
+        # Asleep/Paralyzed suppression, per-attack exemptable (Windup Arm).
+        if immobilized and not getattr(definition, "usable_despite_conditions", False):
+            continue
         # The player going first cannot attack on turn 1 unless the attack
         # explicitly allows it (Indeedee's Watch Over).
         if state.turn_number == 1 \

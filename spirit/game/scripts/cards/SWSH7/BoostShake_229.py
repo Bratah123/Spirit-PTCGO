@@ -1,5 +1,24 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import AttrID, Rarities
+
+
+async def boost_shake(ctx):
+    """Search a card that evolves from 1 of your Pokemon, evolve it immediately, shuffle. Your turn ends."""
+    candidates = ctx.my_pokemon_in_play()
+    if candidates:
+        target = await ctx.choose_pokemon(candidates, "Choose a Pokémon to evolve")
+        logic_name = target.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) if target else None
+        if logic_name:
+            picks = await ctx.search_deck(
+                lambda c, name=logic_name: c.get_attribute(AttrID.EVOLUTION_LOGIC_FROM) == name,
+                count=1, minimum=0,
+                prompt="Choose a card that evolves from that Pokémon.",
+            )
+            if picks:
+                await ctx.evolve_pokemon(target, picks[0])
+        await ctx.shuffle_deck()
+    ctx.ends_turn = True
+
 
 card = ItemCardDef(
     guid="a364bf94-15e5-548a-8e10-c538dcf29d76",
@@ -11,5 +30,5 @@ card = ItemCardDef(
     collector_number=229,
     set_code="SWSH7",
     rarity=Rarities.RareSecret,
-    effect=unimplemented
+    effect=boost_shake,
 )

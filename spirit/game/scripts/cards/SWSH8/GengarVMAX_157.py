@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play, lock_all_attacks
+from spirit.game.card_effects.pokemon import is_pokemon_gx
+
+
+async def g_max_swallow_up(ctx):
+    """250. During your next turn, this Pokemon can't attack."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="a4a73ef9-b533-50f2-a837-be54d2b9f75e",
@@ -25,14 +34,20 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(
+                count_in_play(
+                    "opponent",
+                    pred=lambda c: is_pokemon_v(c.archetype_id) or is_pokemon_gx(c.archetype_id),
+                ),
+                60,
+            ),
         ),
         Attack(
             title="G-Max Swallow Up",
             game_text="During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.DARKNESS: 3},
             damage=250,
-            effect=unimplemented,
+            effect=g_max_swallow_up,
         ),
     ],
 )

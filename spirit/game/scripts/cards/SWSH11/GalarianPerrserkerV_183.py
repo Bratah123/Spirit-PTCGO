@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.attacks_common import damage_per, count_hand
 
 card = PokemonCardDef(
     guid="7e19ba01-e7b5-5404-a007-27609ce70773",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Feelin' Fine",
             game_text="Draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=draw_attack(3),
         ),
         Attack(
             title="Treasure Rush",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_hand("mine"), 20),
         ),
     ],
 )

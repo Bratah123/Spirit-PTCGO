@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def voice_of_happiness(ctx):
+    """On evolve: you may heal 30 damage from your Active Pokémon."""
+    active = ctx.my_active()
+    if active is None:
+        return
+    if await ctx.ask_yes_no("Heal 30 damage from your Active Pokémon?"):
+        await ctx.heal(30, active)
 
 card = PokemonCardDef(
     guid="3ac6d2dc-03ad-5b33-b2e7-0b25fee6ebd9",
@@ -22,7 +31,8 @@ card = PokemonCardDef(
         Ability(
             title="Voice of Happiness",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may heal 30 damage from your Active Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=voice_of_happiness,
         ),
         Attack(
             title="Fairy Wind",

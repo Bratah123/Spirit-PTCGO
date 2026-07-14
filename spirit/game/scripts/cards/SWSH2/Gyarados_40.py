@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def big_storm(ctx):
+    await ctx.deal_damage()
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="ba4d9911-4809-5ca5-82d8-83323dea0e89",
@@ -29,7 +35,7 @@ card = PokemonCardDef(
             game_text="Discard any Stadium in play.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 3},
             damage=200,
-            effect=unimplemented,
+            effect=big_storm,
         ),
     ],
 )

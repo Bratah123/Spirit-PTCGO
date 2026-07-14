@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import dark_asset
 
 card = PokemonCardDef(
     guid="a9034837-b287-56e7-a621-c2db77d7c62e",
@@ -21,14 +23,16 @@ card = PokemonCardDef(
         Ability(
             title="Dark Asset",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench during your turn, you may draw cards until you have 6 cards in your hand. You can't use more than 1 Dark Asset Ability each turn.",
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            shared_once_per_turn="Dark Asset",
+            effect=dark_asset,
         ),
         Attack(
             title="Venomous Fang",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=70,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

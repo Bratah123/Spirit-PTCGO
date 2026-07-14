@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_bonus_attack
 
 card = PokemonCardDef(
     guid="2ca83b47-a097-5fc3-b5a8-ba501075a9f9",
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
             damage_operator="+",
-            effect=unimplemented,
+            effect=condition_bonus_attack(80, SpecialConditions.POISONED),
         ),
     ],
 )

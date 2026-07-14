@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def radar(ctx):
+    """Look at the top 4 cards of your deck and put them back in any order."""
+    await ctx.reorder_deck_top(4)
+
 
 card = PokemonCardDef(
     guid="811a4a95-aed5-51ab-8852-a49f7fe19727",
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             title="Radar",
             game_text="Look at the top 4 cards of your deck and put them back in any order.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=radar,
         ),
         Attack(
             title="Ram",

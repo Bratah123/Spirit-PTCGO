@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def wild_freeze(ctx):
+    """70, plus 50 to itself; the opponent's Active is now Paralyzed."""
+    await ctx.deal_damage()
+    await ctx.deal_damage(50, target=ctx.attacker, apply_modifiers=False)
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="ce4a0c8d-9f0f-5848-979a-46ff0a40d69e",
@@ -25,10 +33,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Wild Freeze",
-            game_text="This Pok\u00e9mon also does 50 damage to itself. Your opponent's Active Pok\u00e9mon is now Paralyzed.",
+            game_text="This Pokémon also does 50 damage to itself. Your opponent's Active Pokémon is now Paralyzed.",
             cost={PokemonTypes.WATER: 2},
             damage=70,
-            effect=unimplemented,
+            effect=wild_freeze,
         ),
     ],
 )

@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    discard_opponent_energy_attack, damage_per, count_bench, has_attack_titled,
+)
 
 card = PokemonCardDef(
     guid="fd92eed4-3c14-57e5-87db-240e7ac442f7",
@@ -20,18 +23,18 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Derail",
-            game_text="Discard a Special Energy from your opponent's Active Pok\u00e9mon.",
+            game_text="Discard a Special Energy from your opponent's Active Pokémon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(special_only=True),
         ),
         Attack(
             title="Let's All Rollout",
-            game_text="This attack does 20 damage for each of your Benched Pok\u00e9mon that has the Let's All Rollout attack.",
+            game_text="This attack does 20 damage for each of your Benched Pokémon that has the Let's All Rollout attack.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_bench("mine", has_attack_titled("Let's All Rollout")), 20),
         ),
     ],
 )

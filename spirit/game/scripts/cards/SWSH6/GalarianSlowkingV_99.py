@@ -1,5 +1,6 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import delayed_knockout, read_the_wind
 
 card = PokemonCardDef(
     guid="8cacaf2d-8771-56d9-9dc6-22313137a545",
@@ -22,13 +23,13 @@ card = PokemonCardDef(
             title="Concoction",
             game_text="Discard a card from your hand. If you do, draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=read_the_wind,
         ),
         Attack(
             title="Word of Ruin",
             game_text="At the end of your opponent's next turn, the Defending Pok\u00e9mon will be Knocked Out.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=delayed_knockout,
         ),
     ],
 )

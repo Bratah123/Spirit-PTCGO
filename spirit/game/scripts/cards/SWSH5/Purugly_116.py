@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def caturday(ctx):
+    """Draw 3 cards. If you do, this Pokemon is now Asleep."""
+    drawn = await ctx.draw_cards(3)
+    if drawn:
+        await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="83cfecbd-ff00-52c6-96bc-a6a9f7394578",
@@ -23,7 +31,7 @@ card = PokemonCardDef(
             title="Caturday",
             game_text="Draw 3 cards. If you do, this Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=caturday,
         ),
         Attack(
             title="Claw Slash",

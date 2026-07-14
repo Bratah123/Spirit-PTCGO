@@ -256,6 +256,10 @@ def create_card_entity(card_obj: Card, owning_player_id: Optional[str] = None, e
     elif c_type == CardType.ENERGY.value:
         return EnergyEntity(card_obj, owning_player_id, entity_id)
     else:
+        from spirit.game.data_utils import def_for  # circular-import guard
+        if getattr(def_for(card_obj.guid), "plays_as_pokemon", False):
+            # Fossils: Trainer archetype, Pokemon entity on the board.
+            return PokemonEntity(card_obj, owning_player_id, entity_id)
         return TrainerEntity(card_obj, owning_player_id, entity_id)
 
 
@@ -452,8 +456,11 @@ class BoardState:
 
     @staticmethod
     def _is_basic_pokemon(entity: BoardEntity) -> bool:
+        # Fossils (Trainer archetypes played as Pokemon) don't count for
+        # mulligans or setup placement.
         return (
             isinstance(entity, PokemonEntity)
+            and entity.card_obj.get_attribute_value(AttrID.CARD_TYPE) == CardType.POKEMON.value
             and entity.card_obj.get_attribute_value(AttrID.STAGE) == PokemonStage.BASIC.value
         )
 
@@ -643,9 +650,10 @@ class BoardState:
                 continue
             bench.children.sort(key=self.bench_slot_of)
             occupied = {self.bench_slot_of(c) for c in bench.children}
+            slots = bench.get_attribute(AttrID.AREA_SLOTS) or BENCH_SLOT_COUNT
             bench.set_attribute(
                 AttrID.AREA_EMPTY_SLOTS,
-                [s for s in range(BENCH_SLOT_COUNT) if s not in occupied],
+                [s for s in range(slots) if s not in occupied],
             )
 
     def serialize(self, viewer_id: Optional[str] = None) -> Dict[str, Any]:

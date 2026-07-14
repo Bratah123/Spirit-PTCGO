@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_taken
 
 card = PokemonCardDef(
     guid="82a177b4-b2b8-59ca-b3ba-d214a7d3f0d9",
@@ -29,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_prizes_taken("opponent"), 40, base=60),
         ),
     ],
 )

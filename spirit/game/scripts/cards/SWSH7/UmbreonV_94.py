@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
+
+async def mean_look(ctx):
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        ctx.lock_retreat(defender)
+
 
 card = PokemonCardDef(
     guid="b69dc488-99d7-5c97-b620-03a53bd1d211",
@@ -23,7 +32,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=mean_look,
         ),
         Attack(
             title="Moonlight Blade",
@@ -31,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage("self"), 80),
         ),
     ],
 )

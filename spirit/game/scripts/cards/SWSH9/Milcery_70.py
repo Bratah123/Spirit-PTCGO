@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_supporter_card
 
 card = PokemonCardDef(
     guid="434562c9-a907-5b12-8734-6327f6b24d2a",
@@ -22,7 +24,10 @@ card = PokemonCardDef(
             title="Lead",
             game_text="Search your deck for a Supporter card, reveal it, and put it into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=search_to_hand(
+                is_supporter_card, count=1, minimum=0,
+                prompt="Choose a Supporter card to put into your hand.",
+            ),
         ),
         Attack(
             title="Ram",

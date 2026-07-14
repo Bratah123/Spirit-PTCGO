@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import primate_wisdom
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -21,7 +22,8 @@ card = PokemonCardDef(
         Ability(
             title="Primate Wisdom",
             game_text="Once during your turn, you may switch a card from your hand with the top card of your deck.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=primate_wisdom,
         ),
         Attack(
             title="Whap Down",

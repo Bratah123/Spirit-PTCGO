@@ -1,5 +1,10 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _bench_has_damage(ctx):
+    return any(p.get_attribute(AttrID.HP, 0) < ctx.max_hp(p) for p in ctx.my_bench())
 
 card = PokemonCardDef(
     guid="30f60ece-43ec-5581-9836-51e31176b8a3",
@@ -25,14 +30,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_bench_has_damage, 140),
         ),
         Attack(
             title="G-Max Chi Strike",
             game_text="During your next turn, this Pok\u00e9mon can't use G-Max Chi Strike.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=240,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

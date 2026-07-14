@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
+
+async def industrious_incisors(ctx):
+    if await ctx.ask_yes_no("Draw cards until you have 5 cards in your hand?"):
+        await ctx.draw_until(5)
+
+
+def _hand_below_five(board, player_id, pokemon):
+    hand = board.find_player_area(player_id, "hand")
+    return (len(hand.children) if hand else 0) < 5
+
 
 card = PokemonCardDef(
     guid="18aff19b-238e-52b3-8ec8-a4b592d043a1",
@@ -22,14 +34,16 @@ card = PokemonCardDef(
         Ability(
             title="Industrious Incisors",
             game_text="Once during your turn, you may draw cards until you have 5 cards in your hand.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_hand_below_five,
+            effect=industrious_incisors,
         ),
         Attack(
             title="Tail Smash",
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=100,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

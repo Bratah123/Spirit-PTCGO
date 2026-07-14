@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def return_effect(ctx):
+    """30 damage; you may draw cards until you have 6 cards in your hand."""
+    await ctx.deal_damage()
+    if await ctx.ask_yes_no("Draw cards until you have 6 cards in your hand?"):
+        await ctx.draw_until(6)
+
 
 card = PokemonCardDef(
     guid="0ff8b3ec-a091-5430-a66e-1a30ff97cbb7",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             game_text="You may draw cards until you have 6 cards in your hand.",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=return_effect,
         ),
         Attack(
             title="Whip Smash",

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+
+
+async def _dizzying_spin_confuse(ctx):
+    """After the spread hit: confuse the opponent's Active."""
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="537131fd-c9fa-5364-8d49-08ba3015a951",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Dizzying Spin",
             game_text="This attack does 10 damage to each of your opponent's Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Confused. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(10, also=_dizzying_spin_confuse),
         ),
     ],
 )

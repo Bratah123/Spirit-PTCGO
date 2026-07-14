@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def snap_trap(ctx):
+    """Active Spot only: after being damaged by an attack (even if Knocked
+    Out), discard an Energy from the Attacking Pokémon."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None or ctx.effects_blocked(attacker):
+        return
+    await ctx.discard_energy_from(attacker, 1)
+
 
 card = PokemonCardDef(
     guid="59f91582-85c7-57c7-9fa5-7bc37ce7e13b",
@@ -22,7 +36,8 @@ card = PokemonCardDef(
         Ability(
             title="Snap Trap",
             game_text="If this Pok\u00e9mon is in the Active Spot and is damaged by an opponent's attack (even if it is Knocked Out), discard an Energy from the Attacking Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=snap_trap,
         ),
         Attack(
             title="Damage Rush",
@@ -30,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, base=30, per_heads=30),
         ),
     ],
 )

@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def rapid_fire_poison(ctx):
+    """Once during your turn, if this Pokemon is in the Active Spot, you may
+    make your opponent's Active Pokemon Poisoned."""
+    if await ctx.ask_yes_no("Make your opponent's Active Pokémon Poisoned?"):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="6b18af02-c73b-5603-a12e-195280311ac7",
@@ -20,15 +30,17 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Rapid-Fire Poison",
-            game_text="Once during your turn, if this Pok\u00e9mon is in the Active Spot, you may make your opponent's Active Pok\u00e9mon Poisoned.",
-            effect=unimplemented,
+            game_text="Once during your turn, if this Pokémon is in the Active Spot, you may make your opponent's Active Pokémon Poisoned.",
+            activation=Activations.ONCE_PER_TURN,
+            condition=in_active_spot,
+            effect=rapid_fire_poison,
         ),
         Attack(
             title="Tripping Shot",
-            game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
+            game_text="During your opponent's next turn, the Defending Pokémon can't retreat.",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

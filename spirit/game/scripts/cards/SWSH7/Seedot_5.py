@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+import random
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def astonish(ctx):
+    """Choose a random card from the opponent's hand, reveal it, shuffle into their deck."""
+    await ctx.deal_damage()
+    opponent = ctx.opponent_id
+    hand = ctx.hand(opponent)
+    if not hand:
+        return
+    card = random.choice(hand)
+    await ctx.reveal_cards([card])
+    await ctx.shuffle_into_deck([card], player_id=opponent)
+
 
 card = PokemonCardDef(
     guid="83426808-da28-50fe-a234-da9b9a5971a9",
@@ -23,7 +38,7 @@ card = PokemonCardDef(
             game_text="Choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into their deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
-            effect=unimplemented,
+            effect=astonish,
         ),
     ],
 )

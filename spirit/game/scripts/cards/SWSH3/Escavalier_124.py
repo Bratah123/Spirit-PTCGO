@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_FURY_CUTTER_BONUS = {1: 20, 2: 70, 3: 140}
+
+
+async def fury_cutter(ctx):
+    results = await ctx.flip_coins(3, "Fury Cutter")
+    heads = sum(1 for r in results if r)
+    bonus = _FURY_CUTTER_BONUS.get(heads, 0)
+    await ctx.deal_damage(ctx.ability.damage + bonus)
 
 card = PokemonCardDef(
     guid="04d1750c-3ff7-58b0-bff6-08eb5fde6516",
@@ -26,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=fury_cutter,
         ),
         Attack(
             title="Seashell Attack",

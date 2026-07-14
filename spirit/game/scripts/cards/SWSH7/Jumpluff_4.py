@@ -1,4 +1,5 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import FluffyBarragePassive
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -22,7 +23,7 @@ card = PokemonCardDef(
         Ability(
             title="Fluffy Barrage",
             game_text="This Pok\u00e9mon may attack twice each turn. If the first attack Knocks Out your opponent's Active Pok\u00e9mon, you may attack again after your opponent chooses a new Active Pok\u00e9mon.",
-            effect=unimplemented,
+            passive=FluffyBarragePassive(),
         ),
         Attack(
             title="Spinning Attack",

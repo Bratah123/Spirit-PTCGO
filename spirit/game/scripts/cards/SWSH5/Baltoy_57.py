@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
 
 card = PokemonCardDef(
     guid="512ff60a-fcbe-5777-b1af-daddce05888f",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon also does 60 damage to itself.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=recoil_attack(60),
         ),
     ],
 )

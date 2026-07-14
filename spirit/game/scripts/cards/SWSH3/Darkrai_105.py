@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.session.passives import Passive
+
+
+class DarknessGuardPassive(Passive):
+    def modify_damage_taken(self, calc, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.target is carrier):
+            return
+        if any(
+            energy_provides_type(c, PokemonTypes.DARKNESS.value)
+            for c in carrier.children
+        ):
+            calc.amount = max(0, calc.amount - 20)
+
 
 card = PokemonCardDef(
     guid="ff8b5d90-1361-5b57-9ebb-6a33f87e61ec",
@@ -21,7 +36,7 @@ card = PokemonCardDef(
         Ability(
             title="Darkness Guard",
             game_text="If this Pok\u00e9mon has any Darkness Energy attached, it takes 20 less damage from attacks (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=DarknessGuardPassive(),
         ),
         Attack(
             title="Vortex of Darkness",
@@ -29,7 +44,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("self", energy_type=PokemonTypes.DARKNESS), 20, base=60
+            ),
         ),
     ],
 )

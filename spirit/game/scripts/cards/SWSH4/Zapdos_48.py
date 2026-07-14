@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_pokemon_gx
+
+
+async def thunder_snipe(ctx):
+    """Discard all Energy from this Pokemon; 160 to 1 opposing V/GX (no W/R off Active)."""
+    await ctx.discard_energy_from(ctx.attacker, 99)
+    candidates = [p for p in ctx.opponent_pokemon_in_play()
+                  if is_pokemon_v(p.archetype_id) or is_pokemon_gx(p.archetype_id)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose 1 of your opponent's Pokémon V or Pokémon-GX"
+    )
+    if target is not None:
+        await ctx.deal_damage(160, target=target)
+
 
 card = PokemonCardDef(
     guid="b719dc8a-c260-5ef3-aa33-e36572c72412",
@@ -28,7 +44,7 @@ card = PokemonCardDef(
             title="Thunder Snipe",
             game_text="Discard all Energy from this Pok\u00e9mon, and this attack does 160 damage to 1 of your opponent's Pok\u00e9mon V or Pok\u00e9mon-GX. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=thunder_snipe,
         ),
     ],
 )

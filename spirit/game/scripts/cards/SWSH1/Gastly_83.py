@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
 
 card = PokemonCardDef(
     guid="73bc8297-e84e-59b4-8e52-2c817f032d5b",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             game_text="Put this Pok\u00e9mon and all attached cards into your hand.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            effect=unimplemented,
+            effect=remove_self_from_play("hand"),
         ),
     ],
 )

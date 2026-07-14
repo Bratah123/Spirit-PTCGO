@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
 
 card = PokemonCardDef(
     guid="fde00e58-c69a-51a2-8cf3-7ad2585308fe",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Stiffen",
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 40 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=40),
         ),
     ],
 )

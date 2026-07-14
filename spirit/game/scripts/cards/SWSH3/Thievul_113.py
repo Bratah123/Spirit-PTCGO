@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = PokemonCardDef(
     guid="9206f148-f170-533c-96c3-8b94bfe3359f",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Nasty Plot",
             game_text="Search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(count=2),
         ),
         Attack(
             title="Sharp Fang",

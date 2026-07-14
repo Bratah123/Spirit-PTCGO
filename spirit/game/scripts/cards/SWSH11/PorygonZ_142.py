@@ -1,4 +1,5 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import downgrading_beam
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Downgrading Beam",
             game_text="Devolve 1 of your opponent's evolved Pok\u00e9mon by removing any number of Evolution cards from it. Your opponent shuffles those cards into their deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=downgrading_beam,
         ),
         Attack(
             title="Power Beam",

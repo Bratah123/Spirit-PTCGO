@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+async def full_nelson(ctx):
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        ctx.lock_retreat(defender)
+
+
+def _used_full_nelson_last_turn(ctx):
+    return ctx.attack_used_last_turn(title="Full Nelson", entity=ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="4df97f55-6696-5c4a-a300-7cc776e9658f",
@@ -24,7 +37,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=30,
-            effect=unimplemented,
+            effect=full_nelson,
         ),
         Attack(
             title="Tentacle Buster",
@@ -32,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_used_full_nelson_last_turn, 120),
         ),
     ],
 )

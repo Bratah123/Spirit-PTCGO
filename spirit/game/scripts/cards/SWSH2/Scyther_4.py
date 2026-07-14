@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Swords Dance",
             game_text="During your next turn, this Pok\u00e9mon's Blinding Scythe attack does 70 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=boost_own_next_turn(70, attack_title="Blinding Scythe"),
         ),
         Attack(
             title="Blinding Scythe",

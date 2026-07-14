@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import TakesLessPassive
+
+
+async def diving_uppercut(ctx):
+    """120. During your opponent's next turn, this Pokemon takes 50 more
+    damage from attacks (after applying Weakness and Resistance)."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, TakesLessPassive(-50))
+
 
 card = PokemonCardDef(
     guid="8bdd8b77-da42-5060-9fd8-f57b5e2f59b7",
@@ -29,7 +38,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 50 more damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=diving_uppercut,
         ),
     ],
 )

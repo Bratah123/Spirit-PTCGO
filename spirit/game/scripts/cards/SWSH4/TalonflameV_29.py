@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import discard_then_draw
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
 card = PokemonCardDef(
     guid="b5b4b149-6391-53d1-b89d-f438b14da123",
@@ -23,14 +25,15 @@ card = PokemonCardDef(
             title="Fast Flight",
             game_text="If you go first, you can use this attack during your first turn. Discard your hand and draw 6 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            usable_first_turn=True,
+            effect=discard_then_draw(None, 6, whole_hand=True),
         ),
         Attack(
             title="Bright Wing",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

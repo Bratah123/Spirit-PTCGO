@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import no_weakness_passive
+from spirit.game.models.board import BoardState
+
+
+def _protective_glow_protects(target, carrier):
+    return (
+        target.owning_player_id == carrier.owning_player_id
+        and bool(BoardState.attached_energies(target))
+    )
+
 
 card = PokemonCardDef(
     guid="86bff073-c9a4-5dd1-97d0-d7dd2f5564c6",
@@ -22,14 +33,14 @@ card = PokemonCardDef(
         Ability(
             title="Protective Glow",
             game_text="All of your Pok\u00e9mon that have Energy attached have no Weakness.",
-            effect=unimplemented,
+            passive=no_weakness_passive(_protective_glow_protects),
         ),
         Attack(
             title="Mirage Flare",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=110,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

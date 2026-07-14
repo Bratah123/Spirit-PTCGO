@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, lock_all_attacks
+
+
+async def iron_buster(ctx):
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
 
 card = PokemonCardDef(
     guid="d7b5bd78-2a18-5036-a981-ee7e2501ba2e",
@@ -25,14 +31,14 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Iron Buster",
             game_text="During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 3},
             damage=170,
-            effect=unimplemented,
+            effect=iron_buster,
         ),
     ],
 )

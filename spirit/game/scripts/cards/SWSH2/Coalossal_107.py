@@ -1,5 +1,44 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.trainers import is_energy_card
+from spirit.game.card_effects.support_common import requires_discard, distribute_energy
+
+
+def _is_fire_energy_card(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.FIRE.value in types
+
+
+def _is_fighting_energy_card(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.FIGHTING.value in types
+
+
+async def tar_generator(ctx):
+    """Once per turn, you may attach a Fire Energy, a Fighting Energy, or
+    1 of each from your discard pile to your Pokémon in any way you like."""
+    if not await ctx.ask_yes_no(
+        "Attach a Fire Energy card, a Fighting Energy card, or 1 of each "
+        "from your discard pile to your Pokémon?"
+    ):
+        return
+    picks = []
+    fire_cards = [c for c in ctx.discard_pile() if _is_fire_energy_card(c)]
+    if fire_cards:
+        picks.extend(await ctx.choose_cards(
+            fire_cards, 1, minimum=0,
+            prompt="Choose a Fire Energy card to attach (optional)",
+        ))
+    fighting_cards = [c for c in ctx.discard_pile() if _is_fighting_energy_card(c)]
+    if fighting_cards:
+        picks.extend(await ctx.choose_cards(
+            fighting_cards, 1, minimum=0,
+            prompt="Choose a Fighting Energy card to attach (optional)",
+        ))
+    if not picks:
+        return
+    await distribute_energy(ctx, picks, ctx.my_pokemon_in_play())
+
 
 card = PokemonCardDef(
     guid="f7c67054-1b19-5383-bb84-b84f0e2635b9",
@@ -21,8 +60,12 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Tar Generator",
-            game_text="Once during your turn, you may attach a Fire Energy card, a Fighting Energy card, or 1 of each from your discard pile to your Pok\u00e9mon in any way you like.",
-            effect=unimplemented,
+            game_text="Once during your turn, you may attach a Fire Energy card, a Fighting Energy card, or 1 of each from your discard pile to your Pokémon in any way you like.",
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_discard(
+                lambda c: _is_fire_energy_card(c) or _is_fighting_energy_card(c)
+            ),
+            effect=tar_generator,
         ),
         Attack(
             title="Flaming Avalanche",

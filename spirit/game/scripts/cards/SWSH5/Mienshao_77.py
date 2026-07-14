@@ -1,5 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.session.effects import full_stack
+
+
+async def spinning_whip(ctx):
+    """90. Opponent's Active is now Confused. Shuffle this Pokémon and all
+    attached cards into your deck."""
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+    await ctx.shuffle_into_deck(full_stack(ctx.attacker), ctx.player_id)
+
+    async def _promote():
+        if not await ctx.session._promote_new_active(ctx.player_id):
+            screen_name = ctx.session.players[ctx.player_id].screen_name
+            await ctx.session.end_game(
+                ctx.opponent_id, f"{screen_name} has no Pokémon left"
+            )
+
+    ctx.deferred_actions.append(_promote)
+
 
 card = PokemonCardDef(
     guid="a57b82ca-48a8-5ff7-88d1-9a179268b4cc",
@@ -29,7 +48,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused. Shuffle this Pok\u00e9mon and all attached cards into your deck.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=spinning_whip,
         ),
     ],
 )

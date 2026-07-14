@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, defender_is_v
+from spirit.game.session.effects import is_special_energy
+
+
+async def thick_mucus(ctx):
+    """70 for each Special Energy card attached to the opponent's Pokemon."""
+    count = sum(
+        1 for p in ctx.opponent_pokemon_in_play()
+        for e in ctx.attached_energies(p) if is_special_energy(e)
+    )
+    await ctx.deal_damage(70 * count)
 
 card = PokemonCardDef(
     guid="ade82de6-2bc0-5531-bc7a-3ebc2dbd264c",
@@ -24,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=70,
             damage_operator="x",
-            effect=unimplemented,
+            effect=thick_mucus,
         ),
         Attack(
             title="Fighting Tackle",
@@ -32,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.FIRE: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_is_v, 80),
         ),
     ],
 )

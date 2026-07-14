@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+async def star_abyss(ctx):
+    """VSTAR Power: you may put up to 2 Item cards from your discard pile into your hand."""
+    items = [c for c in ctx.discard_pile() if is_item_card(c)]
+    picks = await ctx.choose_cards(
+        items, 2, minimum=0,
+        prompt="Choose up to 2 Item cards to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="0e27aad5-2f95-5632-aad5-aa2779a903ab",
@@ -22,7 +35,8 @@ card = PokemonCardDef(
         Ability(
             title="Star Abyss",
             game_text="During your turn, you may put up to 2 Item cards from your discard pile into your hand. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            vstar=True,
+            effect=star_abyss,
         ),
         Attack(
             title="Dark Pulse",
@@ -30,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("mine", energy_type=PokemonTypes.DARKNESS), 30, base=30),
         ),
     ],
 )

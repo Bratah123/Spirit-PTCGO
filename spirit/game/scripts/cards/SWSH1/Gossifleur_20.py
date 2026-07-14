@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
 
 card = PokemonCardDef(
     guid="80c1d2ca-0559-5d32-962e-8679c9c7d324",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for up to 3 Basic Pok\u00e9mon and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(count=3),
         ),
         Attack(
             title="Razor Leaf",

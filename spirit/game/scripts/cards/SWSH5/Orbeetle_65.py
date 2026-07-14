@@ -1,5 +1,33 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.attacks_common import count_energy
+from spirit.game.session.constants import BENCH_CAPACITY
+
+
+def _stage2_not_orbeetle(card):
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value
+        and card.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) != "Orbeetle"
+    )
+
+
+async def evomancy(ctx):
+    """For each Energy attached to this Pokémon, search a Stage 2 Pokémon
+    (except Orbeetle) onto the Bench. Then, shuffle the deck."""
+    count = count_energy("self")(ctx)
+    space = BENCH_CAPACITY - len(ctx.my_bench())
+    take = min(count, space)
+    if take > 0:
+        picks = await ctx.search_deck(
+            _stage2_not_orbeetle, count=take, minimum=0,
+            prompt="Choose Stage 2 Pokémon to put onto your Bench.",
+        )
+        for card in picks:
+            await ctx.bench_pokemon(card)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="cae6af0b-3116-57b0-83bb-99cd9619cae0",
@@ -22,9 +50,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Evomancy",
-            game_text="For each Energy attached to this Pok\u00e9mon, search your deck for a Stage 2 Pok\u00e9mon, except Orbeetle, and put it onto your Bench. Then, shuffle your deck.",
+            game_text="For each Energy attached to this Pokémon, search your deck for a Stage 2 Pokémon, except Orbeetle, and put it onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=evomancy,
         ),
         Attack(
             title="Zen Headbutt",

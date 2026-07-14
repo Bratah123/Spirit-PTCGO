@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, bonus_if, count_energy
 
 card = PokemonCardDef(
     guid="6f965d44-d7c5-5ddb-88f0-864be98052cf",
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
         Attack(
             title="Synchro Hammer",
@@ -33,7 +34,10 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(
+                lambda ctx: count_energy("self")(ctx) == count_energy("defender")(ctx),
+                90,
+            ),
         ),
     ],
 )

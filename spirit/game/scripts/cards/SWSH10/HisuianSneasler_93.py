@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import retreat_discount, is_in_active_spot
 
 card = PokemonCardDef(
     guid="735e5851-e086-5a35-9884-6c632b8a286f",
@@ -22,7 +23,14 @@ card = PokemonCardDef(
         Ability(
             title="Carry and Climb",
             game_text="As long as this Pok\u00e9mon is on your Bench, your Active Pok\u00e9mon's Retreat Cost is ColorlessColorless less.",
-            effect=unimplemented,
+            passive=retreat_discount(
+                2,
+                target_pred=lambda pokemon, carrier: (
+                    pokemon.owning_player_id == carrier.owning_player_id
+                    and is_in_active_spot(pokemon)
+                    and not is_in_active_spot(carrier)
+                ),
+            ),
         ),
         Attack(
             title="Claw Slash",

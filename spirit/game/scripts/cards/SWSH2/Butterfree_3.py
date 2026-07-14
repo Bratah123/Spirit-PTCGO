@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="14dbcb5e-4edb-5c9c-ad1b-05e0c6db1f78",
@@ -24,7 +25,10 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Burned, Confused, and Poisoned.",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=condition_attack(
+                SpecialConditions.BURNED, SpecialConditions.CONFUSED,
+                SpecialConditions.POISONED,
+            ),
         ),
         Attack(
             title="Cutting Wind",

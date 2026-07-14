@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def fling_fire(ctx):
+    discarded = await ctx.discard_from_hand(
+        2, minimum=0, predicate=is_basic_energy_card,
+        prompt="Discard up to 2 basic Energy cards",
+    )
+    await ctx.deal_damage(60 * len(discarded))
+
 
 card = PokemonCardDef(
     guid="fe6d1b3f-13c8-59d3-9701-e56aa2933627",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=fling_fire,
         ),
     ],
 )

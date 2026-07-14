@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack, damage_per
+
+
+def _defender_condition_count(ctx):
+    defender = ctx.defender
+    if defender is None:
+        return 0
+    return len(defender.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
 
 card = PokemonCardDef(
     guid="0698688d-e2ff-5667-bcc6-41cff81c5c64",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
             title="Poison Claws",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
         Attack(
             title="Dire Claw",
@@ -30,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_defender_condition_count, 80),
         ),
     ],
 )

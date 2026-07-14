@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
+
+async def wreak_havoc(ctx):
+    """Flip a coin until you get tails. For each heads, discard the top 2
+    cards of your opponent's deck."""
+    heads = await ctx.flip_until_tails("Wreak Havoc")
+    if heads:
+        await ctx.discard_cards(ctx.deck_top(heads * 2, player_id=ctx.opponent_id))
 
 card = PokemonCardDef(
     guid="d9f36c0f-95d4-5b0b-90c7-f3e460535e53",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
             title="Wreak Havoc",
             game_text="Flip a coin until you get tails. For each heads, discard the top 2 cards of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=wreak_havoc,
         ),
         Attack(
             title="Wild Splash",
             game_text="Discard the top 5 cards of your deck.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=230,
-            effect=unimplemented,
+            effect=mill_attack(5, opponent=False),
         ),
     ],
 )

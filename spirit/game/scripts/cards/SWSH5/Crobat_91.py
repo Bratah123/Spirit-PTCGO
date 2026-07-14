@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def drastic_draw(ctx):
+    """On evolve: you may draw 3 cards."""
+    if await ctx.ask_yes_no("Draw 3 cards?"):
+        await ctx.draw_cards(3)
+
 
 card = PokemonCardDef(
     guid="6665bbd3-e931-5a6f-b151-61b8fe08a828",
@@ -22,7 +29,8 @@ card = PokemonCardDef(
         Ability(
             title="Drastic Draw",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may draw 3 cards.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=drastic_draw,
         ),
         Attack(
             title="Wing Attack",

@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+
+
+async def unamplified_soundwave(ctx):
+    """30 to each of your opponent's Pokemon (no W/R on the Bench). Does
+    nothing if you have any cards in your hand."""
+    if ctx.hand_size():
+        return
+    await damage_all_opponents(30)(ctx)
+
 
 card = PokemonCardDef(
     guid="21552761-0ded-5e64-989a-9e6871c81489",
@@ -21,9 +31,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Unamplified Soundwave",
-            game_text="This attack does 30 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.) If you have any cards in your hand, this attack does nothing.",
+            game_text="This attack does 30 damage to each of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.) If you have any cards in your hand, this attack does nothing.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=unamplified_soundwave,
         ),
     ],
 )

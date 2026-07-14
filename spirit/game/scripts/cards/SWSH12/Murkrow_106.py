@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
+
+def _is_murkrow(card) -> bool:
+    d = def_for(card.archetype_id)
+    return bool(d) and d.display_name == "Murkrow"
+
 
 card = PokemonCardDef(
     guid="a1cc6396-8802-548d-9662-4288f7fb783f",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Flock",
             game_text="Search your deck for up to 2 Murkrow and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(predicate=_is_murkrow, count=2),
         ),
         Attack(
             title="Peck",

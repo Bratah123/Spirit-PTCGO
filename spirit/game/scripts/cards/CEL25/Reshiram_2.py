@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage, bonus_if, named_in_play
 
 card = PokemonCardDef(
     guid="1134864a-2e23-5bd8-ae2b-16b9f2c992d9",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Scorching Wind",
             game_text="This attack does 20 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=spread_damage(20, side="opponent"),
         ),
         Attack(
             title="Black Flame",
@@ -30,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(named_in_play("Zekrom"), 80),
         ),
     ],
 )

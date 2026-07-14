@@ -1,5 +1,18 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import SupporterCardDef
+from spirit.game.attributes import AttrID, PokemonTypes, Rarities
+from spirit.game.session.passives import TurnDamageModifier
+
+
+async def grant(ctx):
+    """This turn, your Fighting Pokemon's attacks do 30 more damage to the
+    opponent's Active Pokemon (before W/R). (Discard-pile self-recovery
+    clause needs Trainer PIE_ABILITIES support -- unscripted.)"""
+    ctx.add_turn_damage_modifier(TurnDamageModifier(
+        30, ctx.player_id,
+        source_predicate=lambda p: PokemonTypes.FIGHTING.value in (
+            p.get_attribute(AttrID.POKEMON_TYPES) or []),
+    ))
+
 
 card = SupporterCardDef(
     guid="f53e3719-5220-5ebd-9254-216b6b23cab5",
@@ -11,5 +24,5 @@ card = SupporterCardDef(
     collector_number=203,
     set_code="SWSH10",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    effect=grant
 )

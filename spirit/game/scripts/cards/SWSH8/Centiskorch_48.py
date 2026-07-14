@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 card = PokemonCardDef(
     guid="45371b46-870d-5135-874e-d317ae12c854",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's attacks do 90 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=boost_own_next_turn(90),
         ),
         Attack(
             title="Burning Train",

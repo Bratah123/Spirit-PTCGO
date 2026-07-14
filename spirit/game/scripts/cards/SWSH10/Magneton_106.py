@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
+
+
+async def bounce_back(ctx):
+    await ctx.deal_damage()
+    await opponent_switches(ctx)
 
 card = PokemonCardDef(
     guid="c712c118-0f49-5835-a227-20b56447f27a",
@@ -25,7 +31,7 @@ card = PokemonCardDef(
             game_text="Your opponent switches their Active Pok\u00e9mon with 1 of their Benched Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=bounce_back,
         ),
     ],
 )

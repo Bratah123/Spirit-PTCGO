@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.session.legal_actions import energy_provided_count
+
+
+def _both_actives_energy(ctx):
+    total = 0
+    for pokemon in (ctx.my_active(), ctx.opponent_active()):
+        if pokemon is None:
+            continue
+        for energy in ctx.attached_energies(pokemon):
+            total += energy_provided_count(energy)
+    return total
+
 
 card = PokemonCardDef(
     guid="a45d39b9-d278-5dd8-83f1-0ba97c38f8a0",
@@ -25,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_both_actives_energy, 30),
         ),
     ],
 )

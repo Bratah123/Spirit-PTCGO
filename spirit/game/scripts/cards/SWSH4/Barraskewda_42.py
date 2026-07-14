@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def targeted_skewer(ctx):
+    """20 damage to a chosen opposing Benched Pokémon for each damage
+    counter already on it (no Weakness/Resistance for Benched Pokémon)."""
+    bench = ctx.opponent_bench()
+    if not bench:
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose 1 of your opponent's Benched Pokémon"
+    )
+    if target is None:
+        return
+    counters = max(0, (ctx.max_hp(target) - target.get_attribute(AttrID.HP, 0)) // 10)
+    if counters:
+        await ctx.deal_damage(20 * counters, target=target, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="39ae597b-4774-5908-974c-116cdbfa0069",
@@ -23,7 +40,7 @@ card = PokemonCardDef(
             title="Targeted Skewer",
             game_text="This attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon for each damage counter on that Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=targeted_skewer,
         ),
         Attack(
             title="Jet Headbutt",

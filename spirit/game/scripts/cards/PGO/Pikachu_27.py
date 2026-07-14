@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, TrainerType
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _played_supporter_this_turn(ctx):
+    return ctx.played_trainer_this_turn(lambda r: r[2] == TrainerType.SUPPORTER.value) > 0
+
 
 card = PokemonCardDef(
     guid="65db8eef-73af-5ed6-95d9-d3dfc1863e6d",
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_played_supporter_this_turn, 30),
         ),
     ],
 )

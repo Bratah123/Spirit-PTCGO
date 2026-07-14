@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.support_common import heal_attack
+
+
+def _defender_retreat_cost(ctx):
+    active = ctx.opponent_active()
+    return int(active.get_attribute(AttrID.RETREAT_COST) or 0) if active else 0
 
 card = PokemonCardDef(
     guid="a6c0a11e-a591-55c5-b2e3-283d849e9298",
@@ -25,14 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 60),
         ),
         Attack(
             title="Max Leaf",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=170,
-            effect=unimplemented,
+            effect=heal_attack(30, target="self"),
         ),
     ],
 )

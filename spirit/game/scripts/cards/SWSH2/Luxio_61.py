@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.card_effects.pokemon import top_entry
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -21,8 +22,9 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Top Entry",
+            trigger=Triggers.ON_TURN_DRAWN,
             game_text="Once during your turn, if you drew this Pok\u00e9mon from your deck at the beginning of your turn and your Bench isn't full, before you put it into your hand, you may put it onto your Bench.",
-            effect=unimplemented,
+            effect=top_entry(),
         ),
         Attack(
             title="Zap Kick",

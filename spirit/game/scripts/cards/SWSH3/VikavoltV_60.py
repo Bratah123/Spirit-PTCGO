@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.session.effects import is_item_card
+
+
+async def paralyzing_bolt(ctx):
+    """50 damage. During your opponent's next turn, they can't play any Item
+    cards from their hand."""
+    await ctx.deal_damage()
+    ctx.lock_plays(ctx.opponent_id, is_item_card)
+
 
 card = PokemonCardDef(
     guid="a5c94ec1-7a70-58f1-a782-0bb279f6e4d5",
@@ -23,14 +33,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, they can't play any Item cards from their hand.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=paralyzing_bolt,
         ),
         Attack(
             title="Super Zap Cannon",
-            game_text="Discard 2 Energy from this Pok\u00e9mon.",
+            game_text="Discard 2 Energy from this Pokémon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=190,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

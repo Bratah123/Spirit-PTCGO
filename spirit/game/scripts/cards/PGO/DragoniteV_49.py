@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
 
 card = PokemonCardDef(
     guid="f56edb89-68c2-555a-844a-fb0460efae15",
@@ -19,10 +20,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Hyper Beam",
-            game_text="Discard an Energy from your opponent's Active Pok\u00e9mon.",
+            game_text="Discard an Energy from your opponent's Active Pokémon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.LIGHTNING: 1},
             damage=60,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(count=1),
         ),
         Attack(
             title="Buster Tail",

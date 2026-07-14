@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def searchlight_tail(ctx):
+    """90 damage, +90 more if the opponent's revealed hand has an Energy card."""
+    cards = await ctx.reveal_hand(ctx.opponent_id, ctx.player_id)
+    amount = 90
+    if any(is_energy_card(c) for c in cards):
+        amount += 90
+    await ctx.deal_damage(amount)
+
 
 card = PokemonCardDef(
     guid="857c9944-4f37-5316-a64f-e92e9019d867",
@@ -24,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Searchlight Tail",
@@ -32,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=searchlight_tail,
         ),
     ],
 )

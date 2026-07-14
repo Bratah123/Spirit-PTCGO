@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
 
 card = PokemonCardDef(
     guid="3032b436-9061-5c24-97b4-4a14fbb3d6cd",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Haunt",
             game_text="Put 1 damage counter on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(1, "opponent_active"),
         ),
     ],
 )

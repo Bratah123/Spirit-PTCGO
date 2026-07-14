@@ -1,4 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_special_energy
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -23,7 +25,10 @@ card = PokemonCardDef(
             title="Clear Tone",
             game_text="Search your deck for up to 2 Special Energy cards, reveal them, and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(
+                is_special_energy, count=2, reveal=True,
+                prompt="Choose up to 2 Special Energy cards.",
+            ),
         ),
         Attack(
             title="Hang Down",

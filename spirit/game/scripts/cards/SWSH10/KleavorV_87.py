@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def axe_slash(ctx):
+    """Discard an Energy from this Pokémon. If you do, discard an Energy from your opponent's Active Pokémon."""
+    await ctx.deal_damage()
+    discarded = await ctx.discard_energy_from(ctx.attacker, 1)
+    if not discarded:
+        return
+    defender = ctx.opponent_active()
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    await ctx.discard_energy_from(defender, 1)
+
 
 card = PokemonCardDef(
     guid="77f605f7-0d49-54c0-a30c-86433a18731b",
@@ -28,7 +41,7 @@ card = PokemonCardDef(
             game_text="Discard an Energy from this Pok\u00e9mon. If you do, discard an Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=150,
-            effect=unimplemented,
+            effect=axe_slash,
         ),
     ],
 )

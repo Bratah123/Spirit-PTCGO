@@ -1,4 +1,5 @@
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.card_effects.trainers import SkatersParkPassive
+from spirit.game.data_utils import StadiumCardDef
 from spirit.game.attributes import Rarities
 
 card = StadiumCardDef(
@@ -11,5 +12,5 @@ card = StadiumCardDef(
     collector_number=242,
     set_code="SWSH8",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=SkatersParkPassive(),
 )

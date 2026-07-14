@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import defender_is_v
+
+
+async def fighting_headbutt(ctx):
+    """10, +50 vs a Pokémon V; not affected by Weakness."""
+    bonus = 50 if defender_is_v(ctx) else 0
+    await ctx.deal_damage(10 + bonus, ignore_weakness=True)
 
 card = PokemonCardDef(
     guid="d287bd67-a29a-5307-baee-39a1f3f27da7",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=fighting_headbutt,
         ),
         Attack(
             title="Jet Headbutt",

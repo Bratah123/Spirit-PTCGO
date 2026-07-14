@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+def _my_tools(ctx):
+    return sum(
+        1 for tool, pokemon in ctx.tools_in_play()
+        if pokemon.owning_player_id == ctx.player_id
+    )
 
 card = PokemonCardDef(
     guid="d1f956bb-8776-551a-9602-be7fb5b66b86",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_my_tools, 30),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import PokemonToolCardDef
+from spirit.game.attributes import PokemonTypes, Rarities
+from spirit.game.card_effects.passives_common import typed_damage_boost_tool
 
 card = PokemonToolCardDef(
     guid="dc156368-3e76-5529-baa8-1bb8ff6a06a1",
@@ -11,5 +12,5 @@ card = PokemonToolCardDef(
     collector_number=145,
     set_code="SWSH7",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=typed_damage_boost_tool(PokemonTypes.FIGHTING, 30),
 )

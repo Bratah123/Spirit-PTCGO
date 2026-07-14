@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.pokemon import is_pokemon_gx
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+def _is_v_or_gx(pokemon):
+    return is_pokemon_v(pokemon.archetype_id) or is_pokemon_gx(pokemon.archetype_id)
 
 card = PokemonCardDef(
     guid="14780490-9698-5d31-9e28-977068e717df",
@@ -25,14 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_in_play("opponent", _is_v_or_gx), 50, base=30),
         ),
         Attack(
             title="Smash Turn",
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
     ],
 )

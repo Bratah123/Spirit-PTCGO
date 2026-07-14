@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+def _is_lightning_pokemon(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_pokemon_card(card) and PokemonTypes.LIGHTNING.value in types
 
 card = PokemonCardDef(
     guid="13c7c8bb-d6ad-5070-99f4-62ca80a3d142",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Call Sign",
             game_text="Search your deck for a Lightning Pok\u00e9mon, reveal it, and put it into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(_is_lightning_pokemon, count=1, minimum=0, reveal=True),
         ),
         Attack(
             title="Tiny Charge",

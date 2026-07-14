@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+
+
+async def spill_out(ctx):
+    """60+150. Discard your hand. If you discarded 5 or more cards this way, +150 damage."""
+    hand = ctx.hand()
+    count = len(hand)
+    await ctx.discard_cards(hand)
+    await ctx.deal_damage(60 + (150 if count >= 5 else 0))
+
 
 card = PokemonCardDef(
     guid="15fe97d0-39ab-543a-8dd0-71f704425543",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Collect",
             game_text="Draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=draw_attack(2),
         ),
         Attack(
             title="Spill Out",
@@ -31,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=spill_out,
         ),
     ],
 )

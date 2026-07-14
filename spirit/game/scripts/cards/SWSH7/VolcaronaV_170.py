@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def surging_flames(ctx):
+    """20 more damage per basic Energy in your discard; then shuffle those Energy into your deck."""
+    energy_cards = [c for c in ctx.discard_pile(ctx.player_id) if is_basic_energy_card(c)]
+    await ctx.deal_damage(20 + 20 * len(energy_cards))
+    if energy_cards:
+        await ctx.shuffle_into_deck(energy_cards, player_id=ctx.player_id)
+
+
+fire_blast = self_energy_discard_attack(count=1)
 
 card = PokemonCardDef(
     guid="76d41205-ecdd-568e-a76a-3a5c0e808f45",
@@ -24,14 +37,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=surging_flames,
         ),
         Attack(
             title="Fire Blast",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=fire_blast,
         ),
     ],
 )

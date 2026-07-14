@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
 
 card = PokemonCardDef(
     guid="56d87599-be1a-598a-943b-2c454f96db44",
@@ -29,7 +30,7 @@ card = PokemonCardDef(
             game_text="If your opponent has 3 or fewer cards in their hand, this attack does nothing.",
             cost={PokemonTypes.FIGHTING: 2},
             damage=240,
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.hand_size(ctx.opponent_id) > 3, 0, else_nothing=True),
         ),
     ],
 )

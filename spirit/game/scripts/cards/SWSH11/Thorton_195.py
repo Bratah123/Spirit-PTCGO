@@ -1,4 +1,5 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.card_effects.trainers import thorton, thorton_condition
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 
 card = SupporterCardDef(
@@ -11,5 +12,6 @@ card = SupporterCardDef(
     collector_number=195,
     set_code="SWSH11",
     rarity=Rarities.RareUltra,
-    effect=unimplemented
+    condition=thorton_condition,
+    effect=thorton,
 )

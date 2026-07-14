@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
 
 card = PokemonCardDef(
     guid="98be6da3-5ced-5f5f-bd10-bfd86bc35794",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             game_text="If your opponent's Active Pok\u00e9mon has no damage counters on it before this attack does damage, this attack does nothing.",
             cost={PokemonTypes.FIRE: 1},
             damage=80,
-            effect=unimplemented,
+            effect=bonus_if(has_damage("defender"), 0, else_nothing=True),
         ),
         Attack(
             title="Fire Wing",

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def lost_volcano(ctx):
+    """220. Put all Energy attached to this Pokemon in the Lost Zone."""
+    await ctx.deal_damage()
+    energies = ctx.attached_energies(ctx.attacker)
+    if energies:
+        await ctx.move_to_lost_zone(energies)
+
 
 card = PokemonCardDef(
     guid="c2559ece-50ea-54b5-aafd-2fa1b2fa8cc5",
@@ -26,10 +35,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Lost Volcano",
-            game_text="Put all Energy attached to this Pok\u00e9mon in the Lost Zone.",
+            game_text="Put all Energy attached to this Pokémon in the Lost Zone.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=220,
-            effect=unimplemented,
+            effect=lost_volcano,
         ),
     ],
 )

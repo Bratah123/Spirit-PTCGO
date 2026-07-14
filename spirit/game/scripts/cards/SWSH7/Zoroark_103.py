@@ -1,4 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import (
+    phantom_transformation, phantom_transformation_condition,
+)
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -22,7 +25,9 @@ card = PokemonCardDef(
         Ability(
             title="Phantom Transformation",
             game_text="Once during your turn, you may choose a Stage 1 Pok\u00e9mon, except any Zoroark, from your discard pile. If you do, discard this Pok\u00e9mon and all attached cards, and put the chosen Pok\u00e9mon in its place.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=phantom_transformation_condition,
+            effect=phantom_transformation,
         ),
         Attack(
             title="Night Daze",

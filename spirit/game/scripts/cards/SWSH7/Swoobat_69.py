@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
 
 card = PokemonCardDef(
     guid="aa975f79-6e47-5f19-8b68-ff97aa9fb0e5",
@@ -26,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.hand_size() == ctx.hand_size(ctx.opponent_id), 80),
         ),
     ],
 )

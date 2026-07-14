@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+async def discreet_draw(ctx):
+    """On evolve: you may draw 2 cards."""
+    if await ctx.ask_yes_no("Draw 2 cards?"):
+        await ctx.draw_cards(2)
+
 
 card = PokemonCardDef(
     guid="3d80cd6a-0006-50ca-b0ab-bf8c218270ac",
@@ -22,14 +30,15 @@ card = PokemonCardDef(
         Ability(
             title="Discreet Draw",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may draw 2 cards.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=discreet_draw,
         ),
         Attack(
             title="Air Slash",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

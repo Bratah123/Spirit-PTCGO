@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def sonic_edge(ctx):
+    """This attack's damage isn't affected by any effects on the Defending Pokemon."""
+    await ctx.deal_damage(ignore_target_effects=True)
+
 
 card = PokemonCardDef(
     guid="4428f9d9-dd5d-5ebb-9b53-c19aa10e9c13",
@@ -29,7 +35,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=sonic_edge,
         ),
     ],
 )

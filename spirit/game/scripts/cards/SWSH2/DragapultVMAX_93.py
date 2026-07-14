@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def shred(ctx):
+    """60. This attack's damage isn't affected by any effects on the
+    opponent's Active Pokémon."""
+    await ctx.deal_damage(ignore_target_effects=True)
+
+
+async def max_phantom(ctx):
+    """130. Put 5 damage counters on your opponent's Benched Pokémon in
+    any way you like."""
+    await ctx.deal_damage()
+    bench = ctx.opponent_bench()
+    if bench:
+        await ctx.place_damage_counters(5, bench)
+
 
 card = PokemonCardDef(
     guid="aeeb1fa5-4d95-544e-8856-83a548309bfd",
@@ -25,14 +41,14 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=60,
-            effect=unimplemented,
+            effect=shred,
         ),
         Attack(
             title="Max Phantom",
             game_text="Put 5 damage counters on your opponent's Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 2},
             damage=130,
-            effect=unimplemented,
+            effect=max_phantom,
         ),
     ],
 )

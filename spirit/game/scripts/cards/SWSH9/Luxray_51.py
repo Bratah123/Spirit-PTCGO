@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy, snipe_attack
 
 card = PokemonCardDef(
     guid="50d2a992-b8bf-568a-82a8-59d812e82fb8",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy("opponent"), 50),
         ),
         Attack(
             title="Flash Impact",
             game_text="This attack also does 30 damage to 1 of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=110,
-            effect=unimplemented,
+            effect=snipe_attack(30, pool="bench", side="mine", also_base=True),
         ),
     ],
 )

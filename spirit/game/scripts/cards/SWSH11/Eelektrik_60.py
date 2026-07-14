@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def ad_hoc_shock(ctx):
+    """On evolve: you may flip a coin. If heads, the opponent's Active is now Paralyzed."""
+    if not await ctx.ask_yes_no("Flip a coin?"):
+        return
+    results = await ctx.flip_coins(1, "Ad Hoc Shock")
+    if not results or not results[0]:
+        return
+    defender = ctx.defender
+    if defender is not None:
+        await ctx.apply_special_condition(defender, SpecialConditions.PARALYZED)
 
 card = PokemonCardDef(
     guid="9573c3da-3303-55c6-ab85-08b60a0b95dd",
@@ -22,7 +34,8 @@ card = PokemonCardDef(
         Ability(
             title="Ad Hoc Shock",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=ad_hoc_shock,
         ),
         Attack(
             title="Static Shock",

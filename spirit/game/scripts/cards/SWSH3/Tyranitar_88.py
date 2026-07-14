@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
+
+async def bedrock_breaker(ctx):
+    """120 damage, then discard a Stadium in play."""
+    await ctx.deal_damage()
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="468abb32-1857-5933-8013-64a5b15d51f7",
@@ -24,14 +32,14 @@ card = PokemonCardDef(
             game_text="Discard a Stadium in play.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            effect=bedrock_breaker,
         ),
         Attack(
             title="Mountain Swing",
             game_text="Discard the top 5 cards of your deck.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 2},
             damage=250,
-            effect=unimplemented,
+            effect=mill_attack(5, opponent=False),
         ),
     ],
 )

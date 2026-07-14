@@ -14,11 +14,12 @@ preds (no_retreat / ability_lock / healing_block / retreat_free) take
 
 from typing import Any, Callable, Optional
 
-from spirit.game.attributes import AttrID
+from spirit.game.attributes import AttrID, TrainerType
 from spirit.game.session.passives import (
     Passive,
     TurnDamageModifier,
     carrier_pokemon,
+    effective_max_hp,
 )
 
 
@@ -207,7 +208,7 @@ class RetreatDiscountPassive(Passive):
         self.amount = amount
         self.protects = _protects_pred(target_pred)
 
-    def modify_retreat_cost(self, cost, pokemon, carrier):
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
         if not self.protects(pokemon, carrier):
             return cost
         return max(0, cost - self.amount)
@@ -225,7 +226,7 @@ class RetreatFreeWhenPassive(Passive):
     def __init__(self, pred):
         self.pred = pred
 
-    def modify_retreat_cost(self, cost, pokemon, carrier):
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
         return 0 if self.pred(pokemon, carrier) else cost
 
 
@@ -435,6 +436,158 @@ def attack_effect_shield_passive(protects="carrier") -> Passive:
     return AttackEffectShieldPassive(protects)
 
 
+class FlipPreventDamagePassive(Passive):
+    """"If any damage is done to this Pokemon by attacks, flip a coin. If
+    heads, prevent that damage" (Infiltrator / Primate Dexterity)."""
+
+    def __init__(self, title="", protects="carrier"):
+        self.title = title
+        self.protects = _protects_pred(protects)
+
+    async def damage_interceptor(self, ctx, calc, target, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.amount > 0):
+            return None
+        if not self.protects(target, carrier):
+            return None
+        heads = await ctx.flip_coins(1, self.title,
+                                     source=carrier_pokemon(carrier) or carrier)
+        return 0 if heads and heads[0] else None
+
+
+def flip_prevent_damage_passive(title="") -> Passive:
+    """Flip-to-prevent shield: heads prevents the whole attack hit; the flip
+    choreographs inside the attack bracket (queued on the attack ctx)."""
+    return FlipPreventDamagePassive(title)
+
+
+class GutsSurvivePassive(Passive):
+    """"If this Pokemon would be Knocked Out by damage from an attack, [flip a
+    coin -- if heads,] it is not Knocked Out and its remaining HP becomes
+    `hp_floor`" (Guts; Sturdy with flip=False + require_full_hp=True)."""
+
+    def __init__(self, hp_floor=10, title="Guts", flip=True,
+                 require_full_hp=False, protects="carrier"):
+        self.hp_floor = hp_floor
+        self.title = title
+        self.flip = flip
+        self.require_full_hp = require_full_hp
+        self.protects = _protects_pred(protects)
+
+    async def damage_interceptor(self, ctx, calc, target, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.amount > 0):
+            return None
+        if not self.protects(target, carrier):
+            return None
+        current = target.get_attribute(AttrID.HP, 0)
+        if calc.amount < current:
+            return None  # would not Knock Out
+        if self.require_full_hp and current < effective_max_hp(calc.board, target):
+            return None
+        if self.flip:
+            heads = await ctx.flip_coins(1, self.title,
+                                         source=carrier_pokemon(carrier) or carrier)
+            if not (heads and heads[0]):
+                return None
+        return max(0, current - self.hp_floor)
+
+
+def guts_survive_passive(hp_floor=10, title="Guts", flip=True,
+                         require_full_hp=False) -> Passive:
+    """KO-survive interceptor: only when the hit would KO; heads (or always
+    with flip=False) rewrites the dealt amount so remaining HP = hp_floor."""
+    return GutsSurvivePassive(hp_floor, title, flip, require_full_hp)
+
+
+class TrainerEffectShieldPassive(Passive):
+    """Shields the carrier's owner from opposing trainer-card effects
+    (Dew Guard: "prevent all effects of that card done to you or your hand")."""
+
+    def __init__(self, supporters_only=True, protects=None, while_active=False,
+                 condition=None):
+        self.supporters_only = supporters_only
+        # protects(affected_entity_or_None, carrier): scopes the shield to
+        # matching direct objects (None = the whole side, legacy behavior).
+        self.protects = protects
+        self.while_active = while_active
+        self.condition = condition
+
+    def blocks_trainer_effects(self, affected_player_id, trainer_card,
+                               trainer_type, carrier, affected_entity=None,
+                               board=None):
+        if self.supporters_only and trainer_type != TrainerType.SUPPORTER.value:
+            return False
+        if affected_player_id != carrier.owning_player_id:
+            return False
+        if self.while_active \
+                and not is_in_active_spot(carrier_pokemon(carrier) or carrier):
+            return False
+        if self.condition is not None and not self.condition(board, carrier):
+            return False
+        if self.protects is not None:
+            return bool(self.protects(affected_entity, carrier))
+        return True
+
+
+def trainer_effect_shield_passive(supporters_only=True, protects=None,
+                                  while_active=False, condition=None) -> Passive:
+    """Dew Guard shape; the engine already scopes it to effects a DIFFERENT
+    player's trainer card does to the shielded side. protects/while_active/
+    condition(board, carrier) narrow the shield (Princess's Curtain, Baffling)."""
+    return TrainerEffectShieldPassive(supporters_only, protects, while_active,
+                                      condition)
+
+
+class SupporterReplacementPassive(Passive):
+    """Opposing Supporter cards resolve `replacement` instead of their own
+    effect (Shifty Substitution: "each Supporter card in your opponent's hand
+    has the effect 'Draw 3 cards.'")."""
+
+    def __init__(self, replacement, opponents_only=True, while_active=True):
+        self.replacement = replacement
+        self.opponents_only = opponents_only
+        self.while_active = while_active
+
+    def replace_supporter_effect(self, card, player_id, carrier):
+        if self.opponents_only and player_id == carrier.owning_player_id:
+            return None
+        if self.while_active:
+            holder = carrier_pokemon(carrier) or carrier
+            if not is_in_active_spot(holder):
+                return None
+        return self.replacement
+
+
+def replace_opponent_supporters(replacement, while_active=True) -> Passive:
+    """Shifty Substitution shape: `replacement` is an async def effect(ctx)
+    run as the opponent's Supporter effect (trainer ctx, shields apply)."""
+    return SupporterReplacementPassive(replacement, while_active=while_active)
+
+
+class EnergyAttachTaxPassive(Passive):
+    """Opposing manual energy attaches flip a coin; tails discards the energy
+    instead of attaching (Slimy Room; per text the turn attachment is NOT
+    used up)."""
+
+    def __init__(self, opponents_only=True, while_active=True):
+        self.opponents_only = opponents_only
+        self.while_active = while_active
+
+    def taxes_energy_attach(self, attaching_player_id, energy, target, carrier):
+        if self.opponents_only \
+                and attaching_player_id == carrier.owning_player_id:
+            return False
+        if self.while_active:
+            holder = carrier_pokemon(carrier) or carrier
+            if not is_in_active_spot(holder):
+                return False
+        return True
+
+
+def energy_attach_tax_passive(opponents_only=True, while_active=True) -> Passive:
+    """Slimy Room shape: taxes the opponent's manual attach with a coin flip."""
+    return EnergyAttachTaxPassive(opponents_only, while_active)
+
+
 # ======================================================================
 # GROUP B -- temporary-shield effect factories (expiring temp passives)
 # ======================================================================
@@ -602,7 +755,7 @@ class SelfRetreatCostRaisePassive(Passive):
     def __init__(self, extra):
         self.extra = extra
 
-    def modify_retreat_cost(self, cost, pokemon, carrier):
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
         if carrier_pokemon(carrier) is not pokemon:
             return cost
         return cost + self.extra

@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class TogeDashPassive(Passive):
+    def modify_prizes_for_knockout(self, pokemon, ctx, count, carrier):
+        return 0
+
+
+async def toge_dash(ctx):
+    """Flip a coin. If heads, if this Pokémon is Knocked Out during your
+    opponent's next turn, they can't take any Prize cards for it."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_coins(1, "Toge Dash")
+    if heads[0]:
+        ctx.add_passive_through_opponents_turn(ctx.source, TogeDashPassive())
 
 card = PokemonCardDef(
     guid="f74c1ce2-1da1-5af1-8b2f-4a18da88c2a0",
@@ -24,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, during your opponent's next turn, if this Pok\u00e9mon is Knocked Out, your opponent can't take any Prize cards for it.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=10,
-            effect=unimplemented,
+            effect=toge_dash,
         ),
     ],
 )

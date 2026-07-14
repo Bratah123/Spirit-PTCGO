@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def lost_headbutt(ctx):
+    """50. Put an Energy attached to your opponent's Active Pokemon in the Lost Zone."""
+    await ctx.deal_damage()
+    target = ctx.defender
+    if target is None or ctx.effects_blocked(target):
+        return
+    energies = ctx.attached_energies(target)
+    if not energies:
+        return
+    picks = await ctx.choose_cards(
+        energies, 1, minimum=1,
+        prompt="Choose an Energy to put in the Lost Zone",
+    )
+    if picks:
+        await ctx.move_to_lost_zone(picks)
+
 
 card = PokemonCardDef(
     guid="f86d0c9b-7034-5b93-bc19-f06cf5e58e10",
@@ -20,10 +38,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Lost Headbutt",
-            game_text="Put an Energy attached to your opponent's Active Pok\u00e9mon in the Lost Zone.",
+            game_text="Put an Energy attached to your opponent's Active Pokémon in the Lost Zone.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
-            effect=unimplemented,
+            effect=lost_headbutt,
         ),
         Attack(
             title="Superpowered Horns",

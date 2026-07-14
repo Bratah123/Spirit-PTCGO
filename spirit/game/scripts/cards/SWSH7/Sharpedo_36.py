@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def jet_bite(ctx):
+    """Printed damage, then this Pokémon can't attack during your next turn."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="c1c9c42f-4c81-5219-b7b5-16463fe7f619",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
             title="Taunt",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with their Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=gust_attack(),
         ),
         Attack(
             title="Jet Bite",
             game_text="During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=jet_bite,
         ),
     ],
 )

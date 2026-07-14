@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def eruption_shot(ctx):
+    top = ctx.deck_top(1)
+    card = top[0] if top else None
+    if card is not None and is_energy_card(card):
+        await ctx.attach_energy(card, ctx.attacker)
+        await ctx.deal_damage(130)
+        return
+    if card is not None:
+        await ctx.discard_cards([card])
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="5a593a19-bc43-5a7e-a1e7-1d243b7a7a40",
@@ -25,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=eruption_shot,
         ),
         Attack(
             title="G-Max Boulder",

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
 
 card = PokemonCardDef(
     guid="20d143fa-e3d6-597d-a0f7-6eca7d47bb65",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             game_text="This attack also does 10 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=spread_damage(10, side="opponent", also_base=True),
         ),
         Attack(
             title="Drum Beating",
             game_text="During your next turn, this Pok\u00e9mon can't use Drum Beating.",
             cost={PokemonTypes.GRASS: 3, PokemonTypes.COLORLESS: 1},
             damage=180,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, snipe_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -25,13 +26,13 @@ card = PokemonCardDef(
             cost={},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("defender"), 30),
         ),
         Attack(
             title="Direct Arrow",
             game_text="This attack does 80 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=snipe_attack(80, pool="any", count=1),
         ),
     ],
 )

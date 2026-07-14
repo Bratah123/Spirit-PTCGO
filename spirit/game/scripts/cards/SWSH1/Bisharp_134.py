@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+_is_pawniard = lambda p: p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Pawniard"
 
 card = PokemonCardDef(
     guid="e39ed81f-f4ec-5489-b7bc-4890749fa45e",
@@ -26,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_bench("mine", pred=_is_pawniard), 30, base=0),
         ),
         Attack(
             title="Slicing Blade",

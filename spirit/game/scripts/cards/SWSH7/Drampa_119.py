@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _bench_has_damage(ctx) -> bool:
+    return any(p.get_attribute(AttrID.HP, ctx.max_hp(p)) < ctx.max_hp(p)
+               for p in ctx.my_bench())
 
 card = PokemonCardDef(
     guid="77f90310-be17-567d-89c3-bda9e52036b2",
@@ -28,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 1},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_bench_has_damage, 90),
         ),
     ],
 )

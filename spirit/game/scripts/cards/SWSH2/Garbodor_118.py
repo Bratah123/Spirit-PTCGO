@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+def _stadium_in_play_condition(board, player_id, pokemon):
+    area = board.find_global_area("activeStadium")
+    return bool(area and area.children)
+
+
+async def poisonous_puddle(ctx):
+    """Once during your turn, if a Stadium is in play, you may make your
+    opponent's Active Pokemon Poisoned."""
+    if await ctx.ask_yes_no("Make your opponent's Active Pokémon Poisoned?"):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="692befb2-3abb-5fe5-9495-3fc7b3fd90ce",
@@ -21,8 +34,10 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Poisonous Puddle",
-            game_text="Once during your turn, if a Stadium is in play, you may make your opponent's Active Pok\u00e9mon Poisoned.",
-            effect=unimplemented,
+            game_text="Once during your turn, if a Stadium is in play, you may make your opponent's Active Pokémon Poisoned.",
+            activation=Activations.ONCE_PER_TURN,
+            condition=_stadium_in_play_condition,
+            effect=poisonous_puddle,
         ),
         Attack(
             title="Sludge Bomb",

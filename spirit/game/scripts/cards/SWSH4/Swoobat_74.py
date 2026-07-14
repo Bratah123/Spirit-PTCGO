@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import attack_effect_shield_passive
 
 card = PokemonCardDef(
     guid="084dbd4e-a047-5b48-af4e-1d83ac9a5721",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Unaware",
             game_text="Prevent all effects of your opponent's attacks, except damage, done to this Pok\u00e9mon.",
-            effect=unimplemented,
+            passive=attack_effect_shield_passive(),
         ),
         Attack(
             title="Heart Stamp",

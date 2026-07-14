@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+from spirit.game.session.effects import is_supporter_card
+
+missing_in_the_forest = damage_per(count_discard("opponent", is_supporter_card), 40)
 
 card = PokemonCardDef(
     guid="ff334cce-77ea-5137-baa3-3f35cb84d8c9",
@@ -25,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=missing_in_the_forest,
         ),
         Attack(
             title="Max Tree",

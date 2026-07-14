@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    snipe_attack, damage_per, count_bench, has_attack_titled,
+)
 
 card = PokemonCardDef(
     guid="68675945-433b-59e6-9867-451a3a154215",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Aqua Liner",
             game_text="This attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
         Attack(
             title="Let's All Rollout",
@@ -30,7 +33,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(
+                count_bench("mine", has_attack_titled("Let's All Rollout")), 20
+            ),
         ),
     ],
 )

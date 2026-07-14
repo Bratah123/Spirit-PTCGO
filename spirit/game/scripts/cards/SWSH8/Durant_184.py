@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def adversity_jaws(ctx):
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None:
+        types = defender.get_attribute(AttrID.POKEMON_TYPES) or []
+        if PokemonTypes.FIRE.value in types:
+            await ctx.apply_special_condition(defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="a177fbf6-57a4-5a7b-b119-2ba16d2db4b1",
@@ -24,7 +34,7 @@ card = PokemonCardDef(
             game_text="If your opponent's Active Pok\u00e9mon is a Fire Pok\u00e9mon, it is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
-            effect=unimplemented,
+            effect=adversity_jaws,
         ),
     ],
 )

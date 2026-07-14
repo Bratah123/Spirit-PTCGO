@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+def _defender_retreat_cost(ctx):
+    defender = ctx.defender
+    return defender.get_attribute(AttrID.RETREAT_COST, 0) if defender else 0
+
 
 card = PokemonCardDef(
     guid="6bf4ce6d-4783-5551-b301-543d0ecf5713",
@@ -31,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 40, base=0),
         ),
     ],
 )

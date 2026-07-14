@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+async def watch_over(ctx):
+    """Once during your turn, you may heal 20 damage from your Active Pokémon."""
+    if await ctx.ask_yes_no("Heal 20 damage from your Active Pokémon?"):
+        await ctx.heal(20)
+
 
 card = PokemonCardDef(
     guid="e736338d-3411-5b14-961e-3d4bae698613",
@@ -22,7 +30,8 @@ card = PokemonCardDef(
         Ability(
             title="Watch Over",
             game_text="Once during your turn, you may heal 20 damage from your Active Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=watch_over,
         ),
         Attack(
             title="Psychic",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 60, base=10),
         ),
     ],
 )

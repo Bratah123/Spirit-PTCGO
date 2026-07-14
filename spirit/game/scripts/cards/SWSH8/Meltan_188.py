@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="4e74f14d-a3bc-5fe8-b4e0-35be79684057",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Iron Intake",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1},
-            effect=unimplemented,
+            effect=heal_attack(30, target="self"),
         ),
         Attack(
             title="Headbutt",

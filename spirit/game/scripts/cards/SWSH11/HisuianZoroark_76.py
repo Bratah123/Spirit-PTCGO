@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.card_effects.pokemon import delayed_knockout
 
 card = PokemonCardDef(
     guid="f9ad5b93-efa4-5246-9242-6ed44c647c07",
@@ -24,13 +26,13 @@ card = PokemonCardDef(
             title="Doom Curse",
             game_text="At the end of your opponent's next turn, the Defending Pok\u00e9mon will be Knocked Out.",
             cost={},
-            effect=unimplemented,
+            effect=delayed_knockout,
         ),
         Attack(
             title="Call Back",
             game_text="Put a card from your discard pile into your hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=recover_from_discard(),
         ),
     ],
 )

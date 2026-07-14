@@ -1,5 +1,24 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef, subtypes_for
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import requires_in_play
+
+
+def _is_rapid_strike(pokemon):
+    return "Rapid Strike" in subtypes_for(pokemon.archetype_id)
+
+
+async def siebold(ctx):
+    """Choose up to 2 of your Rapid Strike Pokémon and heal 60 damage from each."""
+    candidates = [p for p in ctx.my_pokemon_in_play() if _is_rapid_strike(p)]
+    if not candidates:
+        return
+    picks = await ctx.choose_cards(
+        candidates, 2, minimum=0,
+        prompt="Choose up to 2 Rapid Strike Pokémon to heal 60 damage from.",
+    )
+    for pokemon in picks:
+        await ctx.heal(60, pokemon)
+
 
 card = SupporterCardDef(
     guid="2837b729-fd53-5dad-a642-d2990a16c419",
@@ -11,5 +30,6 @@ card = SupporterCardDef(
     collector_number=221,
     set_code="SWSH6",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    condition=requires_in_play(_is_rapid_strike),
+    effect=siebold
 )

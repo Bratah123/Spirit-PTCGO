@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def resolute_spite(ctx):
+    """Put up to 7 damage counters on this Pokemon; 20 damage per counter placed."""
+    n = await ctx.choose(
+        "Put up to 7 damage counters on this Pokémon.",
+        [str(i) for i in range(8)],
+    )
+    if n > 0:
+        await ctx.deal_damage(n * 10, target=ctx.attacker, as_counters=True)
+        await ctx.deal_damage(20 * n)
+
 
 card = PokemonCardDef(
     guid="d2706007-e561-56fb-86e2-0ddc9c9b81dc",
@@ -22,18 +35,18 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Resolute Spite",
-            game_text="Put up to 7 damage counters on this Pok\u00e9mon. This attack does 20 damage for each damage counter you placed in this way.",
+            game_text="Put up to 7 damage counters on this Pokémon. This attack does 20 damage for each damage counter you placed in this way.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=resolute_spite,
         ),
         Attack(
             title="Eerie Light",
-            game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
+            game_text="Your opponent's Active Pokémon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

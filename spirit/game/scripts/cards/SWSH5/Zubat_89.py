@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import switch_self_attack
 
 card = PokemonCardDef(
     guid="c2a70948-e5af-5440-b9f9-1e58211fe2e2",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Hide in Shadows",
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
         Attack(
             title="Speed Dive",

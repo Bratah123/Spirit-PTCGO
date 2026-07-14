@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_tool, recoil_attack
+
+
+def _has_own_tool(ctx):
+    return has_tool(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="da80fa47-56a8-5986-bc3a-8c23af8a9347",
@@ -26,14 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_own_tool, 90),
         ),
         Attack(
             title="Megaton Fall",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=190,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

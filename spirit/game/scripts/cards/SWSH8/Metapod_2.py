@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 card = PokemonCardDef(
     guid="357fe989-3ff5-5fd7-a158-c5f7baa175a4",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
         Ability(
             title="Exoskeleton",
             game_text="This Pok\u00e9mon takes 20 less damage from attacks (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=takes_less_passive(20),
         ),
         Attack(
             title="Ram",

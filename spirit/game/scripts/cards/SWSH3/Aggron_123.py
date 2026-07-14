@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import guts_survive_passive
 
 card = PokemonCardDef(
     guid="799fd8ab-7654-5787-8b67-a736acd255db",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Sturdy",
             game_text="If this Pok\u00e9mon has full HP and would be Knocked Out by damage from an attack, it is not Knocked Out, and its remaining HP becomes 10.",
-            effect=unimplemented,
+            passive=guts_survive_passive(hp_floor=10, flip=False, require_full_hp=True),
         ),
         Attack(
             title="Gigaton Stomp",

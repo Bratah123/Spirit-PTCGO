@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard, count_energy
+
+
+def _is_serena_card(card):
+    definition = def_for(card.archetype_id)
+    return bool(definition and (definition.display_name or "") == "Serena")
+
 
 card = PokemonCardDef(
     guid="8ba6ad51-dee9-5ae8-9411-399283a51c82",
@@ -25,15 +32,15 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_discard("mine", _is_serena_card), 60),
         ),
         Attack(
             title="Energy Crush",
-            game_text="This attack does 50 damage for each Energy attached to all of your opponent's Pok\u00e9mon.",
+            game_text="This attack does 50 damage for each Energy attached to all of your opponent's Pokémon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy("opponent"), 50),
         ),
     ],
 )

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def celestial_roar(ctx):
+    """Discard the top 3 cards of your deck; attach any Energy among them."""
+    top = ctx.deck_top(3)
+    await ctx.discard_cards(top)
+    for card in top:
+        if is_energy_card(card):
+            await ctx.attach_energy(card, ctx.source)
+
 
 card = PokemonCardDef(
     guid="d4bfb8e5-7f25-52ce-ac5b-eca9f4fc14c1",
@@ -21,14 +33,14 @@ card = PokemonCardDef(
             title="Celestial Roar",
             game_text="Discard the top 3 cards of your deck. If any of those cards are Energy cards, attach them to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=celestial_roar,
         ),
         Attack(
             title="Dragon Laser",
             game_text="This attack also does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.FIRE: 1},
             damage=130,
-            effect=unimplemented,
+            effect=snipe_attack(30, also_base=True),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="cbe9f01d-ff26-5cda-ba9b-75b5e8d73ea5",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Moonlight",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Psychic Sphere",

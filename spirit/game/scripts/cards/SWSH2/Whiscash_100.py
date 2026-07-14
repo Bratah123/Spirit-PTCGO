@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+from spirit.game.session.passives import Passive
+
+
+class SubmergePassive(Passive):
+    def prevents_damage(self, calc, carrier):
+        return calc.is_attack and calc.target is carrier and not calc.to_active
+
 
 card = PokemonCardDef(
     guid="3952862f-a9b0-5bfc-bb13-a23b124a8273",
@@ -21,15 +29,15 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Submerge",
-            game_text="As long as this Pok\u00e9mon is on your Bench, prevent all damage done to this Pok\u00e9mon by attacks (both yours and your opponent's).",
-            effect=unimplemented,
+            game_text="As long as this Pokémon is on your Bench, prevent all damage done to this Pokémon by attacks (both yours and your opponent's).",
+            passive=SubmergePassive(),
         ),
         Attack(
             title="Earthquake",
-            game_text="This attack also does 20 damage to each of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack also does 20 damage to each of your Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.FIGHTING: 2},
             damage=140,
-            effect=unimplemented,
+            effect=spread_damage(20, side="mine", also_base=True),
         ),
     ],
 )

@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+async def vital_powder(ctx):
+    """Heal all damage from 2 of your Benched Pokémon."""
+    bench = ctx.my_bench()
+    if not bench:
+        return
+    picks = await ctx.choose_cards(
+        bench, 2, prompt="Choose 2 Benched Pokémon to heal"
+    )
+    for pokemon in picks:
+        heal_amount = ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)
+        if heal_amount > 0:
+            await ctx.heal(heal_amount, pokemon)
 
 card = PokemonCardDef(
     guid="059e1647-e553-54bc-9375-392956f1a637",
@@ -23,7 +37,7 @@ card = PokemonCardDef(
             title="Vital Powder",
             game_text="Heal all damage from 2 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=vital_powder,
         ),
         Attack(
             title="Gust",

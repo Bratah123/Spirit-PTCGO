@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+async def rock_hurl(ctx):
+    """50; this attack's damage isn't affected by Resistance."""
+    await ctx.deal_damage(ignore_resistance=True)
+
+
+def _more_hand_cards(ctx) -> bool:
+    return ctx.hand_size() > ctx.hand_size(ctx.opponent_id)
 
 card = PokemonCardDef(
     guid="9665df54-ad69-5f4b-b27e-02e1c8ff3111",
@@ -24,7 +34,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=rock_hurl,
         ),
         Attack(
             title="Hand Press",
@@ -32,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_more_hand_cards, 80),
         ),
     ],
 )

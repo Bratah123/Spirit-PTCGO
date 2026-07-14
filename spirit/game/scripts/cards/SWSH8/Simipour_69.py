@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_supporter_card
+
+
+async def circus_soaking(ctx):
+    """Opponent reveals their hand; 60 damage for each Supporter card there."""
+    hand = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    count = sum(1 for c in hand if is_supporter_card(c))
+    if count:
+        await ctx.deal_damage(60 * count)
 
 card = PokemonCardDef(
     guid="1ee72771-e075-5f79-9191-3bf8a805c6b4",
@@ -24,7 +34,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Circus Soaking",
@@ -32,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=circus_soaking,
         ),
     ],
 )

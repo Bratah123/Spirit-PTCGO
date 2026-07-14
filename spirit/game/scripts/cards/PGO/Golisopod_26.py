@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _entered_active_this_turn(ctx):
+    return ctx.entered_active_this_turn(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="c5904577-7950-5bbb-b720-30dc82474c01",
@@ -25,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_entered_active_this_turn, 90),
         ),
         Attack(
             title="Slash",

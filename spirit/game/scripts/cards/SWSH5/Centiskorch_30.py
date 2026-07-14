@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class OverheaterPassive(Passive):
+    def blocks_burn_recovery(self, pokemon, carrier):
+        return pokemon.owning_player_id != carrier.owning_player_id
+
 
 card = PokemonCardDef(
     guid="f61cb59b-d8ab-5de7-924e-ea9da902a205",
@@ -21,15 +29,15 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Overheater",
-            game_text="Whenever your opponent flips a coin for their Burned Pok\u00e9mon during Pok\u00e9mon Checkup, it doesn't recover from that Special Condition even if the result is heads.",
-            effect=unimplemented,
+            game_text="Whenever your opponent flips a coin for their Burned Pokémon during Pokémon Checkup, it doesn't recover from that Special Condition even if the result is heads.",
+            passive=OverheaterPassive(),
         ),
         Attack(
             title="Bursting Inferno",
-            game_text="Your opponent's Active Pok\u00e9mon is now Burned.",
+            game_text="Your opponent's Active Pokémon is now Burned.",
             cost={PokemonTypes.FIRE: 3, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED),
         ),
     ],
 )

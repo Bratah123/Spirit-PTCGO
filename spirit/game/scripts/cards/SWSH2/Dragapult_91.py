@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
+
+
+async def phantom_force(ctx):
+    """120 damage; put 3 damage counters on the opponent's Benched Pokemon
+    in any way you like."""
+    await ctx.deal_damage()
+    await ctx.place_damage_counters(3, candidates=ctx.opponent_bench())
+
 
 card = PokemonCardDef(
     guid="b48923cd-2056-598f-b21b-5b0136d13792",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
         Ability(
             title="Infiltrator",
             game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
-            effect=unimplemented,
+            passive=flip_prevent_damage_passive("Infiltrator"),
         ),
         Attack(
             title="Phantom Force",
             game_text="Put 3 damage counters on your opponent's Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 2},
             damage=120,
-            effect=unimplemented,
+            effect=phantom_force,
         ),
     ],
 )

@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    bonus_if, damage_all_opponents, has_damage,
+)
 
 card = PokemonCardDef(
     guid="3608cb47-17b9-56f8-a268-f6a58a8692a5",
@@ -20,17 +23,17 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Swirling Disaster",
-            game_text="This attack does 10 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack does 10 damage to each of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(10),
         ),
         Attack(
             title="Claw Rend",
-            game_text="If your opponent's Active Pok\u00e9mon already has any damage counters on it, this attack does 70 more damage.",
+            game_text="If your opponent's Active Pokémon already has any damage counters on it, this attack does 70 more damage.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage("defender"), 70),
         ),
     ],
 )

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import count_prizes_remaining
+
+
+async def dede_flash(ctx):
+    """20, +60 more and opponent's Active becomes Confused if they have exactly 1 Prize left."""
+    bonus = count_prizes_remaining("opponent")(ctx) == 1
+    await ctx.deal_damage(20 + (60 if bonus else 0))
+    if bonus:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
 
 card = PokemonCardDef(
     guid="6ad2b60b-76b3-5ed8-9724-5c7252140823",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=dede_flash,
         ),
     ],
 )

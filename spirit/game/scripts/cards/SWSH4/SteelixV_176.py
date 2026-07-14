@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, recoil_attack
 
 card = PokemonCardDef(
     guid="747509a6-bb64-564b-8ca4-8cc89a2de072",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("self"), 10, base=30),
         ),
         Attack(
             title="Iron Tackle",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 4},
             damage=210,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

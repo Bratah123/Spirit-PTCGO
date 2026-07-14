@@ -1,5 +1,31 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _precious_touch(ctx):
+    bench = ctx.my_bench()
+    hand_energy = [c for c in ctx.hand() if is_energy_card(c)]
+    if not bench or not hand_energy:
+        return
+    picks = await ctx.choose_cards(hand_energy, 1, prompt="Choose an Energy card to attach.")
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose 1 of your Benched Pokémon.")
+    if target is None:
+        return
+    if await ctx.attach_energy(picks[0], target):
+        await ctx.heal(120, target=target)
+
+
+def _distinct_bench_types(ctx) -> int:
+    types = set()
+    for pokemon in ctx.my_bench():
+        for t in pokemon.get_attribute(AttrID.POKEMON_TYPES) or []:
+            types.add(t)
+    return len(types)
+
 
 card = PokemonCardDef(
     guid="729566be-e569-555f-9262-48736d25a7f5",
@@ -23,7 +49,7 @@ card = PokemonCardDef(
             title="Precious Touch",
             game_text="Attach an Energy card from your hand to 1 of your Benched Pok\u00e9mon. If you do, heal 120 damage from that Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_precious_touch,
         ),
         Attack(
             title="Max Harmony",
@@ -31,7 +57,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_distinct_bench_types, 30, base=70),
         ),
     ],
 )

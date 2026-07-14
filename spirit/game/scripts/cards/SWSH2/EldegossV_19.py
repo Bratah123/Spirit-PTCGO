@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+from spirit.game.session.effects import is_supporter_card
+
+
+async def happy_match(ctx):
+    """On play from hand onto Bench: you may put a Supporter card from your
+    discard pile into your hand."""
+    supporters = [c for c in ctx.discard_pile() if is_supporter_card(c)]
+    if not supporters:
+        return
+    if not await ctx.ask_yes_no(
+        "Put a Supporter card from your discard pile into your hand?"
+    ):
+        return
+    picks = await ctx.choose_cards(
+        supporters, 1, prompt="Choose a Supporter card to put into your hand."
+    )
+    await ctx.put_in_hand(picks, reveal=False)
 
 card = PokemonCardDef(
     guid="c4c876f7-b56f-50f8-ba32-cb7d9a72e330",
@@ -21,14 +39,15 @@ card = PokemonCardDef(
         Ability(
             title="Happy Match",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench during your turn, you may put a Supporter card from your discard pile into your hand.",
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=happy_match,
         ),
         Attack(
             title="Float Up",
             game_text="You may shuffle this Pok\u00e9mon and all attached cards into your deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
-            effect=unimplemented,
+            effect=remove_self_from_play("deck", optional=True),
         ),
     ],
 )

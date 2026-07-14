@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
 
 card = PokemonCardDef(
     guid="464d5255-c6c9-5647-8f79-434ec12eeb82",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Furtive Drop",
             game_text="Put 2 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=place_counters(2, "opponent_active"),
         ),
     ],
 )

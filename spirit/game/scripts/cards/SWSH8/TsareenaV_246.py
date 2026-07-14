@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import full_stack
+
+
+async def queens_orders(ctx):
+    """You may discard any number of your Benched Pokemon; this attack does
+    40 more damage for each Benched Pokemon discarded this way."""
+    bench = ctx.my_bench()
+    picks = []
+    if bench:
+        picks = await ctx.choose_cards(
+            bench, len(bench), minimum=0,
+            prompt="Choose any number of your Benched Pokémon to discard.",
+        )
+    for pokemon in picks:
+        await ctx.discard_cards(full_stack(pokemon))
+    await ctx.deal_damage(20 + 40 * len(picks))
+
 
 card = PokemonCardDef(
     guid="d0da8f96-8aab-548e-9d9d-0bcbb84a9089",
@@ -24,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=queens_orders,
         ),
     ],
 )

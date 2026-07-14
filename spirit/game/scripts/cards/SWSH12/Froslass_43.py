@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+def _played_candice(ctx):
+    return ctx.played_trainer_this_turn("Candice") > 0
+
+
+async def frosty_jail(ctx):
+    """20+. If Candice was played from hand this turn, +90 damage and the
+    opponent's Active Pokemon is now Paralyzed."""
+    boosted = _played_candice(ctx)
+    await ctx.deal_damage(110 if boosted else 20)
+    if boosted:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="02297fec-5e45-54b1-a3d6-7b0fcd4eaf19",
@@ -21,11 +35,11 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Frosty Jail",
-            game_text="If you played Candice from your hand during this turn, this attack does 90 more damage, and your opponent's Active Pok\u00e9mon is now Paralyzed.",
+            game_text="If you played Candice from your hand during this turn, this attack does 90 more damage, and your opponent's Active Pokémon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=frosty_jail,
         ),
         Attack(
             title="Frost Breath",

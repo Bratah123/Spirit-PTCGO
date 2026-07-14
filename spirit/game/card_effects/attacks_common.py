@@ -676,6 +676,21 @@ def discard_for_bonus(source: str = "hand", predicate=None, max_count: int = 1,
     return effect
 
 
+def smokescreen_attack(damage: Optional[int] = None, also=None):
+    """Printed (or damage) damage; "during your opponent's next turn, if the
+    Defending Pokemon tries to attack, your opponent flips a coin. If tails,
+    that attack doesn't happen" (Smokescreen / Sand Attack / Blinding Beam).
+    The rider no-ops versus an attack-effect-shielded target."""
+    async def effect(ctx):
+        await ctx.deal_damage(damage)
+        defender = ctx.defender
+        if defender is not None and not ctx.effects_blocked(defender):
+            ctx.require_attack_flip(defender)
+        if also is not None:
+            await also(ctx)
+    return effect
+
+
 async def discard_random_from_hand(ctx, player_id: Optional[str] = None,
                                    count: int = 1) -> list:
     """Discards `count` random cards from a player's hand (reveals via the

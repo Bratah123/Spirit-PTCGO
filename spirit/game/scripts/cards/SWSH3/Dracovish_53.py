@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
+
+class PrimalLawPassive(Passive):
+    def blocks_evolution(self, player_id, target, carrier):
+        return player_id != carrier.owning_player_id and is_in_active_spot(carrier)
+
 
 card = PokemonCardDef(
     guid="ca58be7f-9ced-5aad-93ec-fcce58b975b8",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
         Ability(
             title="Primal Law",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, your opponent can't play any Pok\u00e9mon from their hand to evolve their Pok\u00e9mon.",
-            effect=unimplemented,
+            passive=PrimalLawPassive(),
         ),
         Attack(
             title="Hammer In",

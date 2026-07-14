@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.passives_common import typed_damage_boost_tool
 
 card = PokemonCardDef(
     guid="5d16a1d8-6f74-55d8-af7f-9e99aa4f9ae5",
@@ -21,14 +23,14 @@ card = PokemonCardDef(
         Ability(
             title="Sap Sipper",
             game_text="This Pok\u00e9mon's attacks do 60 more damage to your opponent's Grass Pok\u00e9mon (before applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=typed_damage_boost_tool(PokemonTypes.GRASS, 60, to_active_only=False),
         ),
         Attack(
             title="Head Charge",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

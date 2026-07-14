@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
 
 card = PokemonCardDef(
     guid="e420a598-5f83-5f20-aa67-26c21d58187a",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Send Back",
             game_text="Your opponent switches their Active Pok\u00e9mon with 1 of their Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=opponent_switches,
         ),
         Attack(
             title="Wing Attack",

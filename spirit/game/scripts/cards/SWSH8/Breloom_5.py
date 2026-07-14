@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -26,10 +26,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Impact Blow",
-            game_text="During your next turn, this Pok\u00e9mon can't use Impact Blow.",
+            game_text="During your next turn, this Pokémon can't use Impact Blow.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=150,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

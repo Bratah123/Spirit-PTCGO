@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.passives_common import condition_immunity_passive
+from spirit.game.session.effects import is_special_energy
+
+
+def _opponent_active_has_special_energy(ctx):
+    active = ctx.opponent_active()
+    if active is None:
+        return False
+    return any(is_special_energy(c) for c in ctx.attached_energies(active))
+
 
 card = PokemonCardDef(
     guid="d2565f12-5cb7-5627-832f-8b4b49d4a757",
@@ -22,16 +33,16 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Insomnia",
-            game_text="This Pok\u00e9mon can't be Asleep.",
-            effect=unimplemented,
+            game_text="This Pokémon can't be Asleep.",
+            passive=condition_immunity_passive(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Voltage Dive",
-            game_text="If your opponent's Active Pok\u00e9mon has any Special Energy attached, this attack does 80 more damage.",
+            game_text="If your opponent's Active Pokémon has any Special Energy attached, this attack does 80 more damage.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_opponent_active_has_special_energy, 80),
         ),
     ],
 )

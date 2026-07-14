@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import count_energy, damage_per
+from spirit.game.card_effects.support_common import gust_then
+
+
+async def _sleep_new_active(ctx, new_active):
+    await ctx.apply_special_condition(new_active, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="0fc279dc-d3ea-5d46-8f53-9a8dc4b809f6",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             title="Sleep Inducer",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with their Active Pok\u00e9mon. The new Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=gust_then(_sleep_new_active),
         ),
         Attack(
             title="Psychic",
@@ -32,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 30, base=30),
         ),
     ],
 )

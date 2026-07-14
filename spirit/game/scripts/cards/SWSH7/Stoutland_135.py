@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import is_in_active_spot, opposing_active
+from spirit.game.session.passives import Passive
+
+
+class IntimidatingFangPassive(Passive):
+    def modify_damage_dealt(self, calc, carrier):
+        if not is_in_active_spot(carrier):
+            return
+        attacker = calc.attacker
+        if attacker is None or not opposing_active(attacker, carrier):
+            return
+        calc.amount = max(0, calc.amount - 30)
 
 card = PokemonCardDef(
     guid="cb599bc2-319e-5fab-98f4-f7456439d764",
@@ -22,7 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="Intimidating Fang",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, your opponent's Active Pok\u00e9mon's attacks do 30 less damage (before applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=IntimidatingFangPassive(),
         ),
         Attack(
             title="Knock Away",
@@ -30,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(100),
         ),
     ],
 )

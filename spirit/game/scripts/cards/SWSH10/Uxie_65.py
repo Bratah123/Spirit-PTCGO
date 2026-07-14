@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = PokemonCardDef(
     guid="23f46731-1a90-5169-85cd-698638080abc",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Wise Guidance",
             game_text="Search your deck for a card and put it into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(count=1, minimum=0, reveal=False),
         ),
         Attack(
             title="Psyshot",

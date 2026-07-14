@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+async def field_crush(ctx):
+    """20 damage; if the opponent has a Stadium in play, discard it."""
+    await ctx.deal_damage()
+    stadium = ctx.stadium_in_play()
+    if stadium is not None and stadium.owning_player_id == ctx.opponent_id:
+        await ctx.discard_stadium()
+
+
+def _damaged_bench_count(ctx):
+    return sum(
+        1 for p in ctx.my_bench() if p.get_attribute(AttrID.HP, 0) < ctx.max_hp(p)
+    )
+
 
 card = PokemonCardDef(
     guid="988bcc33-8ed5-53b4-b0c4-678e5a4a2490",
@@ -24,7 +40,7 @@ card = PokemonCardDef(
             game_text="If your opponent has a Stadium in play, discard it.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=field_crush,
         ),
         Attack(
             title="Steamin' Mad Strike",
@@ -32,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_damaged_bench_count, 50),
         ),
     ],
 )

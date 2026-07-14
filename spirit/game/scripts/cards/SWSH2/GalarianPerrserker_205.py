@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import team_damage_boost_passive
+
+
+def _is_metal_pokemon(pokemon) -> bool:
+    types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.METAL.value in types
+
 
 card = PokemonCardDef(
     guid="fd0ba61c-aa8a-55e0-b86f-dfb81bbe22d4",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
         Ability(
             title="Steely Spirit",
             game_text="Your Metal Pok\u00e9mon's attacks do 20 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=team_damage_boost_passive(20, attacker_pred=_is_metal_pokemon),
         ),
         Attack(
             title="Metal Claw",

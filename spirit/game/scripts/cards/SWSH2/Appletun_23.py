@@ -1,5 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import requires_in_play
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def delicious_aroma(ctx):
+    """You may flip a coin; on heads switch an opposing Benched Basic in."""
+    if not await ctx.ask_yes_no(
+            "Flip a coin to switch 1 of your opponent's Benched Basic "
+            "Pokémon with their Active Pokémon?"):
+        return
+    heads = (await ctx.flip_coins(1, "Delicious Aroma"))[0]
+    if not heads:
+        return
+    candidates = [p for p in ctx.opponent_bench() if is_basic_pokemon(p)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose the opponent's new Active Pokémon")
+    if target is not None:
+        await ctx.switch_active(ctx.opponent_id, target)
+
 
 card = PokemonCardDef(
     guid="88ba1dc3-c4d2-58dc-b67d-a78d0c0eb106",
@@ -22,7 +43,9 @@ card = PokemonCardDef(
         Ability(
             title="Delicious Aroma",
             game_text="Once during your turn, you may flip a coin. If heads, switch 1 of your opponent's Benched Basic Pok\u00e9mon with their Active Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_in_play(is_basic_pokemon, side="opponent"),
+            effect=delicious_aroma,
         ),
         Attack(
             title="Solar Beam",

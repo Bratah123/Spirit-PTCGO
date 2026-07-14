@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import hop
 
 card = SupporterCardDef(
     guid="ab263a03-c4aa-50dc-833e-a8e2e65ed86c",
@@ -11,5 +12,5 @@ card = SupporterCardDef(
     collector_number=130,
     set_code="SWSH9",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=hop
 )

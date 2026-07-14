@@ -1,5 +1,30 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.support_common import attach_from_discard, requires_bench_space
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def reviving_flame(ctx):
+    """Once per turn from discard: you may Bench this Pokémon, then attach up
+    to 4 basic Energy from discard to it. Using this Ability ends your turn."""
+    if not await ctx.ask_yes_no("Put this Pokémon onto your Bench?"):
+        return
+    if not await ctx.bench_pokemon(ctx.source):
+        return
+    ctx.ends_turn = True
+    await attach_from_discard(predicate=is_basic_energy_card, count=4,
+                               target="self", minimum=0)(ctx)
+
+
+def _basic_energy_types_count(ctx):
+    types = set()
+    for e in ctx.attached_energies(ctx.attacker):
+        if is_basic_energy_card(e):
+            for t in (e.get_attribute(AttrID.POKEMON_TYPES) or []):
+                types.add(t)
+    return len(types)
+
 
 card = PokemonCardDef(
     guid="c3949c42-5090-52af-9991-9916a3013f65",
@@ -22,7 +47,10 @@ card = PokemonCardDef(
         Ability(
             title="Reviving Flame",
             game_text="Once during your turn, if this Pok\u00e9mon is in your discard pile, you may put it onto your Bench. If you do, attach up to 4 basic Energy cards from your discard pile to this Pok\u00e9mon. If you use this Ability, your turn ends.",
-            effect=unimplemented,
+            usable_from="discard",
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_bench_space(1),
+            effect=reviving_flame,
         ),
         Attack(
             title="Rainbow Burn",
@@ -30,7 +58,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_basic_energy_types_count, 30, base=100),
         ),
     ],
 )

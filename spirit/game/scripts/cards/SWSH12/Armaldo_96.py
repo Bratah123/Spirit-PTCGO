@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def reaping_claw(ctx):
+    defender = ctx.defender
+    if defender is not None and defender.get_attribute(AttrID.HP, 0) <= 100:
+        await ctx.knock_out(defender)
+
 
 card = PokemonCardDef(
     guid="fce33d95-a617-5a10-b332-2f32a0d09033",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Reaping Claw",
             game_text="If your opponent's Active Pok\u00e9mon has 100 HP or less remaining, it is Knocked Out.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=reaping_claw,
         ),
         Attack(
             title="Boulder Crush",

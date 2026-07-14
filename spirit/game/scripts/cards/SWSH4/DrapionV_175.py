@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def hazardous_claws(ctx):
+    await ctx.discard_energy_from(ctx.attacker, 2)
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="6280135f-4c64-50c3-928b-298210e5fc62",
@@ -28,7 +36,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Energy from this Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Paralyzed and Poisoned.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 3},
             damage=130,
-            effect=unimplemented,
+            effect=hazardous_claws,
         ),
     ],
 )

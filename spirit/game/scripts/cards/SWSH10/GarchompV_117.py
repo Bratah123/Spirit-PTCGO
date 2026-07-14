@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def sonic_strike(ctx):
+    await ctx.discard_energy_from(ctx.attacker, 3, prompt="Choose 3 Energy to discard")
+    await snipe_attack(220, pool="any", count=1)(ctx)
+
 
 card = PokemonCardDef(
     guid="68de790c-724a-530f-acff-7bc437f639e5",
@@ -26,7 +33,7 @@ card = PokemonCardDef(
             title="Sonic Strike",
             game_text="Discard 3 Energy from this Pok\u00e9mon. This attack does 220 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=sonic_strike,
         ),
     ],
 )

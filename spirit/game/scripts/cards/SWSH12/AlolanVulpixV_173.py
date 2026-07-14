@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, defender_is_v
 
 card = PokemonCardDef(
     guid="4ac16aea-9296-5604-b682-7e30d81feab6",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             cost={},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_is_v, 50),
         ),
         Attack(
             title="Frost Smash",

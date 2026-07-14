@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import double_dip_fangs, wild_tackle
 
 card = PokemonCardDef(
     guid="3bcd0555-e43f-55c0-b490-d2660a763208",
@@ -23,14 +24,14 @@ card = PokemonCardDef(
             game_text="If your opponent's Basic Pok\u00e9mon is Knocked Out by damage from this attack, take 1 more Prize card.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
-            effect=unimplemented,
+            effect=double_dip_fangs,
         ),
         Attack(
             title="Wild Tackle",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=200,
-            effect=unimplemented,
+            effect=wild_tackle,
         ),
     ],
 )

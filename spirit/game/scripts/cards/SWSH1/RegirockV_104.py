@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, recoil_attack
 
 card = PokemonCardDef(
     guid="9f385d35-3e03-5e6f-a1e2-eb3802ff0fb6",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("self"), 10, base=30),
         ),
         Attack(
             title="Rocky Tackle",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=190,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

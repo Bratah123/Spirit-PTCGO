@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def mining_rush(ctx):
+    """Discard up to 6 cards from the top of your deck; if you do, 30 damage
+    for each card discarded this way."""
+    top = ctx.deck_top(6)
+    if not top:
+        return
+    picks = await ctx.choose_cards(
+        top, len(top), minimum=0, display_cards=top,
+        prompt="Choose up to 6 cards to discard from the top of your deck",
+    )
+    if not picks:
+        return
+    await ctx.discard_cards(picks)
+    await ctx.deal_damage(30 * len(picks))
+
 
 card = PokemonCardDef(
     guid="901c7740-3b1a-5b7e-a902-2aedf07ff052",
@@ -25,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=mining_rush,
         ),
         Attack(
             title="Headbutt Bounce",

@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def _grudge_dive(ctx):
+    if ctx.kos_suffered_last_turn() > 0:
+        await ctx.deal_damage(120)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+    else:
+        await ctx.deal_damage(30)
 
 card = PokemonCardDef(
     guid="867c3aa1-5afc-5774-9c6a-4be592e4bdc5",
@@ -25,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_grudge_dive,
         ),
         Attack(
             title="Jet Headbutt",

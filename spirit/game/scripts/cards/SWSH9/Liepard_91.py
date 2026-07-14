@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import discard_then_draw, requires_hand
 
 card = PokemonCardDef(
     guid="76380e53-8d0e-5a8f-ada6-235d439db622",
@@ -22,7 +23,9 @@ card = PokemonCardDef(
         Ability(
             title="Trade",
             game_text="You must discard a card from your hand in order to use this Ability. Once during your turn, you may draw 2 cards.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_hand(n=1),
+            effect=discard_then_draw(1, 2, optional=False),
         ),
         Attack(
             title="Slash",

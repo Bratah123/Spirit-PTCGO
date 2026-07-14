@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import has_tool
+
+
+async def windup_beam(ctx):
+    """60, +60 more and Confuse the opponent's Active if this Pokémon has a
+    Pokémon Tool attached."""
+    tooled = has_tool(ctx.attacker)
+    await ctx.deal_damage(120 if tooled else 60)
+    if tooled:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="63b38191-bde0-58ca-b717-3caf3c19053f",
@@ -30,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=windup_beam,
         ),
     ],
 )

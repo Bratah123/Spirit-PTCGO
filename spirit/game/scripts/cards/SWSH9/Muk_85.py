@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import (
+    AttrID, CLIENT_SPECIAL_CONDITION_NAMES, PokemonTypes, PokemonStage,
+    Rarities, SpecialConditions,
+)
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class SludgeStreetPassive(Passive):
+    """The Retreat Cost of your opponent's Poisoned Pokémon is Colorless more."""
+
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        if pokemon.owning_player_id == carrier.owning_player_id:
+            return cost
+        name = CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.POISONED]
+        if name in (pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or []):
+            return cost + 1
+        return cost
+
 
 card = PokemonCardDef(
     guid="f3ea16e1-582d-5344-a636-9bce3bc419f3",
@@ -22,14 +40,14 @@ card = PokemonCardDef(
         Ability(
             title="Sludge Street",
             game_text="The Retreat Cost of your opponent's Poisoned Pok\u00e9mon is Colorless more.",
-            effect=unimplemented,
+            passive=SludgeStreetPassive(),
         ),
         Attack(
             title="Shrieking Poison",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused and Poisoned.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, SpecialConditions.POISONED),
         ),
     ],
 )

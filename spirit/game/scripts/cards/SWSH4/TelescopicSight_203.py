@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.trainers import is_v_or_gx
+
+
+class TelescopicSightPassive(Passive):
+    """The holder's attacks do +30 to the opponent's Benched Pokemon V/GX."""
+
+    def modify_damage_dealt(self, calc, carrier):
+        if not (calc.is_attack and calc.is_opposing):
+            return
+        if carrier_pokemon(carrier) is not calc.attacker:
+            return
+        if calc.to_active:
+            return
+        if is_v_or_gx(calc.target.archetype_id):
+            calc.amount += 30
+
 
 card = PokemonToolCardDef(
     guid="4ce1fc5e-e61e-576b-afe4-096179ffcad6",
@@ -11,5 +28,5 @@ card = PokemonToolCardDef(
     collector_number=203,
     set_code="SWSH4",
     rarity=Rarities.RareSecret,
-    effect=unimplemented
+    passive=TelescopicSightPassive(),
 )

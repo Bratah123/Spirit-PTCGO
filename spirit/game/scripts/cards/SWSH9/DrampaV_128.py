@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="62488140-1f03-5ffc-bc97-9992d0a4570c",
@@ -23,14 +25,14 @@ card = PokemonCardDef(
             game_text="Draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=draw_attack(2),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top 2 cards of your deck.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=160,
-            effect=unimplemented,
+            effect=mill_attack(2, opponent=False),
         ),
     ],
 )

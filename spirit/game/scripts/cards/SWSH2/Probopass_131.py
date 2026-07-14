@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def gravitational_drop(ctx):
+    """10, +30 for each Colorless in the opponent's Active's Retreat Cost."""
+    active = ctx.opponent_active()
+    retreat = int(active.get_attribute(AttrID.RETREAT_COST) or 0) if active else 0
+    await ctx.deal_damage(10 + 30 * retreat)
+
 
 card = PokemonCardDef(
     guid="c77ee73f-9c0d-55c6-b019-b898698df88f",
@@ -26,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=gravitational_drop,
         ),
         Attack(
             title="Heavy Impact",

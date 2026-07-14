@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_lightning_energy
+from spirit.game.card_effects.support_common import search_attach_energy
 
 card = PokemonCardDef(
     guid="c23ec7ff-8792-5d26-9e9b-ca6331ecd9d9",
@@ -23,7 +25,10 @@ card = PokemonCardDef(
             title="Charge",
             game_text="Search your deck for up to 2 Lightning Energy cards and attach them to this Pok\u00e9mon. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(
+                predicate=is_lightning_energy, count=2, to_self=True,
+                prompt="Choose up to 2 Lightning Energy cards to attach.",
+            ),
         ),
         Attack(
             title="Lightning Ball",

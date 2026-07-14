@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.session.effects import is_basic_pokemon
 
 card = PokemonCardDef(
     guid="d9828a6d-91e5-50c0-b993-ad0b0be22b26",
@@ -26,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_basic_pokemon), 100),
         ),
         Attack(
             title="G-Max Hammer",

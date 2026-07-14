@@ -1,4 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +13,6 @@ card = ItemCardDef(
     collector_number=161,
     set_code="SWSH1",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=search_to_hand(is_basic_energy_card, count=1, minimum=0, reveal=True,
+                           prompt="Choose a basic Energy card to put into your hand."),
 )

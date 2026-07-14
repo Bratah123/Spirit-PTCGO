@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, self_energy_discard_attack
 
 card = PokemonCardDef(
     guid="ea22f75d-ce7a-59fd-8b96-ea0ec61589dc",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.stadium_in_play() is not None, 20),
         ),
         Attack(
             title="Blasting Hammer",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=180,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1, before_damage=True),
         ),
     ],
 )

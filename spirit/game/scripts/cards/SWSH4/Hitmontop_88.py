@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import discard_then_draw
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _played_bea(ctx):
+    return ctx.played_trainer_this_turn("Bea") > 0
+
 
 card = PokemonCardDef(
     guid="f6517430-0c8a-5700-831b-68aa8b3020b8",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Cycle Draw",
             game_text="Discard a card from your hand. If you do, draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=discard_then_draw(1, 3),
         ),
         Attack(
             title="Tornado Kick",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_played_bea, 80),
         ),
     ],
 )

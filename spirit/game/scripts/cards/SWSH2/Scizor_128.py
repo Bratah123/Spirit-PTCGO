@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+def _evolved_this_turn(ctx):
+    state = ctx.session.turn_state
+    return state.entered_play_turn.get(ctx.attacker.entity_id) == state.turn_number
+
 
 card = PokemonCardDef(
     guid="356ccf4d-9480-5adc-94d5-126f9af1e98b",
@@ -26,14 +34,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_evolved_this_turn, 90),
         ),
         Attack(
             title="Guard Claw",
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
     ],
 )

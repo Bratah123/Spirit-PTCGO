@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_basic_pokemon
+from spirit.game.session.constants import BENCH_CAPACITY
+
+
+async def dark_guidance(ctx):
+    """Put a Basic Pokemon from your discard pile onto your Bench."""
+    if len(ctx.my_bench()) >= BENCH_CAPACITY:
+        return
+    candidates = [c for c in ctx.discard_pile() if is_basic_pokemon(c)]
+    if not candidates:
+        return
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose a Basic Pokémon from your discard pile to put onto your Bench.",
+    )
+    for card in picks:
+        await ctx.bench_pokemon(card)
+
 
 card = PokemonCardDef(
     guid="2962aa46-1df3-55e3-91be-1b88f5f31e72",
@@ -22,7 +40,7 @@ card = PokemonCardDef(
             title="Dark Guidance",
             game_text="Put a Basic Pok\u00e9mon from your discard pile onto your Bench.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=dark_guidance,
         ),
         Attack(
             title="Seed Bomb",

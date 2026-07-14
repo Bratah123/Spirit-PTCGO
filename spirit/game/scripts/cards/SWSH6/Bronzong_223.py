@@ -1,5 +1,40 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _metal_transfer_condition(board, player_id, pokemon):
+    pkmn = board.pokemon_in_play(player_id)
+    if len(pkmn) < 2:
+        return False
+    return any(
+        energy_provides_type(e, PokemonTypes.METAL)
+        for p in pkmn for e in board.attached_energies(p)
+    )
+
+
+async def metal_transfer(ctx):
+    pool = [
+        (e, p) for p in ctx.my_pokemon_in_play()
+        for e in ctx.attached_energies(p)
+        if energy_provides_type(e, PokemonTypes.METAL)
+    ]
+    if not pool:
+        return
+    picked = await ctx.choose_cards(
+        [e for e, _ in pool], 1, prompt="Choose a Metal Energy to move"
+    )
+    if not picked:
+        return
+    energy = picked[0]
+    holder = next(p for e, p in pool if e is energy)
+    targets = [p for p in ctx.my_pokemon_in_play() if p is not holder]
+    if not targets:
+        return
+    target = await ctx.choose_pokemon(targets, "Choose a Pokémon to move the Energy to")
+    if target is not None:
+        await ctx.move_energy(energy, target)
+
 
 card = PokemonCardDef(
     guid="df6b4ac1-746d-514f-b8c5-02172778513b",
@@ -23,7 +58,9 @@ card = PokemonCardDef(
         Ability(
             title="Metal Transfer",
             game_text="As often as you like during your turn, you may move a Metal Energy from 1 of your Pok\u00e9mon to another of your Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.UNLIMITED,
+            condition=_metal_transfer_condition,
+            effect=metal_transfer,
         ),
         Attack(
             title="Zen Headbutt",

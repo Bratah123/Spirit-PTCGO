@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 card = PokemonCardDef(
     guid="8a6d4e92-ed5d-5776-a6d6-621e03948b94",
@@ -29,7 +30,8 @@ card = PokemonCardDef(
             title="Psychic Arrow",
             game_text="This attack does 60 damage to 1 of your opponent's Pok\u00e9mon. Also apply Weakness and Resistance for Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            damage=60,
+            effect=snipe_attack(60, pool="any", count=1, apply_modifiers=True),
         ),
     ],
 )

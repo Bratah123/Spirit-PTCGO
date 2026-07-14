@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.card_effects.pokemon import top_entry
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
 
 card = PokemonCardDef(
     guid="39aa80ee-ae64-5e5a-8766-141f6071aa13",
@@ -21,8 +23,9 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Top Entry",
+            trigger=Triggers.ON_TURN_DRAWN,
             game_text="Once during your turn, if you drew this Pok\u00e9mon from your deck at the beginning of your turn and your Bench isn't full, before you put it into your hand, you may put it onto your Bench.",
-            effect=unimplemented,
+            effect=top_entry(),
         ),
         Attack(
             title="Fury Swipes",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=40),
         ),
     ],
 )

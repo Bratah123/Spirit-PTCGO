@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="4df301b4-84e2-5018-92cc-50f893097832",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Kindling Panic",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
     ],
 )

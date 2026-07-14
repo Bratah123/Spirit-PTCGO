@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+def _evolved_this_turn(ctx) -> bool:
+    state = ctx.session.turn_state
+    return state.entered_play_turn.get(ctx.attacker.entity_id) == state.turn_number
+
+
+async def upper_shock(ctx):
+    await ctx.deal_damage()
+    if _evolved_this_turn(ctx):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="96f5e8a7-91d3-5068-a633-3b6ec915914f",
@@ -24,14 +37,14 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon evolved from Eelektrik during this turn, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=40,
-            effect=unimplemented,
+            effect=upper_shock,
         ),
         Attack(
             title="Wild Charge",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=160,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

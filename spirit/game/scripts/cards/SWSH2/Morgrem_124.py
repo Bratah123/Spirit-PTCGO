@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def false_surrender(ctx):
+    """60. This attack's damage isn't affected by any effects on your
+    opponent's Active Pokemon."""
+    await ctx.deal_damage(ignore_target_effects=True)
+
 
 card = PokemonCardDef(
     guid="701ea824-7e2f-54a5-93e9-89ea9f9bfbcf",
@@ -26,10 +33,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="False Surrender",
-            game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
+            game_text="This attack's damage isn't affected by any effects on your opponent's Active Pokémon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=false_surrender,
         ),
     ],
 )

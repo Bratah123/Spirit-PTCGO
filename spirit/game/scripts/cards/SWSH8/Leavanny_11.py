@@ -1,5 +1,29 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import full_stack
+
+
+async def healing_circle(ctx):
+    """Heal all damage from each of your Benched Pokemon. If you healed any
+    damage this way, shuffle this Pokemon and all attached cards into your
+    deck."""
+    healed_any = False
+    for pokemon in ctx.my_bench():
+        if await ctx.heal(ctx.max_hp(pokemon), pokemon) > 0:
+            healed_any = True
+    if not healed_any:
+        return
+    await ctx.shuffle_into_deck(full_stack(ctx.attacker), ctx.player_id)
+
+    async def _promote():
+        if not await ctx.session._promote_new_active(ctx.player_id):
+            screen_name = ctx.session.players[ctx.player_id].screen_name
+            await ctx.session.end_game(
+                ctx.opponent_id, f"{screen_name} has no Pokémon left"
+            )
+
+    ctx.deferred_actions.append(_promote)
+
 
 card = PokemonCardDef(
     guid="5dad5f7a-4a87-5a64-8afe-be97109e30b9",
@@ -23,7 +47,7 @@ card = PokemonCardDef(
             title="Healing Circle",
             game_text="Heal all damage from each of your Benched Pok\u00e9mon. If you healed any damage in this way, shuffle this Pok\u00e9mon and all attached cards into your deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=healing_circle,
         ),
         Attack(
             title="Razor Leaf",

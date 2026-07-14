@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
+_FIRE_ENERGY_ON_SELF = count_energy("self", energy_type=PokemonTypes.FIRE)
+
+
+async def _clutch(ctx):
+    await ctx.deal_damage()
+    target = ctx.defender
+    if target is not None and not ctx.effects_blocked(target):
+        ctx.lock_retreat(target)
+
 
 card = PokemonCardDef(
     guid="d720b952-a2c6-5466-a2de-8e61bf8f9775",
@@ -25,7 +36,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=_clutch,
         ),
         Attack(
             title="Nitro Dive",
@@ -33,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _FIRE_ENERGY_ON_SELF(ctx) > 0, 80),
         ),
     ],
 )

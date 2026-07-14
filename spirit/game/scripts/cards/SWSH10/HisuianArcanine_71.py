@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _scorching_horn(ctx):
+    has_fire = any(
+        energy_provides_type(energy, PokemonTypes.FIRE.value)
+        for energy in ctx.attached_energies(ctx.attacker)
+    )
+    if has_fire:
+        await ctx.deal_damage(160)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
+    else:
+        await ctx.deal_damage(80)
 
 card = PokemonCardDef(
     guid="2eb21b94-ae72-50e7-8175-5aff2bcf5ac3",
@@ -30,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_scorching_horn,
         ),
     ],
 )

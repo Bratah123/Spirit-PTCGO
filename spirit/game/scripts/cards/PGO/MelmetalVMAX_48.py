@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+def _extra_metal_energy(ctx) -> int:
+    return max(0, count_energy("self", energy_type=PokemonTypes.METAL)(ctx) - 3)
+
 
 card = PokemonCardDef(
     guid="a5db3f2a-bd2a-5f4c-bd92-e5639bb833a5",
@@ -26,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 3},
             damage=160,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_extra_metal_energy, 60, base=160, cap=280),
         ),
     ],
 )

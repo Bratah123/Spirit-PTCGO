@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def magnetic_lift(ctx):
+    """Search your deck for a card, shuffle, then put that card on top."""
+    picks = await ctx.search_deck(
+        count=1, minimum=1, prompt="Choose a card.",
+    )
+    if not picks:
+        return
+    await ctx.shuffle_deck()
+    await ctx.put_on_top_of_deck(picks[0])
+
 
 card = PokemonCardDef(
     guid="bac913e8-e369-59d1-9a81-0c7871e41ed4",
@@ -23,7 +35,7 @@ card = PokemonCardDef(
             title="Magnetic Lift",
             game_text="Search your deck for a card. Shuffle your deck, then put that card on top of it.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=magnetic_lift,
         ),
         Attack(
             title="Tackle",

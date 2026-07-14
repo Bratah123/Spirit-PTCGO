@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="8d7cb772-3170-5aa1-9b62-f37b89034121",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Stomp Off",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Sludge Whirlpool",

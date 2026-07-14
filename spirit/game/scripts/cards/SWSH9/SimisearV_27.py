@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.support_common import distribute_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def bursting_power(ctx):
+    await ctx.deal_damage()
+    energies = [c for c in ctx.hand() if is_basic_energy_card(c)]
+    if not energies:
+        return
+    picks = await ctx.choose_cards(
+        energies, 2, minimum=0,
+        prompt="Choose up to 2 basic Energy cards to attach to your Pokémon",
+    )
+    if picks:
+        await distribute_energy(ctx, picks, ctx.my_pokemon_in_play())
+
 
 card = PokemonCardDef(
     guid="a63c3a0b-0c27-59e0-a731-4a896318de3b",
@@ -23,7 +40,7 @@ card = PokemonCardDef(
             game_text="You may attach up to 2 basic Energy cards from your hand to your Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.FIRE: 1},
             damage=20,
-            effect=unimplemented,
+            effect=bursting_power,
         ),
         Attack(
             title="Flare Juggling",
@@ -31,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 30, base=90),
         ),
     ],
 )

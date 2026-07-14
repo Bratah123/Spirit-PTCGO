@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack, recover_from_discard, requires_discard
 
 card = PokemonCardDef(
     guid="7936d21c-1bb5-5bb9-897c-44df53e0335e",
@@ -22,14 +23,15 @@ card = PokemonCardDef(
             title="Geo Hunt",
             game_text="Put a card from your discard pile into your hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            condition=requires_discard(),
+            effect=recover_from_discard(count=1, minimum=1, reveal=False, to="hand"),
         ),
         Attack(
             title="Aurora Gain",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
     ],
 )

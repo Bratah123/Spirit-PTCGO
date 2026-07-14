@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_special_energy
+from spirit.game.card_effects.attacks_common import snipe_attack, bonus_if
+
+
+def _has_special_energy(ctx) -> bool:
+    return any(is_special_energy(e) for e in ctx.attached_energies(ctx.attacker))
+
 
 card = PokemonCardDef(
     guid="e7c90e6e-d02d-570f-95ee-0b0688f0837a",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Gear Throw",
             game_text="This attack does 30 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.METAL: 1},
-            effect=unimplemented,
+            effect=snipe_attack(30, pool="any", count=1),
         ),
         Attack(
             title="Special Laser",
@@ -31,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_special_energy, 120),
         ),
     ],
 )

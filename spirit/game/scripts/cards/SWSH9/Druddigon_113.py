@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _kos_suffered_last_turn(ctx):
+    return ctx.kos_suffered_last_turn() > 0
+
 
 card = PokemonCardDef(
     guid="a6a09ff7-316b-5f87-9210-161d286fb919",
@@ -23,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_kos_suffered_last_turn, 120),
         ),
         Attack(
             title="Dragon Claw",

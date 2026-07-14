@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def max_jammer(ctx):
+    """Opponent reveals their hand. Choose a card there and put it on the
+    bottom of their deck."""
+    await ctx.deal_damage()
+    hand = ctx.hand(ctx.opponent_id)
+    if not hand:
+        return
+    picks = await ctx.choose_cards(
+        hand, 1, minimum=1,
+        prompt="Choose a card from your opponent's hand to put on the bottom of their deck.",
+    )
+    for card in picks:
+        await ctx.put_on_bottom_of_deck(card)
+
 
 card = PokemonCardDef(
     guid="be2964ef-c47b-5363-959d-cbf5aaf1c665",
@@ -24,7 +40,7 @@ card = PokemonCardDef(
             game_text="Your opponent reveals their hand. Choose a card you find there and put it on the bottom of their deck.",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=180,
-            effect=unimplemented,
+            effect=max_jammer,
         ),
     ],
 )

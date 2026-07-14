@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if, defender_has_condition
 
 card = PokemonCardDef(
     guid="bb1f1731-14bd-59fd-8657-a7fb347b2b2b",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             title="Sleepy Pulse",
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep. During Pok\u00e9mon Checkup, your opponent flips 2 coins instead of 1. If either of them is tails, that Pok\u00e9mon is still Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, checkup_coins=2),
         ),
         Attack(
             title="Super Hypnoblast",
@@ -32,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_has_condition(SpecialConditions.ASLEEP), 120),
         ),
     ],
 )

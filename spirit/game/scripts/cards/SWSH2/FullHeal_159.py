@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import cure_conditions_effect
 
 card = ItemCardDef(
     guid="ae5dbb3f-2b7e-5ca0-9eae-d15cbce462bd",
@@ -11,5 +12,5 @@ card = ItemCardDef(
     collector_number=159,
     set_code="SWSH2",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=cure_conditions_effect("active")
 )

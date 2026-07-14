@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _bright_beam(ctx):
+    picks = await ctx.discard_from_hand(
+        3, minimum=0, predicate=is_energy_card,
+        prompt="Discard up to 3 Energy cards from your hand.",
+    )
+    await ctx.deal_damage(10 + 70 * len(picks))
+
 
 card = PokemonCardDef(
     guid="f7d0f2ff-14ed-5a81-ab4b-1486d82c4964",
@@ -25,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_bright_beam,
         ),
     ],
 )

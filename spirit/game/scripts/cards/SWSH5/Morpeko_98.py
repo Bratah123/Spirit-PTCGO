@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_item_card
+
+
+def _empty_hand(ctx) -> bool:
+    return ctx.hand_size() == 0
+
 
 card = PokemonCardDef(
     guid="8eb645ee-906d-553a-9fd7-c7e8d99094b7",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
             title="Gather Food",
             game_text="Put an Item card from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=recover_from_discard(is_item_card, count=1, minimum=1, reveal=False, to="hand"),
         ),
         Attack(
             title="Hangry Tackle",
@@ -30,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_empty_hand, 90, base=20),
         ),
     ],
 )

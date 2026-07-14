@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, TrainerType
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.pokemon import in_active_spot
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+def _is_tool_card(card) -> bool:
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
 
 card = PokemonCardDef(
     guid="b09d0bf8-9921-5aad-a090-0766d88cd682",
@@ -21,7 +30,10 @@ card = PokemonCardDef(
         Ability(
             title="Back Order",
             game_text="Once during your turn, if this Pok\u00e9mon is in the Active Spot, you may search your deck for up to 2 Pok\u00e9mon Tool cards, reveal them, and put them into your hand. Then, shuffle your deck.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=in_active_spot,
+            effect=search_to_hand(predicate=_is_tool_card, count=2, reveal=True,
+                                   prompt="Choose up to 2 Pok\u00e9mon Tool cards to put into your hand."),
         ),
         Attack(
             title="Psychic",
@@ -29,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 50, base=30),
         ),
     ],
 )

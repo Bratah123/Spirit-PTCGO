@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class BossPocketsPassive(Passive):
+    def tool_capacity(self, pokemon, carrier):
+        return 4 if pokemon is carrier else 1
+
+
+async def fearsome_shadow(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.deal_damage()
+    await ctx.reveal_hand(of_player=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="f1f656b0-2e01-5cbe-b7fb-724e961ce314",
@@ -22,14 +35,14 @@ card = PokemonCardDef(
         Ability(
             title="Boss Pockets",
             game_text="This Pok\u00e9mon may have up to 4 Pok\u00e9mon Tools attached to it. If it loses this Ability, discard Pok\u00e9mon Tools from it until only 1 remains.",
-            effect=unimplemented,
+            passive=BossPocketsPassive(),
         ),
         Attack(
             title="Fearsome Shadow",
             game_text="Your opponent reveals their hand.",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=fearsome_shadow,
         ),
     ],
 )

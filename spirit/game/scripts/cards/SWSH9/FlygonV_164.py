@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import defender_is_vmax
+
+
+async def draconic_impulse(ctx):
+    if defender_is_vmax(ctx):
+        await ctx.deal_damage(320)
+        await ctx.discard_energy_from(ctx.attacker, 3)
+    else:
+        await ctx.deal_damage(160)
+
 
 card = PokemonCardDef(
     guid="c82acf60-ec65-5e6e-86dc-8c4483d83f4b",
@@ -28,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
             damage_operator="+",
-            effect=unimplemented,
+            effect=draconic_impulse,
         ),
     ],
 )

@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.support_common import draw_attack
+
+
+async def turn_a_profit(ctx):
+    """30. If the opponent's Basic is Knocked Out by this damage, take 2 more Prizes."""
+    defender = ctx.defender
+    was_basic = (
+        defender is not None
+        and defender.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value
+    )
+    await ctx.deal_damage()
+    if was_basic and defender in ctx.knockouts:
+        ctx.extra_prizes += 2
+
 
 card = PokemonCardDef(
     guid="2904c289-5bcb-5b39-a1b8-0a60b1d2df7e",
@@ -24,14 +38,14 @@ card = PokemonCardDef(
             game_text="If your opponent's Basic Pok\u00e9mon is Knocked Out by damage from this attack, take 2 more Prize cards.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=turn_a_profit,
         ),
         Attack(
             title="Max Gimme Gimme",
             game_text="Draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=160,
-            effect=unimplemented,
+            effect=draw_attack(3),
         ),
     ],
 )

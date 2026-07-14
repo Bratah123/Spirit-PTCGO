@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, damage_counters_on
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="88bf3243-6420-5365-9449-6de59cd6dbbf",
@@ -25,14 +27,16 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2},
             damage=60,
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Muscular Nose",
             game_text="If this Pok\u00e9mon has 8 or more damage counters on it, this attack does nothing.",
             cost={PokemonTypes.METAL: 3},
             damage=220,
-            effect=unimplemented,
+            effect=bonus_if(
+                lambda ctx: damage_counters_on("self")(ctx) < 8, 0, else_nothing=True
+            ),
         ),
     ],
 )

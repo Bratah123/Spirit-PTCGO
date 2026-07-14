@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard, has_attack_titled
 
 card = PokemonCardDef(
     guid="ab5940cb-af67-5353-88f8-f498c7274f87",
@@ -20,11 +21,11 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Mad Party",
-            game_text="This attack does 20 damage for each Pok\u00e9mon in your discard pile that has the Mad Party attack.",
+            game_text="This attack does 20 damage for each Pokémon in your discard pile that has the Mad Party attack.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_discard("mine", has_attack_titled("Mad Party")), 20),
         ),
     ],
 )

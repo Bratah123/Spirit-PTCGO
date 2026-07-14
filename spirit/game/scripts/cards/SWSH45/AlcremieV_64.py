@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_basic_pokemon
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def sugary_sprinkles(ctx):
+    """Heal 30 damage from each of your Benched Pokemon."""
+    for pokemon in ctx.my_bench():
+        await ctx.heal(30, pokemon)
+
+
+async def sweet_splash(ctx):
+    """100 damage. If the Defending Pokemon is a Basic Pokemon, it can't attack next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and is_basic_pokemon(defender):
+        lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="cf1a873b-b252-5cf9-a433-79c790b2fe1f",
@@ -22,14 +39,14 @@ card = PokemonCardDef(
             title="Sugary Sprinkles",
             game_text="Heal 30 damage from each of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=sugary_sprinkles,
         ),
         Attack(
             title="Sweet Splash",
             game_text="If the Defending Pok\u00e9mon is a Basic Pok\u00e9mon, it can't attack during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
-            effect=unimplemented,
+            effect=sweet_splash,
         ),
     ],
 )

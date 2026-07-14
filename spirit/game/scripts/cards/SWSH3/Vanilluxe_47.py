@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def bitter_cold(ctx):
+    """Once per turn, in the Active spot: you may flip a coin. Heads paralyzes the opponent's Active."""
+    if not await ctx.ask_yes_no("Flip a coin?"):
+        return
+    if not (await ctx.flip_coins(1, "Bitter Cold"))[0]:
+        return
+    target = ctx.opponent_active()
+    if target is not None:
+        await ctx.apply_special_condition(target, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="d534da76-204d-52bf-ad38-18ee956ad1bb",
@@ -22,7 +35,9 @@ card = PokemonCardDef(
         Ability(
             title="Bitter Cold",
             game_text="Once during your turn, if this Pok\u00e9mon is in the Active Spot, you may flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=in_active_spot,
+            effect=bitter_cold,
         ),
         Attack(
             title="Frost Smash",

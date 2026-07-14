@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def synchrodraw(ctx):
+    """Shuffle your hand into your deck. Then, draw a card for each card in
+    your opponent's hand."""
+    draw_count = ctx.hand_size(ctx.opponent_id)
+    await ctx.shuffle_into_deck(ctx.hand(), ctx.player_id)
+    await ctx.draw_cards(draw_count)
+
 
 card = PokemonCardDef(
     guid="c247656d-7fa8-57db-9178-7dff92d38c86",
@@ -22,7 +31,7 @@ card = PokemonCardDef(
             title="Synchrodraw",
             game_text="Shuffle your hand into your deck. Then, draw a card for each card in your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=synchrodraw,
         ),
         Attack(
             title="Water Gun",

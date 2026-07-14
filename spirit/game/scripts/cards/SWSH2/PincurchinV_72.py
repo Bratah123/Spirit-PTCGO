@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def counterattack_kerzap(ctx):
+    """If Active and damaged by an attack: flip 3, 3 damage counters per heads on the attacker."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    results = await ctx.flip_coins(3, ctx.ability.title)
+    heads = sum(results)
+    if heads:
+        await ctx.deal_damage(heads * 30, target=attacker, apply_modifiers=False,
+                              as_counters=True)
 
 card = PokemonCardDef(
     guid="c9f867cb-26f1-5185-8507-ba06380a14f0",
@@ -21,7 +36,8 @@ card = PokemonCardDef(
         Ability(
             title="Counterattack Kerzap",
             game_text="If this Pok\u00e9mon is in the Active Spot and is damaged by an opponent's attack (even if it is Knocked Out), flip 3 coins. For each heads, put 3 damage counters on the Attacking Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=counterattack_kerzap,
         ),
         Attack(
             title="Sparking Strike",

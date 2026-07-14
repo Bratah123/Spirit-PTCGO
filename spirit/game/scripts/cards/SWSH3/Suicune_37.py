@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _aurora_loop(ctx):
+    await ctx.deal_damage()
+    water_energies = [
+        e for e in ctx.attached_energies(ctx.attacker)
+        if energy_provides_type(e, PokemonTypes.WATER.value)
+    ]
+    picks = await ctx.choose_cards(
+        water_energies, 2,
+        prompt="Choose 2 Water Energy to put into your hand",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="1bf418ff-c175-5f25-b650-a956c62cc59c",
@@ -28,7 +43,7 @@ card = PokemonCardDef(
             game_text="Put 2 Water Energy attached to this Pok\u00e9mon into your hand.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=_aurora_loop,
         ),
     ],
 )

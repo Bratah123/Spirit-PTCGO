@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+async def max_lance(ctx):
+    """You may discard up to 2 Energy from this Pokémon: +120 damage each."""
+    discarded = []
+    if ctx.attached_energies(ctx.attacker) and await ctx.ask_yes_no(
+            "Discard up to 2 Energy from this Pokémon?"):
+        discarded = await ctx.discard_energy_from(
+            ctx.attacker, 2, minimum=0,
+            prompt="Choose up to 2 Energy to discard")
+    await ctx.deal_damage(10 + 120 * len(discarded))
+
 
 card = PokemonCardDef(
     guid="ddb00149-826c-5fa4-bea2-258d68acd9e6",
@@ -25,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_bench("opponent"), 30, base=10),
         ),
         Attack(
             title="Max Lance",
@@ -33,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=max_lance,
         ),
     ],
 )

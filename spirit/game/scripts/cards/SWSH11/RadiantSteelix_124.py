@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_metal_energy_card
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def destructive_finish(ctx):
+    """Discard the top of your deck down to 1 card; +30 damage per Energy discarded."""
+    deck_size = len(ctx.deck())
+    mill_count = max(0, deck_size - 1)
+    cards = ctx.deck_top(mill_count)
+    await ctx.discard_cards(cards)
+    energy_count = sum(1 for c in cards if is_energy_card(c))
+    await ctx.deal_damage(60 + 30 * energy_count)
+
 
 card = PokemonCardDef(
     guid="7fd5c2df-c315-5671-bd24-b18256169dce",
@@ -24,7 +38,11 @@ card = PokemonCardDef(
             game_text="Attach up to 2 Metal Energy cards from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_metal_energy_card, count=2, target="self",
+                minimum=0,
+                prompt="Choose up to 2 Metal Energy from your discard pile to attach",
+            ),
         ),
         Attack(
             title="Destructive Finish",
@@ -32,7 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=destructive_finish,
         ),
     ],
 )

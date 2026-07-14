@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import peonia, peonia_playable
 
 card = SupporterCardDef(
     guid="cbc997d3-3608-55f8-9cc0-e0517d7470d4",
@@ -11,5 +12,6 @@ card = SupporterCardDef(
     collector_number=219,
     set_code="SWSH6",
     rarity=Rarities.RareRainbow,
-    effect=unimplemented
+    condition=peonia_playable,
+    effect=peonia,
 )

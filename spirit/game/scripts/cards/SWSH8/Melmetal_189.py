@@ -1,5 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+class _IngotSwingShield(Passive):
+    """Prevent all damage from an opposing attacker with an Ability."""
+
+    def prevents_damage(self, calc, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.target is carrier):
+            return False
+        attacker = calc.attacker
+        if attacker is None:
+            return False
+        return any(
+            isinstance(entry, dict) and entry.get("abilityType") != "Attack"
+            for entry in (attacker.get_attribute(AttrID.PIE_ABILITIES) or [])
+        )
+
+
+async def ingot_swing(ctx):
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _IngotSwingShield())
+
 
 card = PokemonCardDef(
     guid="c6c77afc-4ec7-5cbf-88f7-62f24ec7a247",
@@ -25,14 +48,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, prevent all damage done to this Pok\u00e9mon by attacks from Pok\u00e9mon that have an Ability.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=ingot_swing,
         ),
         Attack(
             title="Blasting Hammer",
             game_text="Discard an Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

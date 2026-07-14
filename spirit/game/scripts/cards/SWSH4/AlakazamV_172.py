@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    count_hand, damage_per, place_counters,
+)
 
 card = PokemonCardDef(
     guid="437c158a-9906-5ac2-8fce-3e3ae7706a96",
@@ -21,9 +24,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Zen Spoon",
-            game_text="Put 3 damage counters on your opponent's Pok\u00e9mon in any way you like.",
+            game_text="Put 3 damage counters on your opponent's Pokémon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(3, "choose_any_opponent"),
         ),
         Attack(
             title="Mind Ruler",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_hand("opponent"), 30),
         ),
     ],
 )

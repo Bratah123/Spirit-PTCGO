@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def gulp_down(ctx):
+    """Heal from this Pokémon the same amount of damage you did to your
+    opponent's Active Pokémon."""
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt, ctx.attacker)
 
 card = PokemonCardDef(
     guid="bec6f3d7-b9a5-5c53-870d-ab9fbfd3e9ef",
@@ -23,7 +31,7 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=gulp_down,
         ),
         Attack(
             title="Wave Splash",

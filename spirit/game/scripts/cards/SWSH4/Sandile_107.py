@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="3a7dce38-afce-55cf-a1b4-23e337fab2ba",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Dredge Up",
             game_text="Discard the top 3 cards of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 4},
-            effect=unimplemented,
+            effect=mill_attack(3),
         ),
     ],
 )

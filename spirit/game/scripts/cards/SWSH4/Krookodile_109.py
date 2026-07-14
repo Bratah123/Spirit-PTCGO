@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, mill_attack
 
 card = PokemonCardDef(
     guid="edc2cf65-caed-53cf-a65c-76816870adc7",
@@ -23,14 +24,14 @@ card = PokemonCardDef(
             title="Dredge Up",
             game_text="Discard the top 3 cards of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=mill_attack(3),
         ),
         Attack(
             title="Tantrum",
-            game_text="This Pok\u00e9mon is now Confused.",
+            game_text="This Pokémon is now Confused.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 3},
             damage=180,
-            effect=unimplemented,
+            effect=condition_attack(self_conditions=(SpecialConditions.CONFUSED,)),
         ),
     ],
 )

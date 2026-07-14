@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_metal_energy_card
 
 card = PokemonCardDef(
     guid="6d9455dc-f39f-57be-91dd-6080c6fac1c7",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Metal Coating",
             game_text="Attach up to 2 Metal Energy cards from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=is_metal_energy_card, count=2, minimum=0),
         ),
         Attack(
             title="Temporal Rupture",

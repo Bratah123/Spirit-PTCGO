@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.support_common import search_to_bench
 
 card = PokemonCardDef(
     guid="5a7d0956-85c9-5fa2-9a98-aa110f18eba8",
@@ -23,7 +24,11 @@ card = PokemonCardDef(
             title="Mirage Step",
             game_text="Search your deck for up to 3 Kirlia and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=search_to_bench(
+                predicate=lambda c: c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Kirlia",
+                count=3,
+                prompt="Choose up to 3 Kirlia to put onto your Bench.",
+            ),
         ),
     ],
 )

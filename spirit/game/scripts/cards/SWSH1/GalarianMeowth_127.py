@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 card = PokemonCardDef(
     guid="9979e429-cad5-5a90-af2d-2460c4fb21c3",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Hone Claws",
             game_text="During your next turn, this Pok\u00e9mon's Slash attack does 60 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=boost_own_next_turn(60, attack_title="Slash"),
         ),
         Attack(
             title="Slash",

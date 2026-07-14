@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def shatter(ctx):
+    """20 damage, then discard a Stadium in play."""
+    await ctx.deal_damage()
+    await ctx.discard_stadium()
 
 card = PokemonCardDef(
     guid="c7c4b87d-f07b-5a0c-9485-cb50203669fb",
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             game_text="Discard a Stadium in play.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=shatter,
         ),
         Attack(
             title="Slash",

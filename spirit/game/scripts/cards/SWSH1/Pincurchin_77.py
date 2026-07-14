@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def shocking_needles(ctx):
+    """Flip 4 coins. 30 damage per heads; 2+ heads also Paralyzes the Defending Pokemon."""
+    results = await ctx.flip_coins(4, ctx.ability.title)
+    heads = sum(results)
+    if heads:
+        await ctx.deal_damage(30 * heads)
+    if heads >= 2 and ctx.defender is not None:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
 
 card = PokemonCardDef(
     guid="8fdce931-5d96-51ff-8ee4-a2dd043b9bde",
@@ -24,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=shocking_needles,
         ),
     ],
 )

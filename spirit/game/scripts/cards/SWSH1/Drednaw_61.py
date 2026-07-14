@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, condition_attack
+
+
+def _defender_retreat_cost(ctx):
+    defender = ctx.defender
+    return defender.get_attribute(AttrID.RETREAT_COST, 0) if defender else 0
+
 
 card = PokemonCardDef(
     guid="c5f3a167-6b62-513b-9fde-d8e4e304c7b2",
@@ -25,14 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 30, base=60),
         ),
         Attack(
             title="Jaw Lock",
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 3},
             damage=130,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

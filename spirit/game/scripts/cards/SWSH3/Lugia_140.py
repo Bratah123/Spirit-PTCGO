@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def energy_loop(ctx):
+    """120. Put an Energy attached to this Pokémon into your hand."""
+    await ctx.deal_damage()
+    energies = ctx.attached_energies(ctx.source)
+    if not energies:
+        return
+    picks = await ctx.choose_cards(
+        energies, 1, minimum=1,
+        prompt="Choose an Energy card to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
 
 card = PokemonCardDef(
     guid="5a5bb12f-0e4f-5738-98f6-8324955741ac",
@@ -29,7 +42,7 @@ card = PokemonCardDef(
             game_text="Put an Energy attached to this Pok\u00e9mon into your hand.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
-            effect=unimplemented,
+            effect=energy_loop,
         ),
     ],
 )

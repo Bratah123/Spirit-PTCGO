@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -24,7 +25,10 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(
+                count_in_play("mine", lambda p: "Rapid Strike" in subtypes_for(p.archetype_id)),
+                20,
+            ),
         ),
     ],
 )

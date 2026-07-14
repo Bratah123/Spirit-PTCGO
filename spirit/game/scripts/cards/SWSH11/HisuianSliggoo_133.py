@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
 
 card = PokemonCardDef(
     guid="7cdea712-6b10-54e3-a88a-c9cf360e8c0a",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Rigidify",
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 50 less damage from attacks (after applying Weakness and Resistance).",
             cost={},
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=50),
         ),
         Attack(
             title="Gentle Slap",

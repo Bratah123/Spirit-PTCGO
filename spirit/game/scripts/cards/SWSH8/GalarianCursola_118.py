@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def force_regeneration(ctx):
+    candidates = [c for c in ctx.discard_pile(ctx.opponent_id)
+                  if is_basic_pokemon(c) and is_pokemon_v(c.archetype_id)]
+    if not candidates:
+        return
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose a Basic Pokémon V from your opponent's discard pile.")
+    if not picks:
+        return
+    card = picks[0]
+    if not await ctx.bench_pokemon(card):
+        return
+    counters = max(0, (ctx.max_hp(card) - 30) // 10)
+    await ctx.set_damage_counters(card, counters)
 
 card = PokemonCardDef(
     guid="d1bc64ee-e196-54e6-aa94-fa891e449f7a",
@@ -24,7 +42,7 @@ card = PokemonCardDef(
             title="Force Regeneration",
             game_text="Put a Basic Pok\u00e9mon V from your opponent's discard pile onto their Bench. If you do, put damage counters on that Pok\u00e9mon until its remaining HP is 30.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=force_regeneration,
         ),
         Attack(
             title="Spooky Shot",

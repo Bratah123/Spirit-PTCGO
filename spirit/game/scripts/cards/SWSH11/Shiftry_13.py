@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches, remove_self_from_play
+
+
+async def fan_tornado(ctx):
+    """50. You may have your opponent switch their Active with 1 of their Benched Pokemon."""
+    await ctx.deal_damage()
+    if not ctx.opponent_bench():
+        return
+    if await ctx.ask_yes_no(
+            "Have your opponent switch their Active Pokémon with 1 of their Benched Pokémon?"):
+        await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="e1e3b13c-790e-500a-b26e-e72d8bd3af1a",
@@ -21,17 +33,17 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Fan Tornado",
-            game_text="You may have your opponent switch their Active Pok\u00e9mon with 1 of their Benched Pok\u00e9mon.",
+            game_text="You may have your opponent switch their Active Pokémon with 1 of their Benched Pokémon.",
             cost={PokemonTypes.GRASS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=fan_tornado,
         ),
         Attack(
             title="Tearing Gust",
-            game_text="Put this Pok\u00e9mon and all attached cards in the Lost Zone.",
+            game_text="Put this Pokémon and all attached cards in the Lost Zone.",
             cost={PokemonTypes.GRASS: 1},
             damage=210,
-            effect=unimplemented,
+            effect=remove_self_from_play("lost_zone"),
         ),
     ],
 )

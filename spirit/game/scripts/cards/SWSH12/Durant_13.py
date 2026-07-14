@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
 card = PokemonCardDef(
     guid="1078512e-71e0-53cf-ad16-79822e864f5f",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Energy Digging",
             game_text="Search your deck for up to 2 basic Energy cards, reveal them, and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(predicate=is_basic_energy_card, count=2, reveal=True),
         ),
         Attack(
             title="Bite",

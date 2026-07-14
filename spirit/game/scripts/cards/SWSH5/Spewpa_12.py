@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="b9c86443-05ff-531b-894e-d703264dba01",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Grass Cocooning",
             game_text="Heal 40 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_attack(40, target="self"),
         ),
         Attack(
             title="Bug Bite",

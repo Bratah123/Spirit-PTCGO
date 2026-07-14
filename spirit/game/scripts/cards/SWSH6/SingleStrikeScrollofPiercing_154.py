@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import PokemonToolCardDef, Attack, subtypes_for
+from spirit.game.attributes import PokemonTypes, Rarities
+
+
+def _is_single_strike(board, player_id, pokemon):
+    return "Single Strike" in subtypes_for(pokemon.archetype_id)
+
+
+async def bullet_breakthrough(ctx):
+    """120 damage, not affected by Weakness/Resistance or effects on the opponent's Active."""
+    await ctx.deal_damage(120, apply_modifiers=False, ignore_target_effects=True)
+
 
 card = PokemonToolCardDef(
     guid="403a69e4-d741-55fa-8cbf-629361902695",
@@ -11,5 +21,14 @@ card = PokemonToolCardDef(
     collector_number=154,
     set_code="SWSH6",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    granted_abilities=[
+        Attack(
+            title="Bullet Breakthrough",
+            game_text="This attack's damage isn't affected by Weakness or Resistance, or by any effects on your opponent's Active Pok\u00e9mon.",
+            cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
+            damage=120,
+            effect=bullet_breakthrough,
+            condition=_is_single_strike,
+        ),
+    ],
 )

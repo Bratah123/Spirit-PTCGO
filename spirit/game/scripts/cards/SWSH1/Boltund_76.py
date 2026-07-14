@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def electrodash(ctx):
+    """160 damage; during your next turn, this Pokémon can't attack at all."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="6adfbdf3-7cac-58b3-8ccf-205a73355483",
@@ -26,10 +34,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Electrodash",
-            game_text="During your next turn, this Pok\u00e9mon can't attack.",
+            game_text="During your next turn, this Pokémon can't attack.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=electrodash,
         ),
     ],
 )

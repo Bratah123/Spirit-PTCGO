@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.passives_common import takes_less_passive
+
+
+async def _discard_stadium_after(ctx):
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="405e7be5-a208-59db-b327-f0a9cfbd566b",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
         Ability(
             title="Massive Ice",
             game_text="This Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=takes_less_passive(30),
         ),
         Attack(
             title="Mountain Gale",
@@ -30,7 +37,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.stadium_in_play() is not None, 120, base=100,
+                             also=_discard_stadium_after),
         ),
     ],
 )

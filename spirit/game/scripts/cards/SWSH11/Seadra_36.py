@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+from spirit.game.card_effects.passives_common import flip_protection
+
+
+async def hydro_jet(ctx):
+    amount = 20 * count_energy("self", energy_type=PokemonTypes.WATER)(ctx)
+    candidates = ctx.opponent_pokemon_in_play()
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose 1 of your opponent's Pokémon")
+    if target is not None:
+        await ctx.deal_damage(amount, target=target)
 
 card = PokemonCardDef(
     guid="792c1768-a945-512b-875e-15b44660a7a0",
@@ -24,13 +37,13 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, during your opponent's next turn, prevent all damage from and effects of attacks done to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
             damage=10,
-            effect=unimplemented,
+            effect=flip_protection(prevent=True, effects_too=True),
         ),
         Attack(
             title="Hydro Jet",
             game_text="This attack does 20 damage to 1 of your opponent's Pok\u00e9mon for each Water Energy attached to this Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=hydro_jet,
         ),
     ],
 )

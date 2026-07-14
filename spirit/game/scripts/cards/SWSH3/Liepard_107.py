@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.passives_common import condition_immunity_passive
 
 card = PokemonCardDef(
     guid="df23d0e6-bf8b-53e9-b6b0-737583a41048",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
         Ability(
             title="Limber",
             game_text="This Pok\u00e9mon can't be Paralyzed.",
-            effect=unimplemented,
+            passive=condition_immunity_passive(SpecialConditions.PARALYZED),
         ),
         Attack(
             title="Slashing Claw",

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def cut_down(ctx):
+    """Flip a coin. If heads, discard an Energy from the opponent's Active Pokemon."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_coins(1, "Cut Down")
+    if heads[0] and not ctx.effects_blocked(ctx.defender):
+        await ctx.discard_energy_from(
+            ctx.defender, 1,
+            prompt="Choose an Energy to discard from the opponent's Active Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="9d2ad624-8d85-5bc5-a125-72be7a1494e4",
@@ -25,7 +37,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=cut_down,
         ),
     ],
 )

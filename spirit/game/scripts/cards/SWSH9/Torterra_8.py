@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+from spirit.game.session.effects import is_evolution_pokemon
 
 card = PokemonCardDef(
     guid="93b2cb2f-e92f-58c4-9f0d-0b49688e19db",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play("mine", is_evolution_pokemon), 50),
         ),
         Attack(
             title="Hammer In",

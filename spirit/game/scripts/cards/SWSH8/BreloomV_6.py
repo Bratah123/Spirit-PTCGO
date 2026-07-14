@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def counter(ctx):
+    """20, plus that much more damage if this Pokémon was damaged by an attack during the opponent's last turn."""
+    bonus = ctx.damage_taken_last_turn(ctx.attacker)
+    await ctx.deal_damage(20 + bonus)
+
 
 card = PokemonCardDef(
     guid="987c6de5-d7c3-58af-9d18-be118960ada4",
@@ -20,11 +27,11 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Counter",
-            game_text="If this Pok\u00e9mon was damaged by an attack during your opponent's last turn, this attack does that much more damage.",
+            game_text="If this Pokémon was damaged by an attack during your opponent's last turn, this attack does that much more damage.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=counter,
         ),
         Attack(
             title="Mach Cross",

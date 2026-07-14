@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _dedenne_dede_short_last_turn(ctx):
+    for pokemon in ctx.my_pokemon_in_play():
+        card_def = def_for(pokemon.archetype_id)
+        if card_def and card_def.display_name == "Dedenne" and \
+                ctx.attack_used_last_turn(title="Dede-Short", entity=pokemon):
+            return True
+    return False
+
 
 card = PokemonCardDef(
     guid="caad81a2-cd85-5271-b05b-d83f3649e624",
@@ -24,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_dedenne_dede_short_last_turn, 180),
         ),
     ],
 )

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _power_cyclone(ctx):
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    energies = ctx.attached_energies(ctx.attacker)
+    if not bench or not energies:
+        return
+    picked = await ctx.choose_cards(energies, 1, minimum=1, prompt="Choose an Energy to move")
+    if not picked:
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose the Benched Pokémon to move the Energy to"
+    )
+    if target is not None:
+        await ctx.move_energy(picked[0], target)
+
 
 card = PokemonCardDef(
     guid="d9640c69-9b04-5427-8102-3f999ef6c740",
@@ -30,7 +47,7 @@ card = PokemonCardDef(
             game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=110,
-            effect=unimplemented,
+            effect=_power_cyclone,
         ),
     ],
 )

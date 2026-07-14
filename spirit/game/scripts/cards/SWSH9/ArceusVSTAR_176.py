@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def starbirth(ctx):
+    """VSTAR Power: search your deck for up to 2 cards and put them into your hand."""
+    picks = await ctx.search_deck(
+        None, count=2, minimum=0, prompt="Choose up to 2 cards to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="5ab27d53-e06e-5631-8e00-9f54682cd945",
@@ -22,14 +34,19 @@ card = PokemonCardDef(
         Ability(
             title="Starbirth",
             game_text="During your turn, you may search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            vstar=True,
+            effect=starbirth,
         ),
         Attack(
             title="Trinity Nova",
             game_text="Search your deck for up to 3 basic Energy cards and attach them to your Pok\u00e9mon V in any way you like. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=200,
-            effect=unimplemented,
+            effect=search_attach_energy(
+                is_basic_energy_card, count=3,
+                target_pred=lambda p: is_pokemon_v(p.archetype_id),
+            ),
         ),
     ],
 )

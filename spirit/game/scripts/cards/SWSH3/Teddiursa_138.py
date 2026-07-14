@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def baby_doll_eyes(ctx):
+    """During your opponent's next turn, the Defending Pokemon can't retreat."""
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        ctx.lock_retreat(defender)
+
 
 card = PokemonCardDef(
     guid="2a01ecb8-7a8e-5fcc-8a14-9e7a5f8f50c4",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
             title="Baby-Doll Eyes",
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=baby_doll_eyes,
         ),
         Attack(
             title="Dig Claws",

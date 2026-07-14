@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
+_ENERGY_ON_SELF = count_energy("self")
+
+
+def _has_extra_energy(ctx) -> bool:
+    total_cost = sum(ctx.ability.cost.values())
+    return _ENERGY_ON_SELF(ctx) > total_cost
+
 
 card = PokemonCardDef(
     guid="1ac0697d-0170-5fc3-b035-8f31594901c1",
@@ -29,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_extra_energy, 60),
         ),
     ],
 )

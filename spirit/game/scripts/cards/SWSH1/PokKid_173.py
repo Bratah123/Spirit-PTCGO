@@ -1,5 +1,7 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
 
 card = SupporterCardDef(
     guid="bece6b76-81de-5a5a-873a-4681fe181172",
@@ -11,5 +13,8 @@ card = SupporterCardDef(
     collector_number=173,
     set_code="SWSH1",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=search_to_hand(
+        is_pokemon_card, count=1, minimum=0, reveal=True,
+        prompt="Choose a Pokémon to put into your hand.",
+    )
 )

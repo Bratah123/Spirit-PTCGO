@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_trainer_card
+
+
+async def teatime(ctx):
+    """Each player draws 2 cards."""
+    await ctx.draw_cards(2, player_id=ctx.player_id)
+    await ctx.draw_cards(2, player_id=ctx.opponent_id)
+
+
+async def poltergeist(ctx):
+    """Opponent reveals their hand; 50 damage for each Trainer card found there."""
+    cards = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    count = sum(1 for c in cards if is_trainer_card(c))
+    await ctx.deal_damage(50 * count)
+
 
 card = PokemonCardDef(
     guid="d6a83755-2794-5dba-996e-639b2ee4639b",
@@ -24,7 +39,7 @@ card = PokemonCardDef(
             title="Teatime",
             game_text="Each player draws 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=teatime,
         ),
         Attack(
             title="Poltergeist",
@@ -32,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=poltergeist,
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import opponent_attack_tax
 
 card = PokemonCardDef(
     guid="df99ed28-b66c-52ac-a494-ed6652d9ce6d",
@@ -22,7 +23,10 @@ card = PokemonCardDef(
         Ability(
             title="Single Strike Jammer",
             game_text="Your opponent's Single Strike Pok\u00e9mon's attacks cost Colorless more.",
-            effect=unimplemented,
+            passive=opponent_attack_tax(
+                1,
+                target_pred=lambda p: "Single Strike" in subtypes_for(p.archetype_id),
+            ),
         ),
         Attack(
             title="Cavernous Chomp",

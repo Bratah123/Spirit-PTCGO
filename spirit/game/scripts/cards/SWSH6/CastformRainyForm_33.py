@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+
+
+class WeatherReadingPassive(Passive):
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if carrier_pokemon(carrier) is not pokemon:
+            return cost
+        discard = board.find_player_area(carrier.owning_player_id, "discard")
+        stadiums = sum(
+            1 for c in (discard.children if discard else [])
+            if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.STADIUM.value
+        )
+        if stadiums >= 8:
+            return {}
+        return cost
+
 
 card = PokemonCardDef(
     guid="cf23d7f0-f5cf-5233-ad80-8aba42de925e",
@@ -20,14 +37,14 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Weather Reading",
-            game_text="If you have 8 or more Stadium cards in your discard pile, ignore all Energy in this Pok\u00e9mon's attack costs.",
-            effect=unimplemented,
+            game_text="If you have 8 or more Stadium cards in your discard pile, ignore all Energy in this Pokémon's attack costs.",
+            passive=WeatherReadingPassive(),
         ),
         Attack(
             title="Rainfall",
-            game_text="This attack does 20 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack does 20 damage to each of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(20),
         ),
     ],
 )

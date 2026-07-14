@@ -9,19 +9,22 @@ from spirit.game.attributes import (
     SpecialConditions,
 )
 from spirit.game.data_utils import (
-    ABILITIES_BY_ID, Ability, Attack, ability_id_for, def_for, is_pokemon_v,
-    subtypes_for,
+    ABILITIES_BY_ID, Ability, Attack, ability_id_for, def_for, has_rule_box,
+    is_pokemon_v, subtypes_for,
 )
 from spirit.game.session.constants import BENCH_CAPACITY
 from spirit.game.session.effects import (
     full_stack,
     is_basic_pokemon,
     is_colorless_no_rule_box,
+    is_pokemon_card,
     is_special_energy,
     is_supporter_card,
     is_trainer_card,
 )
-from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.session.passives import (
+    Passive, carrier_pokemon, effective_bench_capacity,
+)
 from spirit.game.models.board import PokemonEntity
 
 
@@ -40,7 +43,8 @@ class MysteriousNestPassive(Passive):
 
 async def read_the_wind(ctx):
     """Discard a card from your hand. If you do, draw 3 cards."""
-    if await ctx.discard_from_hand(1, minimum=0, prompt="Discard a card from your hand"):
+    # No "you may": with a card in hand the discard is mandatory.
+    if await ctx.discard_from_hand(1, minimum=1, prompt="Discard a card from your hand"):
         await ctx.draw_cards(3)
 
 
@@ -191,6 +195,26 @@ class ExcitedHeartPassive(Passive):
         else:
             del cost["Colorless"]
         return cost
+
+
+# --- Ditto (PGO): Sudden Transformation ------------------------------------
+
+class SuddenTransformationPassive(Passive):
+    """May use the attacks of Basic non-Rule-Box Pokemon in the owner's
+    discard pile (energy costs still apply)."""
+
+    def granted_attacks(self, board, pokemon, carrier):
+        if carrier is not pokemon:
+            return []
+        discard = board.find_player_area(pokemon.owning_player_id, "discard")
+        attacks = []
+        for card in (discard.children if discard else []):
+            if not is_basic_pokemon(card) or has_rule_box(card.archetype_id):
+                continue
+            for ability in getattr(def_for(card.archetype_id), "abilities", None) or []:
+                if isinstance(ability, Attack):
+                    attacks.append(ability)
+        return attacks
 
 
 # --- Raikou (VIV): Amazing Shot -------------------------------------------
@@ -902,3 +926,239 @@ async def teraspark(ctx):
         ctx, ctx.opponent_bench(), 40,
         "Choose a Benched Pokémon to take 40 damage",
     )
+
+
+# --- Word of Ruin / Doom Curse (delayed Knock Out) ------------------------
+
+async def delayed_knockout(ctx):
+    """At the end of your opponent's next turn, the Defending Pokemon will
+    be Knocked Out (dropped if it leaves the Active spot or evolves)."""
+    target = ctx.defender
+    if target is None or ctx.effects_blocked(target):
+        return
+    ctx.visual_targets = [target.entity_id]
+    owner_id = target.owning_player_id
+    target_id = target.entity_id
+
+    def _guard(board):
+        active = board.active_pokemon(owner_id) if owner_id else None
+        return active is not None and active.entity_id == target_id
+
+    async def _fire(session):
+        pokemon = session.board_state.get_entity(target_id)
+        if isinstance(pokemon, PokemonEntity):
+            await session._resolve_raw_knockout(pokemon)
+
+    ctx.schedule_at_checkup(1, _fire, guard=_guard)
+
+
+# --- Top Entry / Emergency Entry (bench straight from the turn draw) ------
+
+def top_entry(draw_count=0):
+    """If drawn at the beginning of your turn and your Bench isn't full, you
+    may put this Pokemon onto your Bench (Emergency Entry also draws)."""
+    async def effect(ctx):
+        source = ctx.source
+        owner = source.owning_player_id or ctx.player_id
+        bench = ctx.board.find_player_area(owner, "bench")
+        if not bench \
+                or len(bench.children) >= effective_bench_capacity(ctx.board, owner):
+            return
+        if not await ctx.ask_yes_no("Put this Pokémon onto your Bench?"):
+            return
+        if await ctx.bench_pokemon(source) and draw_count:
+            await ctx.draw_cards(draw_count)
+    return effect
+
+
+# --- Origin Forme Dialga VSTAR (BRS): Star Chronos ------------------------
+
+async def star_chronos(ctx):
+    """220. Take another turn after this one. (Skip Pokemon Checkup.)"""
+    await ctx.deal_damage()
+    ctx.take_extra_turn()
+
+
+# --- Medicham V (EVS): Yoga Loop ------------------------------------------
+
+def yoga_loop_condition(board, player_id, pokemon):
+    """Unusable if any of your Pokemon used Yoga Loop during your last turn."""
+    prev = board.turn_state.attack_titles_prev_turn_by_player.get(player_id) or []
+    return "Yoga Loop" not in prev
+
+
+async def yoga_loop(ctx):
+    """2 damage counters on 1 opposing Pokemon; a KO grants an extra turn."""
+    target = await ctx.choose_pokemon(
+        ctx.opponent_pokemon_in_play(), "Choose 1 of your opponent's Pokémon"
+    )
+    if target is None:
+        return
+    await ctx.deal_damage(20, target=target, as_counters=True)
+    if target in ctx.knockouts:
+        ctx.take_extra_turn()
+
+
+# --- Jumpluff (EVS): Fluffy Barrage ---------------------------------------
+
+class FluffyBarragePassive(Passive):
+    """May attack twice each turn (the printed KO sentence is timing reminder
+    text, not a condition): the first attack keeps the turn, and legal
+    actions collapse to attacks-only afterwards, so the player either attacks
+    again or clicks End Turn."""
+
+    def attack_keeps_turn(self, attacker, ability, ctx, carrier):
+        if attacker is not carrier:
+            return False
+        uses = [e for e in ctx.session.turn_state.attacks_used
+                if e[0] == carrier.entity_id]
+        return len(uses) == 1
+
+
+# --- Devolution (Rewind Beam / Downgrading Beam / Curse of Devolution) ----
+
+def devolvable(pokemon) -> bool:
+    """An evolved in-play Pokemon with its previous stage tucked underneath."""
+    evolves_from = pokemon.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
+    return bool(evolves_from) and any(
+        isinstance(c, PokemonEntity)
+        and c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
+        for c in pokemon.children
+    )
+
+
+def devolve_depth(pokemon) -> int:
+    """How many evolution cards can be peeled off the stack."""
+    depth, current = 0, pokemon
+    while True:
+        evolves_from = current.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
+        nxt = next(
+            (c for c in current.children
+             if isinstance(c, PokemonEntity)
+             and c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from),
+            None,
+        ) if evolves_from else None
+        if nxt is None:
+            return depth
+        depth, current = depth + 1, nxt
+
+
+async def rewind_beam(ctx):
+    """180. Devolve the opposing evolved Active: highest Stage card to hand."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and devolvable(defender)             and not ctx.effects_blocked(defender):
+        await ctx.devolve_pokemon(defender, steps=1, destination="hand")
+
+
+async def downgrading_beam(ctx):
+    """Devolve 1 opposing evolved Pokemon, removing any number of Evolution
+    cards; the opponent shuffles them into their deck."""
+    candidates = [p for p in ctx.opponent_pokemon_in_play()
+                  if devolvable(p) and not ctx.effects_blocked(p)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose 1 of your opponent's evolved Pokémon"
+    )
+    if target is None:
+        return
+    owner_id = target.owning_player_id
+    depth = devolve_depth(target)
+    steps = 1
+    if depth > 1:
+        steps = 1 + await ctx.choose(
+            "How many Evolution cards will you remove?",
+            [str(n + 1) for n in range(depth)],
+        )
+    removed = await ctx.devolve_pokemon(target, steps=steps, destination="deck")
+    if removed:
+        await ctx.shuffle_deck(owner_id)
+
+
+async def curse_of_devolution(ctx):
+    """On evolve: you may devolve 1 opposing Benched evolved Pokemon."""
+    candidates = [p for p in ctx.opponent_bench()
+                  if devolvable(p) and not ctx.effects_blocked(p)]
+    if not candidates:
+        return
+    if not await ctx.ask_yes_no("Devolve 1 of your opponent's Benched Pokémon?"):
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose 1 of your opponent's Benched evolved Pokémon"
+    )
+    if target is not None:
+        await ctx.devolve_pokemon(target, steps=1, destination="hand")
+
+
+# --- Identity swaps (Stance Change / V Transformation / Phantom Transformation)
+
+
+def _same_name(entity, other) -> bool:
+    return entity.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) \
+        == other.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+
+
+def stance_change_condition(board, player_id, pokemon):
+    """A same-named card (an Aegislash) sits in the hand."""
+    hand = board.find_player_area(player_id, "hand")
+    return bool(hand) and any(_same_name(c, pokemon) for c in hand.children)
+
+
+async def stance_change(ctx):
+    """Switch this Pokemon with an Aegislash in your hand; everything remains."""
+    candidates = [c for c in ctx.hand() if _same_name(c, ctx.source)]
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose an Aegislash to switch with this Pokémon",
+    )
+    if picks:
+        await ctx.identity_swap(ctx.source, picks[0], destination="hand")
+
+
+def _is_basic_pokemon_v(card) -> bool:
+    return is_basic_pokemon(card) and is_pokemon_v(card.archetype_id)
+
+
+def v_transformation_condition(board, player_id, pokemon):
+    discard = board.find_player_area(player_id, "discard")
+    return bool(discard) and any(_is_basic_pokemon_v(c) for c in discard.children)
+
+
+async def v_transformation(ctx):
+    """Switch this Pokemon with a Basic Pokemon V from the discard pile."""
+    candidates = [c for c in ctx.discard_pile() if _is_basic_pokemon_v(c)]
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose a Basic Pokémon V to switch with this Pokémon",
+    )
+    if picks:
+        await ctx.identity_swap(ctx.source, picks[0], destination="discard")
+
+
+def _phantom_candidate(card, zoroark) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE1.value
+        and not _same_name(card, zoroark)
+    )
+
+
+def phantom_transformation_condition(board, player_id, pokemon):
+    discard = board.find_player_area(player_id, "discard")
+    return bool(discard) and any(
+        _phantom_candidate(c, pokemon) for c in discard.children)
+
+
+async def phantom_transformation(ctx):
+    """Discard this Pokemon and all attached cards; a Stage 1 (non-Zoroark)
+    from the discard pile takes its place as a fresh Pokemon."""
+    candidates = [c for c in ctx.discard_pile()
+                  if _phantom_candidate(c, ctx.source)]
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose a Stage 1 Pokémon to put in this Pokémon's place",
+    )
+    if picks:
+        await ctx.identity_swap(ctx.source, picks[0], destination="discard",
+                                transfer=False)

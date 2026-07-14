@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.session.effects import is_special_energy
+
+
+async def persist_sting(ctx):
+    """If the opponent's Active has any Special Energy attached, it is Knocked Out."""
+    defender = ctx.defender
+    if defender is not None and any(
+        is_special_energy(e) for e in ctx.attached_energies(defender)
+    ):
+        await ctx.knock_out(defender)
+
 
 card = PokemonCardDef(
     guid="3e741793-cbf8-50c9-9947-4d303a67c51d",
@@ -21,16 +33,16 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Persist Sting",
-            game_text="If your opponent's Active Pok\u00e9mon has any Special Energy attached, it is Knocked Out.",
+            game_text="If your opponent's Active Pokémon has any Special Energy attached, it is Knocked Out.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=persist_sting,
         ),
         Attack(
             title="Jet Spear",
-            game_text="Discard an Energy from this Pok\u00e9mon.",
+            game_text="Discard an Energy from this Pokémon.",
             cost={PokemonTypes.GRASS: 1},
             damage=110,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

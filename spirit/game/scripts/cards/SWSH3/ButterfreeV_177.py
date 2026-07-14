@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="ff69cefc-d09c-5ccb-8edd-a097212ca8d4",
@@ -22,7 +23,9 @@ card = PokemonCardDef(
             title="Dizzying Poison",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused and Poisoned.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=condition_attack(
+                SpecialConditions.CONFUSED, SpecialConditions.POISONED,
+            ),
         ),
         Attack(
             title="Blasting Wind",

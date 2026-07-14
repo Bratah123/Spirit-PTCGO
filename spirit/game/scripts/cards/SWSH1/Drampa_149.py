@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="5e54416d-c387-5bf5-90d1-b0d8ab4ec408",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             game_text="Discard the top 2 cards of your deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=mill_attack(2, opponent=False),
         ),
     ],
 )

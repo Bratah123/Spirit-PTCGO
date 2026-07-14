@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, CardType, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, defender_is_v
+from spirit.game.card_effects.support_common import attach_from_discard
+
+
+def _is_fire_energy_card(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return card.get_attribute(AttrID.CARD_TYPE) == CardType.ENERGY.value \
+        and PokemonTypes.FIRE.value in types
 
 card = PokemonCardDef(
     guid="4432221a-c964-504a-8130-09a271fd25b8",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             game_text="Attach a Fire Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=_is_fire_energy_card, count=1, target="self"),
         ),
         Attack(
             title="Fighting Tackle",
@@ -32,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_is_v, 100),
         ),
     ],
 )

@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+from spirit.game.card_effects.support_common import opponent_switches
+from spirit.game.card_effects.trainers import opponent_has_bench
+
+
+async def intimidating_roar(ctx):
+    """Once during your turn, you may have your opponent switch their Active
+    Pokémon with 1 of their Benched Pokémon."""
+    if await ctx.ask_yes_no(
+        "Have your opponent switch their Active Pokémon with 1 of their "
+        "Benched Pokémon?"
+    ):
+        await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="fe67fb86-b935-50da-8200-177adde21841",
@@ -21,7 +35,9 @@ card = PokemonCardDef(
         Ability(
             title="Intimidating Roar",
             game_text="Once during your turn, you may have your opponent switch their Active Pok\u00e9mon with 1 of their Benched Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=lambda board, player_id, pokemon: opponent_has_bench(board, player_id),
+            effect=intimidating_roar,
         ),
         Attack(
             title="Fierce Dragon",
@@ -29,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage("defender"), 120),
         ),
     ],
 )

@@ -1,4 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.support_common import recover_from_discard, requires_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +13,6 @@ card = ItemCardDef(
     collector_number=160,
     set_code="SWSH1",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    condition=requires_discard(is_basic_energy_card),
+    effect=recover_from_discard(is_basic_energy_card, count=2, minimum=1, to="hand"),
 )

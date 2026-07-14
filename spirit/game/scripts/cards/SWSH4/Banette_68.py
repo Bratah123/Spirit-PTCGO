@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.card_effects.pokemon import curse_of_devolution
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -22,8 +23,9 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Curse of Devolution",
+            trigger=Triggers.ON_EVOLVE,
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may devolve 1 of your opponent's Benched evolved Pok\u00e9mon by putting the highest Stage Evolution card on it into your opponent's hand.",
-            effect=unimplemented,
+            effect=curse_of_devolution,
         ),
         Attack(
             title="Spooky Shot",

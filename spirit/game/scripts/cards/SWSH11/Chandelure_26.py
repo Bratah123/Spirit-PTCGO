@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def mountain_roasting(ctx):
+    """On evolve: you may discard the top 3 cards of your opponent's deck."""
+    if await ctx.ask_yes_no("Discard the top 3 cards of your opponent's deck?"):
+        await ctx.discard_cards(ctx.deck_top(3, player_id=ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="7fcef5a2-86ab-5518-9f30-2f948ed75d8f",
@@ -22,7 +29,8 @@ card = PokemonCardDef(
         Ability(
             title="Mountain Roasting",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may discard the top 3 cards of your opponent's deck.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=mountain_roasting,
         ),
         Attack(
             title="Heat Blast",

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
 
 card = PokemonCardDef(
     guid="c7d4930b-3cf6-523b-bf3d-1d798f444bfb",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Sneaky Placement",
             game_text="Put 1 damage counter on 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(1, "choose_any_opponent"),
         ),
     ],
 )

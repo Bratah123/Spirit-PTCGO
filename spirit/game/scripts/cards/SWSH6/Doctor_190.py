@@ -1,5 +1,15 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.pokemon import is_pokemon_vmax
+
+
+async def doctor(ctx):
+    """Draw 2 cards. If your opponent's Active Pokemon is a Pokemon VMAX, draw 2 more cards."""
+    await ctx.draw_cards(2)
+    active = ctx.opponent_active()
+    if active is not None and is_pokemon_vmax(active.archetype_id):
+        await ctx.draw_cards(2)
+
 
 card = SupporterCardDef(
     guid="38af8d35-b09d-5f39-bb2b-2162636f717d",
@@ -11,5 +21,5 @@ card = SupporterCardDef(
     collector_number=190,
     set_code="SWSH6",
     rarity=Rarities.RareUltra,
-    effect=unimplemented
+    effect=doctor,
 )

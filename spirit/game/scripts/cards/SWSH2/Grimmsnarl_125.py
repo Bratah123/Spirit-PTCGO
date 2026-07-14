@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.passives_common import is_in_active_spot, opposing_active
+from spirit.game.session.passives import Passive
+
+
+class DarkOathPassive(Passive):
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if is_in_active_spot(carrier) and opposing_active(pokemon, carrier):
+            cost["Colorless"] = cost.get("Colorless", 0) + 1
+        return cost
+
 
 card = PokemonCardDef(
     guid="a0033ec6-9849-56b2-9fb9-c772b820d070",
@@ -22,7 +33,7 @@ card = PokemonCardDef(
         Ability(
             title="Dark Oath",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, your opponent's Active Pok\u00e9mon's attacks cost Colorless more.",
-            effect=unimplemented,
+            passive=DarkOathPassive(),
         ),
         Attack(
             title="Energy Press",
@@ -30,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 30, base=100),
         ),
     ],
 )

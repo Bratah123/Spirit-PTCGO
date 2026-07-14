@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+
+
+async def flying_fury(ctx):
+    """Before damage, discard any number of your Pokémon Tools; +40 damage each."""
+    my_tools = [tool for tool, pokemon in ctx.tools_in_play()
+                if pokemon.owning_player_id == ctx.player_id]
+    picks = []
+    if my_tools:
+        picks = await ctx.choose_cards(
+            my_tools, len(my_tools), minimum=0,
+            prompt="Discard any number of Pokémon Tools from your Pokémon.",
+        )
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.deal_damage(10 + 40 * len(picks))
+
 
 card = PokemonCardDef(
     guid="ac206174-5d5f-5c35-b0ce-2a9753f9c347",
@@ -23,7 +40,7 @@ card = PokemonCardDef(
             title="Triple Draw",
             game_text="Draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=draw_attack(3),
         ),
         Attack(
             title="Flying Fury",
@@ -31,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flying_fury,
         ),
     ],
 )

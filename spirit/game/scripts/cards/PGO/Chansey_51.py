@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
 
 card = PokemonCardDef(
     guid="8506860a-4fe4-5cf8-ae12-ed16c472b45b",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Delicious Egg",
             game_text="Heal 30 damage from 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_targets(30, "bench_choice"),
         ),
         Attack(
             title="Gentle Slap",

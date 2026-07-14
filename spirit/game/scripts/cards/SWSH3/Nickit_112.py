@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def tail_whip(ctx):
+    """Flip a coin. If heads, the Defending Pokémon can't attack next turn."""
+    heads = await ctx.flip_coins(1, "Tail Whip")
+    if heads[0]:
+        lock_defender_attacks(ctx)
 
 card = PokemonCardDef(
     guid="6b8927a2-9650-5a0a-9ca7-b010ba01f11c",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
             title="Tail Whip",
             game_text="Flip a coin. If heads, during your opponent's next turn, the Defending Pok\u00e9mon can't attack.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=tail_whip,
         ),
     ],
 )

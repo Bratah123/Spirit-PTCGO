@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_metal_energy_card
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
 card = PokemonCardDef(
     guid="da2623da-5a2d-59bd-a04a-0350509f6da7",
@@ -21,16 +24,19 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Rewind Time",
-            game_text="Attach up to 2 Metal Energy cards from your discard pile to 1 of your Pok\u00e9mon.",
+            game_text="Attach up to 2 Metal Energy cards from your discard pile to 1 of your Pokémon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_metal_energy_card, count=2, minimum=0, target="choice",
+                prompt="Choose up to 2 Metal Energy cards to attach",
+            ),
         ),
         Attack(
             title="Flash of Destruction",
-            game_text="Discard 2 Energy from this Pok\u00e9mon.",
+            game_text="Discard 2 Energy from this Pokémon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

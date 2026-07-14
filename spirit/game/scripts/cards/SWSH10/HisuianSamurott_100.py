@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.support_common import discard_then_draw, requires_hand
 
 card = PokemonCardDef(
     guid="e7a0a6ef-bc85-5897-a9f5-ff5142325f63",
@@ -22,7 +24,9 @@ card = PokemonCardDef(
         Ability(
             title="Wily Stance",
             game_text="You must discard a card from your hand in order to use this Ability. Once during your turn, you may draw 3 cards.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=requires_hand(n=1),
+            effect=discard_then_draw(1, 3, optional=False),
         ),
         Attack(
             title="Dark Mastery",
@@ -30,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("mine"), 20, base=60),
         ),
     ],
 )

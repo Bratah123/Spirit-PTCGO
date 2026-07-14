@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import place_counters
+
+
+async def spiteful_magic(ctx):
+    """If this Pokemon was at full HP and this attack knocks it out, put 8
+    damage counters on the Attacking Pokemon."""
+    if ctx.pre_hit_hp != ctx.max_hp(ctx.source):
+        return
+    if ctx.source.get_attribute(AttrID.HP, 0) > 0:
+        return
+    if ctx.damaged_by is not None:
+        await ctx.deal_damage(80, target=ctx.damaged_by, apply_modifiers=False,
+                              as_counters=True)
 
 card = PokemonCardDef(
     guid="2f8c2153-b3e9-5196-9727-d6be25444dfe",
@@ -23,13 +36,14 @@ card = PokemonCardDef(
         Ability(
             title="Spiteful Magic",
             game_text="If this Pok\u00e9mon has full HP and is Knocked Out by damage from an attack from your opponent's Pok\u00e9mon, put 8 damage counters on the Attacking Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=spiteful_magic,
         ),
         Attack(
             title="Eerie Voice",
             game_text="Put 2 damage counters on each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(2, "each_opponent"),
         ),
     ],
 )

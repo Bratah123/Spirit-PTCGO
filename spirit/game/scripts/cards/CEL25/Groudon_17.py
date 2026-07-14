@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_scaled_damage
+from spirit.game.card_effects.support_common import is_energy
 
 card = PokemonCardDef(
     guid="9affb786-a38e-5429-84b8-37ebec853940",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="x",
-            effect=unimplemented,
+            effect=mill_scaled_damage(5, 80, pred=is_energy),
         ),
         Attack(
             title="Massive Rend",

@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def dangerous_mucus(ctx):
+    """On evolve: you may make opponent's Active Burned and Poisoned."""
+    if await ctx.ask_yes_no("Make your opponent's Active Pokémon Burned and Poisoned?"):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="799ddb96-0b03-5a3d-a7e5-6c7cbe9b5905",
@@ -22,7 +30,8 @@ card = PokemonCardDef(
         Ability(
             title="Dangerous Mucus",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may make your opponent's Active Pok\u00e9mon Burned and Poisoned.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=dangerous_mucus,
         ),
         Attack(
             title="Vine Whip",

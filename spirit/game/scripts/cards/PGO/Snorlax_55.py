@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import (
+    no_retreat_passive, is_in_active_spot, opposing_active,
+)
 
 card = PokemonCardDef(
     guid="5796a3e5-68f2-5556-aee0-2216f67f5f11",
@@ -21,14 +25,16 @@ card = PokemonCardDef(
         Ability(
             title="Block",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, your opponent's Active Pok\u00e9mon can't retreat.",
-            effect=unimplemented,
+            passive=no_retreat_passive(
+                lambda p, c: opposing_active(p, c) and is_in_active_spot(c)
+            ),
         ),
         Attack(
             title="Collapse",
             game_text="This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=150,
-            effect=unimplemented,
+            effect=condition_attack(self_conditions=(SpecialConditions.ASLEEP,)),
         ),
     ],
 )

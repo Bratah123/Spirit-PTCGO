@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy_card(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER)
+
+
+async def spiral_jet(ctx):
+    """Discard 2 Water Energy cards from hand. If you don't, this attack does nothing."""
+    discarded = await ctx.discard_from_hand(
+        2, minimum=0, predicate=_is_water_energy_card,
+        prompt="Discard 2 Water Energy cards from your hand for Spiral Jet",
+    )
+    if len(discarded) < 2:
+        return
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="b5aa2e29-b89c-5cd4-8765-a4e71b923d01",
@@ -29,7 +46,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Water Energy cards from your hand. If you don't, this attack does nothing.",
             cost={PokemonTypes.WATER: 1},
             damage=130,
-            effect=unimplemented,
+            effect=spiral_jet,
         ),
     ],
 )

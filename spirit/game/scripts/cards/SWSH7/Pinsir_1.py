@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import no_resistance_passive
+
+
+def _single_strike_attacker(calc, carrier):
+    return (calc.attacker is not None
+            and calc.attacker.owning_player_id == carrier.owning_player_id
+            and "Single Strike" in subtypes_for(calc.attacker.archetype_id))
 
 card = PokemonCardDef(
     guid="f2928e4f-4662-5c5a-aca8-905e7ea6e7bd",
@@ -21,7 +28,7 @@ card = PokemonCardDef(
         Ability(
             title="Vise Coach",
             game_text="Damage from your Single Strike Pok\u00e9mon's attacks isn't affected by your opponent's Active Pok\u00e9mon's Resistance.",
-            effect=unimplemented,
+            passive=no_resistance_passive(when=_single_strike_attacker),
         ),
         Attack(
             title="Seismic Toss",

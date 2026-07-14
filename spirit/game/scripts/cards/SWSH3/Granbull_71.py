@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def jaw_lock(ctx):
+    """50. During your opponent's next turn, the Defending Pokemon can't
+    retreat."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        ctx.lock_retreat(defender)
 
 card = PokemonCardDef(
     guid="5173239b-c785-59ae-ba72-38324af83844",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=jaw_lock,
         ),
         Attack(
             title="Headbutt Bounce",

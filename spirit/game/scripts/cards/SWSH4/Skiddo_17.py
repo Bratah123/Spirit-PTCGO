@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+synthesis = search_attach_energy(
+    predicate=_is_grass_energy, count=1, to_self=False,
+    prompt="Choose a Grass Energy card to attach.",
+)
+
 
 card = PokemonCardDef(
     guid="7cd86cd1-62e0-5af1-b4c7-208ed4449b12",
@@ -22,7 +35,7 @@ card = PokemonCardDef(
             title="Synthesis",
             game_text="Search your deck for a Grass Energy card and attach it to 1 of your Pok\u00e9mon. Then, shuffle your deck.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=synthesis,
         ),
         Attack(
             title="Razor Leaf",

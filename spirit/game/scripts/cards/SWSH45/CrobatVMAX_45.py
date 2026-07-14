@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def stealth_poison(ctx):
+    """70, opponent's Active becomes Poisoned, then switch this Pokémon with 1 of your Benched."""
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    bench = ctx.my_bench()
+    if bench:
+        target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+        if target is not None:
+            await ctx.switch_active(ctx.player_id, target)
 
 card = PokemonCardDef(
     guid="dc057a12-def2-5b04-b8d5-42a44e7da160",
@@ -24,7 +35,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned. Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=70,
-            effect=unimplemented,
+            effect=stealth_poison,
         ),
         Attack(
             title="Max Cutter",

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, opponent_prizes_taken_at_least
 
 card = PokemonCardDef(
     guid="3a350e08-665c-52ec-b887-cc6a4f273ab6",
@@ -24,7 +25,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(opponent_prizes_taken_at_least(3), 50),
         ),
     ],
 )

@@ -1,5 +1,10 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+from spirit.game.card_effects.passives_common import takes_less_passive
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_extra_fighting_energy = lambda ctx: count_energy(
+    "self", energy_type=PokemonTypes.FIGHTING)(ctx) >= 3
 
 card = PokemonCardDef(
     guid="e820b680-0fd1-5cbc-bcf2-f509b9950590",
@@ -22,7 +27,7 @@ card = PokemonCardDef(
         Ability(
             title="Sand Sac",
             game_text="This Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=takes_less_passive(30),
         ),
         Attack(
             title="Power Press",
@@ -30,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_extra_fighting_energy, 70),
         ),
     ],
 )

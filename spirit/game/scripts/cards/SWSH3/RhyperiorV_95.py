@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
 
 card = PokemonCardDef(
     guid="a21484ae-0b01-5b8b-82ef-85cd896f5633",
@@ -23,14 +24,14 @@ card = PokemonCardDef(
             game_text="Discard an Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(),
         ),
         Attack(
             title="Heavy Rock Artillery",
             game_text="During your next turn, this Pok\u00e9mon can't use Heavy Rock Artillery.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=210,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

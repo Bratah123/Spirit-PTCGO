@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import WildStylePassive, dynamic_tail
 
 card = PokemonCardDef(
     guid="bd64b9be-7f7a-5a13-a0ae-4b88684f9b29",
@@ -21,14 +22,14 @@ card = PokemonCardDef(
         Ability(
             title="Wild Style",
             game_text="This Pok\u00e9mon's attacks cost Colorless less for each of your opponent's Single Strike, Rapid Strike, and Fusion Strike Pok\u00e9mon in play.",
-            effect=unimplemented,
+            passive=WildStylePassive(),
         ),
         Attack(
             title="Dynamic Tail",
             game_text="This attack also does 60 damage to 1 of your Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 4},
             damage=190,
-            effect=unimplemented,
+            effect=dynamic_tail,
         ),
     ],
 )

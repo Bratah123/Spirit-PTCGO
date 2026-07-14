@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def geo_cannon(ctx):
+    """50, +100 and attach the top card if it's an Energy card (else discard it)."""
+    top = ctx.deck_top(1)
+    if not top:
+        await ctx.deal_damage(50)
+        return
+    card = top[0]
+    if is_energy_card(card):
+        await ctx.attach_energy(card, ctx.attacker)
+        await ctx.deal_damage(150)
+    else:
+        await ctx.discard_cards([card])
+        await ctx.deal_damage(50)
+
 
 card = PokemonCardDef(
     guid="2511b893-133b-552f-bd82-df0be95def33",
@@ -25,14 +43,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=geo_cannon,
         ),
         Attack(
             title="Rocky Tackle",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=180,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

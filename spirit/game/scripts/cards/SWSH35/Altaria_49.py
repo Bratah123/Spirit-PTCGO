@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+from spirit.game.card_effects.pokemon import is_pokemon_gx
+
+
+def _v_or_gx_attack_on_carrier(calc, carrier) -> bool:
+    return (
+        calc.target is carrier
+        and calc.attacker is not None
+        and (is_pokemon_v(calc.attacker.archetype_id) or is_pokemon_gx(calc.attacker.archetype_id))
+    )
+
 
 card = PokemonCardDef(
     guid="15143446-31a6-5341-b5aa-670dd522342d",
@@ -23,7 +34,7 @@ card = PokemonCardDef(
         Ability(
             title="Miraculous Charm",
             game_text="Prevent all damage done to this Pok\u00e9mon by attacks from your opponent's Pok\u00e9mon V and Pok\u00e9mon-GX.",
-            effect=unimplemented,
+            passive=prevent_damage_when(_v_or_gx_attack_on_carrier),
         ),
         Attack(
             title="Speed Dive",

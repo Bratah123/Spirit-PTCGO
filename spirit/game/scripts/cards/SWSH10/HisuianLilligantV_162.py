@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_until_effect
 
 card = PokemonCardDef(
     guid="f56c45f0-5bbe-58e5-9b53-05ca31c117b5",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Dance Gracefully",
             game_text="Draw cards until you have 6 cards in your hand.",
             cost={},
-            effect=unimplemented,
+            effect=draw_until_effect(6),
         ),
         Attack(
             title="Leaf Step",

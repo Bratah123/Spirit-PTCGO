@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 card = PokemonCardDef(
     guid="15f3dbb5-667c-5dd5-8ab9-b84ee49d7dae",
@@ -20,9 +21,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Thunder Spear",
-            game_text="This attack does 10 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack does 10 damage to 1 of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.LIGHTNING: 1},
-            effect=unimplemented,
+            effect=snipe_attack(10, pool="any", count=1),
         ),
     ],
 )

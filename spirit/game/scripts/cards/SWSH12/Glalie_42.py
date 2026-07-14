@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _played_candice(ctx):
+    return ctx.played_trainer_this_turn("Candice") > 0
+
 
 card = PokemonCardDef(
     guid="08abe688-454d-5dcd-bc3e-c6ae1bdf140e",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=130,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_played_candice, 130),
         ),
     ],
 )

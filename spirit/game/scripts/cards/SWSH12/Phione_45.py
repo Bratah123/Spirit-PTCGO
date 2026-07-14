@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_basic_pokemon, is_water_pokemon
+from spirit.game.card_effects.support_common import search_to_bench
+
+
+def _is_basic_water_pokemon(card):
+    return is_basic_pokemon(card) and is_water_pokemon(card)
+
 
 card = PokemonCardDef(
     guid="ee7cc6fb-017d-5745-8653-bd3f2aa6464b",
@@ -20,9 +27,9 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Sea Feast",
-            game_text="Search your deck for up to 3 Basic Water Pok\u00e9mon and put them onto your Bench. Then, shuffle your deck.",
+            game_text="Search your deck for up to 3 Basic Water Pokémon and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=search_to_bench(predicate=_is_basic_water_pokemon, count=3),
         ),
         Attack(
             title="Wave Splash",

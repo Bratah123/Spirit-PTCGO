@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.session.passives import Passive
+from spirit.game.card_effects.passives_common import is_in_active_spot, boost_own_next_turn
+
+
+class AbsoluteSpacePassive(Passive):
+    def blocks_trainer_play(self, card, player_id, carrier):
+        if player_id == carrier.owning_player_id:
+            return False
+        if not is_in_active_spot(carrier):
+            return False
+        return card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.STADIUM.value
+
 
 card = PokemonCardDef(
     guid="70959369-220f-5338-bdef-cfebe8044717",
@@ -21,7 +33,7 @@ card = PokemonCardDef(
         Ability(
             title="Absolute Space",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, your opponent can't play any Stadium cards from their hand.",
-            effect=unimplemented,
+            passive=AbsoluteSpacePassive(),
         ),
         Attack(
             title="Overdrive Smash",
@@ -29,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=boost_own_next_turn(80, attack_title="Overdrive Smash"),
         ),
     ],
 )

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_special_energy
+from spirit.game.card_effects.attacks_common import bonus_if, snipe_attack
+
+
+def _has_special_energy(ctx) -> bool:
+    return any(is_special_energy(e) for e in ctx.attached_energies(ctx.attacker))
+
 
 card = PokemonCardDef(
     guid="6891b982-6a9d-5ecf-a6f1-f93d9a05d1b9",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="This attack also does 20 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            effect=unimplemented,
+            effect=snipe_attack(20, pool="bench", count=2, also_base=True),
         ),
         Attack(
             title="Special Laser",
@@ -32,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_special_energy, 120),
         ),
     ],
 )

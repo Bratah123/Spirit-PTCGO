@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack, flip_or_nothing
 
 card = PokemonCardDef(
     guid="fce25894-c26a-5c8f-8937-1f63dcb7b102",
@@ -23,14 +24,14 @@ card = PokemonCardDef(
             game_text="Discard an Energy from your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(),
         ),
         Attack(
             title="Stumbling Press",
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=180,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

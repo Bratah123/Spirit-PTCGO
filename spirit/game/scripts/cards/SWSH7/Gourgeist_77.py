@@ -1,5 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _is_psychic_pokemon(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_pokemon_card(card) and PokemonTypes.PSYCHIC.value in types
+
+
+async def pandemonium(ctx):
+    """Reveal the top 6 cards of your deck. This attack does 60 damage for
+    each Psychic Pokemon found there. Then, shuffle those Pokemon back into
+    your deck and discard the other cards."""
+    top = ctx.deck_top(6)
+    if top:
+        await ctx.reveal_cards(top)
+    psychic = [c for c in top if _is_psychic_pokemon(c)]
+    await ctx.deal_damage(60 * len(psychic))
+    others = [c for c in top if c not in psychic]
+    if psychic:
+        await ctx.shuffle_into_deck(psychic)
+    if others:
+        await ctx.discard_cards(others)
+
 
 card = PokemonCardDef(
     guid="ecf0c178-7ba2-500d-bcaa-24627b4d12ca",
@@ -26,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=pandemonium,
         ),
     ],
 )

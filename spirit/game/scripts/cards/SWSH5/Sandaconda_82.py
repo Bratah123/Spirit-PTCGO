@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_scaled_damage
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _is_fighting_energy(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.FIGHTING.value in types
+
 
 card = PokemonCardDef(
     guid="298d1d7f-9206-5fd0-a53d-d09c1173194a",
@@ -25,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=mill_scaled_damage(6, 60, pred=_is_fighting_energy),
         ),
         Attack(
             title="Skull Bash",

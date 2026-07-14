@@ -1,5 +1,14 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def bug_catcher(ctx):
+    """Draw 2 cards. Flip a coin; if heads, draw 2 more cards."""
+    await ctx.draw_cards(2)
+    heads = (await ctx.flip_coins(1, "Bug Catcher"))[0]
+    if heads:
+        await ctx.draw_cards(2)
+
 
 card = SupporterCardDef(
     guid="0c008faf-9553-50c3-b40b-b9249c38d9bb",
@@ -11,5 +20,5 @@ card = SupporterCardDef(
     collector_number=226,
     set_code="SWSH8",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=bug_catcher
 )

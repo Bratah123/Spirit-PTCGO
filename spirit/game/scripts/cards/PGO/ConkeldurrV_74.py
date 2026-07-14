@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def counter(ctx):
+    """20 damage, +that much more if this Pokemon was damaged by an attack during the opponent's last turn."""
+    bonus = ctx.damage_taken_last_turn(ctx.attacker)
+    await ctx.deal_damage(20 + bonus)
+
 
 card = PokemonCardDef(
     guid="a6cded83-22e8-57ab-bae6-f51a1a627c0e",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=counter,
         ),
         Attack(
             title="Dynamic Punch",
@@ -32,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, flip=True, heads_bonus_damage=90),
         ),
     ],
 )

@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+import random
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def whiny_voice(ctx):
+    """Choose a random card from your opponent's hand. Your opponent reveals
+    that card and shuffles it into their deck."""
+    hand = ctx.hand(ctx.opponent_id)
+    if not hand:
+        return
+    card = random.choice(hand)
+    await ctx.reveal_cards([card])
+    await ctx.shuffle_into_deck([card], ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="d61727a9-46c1-5dfc-b296-1b53d72a7352",
@@ -22,7 +36,7 @@ card = PokemonCardDef(
             title="Whiny Voice",
             game_text="Choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into their deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=whiny_voice,
         ),
         Attack(
             title="Tackle",

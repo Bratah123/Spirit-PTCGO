@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
+
+async def flock(ctx):
+    """Search your deck for up to 2 Arrokuda and put them onto your Bench."""
+    same_archetype = ctx.source.archetype_id
+    await search_to_bench(
+        lambda c: c.archetype_id == same_archetype, count=2,
+        prompt="Choose up to 2 Arrokuda to put onto your Bench.",
+    )(ctx)
+
 
 card = PokemonCardDef(
     guid="abf209f4-394b-5963-979d-ea7ce09865c6",
@@ -22,7 +33,7 @@ card = PokemonCardDef(
             title="Flock",
             game_text="Search your deck for up to 2 Arrokuda and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=flock,
         ),
         Attack(
             title="Peck",

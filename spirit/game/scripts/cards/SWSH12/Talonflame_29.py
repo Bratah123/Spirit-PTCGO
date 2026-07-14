@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack, bonus_if, has_damage
 
 card = PokemonCardDef(
     guid="a0e2376a-a8e2-52c6-a55e-d82d630b2142",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Quick Dive",
             game_text="This attack does 50 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=snipe_attack(50, pool="any", count=1),
         ),
         Attack(
             title="Merciless Strike",
@@ -31,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage(), 80),
         ),
     ],
 )

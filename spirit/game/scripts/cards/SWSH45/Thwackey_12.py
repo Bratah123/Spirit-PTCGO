@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class LayOfTheLandPassive(Passive):
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier:
+            return cost
+        area = board.find_global_area("activeStadium")
+        if not (area and area.children):
+            return cost
+        return 0
+
 
 card = PokemonCardDef(
     guid="77fb9e8a-b528-5742-82c1-995e38fcb067",
@@ -22,7 +34,7 @@ card = PokemonCardDef(
         Ability(
             title="Lay of the Land",
             game_text="If you have a Stadium in play, this Pok\u00e9mon has no Retreat Cost.",
-            effect=unimplemented,
+            passive=LayOfTheLandPassive(),
         ),
         Attack(
             title="Branch Poke",

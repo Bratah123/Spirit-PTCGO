@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_grass_energy_card
 
 card = PokemonCardDef(
     guid="1fc0107e-9d80-5934-b5b5-2eaa9b53e163",
@@ -21,7 +24,11 @@ card = PokemonCardDef(
         Ability(
             title="Greening Cells",
             game_text="Once during your turn, you may search your deck for a Grass Energy card and attach it to 1 of your Pok\u00e9mon. Then, shuffle your deck. If you use this Ability, your turn ends.",
-            effect=unimplemented,
+            ends_turn=True,
+            effect=search_attach_energy(
+                predicate=is_grass_energy_card, count=1, distribute=False,
+                prompt="Choose a Grass Energy card to attach.",
+            ),
         ),
         Attack(
             title="Leaf Blade",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(60),
         ),
     ],
 )

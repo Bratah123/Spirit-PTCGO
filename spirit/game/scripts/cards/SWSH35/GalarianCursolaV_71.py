@@ -1,5 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def gnawing_aura(ctx):
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    if ctx.attaching_player_id != ctx.opponent_id:
+        return
+    receiver = ctx.energy_receiver
+    if receiver is None or receiver.owning_player_id != ctx.opponent_id:
+        return
+    await ctx.deal_damage(30, target=receiver, as_counters=True)
+
+
+async def hollow_missile(ctx):
+    await ctx.deal_damage()
+    bench = ctx.opponent_bench()
+    if bench:
+        await ctx.place_damage_counters(3, bench)
 
 card = PokemonCardDef(
     guid="b9a4964e-aed4-5b33-80e0-5f7545517600",
@@ -22,14 +41,15 @@ card = PokemonCardDef(
         Ability(
             title="Gnawing Aura",
             game_text="As long as this Pok\u00e9mon is in the Active Spot, whenever your opponent attaches an Energy card from their hand to 1 of their Pok\u00e9mon, put 3 damage counters on that Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_ENERGY_ATTACHED,
+            effect=gnawing_aura,
         ),
         Attack(
             title="Hollow Missile",
             game_text="Put 3 damage counters on your opponent's Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=hollow_missile,
         ),
     ],
 )

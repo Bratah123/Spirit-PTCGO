@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def spacing_out(ctx):
+    """Flip a coin. If heads, heal 10 damage from this Pokémon."""
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if heads:
+        await ctx.heal(10, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="a0848ba3-b75b-583e-ab69-f4fe9946e74e",
@@ -22,7 +30,7 @@ card = PokemonCardDef(
             title="Spacing Out",
             game_text="Flip a coin. If heads, heal 10 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=spacing_out,
         ),
         Attack(
             title="Ram",

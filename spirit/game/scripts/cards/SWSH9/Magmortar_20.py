@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _electivire_on_bench(ctx) -> bool:
+    return any(p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Electivire"
+               for p in ctx.my_bench())
+
 
 card = PokemonCardDef(
     guid="d4420848-619f-50c0-944b-d1edea4769ac",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_electivire_on_bench, 120),
         ),
     ],
 )

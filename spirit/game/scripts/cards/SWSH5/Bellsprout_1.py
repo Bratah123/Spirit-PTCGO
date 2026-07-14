@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, defender_has_condition
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 card = PokemonCardDef(
     guid="acb0ca84-8b3e-5ce1-8c0e-95384b203a08",
@@ -20,11 +21,11 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Venoshock",
-            game_text="If your opponent's Active Pok\u00e9mon is Poisoned, this attack does 40 more damage.",
+            game_text="If your opponent's Active Pokémon is Poisoned, this attack does 40 more damage.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_has_condition(SpecialConditions.POISONED), 40),
         ),
     ],
 )

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+from spirit.game.card_effects.attacks_common import recoil_attack
 
 card = PokemonCardDef(
     guid="779dd8e1-7210-502d-b99e-71cae4a22a57",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's attacks do 80 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=boost_own_next_turn(80),
         ),
         Attack(
             title="Rampage Drill",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=160,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

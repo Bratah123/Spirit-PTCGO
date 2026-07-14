@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def oppressing_sandstorm(ctx):
+    """If your opponent's Active Pokemon is a Basic Pokemon, it is Knocked Out."""
+    defender = ctx.defender
+    if defender is not None and is_basic_pokemon(defender):
+        await ctx.knock_out(defender)
+
 
 card = PokemonCardDef(
     guid="ae538704-d9f1-5dce-8896-481254a76f24",
@@ -29,7 +38,7 @@ card = PokemonCardDef(
             title="Oppressing Sandstorm",
             game_text="If your opponent's Active Pok\u00e9mon is a Basic Pok\u00e9mon, it is Knocked Out.",
             cost={PokemonTypes.PSYCHIC: 3, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=oppressing_sandstorm,
         ),
     ],
 )

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def raging_repeated_strike(ctx):
+    """Discard any amount of Energy from your Pokemon; +30 damage per card discarded."""
+    energies = [e for p in ctx.my_pokemon_in_play()
+                for e in ctx.attached_energies(p)]
+    picks = []
+    if energies:
+        picks = await ctx.choose_cards(
+            energies, len(energies), minimum=0,
+            prompt="Choose any amount of Energy to discard from your Pokémon.",
+        )
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.deal_damage(120 + 30 * len(picks))
+
 
 card = PokemonCardDef(
     guid="65961c5c-6705-536e-bdd2-c6f13f626101",
@@ -24,7 +41,7 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Raging Repeated Strike",
@@ -32,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=raging_repeated_strike,
         ),
     ],
 )

@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import AttrID
+from spirit.game.session.passives import Passive
+
+
+class _FieldRunnerPassive(Passive):
+    """No Retreat Cost while a Stadium is in play."""
+
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier:
+            return cost
+        node = carrier
+        while node.parent is not None:
+            node = node.parent
+        for child in node.children:
+            if child.get_attribute(AttrID.NAME) == "activeStadium" and child.children:
+                return 0
+        return cost
+
 
 card = PokemonCardDef(
     guid="47f8f433-e678-5249-9378-924d1dd3764a",
@@ -21,7 +39,7 @@ card = PokemonCardDef(
         Ability(
             title="Field Runner",
             game_text="If a Stadium is in play, this Pok\u00e9mon has no Retreat Cost.",
-            effect=unimplemented,
+            passive=_FieldRunnerPassive(),
         ),
         Attack(
             title="Crimson Legs",

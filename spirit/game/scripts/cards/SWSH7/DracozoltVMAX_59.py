@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def spark_trap_retaliate(ctx):
+    """During your opponent's next turn, if this Pokémon is damaged by an
+    attack (even if it is Knocked Out), put 12 damage counters on the
+    Attacking Pokémon."""
+    if not ctx.attack_used_last_turn(title="Spark Trap", entity=ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    await ctx.deal_damage(120, target=attacker, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="5b7b04b5-a3c5-5ccd-ba18-94478c957ca6",
@@ -24,7 +37,12 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, if this Pok\u00e9mon is damaged by an attack (even if it is Knocked Out), put 12 damage counters on the Attacking Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=60,
-            effect=unimplemented,
+        ),
+        Ability(
+            title="Spark Trap",
+            game_text="During your opponent's next turn, if this Pok\u00e9mon is damaged by an attack (even if it is Knocked Out), put 12 damage counters on the Attacking Pok\u00e9mon.",
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=spark_trap_retaliate,
         ),
         Attack(
             title="Max Impact",

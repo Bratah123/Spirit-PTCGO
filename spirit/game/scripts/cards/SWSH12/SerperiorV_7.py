@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def noble_light(ctx):
+    for pokemon in ctx.my_pokemon_in_play() + ctx.opponent_pokemon_in_play():
+        await ctx.heal(30, pokemon)
+
 
 card = PokemonCardDef(
     guid="c9f62229-c761-503c-a0da-a942143af970",
@@ -22,7 +28,7 @@ card = PokemonCardDef(
             title="Noble Light",
             game_text="Heal 30 damage from each Pok\u00e9mon (both yours and your opponent's).",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=noble_light,
         ),
         Attack(
             title="Solar Beam",

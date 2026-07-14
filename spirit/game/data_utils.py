@@ -123,6 +123,25 @@ class Triggers:
     # BEFORE the KO'd stack moves (energies still attached); ctx carries
     # ko_pokemon / ko_from_attack / ko_attacker.
     ON_ALLY_KNOCKED_OUT = "on_ally_knocked_out"
+    # Either player manually put a Basic from hand onto their Bench (Gapejaw
+    # Bog); ctx carries benching_player_id / benched_pokemon.
+    ON_POKEMON_BENCHED = "on_pokemon_benched"
+    # This card was drawn by the beginning-of-turn draw (Lombre "Top Entry");
+    # fires after the card lands in hand (approximation of "before you put it
+    # into your hand").
+    ON_TURN_DRAWN = "on_turn_drawn"
+    # This card was just taken as a face-down Prize into hand (Dream Ball).
+    ON_TAKEN_AS_PRIZE = "on_taken_as_prize"
+    # Another of the owner's Pokemon evolved via a hand-played evolution card
+    # (Eevee "Resonant Evolution"); ctx carries evolved_pokemon / evolved_from.
+    ON_ALLY_EVOLVED = "on_ally_evolved"
+    # Fires for each of the turn player's in-play Pokemon after their turn
+    # ends, before the checkup (Radiant Venusaur "Sunny Bloom").
+    END_OF_TURN = "end_of_turn"
+    # This card was discarded from its owner's hand by an OPPOSING player's
+    # effect (Amoonguss "Surprise Spores"); fires via the acting ctx's
+    # deferred_actions, after that effect's choreography flushes.
+    ON_DISCARDED_FROM_HAND = "on_discarded_from_hand"
 
 
 class Activations:
@@ -241,7 +260,8 @@ class Attack(Ability):
         vstar: bool = False,
         locks_next_turn: bool = False,
         condition: Optional[Callable] = None,
-        usable_first_turn: bool = False
+        usable_first_turn: bool = False,
+        usable_despite_conditions: bool = False
     ):
         super().__init__(title, game_text, ability_type, effect, vstar=vstar,
                          condition=condition)
@@ -252,6 +272,8 @@ class Attack(Ability):
         self.locks_next_turn = locks_next_turn
         # Exempt from the "going first can't attack on turn 1" rule (Indeedee).
         self.usable_first_turn = usable_first_turn
+        # Offered even while the user is Asleep/Paralyzed (Windup Arm-style).
+        self.usable_despite_conditions = usable_despite_conditions
 
     def to_dict(self) -> dict:
         d = super().to_dict()
@@ -431,7 +453,8 @@ class TrainerCardDef(CardDefinition):
     the `unimplemented` marker, or None for cards with no effect scripted.
 
     `condition(board, player_id) -> bool` gates when the card may be played
-    at all (e.g. Ultra Ball needs 2 other cards in hand to discard).
+    at all (e.g. Ultra Ball needs 2 other cards in hand to discard); a
+    3-arg `condition(board, player_id, card)` also gets the hand copy (Nugget).
     """
     def __init__(
         self,
@@ -444,6 +467,7 @@ class TrainerCardDef(CardDefinition):
         trainer_type: TrainerType,
         effect: Optional[Any] = None,
         condition: Optional[Callable] = None,
+        abilities: Optional[List[Ability]] = None,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -452,6 +476,13 @@ class TrainerCardDef(CardDefinition):
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes)
         self.effect = effect
         self.condition = condition
+        # Trainers have no PIE_ABILITIES slot; declared abilities register for
+        # the session's trigger scans only (Dream Ball's ON_TAKEN_AS_PRIZE).
+        self.abilities: List[Ability] = abilities or []
+        for idx, a in enumerate(self.abilities):
+            if not a.ability_id:
+                a.ability_id = ability_id_for(guid, idx + 100)  # slot 0 = StadiumCardDef.ability
+            ABILITIES_BY_ID[a.ability_id] = a
         if effect is not None:
             TRAINER_EFFECTS_BY_GUID[guid.lower()] = effect
         self.extra_attributes.update({
@@ -463,6 +494,33 @@ class ItemCardDef(TrainerCardDef):
     def __init__(self, **kwargs):
         kwargs['trainer_type'] = TrainerType.ITEM
         super().__init__(**kwargs)
+
+class FossilItemCardDef(ItemCardDef):
+    """Item played as if it were a Basic Colorless Pokemon (fossils).
+
+    The archetype stays a Trainer-Item (real PTCGO shape: deck-builder
+    grouping, Item locks, mulligan/setup exclusion); plays_as_pokemon makes
+    the board entity a PokemonEntity so it benches, evolves, takes damage and
+    offers its PIE abilities like a Basic while in play.
+    """
+    plays_as_pokemon = True
+
+    def __init__(self, hp: int, passive: Optional[Any] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.passive = passive
+        self.extra_attributes.update({
+            str(AttrID.HP.value): {"type": "int", "value": hp},
+            str(AttrID.STAGE.value): {"type": "int", "value": PokemonStage.BASIC.value},
+            str(AttrID.POKEMON_TYPES.value): {
+                "type": "json", "value": json.dumps([PokemonTypes.COLORLESS.value])
+            },
+            str(AttrID.RETREAT_COST.value): {"type": "int", "value": 0},
+            str(AttrID.PIE_ABILITIES.value): {
+                "type": "json",
+                "value": json.dumps([a.to_dict() for a in self.abilities]),
+            },
+        })
+
 
 class SupporterCardDef(TrainerCardDef):
     def __init__(self, **kwargs):

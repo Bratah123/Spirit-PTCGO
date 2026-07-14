@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def quick_shooting(ctx):
+    """Once per turn: you may put 2 damage counters on 1 of your opponent's Pokemon."""
+    if not await ctx.ask_yes_no("Put 2 damage counters on 1 of your opponent's Pokémon?"):
+        return
+    targets = ctx.opponent_pokemon_in_play()
+    if not targets:
+        return
+    target = await ctx.choose_pokemon(targets, "Choose 1 of your opponent's Pokémon")
+    if target is not None:
+        await ctx.deal_damage(20, target=target, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="aabb4dbb-ca2d-5d66-9f48-c3dd3f7ef71a",
@@ -21,8 +34,9 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Quick Shooting",
-            game_text="Once during your turn, you may put 2 damage counters on 1 of your opponent's Pok\u00e9mon.",
-            effect=unimplemented,
+            game_text="Once during your turn, you may put 2 damage counters on 1 of your opponent's Pokémon.",
+            activation=Activations.ONCE_PER_TURN,
+            effect=quick_shooting,
         ),
         Attack(
             title="Waterfall",

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+
+
+def _heatproof_pred(calc, carrier):
+    if calc.target is not carrier:
+        return False
+    types = calc.attacker.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.FIRE.value in types
+
 
 card = PokemonCardDef(
     guid="79c18e5d-69ef-53e6-a6aa-91bbbc1d5153",
@@ -22,8 +31,8 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Heatproof",
-            game_text="Prevent all damage done to this Pok\u00e9mon by attacks from your opponent's Fire Pok\u00e9mon.",
-            effect=unimplemented,
+            game_text="Prevent all damage done to this Pokémon by attacks from your opponent's Fire Pokémon.",
+            passive=prevent_damage_when(_heatproof_pred),
         ),
         Attack(
             title="Hammer In",

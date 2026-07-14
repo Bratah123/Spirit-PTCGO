@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy, flip_damage
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
 
 card = PokemonCardDef(
     guid="822d008a-f144-56e1-ae7e-3779ccfd515c",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Primate Dexterity",
             game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
-            effect=unimplemented,
+            passive=flip_prevent_damage_passive("Primate Dexterity"),
         ),
         Attack(
             title="Full Tilt Fling",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy("self"), per_heads=60),
         ),
     ],
 )

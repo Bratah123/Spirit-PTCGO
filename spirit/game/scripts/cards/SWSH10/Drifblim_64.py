@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def spooky_balloon(ctx):
+    await ctx.deal_damage()
+    bench = ctx.opponent_bench()
+    if bench:
+        target = await ctx.choose_pokemon(
+            bench, "Choose 1 of your opponent's Benched Pokémon")
+        if target is not None:
+            await ctx.deal_damage(20, target=target, as_counters=True)
 
 card = PokemonCardDef(
     guid="a3c060f2-38b7-5ce9-adef-650fd8c57732",
@@ -25,7 +35,7 @@ card = PokemonCardDef(
             game_text="Put 2 damage counters on 1 of your opponent's Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=50,
-            effect=unimplemented,
+            effect=spooky_balloon,
         ),
     ],
 )

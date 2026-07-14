@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 card = PokemonCardDef(
     guid="d934789a-ba62-5c73-826d-e0942b3d2c81",
@@ -29,7 +30,7 @@ card = PokemonCardDef(
             game_text="This attack also does 10 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
-            effect=unimplemented,
+            effect=snipe_attack(10, pool="bench", count=2, also_base=True),
         ),
     ],
 )

@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _bench_two_or_fewer(ctx):
+    return len(ctx.my_bench()) <= 2
+
 
 card = PokemonCardDef(
     guid="b7c3f347-56bc-582d-b9ca-36de009c0bc0",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_bench_two_or_fewer, 140),
         ),
     ],
 )

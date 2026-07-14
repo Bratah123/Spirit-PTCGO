@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def libero(ctx):
+    """Once per turn, on move to Active: you may attach up to 2 Fire Energy from discard."""
+    fire_energy = [c for c in ctx.discard_pile() if energy_provides_type(c, PokemonTypes.FIRE.value)]
+    if not fire_energy:
+        return
+    if not await ctx.ask_yes_no("Attach up to 2 Fire Energy cards from your discard pile to Cinderace?"):
+        return
+    picks = await ctx.choose_cards(
+        fire_energy, 2, minimum=1,
+        prompt="Choose up to 2 Fire Energy cards to attach.",
+    )
+    for card in picks:
+        await ctx.attach_energy(card, ctx.source)
+
 
 card = PokemonCardDef(
     guid="9a908f80-98fe-5529-aeb7-aa5aaf67fdbe",
@@ -22,14 +40,15 @@ card = PokemonCardDef(
         Ability(
             title="Libero",
             game_text="Once during your turn, when this Pok\u00e9mon moves from your Bench to the Active Spot, you may attach up to 2 Fire Energy cards from your discard pile to it.",
-            effect=unimplemented,
+            trigger=Triggers.ON_MOVE_TO_ACTIVE,
+            effect=libero,
         ),
         Attack(
             title="Flare Striker",
             game_text="Discard 2 Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=190,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

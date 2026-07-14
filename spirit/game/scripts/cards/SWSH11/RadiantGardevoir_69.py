@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 card = PokemonCardDef(
     guid="bb21c8f8-7fe3-58e6-8e3f-e062f9f2a50d",
@@ -21,7 +23,10 @@ card = PokemonCardDef(
         Ability(
             title="Loving Veil",
             game_text="All of your Pok\u00e9mon take 20 less damage from attacks from your opponent's Pok\u00e9mon V (after applying Weakness and Resistance).",
-            effect=unimplemented,
+            passive=takes_less_passive(
+                20, protects="team",
+                attacker_pred=lambda p: is_pokemon_v(p.archetype_id),
+            ),
         ),
         Attack(
             title="Psychic",
@@ -29,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 20, base=70),
         ),
     ],
 )

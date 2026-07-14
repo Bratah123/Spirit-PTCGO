@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def willful_busybody(ctx):
+    """Opponent reveals hand; choose a card there and put it on the bottom of their deck."""
+    hand = ctx.hand(ctx.opponent_id)
+    if not hand:
+        return
+    picks = await ctx.choose_cards(
+        hand, 1, minimum=1,
+        prompt="Choose a card from your opponent's hand to put on the bottom of their deck.",
+    )
+    for card in picks:
+        await ctx.put_on_bottom_of_deck(card)
+
 
 card = PokemonCardDef(
     guid="ac81abc3-13e2-566f-8225-e4072e909b3c",
@@ -23,7 +38,7 @@ card = PokemonCardDef(
             title="Willful Busybody",
             game_text="Your opponent reveals their hand. Choose a card you find there and put it on the bottom of their deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=willful_busybody,
         ),
         Attack(
             title="Double Slap",
@@ -31,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=50),
         ),
     ],
 )

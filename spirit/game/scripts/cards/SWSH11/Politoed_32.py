@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def lordly_songleader(ctx):
+    bench_names = {
+        card_def.display_name
+        for card_def in (def_for(p.archetype_id) for p in ctx.my_bench())
+        if card_def
+    }
+    bonus = 0
+    if "Poliwag" in bench_names:
+        bonus += 60
+    if "Poliwhirl" in bench_names:
+        bonus += 90
+    if "Poliwrath" in bench_names:
+        bonus += 120
+    await ctx.deal_damage(10 + bonus)
+
 
 card = PokemonCardDef(
     guid="5e379c27-b182-5d29-bd53-6242eb15e1ee",
@@ -25,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=lordly_songleader,
         ),
         Attack(
             title="Hydro Splash",

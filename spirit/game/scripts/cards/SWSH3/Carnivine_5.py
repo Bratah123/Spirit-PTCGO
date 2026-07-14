@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _return(ctx):
+    await ctx.deal_damage()
+    if await ctx.ask_yes_no("Draw cards until you have 5 cards in your hand?"):
+        await ctx.draw_until(5)
+
+
+async def _giga_drain(ctx):
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt)
+
 
 card = PokemonCardDef(
     guid="3fd18270-2a2c-56a3-a3a5-1d2278b4e135",
@@ -23,14 +36,14 @@ card = PokemonCardDef(
             game_text="You may draw cards until you have 5 cards in your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=_return,
         ),
         Attack(
             title="Giga Drain",
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=_giga_drain,
         ),
     ],
 )

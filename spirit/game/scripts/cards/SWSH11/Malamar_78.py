@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def synchro_kinesis(ctx):
+    """Each player reveals their hand; +90 if a name is shared."""
+    await ctx.reveal_hand(ctx.player_id, ctx.opponent_id)
+    await ctx.reveal_hand(ctx.opponent_id, ctx.player_id)
+    mine = {c.card_obj.display_name for c in ctx.hand(ctx.player_id)}
+    theirs = {c.card_obj.display_name for c in ctx.hand(ctx.opponent_id)}
+    bonus = 90 if mine & theirs else 0
+    await ctx.deal_damage(30 + bonus)
+
 
 card = PokemonCardDef(
     guid="d6b0e441-098d-5018-8652-b61b66cc4365",
@@ -26,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=synchro_kinesis,
         ),
         Attack(
             title="Psychic Sphere",

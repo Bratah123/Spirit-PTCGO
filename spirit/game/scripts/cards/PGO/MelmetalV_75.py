@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_metal_energy_card
+
+
+async def _arm_charge(ctx):
+    await ctx.deal_damage()
+    energies = [c for c in ctx.hand() if is_metal_energy_card(c)]
+    if not energies:
+        return
+    if not await ctx.ask_yes_no(
+        "Attach a Metal Energy card from your hand to this Pokémon?"
+    ):
+        return
+    picked = await ctx.choose_cards(
+        energies, 1, minimum=1, prompt="Choose a Metal Energy card to attach"
+    )
+    if picked:
+        await ctx.attach_energy(picked[0], ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="415f4d10-3d01-5d2e-a550-fde9f4534c5b",
@@ -24,7 +42,7 @@ card = PokemonCardDef(
             game_text="You may attach a Metal Energy card from your hand to this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2},
             damage=50,
-            effect=unimplemented,
+            effect=_arm_charge,
         ),
         Attack(
             title="Mega Punch",

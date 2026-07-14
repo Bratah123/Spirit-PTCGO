@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_played_piers_this_turn = lambda ctx: ctx.played_trainer_this_turn("Piers") > 0
+
+
+async def corner(ctx):
+    """30 damage; the Defending Pokemon can't retreat during your opponent's next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        ctx.lock_retreat(defender)
+
 
 card = PokemonCardDef(
     guid="6675e84d-50f9-5bad-881d-1bf39c83c4ba",
@@ -24,7 +36,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=corner,
         ),
         Attack(
             title="Bad Brawl",
@@ -32,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_played_piers_this_turn, 90),
         ),
     ],
 )

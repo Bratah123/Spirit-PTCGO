@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.card_effects.pokemon import top_entry
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 card = PokemonCardDef(
     guid="4b4117c0-c560-5a3e-a6da-31db879bbac8",
@@ -22,15 +24,16 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Emergency Entry",
+            trigger=Triggers.ON_TURN_DRAWN,
             game_text="Once during your turn, if you drew this Pok\u00e9mon from your deck at the beginning of your turn and your Bench isn't full, before you put it into your hand, you may put it onto your Bench. If you do, draw 3 cards.",
-            effect=unimplemented,
+            effect=top_entry(3),
         ),
         Attack(
             title="Meteor Mash",
             game_text="During your next turn, this Pok\u00e9mon's Meteor Mash attack does 100 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=boost_own_next_turn(100, attack_title="Meteor Mash"),
         ),
     ],
 )

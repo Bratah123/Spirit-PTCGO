@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, is_pokemon_v
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+zen_shot = snipe_attack(60, pool=lambda p: is_pokemon_v(p.archetype_id), count=1,
+                         prompt="Choose 1 of your opponent's Pokémon V")
 
 card = PokemonCardDef(
     guid="a3ce9ccf-7ad5-5eac-b274-74d1f0648c95",
@@ -23,7 +27,7 @@ card = PokemonCardDef(
             title="Zen Shot",
             game_text="This attack does 60 damage to 1 of your opponent's Pok\u00e9mon V. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=zen_shot,
         ),
         Attack(
             title="Super Psy Bolt",

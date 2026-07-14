@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def scorching_feathers(ctx):
+    """If this Pokémon (in the Active Spot) is damaged by an attack, burn the attacker."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    await ctx.apply_special_condition(ctx.damaged_by, SpecialConditions.BURNED)
+
 
 card = PokemonCardDef(
     guid="c4f7b0ea-8692-5daa-a748-14df67353dfb",
@@ -23,14 +33,15 @@ card = PokemonCardDef(
         Ability(
             title="Scorching Feathers",
             game_text="If this Pok\u00e9mon is in the Active Spot and is damaged by an attack from your opponent's Pok\u00e9mon (even if this Pok\u00e9mon is Knocked Out), the Attacking Pok\u00e9mon is now Burned.",
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=scorching_feathers,
         ),
         Attack(
             title="Mach Flight",
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

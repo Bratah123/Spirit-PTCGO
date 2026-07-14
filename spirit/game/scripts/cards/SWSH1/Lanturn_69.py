@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+async def strobe_shock(ctx):
+    """90 damage. Your opponent reveals their hand; if it holds an Energy
+    card, their Active Pokemon is now Paralyzed."""
+    await ctx.deal_damage()
+    hand = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    if any(is_energy_card(c) for c in hand):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="833a1edb-1f10-5dd4-addc-736fa418350c",
@@ -26,10 +37,10 @@ card = PokemonCardDef(
         ),
         Attack(
             title="Strobe Shock",
-            game_text="Your opponent reveals their hand. If you find any Energy cards there, your opponent's Active Pok\u00e9mon is now Paralyzed.",
+            game_text="Your opponent reveals their hand. If you find any Energy cards there, your opponent's Active Pokémon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=strobe_shock,
         ),
     ],
 )

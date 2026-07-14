@@ -46,6 +46,7 @@ from .constants import (
     PROMPT_TAKE_PRIZE,
     PROMPT_CHOOSE_NEW_ACTIVE,
     PROMPT_REVEAL_BASIC_FROM_PRIZE,
+    PROMPT_DISCARD_BENCH,
     TEXT_COIN_TOSS_RESULT,
     TEXT_HEADS_RESULT,
     TEXT_TAILS_RESULT,
@@ -59,6 +60,12 @@ from .constants import (
     TEXT_CONFUSION_CHECK,
     TEXT_CONFUSION_PROCEEDS,
     TEXT_CONFUSION_HURT,
+    TEXT_ATTACK_FLIP_CHECK,
+    TEXT_ATTACK_FLIP_PROCEEDS,
+    TEXT_ATTACK_FLIP_FAILS,
+    TEXT_ATTACH_TAX_CHECK,
+    TEXT_ATTACH_TAX_OK,
+    TEXT_ATTACH_TAX_DISCARD,
 )
 from spirit.network.message_names import OutboundMsg
 from spirit.game.attributes import (
@@ -87,9 +94,11 @@ from .effects import (
     resolve_triggered_ability,
 )
 from .passives import (
-    ability_locked, active_passives, burn_recovery_blocked,
-    effective_bench_capacity, effective_max_hp, effective_retreat_cost,
-    tool_slots_free,
+    ability_locked, active_passives, active_to_bench_counters,
+    burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
+    effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
+    granted_extra_attacks, retreat_energy_destination, tool_slots_free,
+    tool_suppressed,
 )
 from .legal_actions import (
     ACTION_ATTACH_TOOL,
@@ -117,6 +126,9 @@ EOG_STAT_KEYS = (
 
 # Recursion cap on ON_KNOCKED_OUT triggers cascading into further knockouts.
 _MAX_KO_TRIGGER_DEPTH = 4
+
+# Cap on bench-capacity enforcement passes (a discard can itself shrink capacity).
+_MAX_BENCH_ENFORCE_PASSES = 4
 
 # Ceiling on an AIPlayer prompt wait (simulated answers land in ~1.5s); a
 # prompt no simulation answers must never hang the gameplay task.
@@ -240,6 +252,18 @@ class GameSession:
         # entity_id -> turn number Paralyzed was applied (cures after the
         # checkup following the OWNER's next turn, not the same turn).
         self.paralyzed_since: Dict[str, int] = {}
+        # Reentrancy guard for enforce_bench_capacity (a discard toggles passives).
+        self._enforcing_bench: bool = False
+        # Cross-turn scheduled effects (ctx.schedule_at_checkup): entries of
+        # {fire_at_checkup_of_turn, guard, effect}, run at checkup start.
+        self.scheduled_effects: List[Dict[str, Any]] = []
+        # "Take another turn after this one. (Skip Pokemon Checkup.)" --
+        # granted mid-turn to the active player (Star Chronos, Yoga Loop).
+        self.extra_turn_pending: bool = False
+        # entity_id -> last effective max HP broadcast for it; lets
+        # resync_effective_max_hp keep damage constant when a suppression
+        # passive (Tool Jammer) flips a bonus on/off without a stack change.
+        self._effective_max_seen: Dict[str, int] = {}
         # Per-player EOG summary counters (playmat.endgame.stat.* suffixes).
         self.game_stats: Dict[str, Dict[str, int]] = {
             pid: {} for pid in pairing["players"].keys()
@@ -901,6 +925,8 @@ class GameSession:
             state.attack_locks.pop(key, None)
         state.retreat_locks.pop(entity_id, None)
         state.attach_restrictions.pop(entity_id, None)
+        state.attack_flip_checks.pop(entity_id, None)
+        state.ignore_target_effects_entities.discard(entity_id)
         for entity_map in (state.damage_taken, state.damage_taken_last_turn,
                            state.became_active_turn):
             entity_map.pop(entity_id, None)
@@ -925,6 +951,7 @@ class GameSession:
             AttrID.HP.value, pokemon.get_attribute(AttrID.HP, 0)
         )
         pokemon.set_attribute(AttrID.HP, printed_max)
+        self._effective_max_seen.pop(pokemon.entity_id, None)
 
     def reset_ability_usage(self, pokemon) -> None:
         """A Pokemon leaving PLAY becomes a fresh card: its once-per-turn
@@ -1506,27 +1533,33 @@ class GameSession:
         if not ctx.knockouts:
             return
         # Snapshot ON_KNOCKED_OUT triggers BEFORE any stack moves: ability_locked
-        # reads board position, so the carrier must still be top-level in-play.
-        ko_triggers: List[Tuple[PokemonEntity, str, Ability]] = []
+        # reads board position, so the carrier must still be top-level in-play;
+        # was_active is captured here too (Radiant Jirachi's Active-spot gate).
+        ko_triggers: List[Tuple[PokemonEntity, str, Ability, bool]] = []
         for pokemon in ctx.knockouts:
             owner_id = pokemon.owning_player_id
             if owner_id is None or ability_locked(self.board_state, pokemon):
                 continue
+            was_active = self.board_state.active_pokemon(owner_id) is pokemon
             for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
                 if not isinstance(entry, dict):
                     continue
                 ability_id = entry.get("abilityID")
                 ability = ABILITIES_BY_ID.get(ability_id) if ability_id else None
                 if ability is not None and ability.has_trigger(Triggers.ON_KNOCKED_OUT):
-                    ko_triggers.append((pokemon, owner_id, ability))
+                    ko_triggers.append((pokemon, owner_id, ability, was_active))
 
         # Special-energy leave-play hooks (Gift Energy's draw) snapshotted with
         # the KO'd carrier before any stack moves; run only for attack KOs.
-        is_attack_ko = ctx.is_attack_effect()
+        # "By DAMAGE from an attack" needs a real hit in ctx.attack_damage --
+        # ctx.knock_out() direct KOs and as_counters placement never qualify.
+        def _damage_ko(pokemon) -> bool:
+            return ctx.is_attack_effect() \
+                and pokemon.entity_id in ctx.attack_damage
         energy_ko_hooks: List[Tuple[str, Any]] = []
         for pokemon in ctx.knockouts:
             owner_id = pokemon.owning_player_id
-            if owner_id is None or not is_attack_ko \
+            if owner_id is None or not _damage_ko(pokemon) \
                     or ctx.attacker.owning_player_id == owner_id:
                 continue
             for energy in self.board_state.attached_energies(pokemon):
@@ -1553,7 +1586,8 @@ class GameSession:
                 "hand",
             )
             prize_plans.append((self._opponent_id(owner_id), max(0, count), mode))
-            ko_from_attack = is_attack_ko and ctx.attacker.owning_player_id != owner_id
+            ko_from_attack = _damage_ko(pokemon) \
+                and ctx.attacker.owning_player_id != owner_id
             for ally in self.board_state.pokemon_in_play(owner_id):
                 if ally is pokemon or ally in ctx.knockouts:
                     continue
@@ -1619,20 +1653,24 @@ class GameSession:
                 viz_msg = self._clear_entity_visualizations_msg(member)
                 if viz_msg is not None:
                     viz_msgs.append(viz_msg)
-            # Restore HP to the printed max so the discarded card carries no
-            # damage counters (the client keeps rendering attr 200490 there).
-            printed_max = pokemon.attribute_originals.get(
-                AttrID.HP.value, pokemon.get_attribute(AttrID.HP, 0)
-            )
-            pokemon.set_attribute(AttrID.HP, printed_max)
-            if moves:
-                # The attr rides the Knockout bracket (N.k runs non-move
-                # commands generically); a move-less bracket would NRE it.
-                moves.append(self._build_msg(
+            # Restore HP to the printed max so the discarded cards carry no
+            # damage counters (the client keeps rendering attr 200490 there);
+            # tucked pre-evolutions may hold a stale pre-evolve HP the client
+            # still renders, so every stack Pokemon resets, not just the top.
+            hp_resets = []
+            for member in stack:
+                if not isinstance(member, PokemonEntity):
+                    continue
+                printed_max = member.attribute_originals.get(
+                    AttrID.HP.value, member.get_attribute(AttrID.HP, 0)
+                )
+                member.set_attribute(AttrID.HP, printed_max)
+                self._effective_max_seen.pop(member.entity_id, None)
+                hp_resets.append(self._build_msg(
                     OutboundMsg.ATTRIBUTE_MODIFIED.value,
                     {
                         "gameID": self.game_id,
-                        "entityID": pokemon.entity_id,
+                        "entityID": member.entity_id,
                         "attribute": {
                             "name": AttrID.HP.value,
                             "value": printed_max,
@@ -1641,11 +1679,15 @@ class GameSession:
                         },
                     },
                 ))
+            if moves:
+                # The attrs ride the Knockout bracket (N.k runs non-move
+                # commands generically); a move-less bracket would NRE it.
+                moves.extend(hp_resets)
                 moves.extend(viz_msgs)
                 await self.send_game_sequence(
                     list(self.players.values()), GameSequence.KNOCKOUT, moves
                 )
-            if is_attack_ko and ctx.attacker.owning_player_id != owner_id:
+            if _damage_ko(pokemon) and ctx.attacker.owning_player_id != owner_id:
                 self.turn_state.kos_by_attack.setdefault(owner_id, []).append({
                     "archetype_id": pokemon.archetype_id,
                     "subtypes": list(subtypes_for(pokemon.archetype_id)),
@@ -1679,14 +1721,16 @@ class GameSession:
                     f"depth exceeded ({_ko_depth}); skipping further triggers."
                 )
             else:
-                is_attack_ctx = ctx.is_attack_effect()
-                for pokemon, owner_id, ability in ko_triggers:
-                    ko_from_attack = is_attack_ctx and ctx.attacker.owning_player_id != owner_id
+                for pokemon, owner_id, ability, was_active in ko_triggers:
+                    ko_from_attack = _damage_ko(pokemon) \
+                        and ctx.attacker.owning_player_id != owner_id
                     ko_attacker = ctx.attacker if ko_from_attack else None
 
-                    def _setup(c, _from_attack=ko_from_attack, _attacker=ko_attacker):
+                    def _setup(c, _from_attack=ko_from_attack, _attacker=ko_attacker,
+                               _was_active=was_active):
                         c.ko_from_attack = _from_attack
                         c.ko_attacker = _attacker
+                        c.was_active_at_ko = _was_active
 
                     trigger_ctx = await resolve_triggered_ability(
                         self, owner_id, pokemon, ability, ctx_setup=_setup,
@@ -1722,24 +1766,214 @@ class GameSession:
             if trigger_ctx.knockouts:
                 await self.resolve_knockouts(trigger_ctx, _ko_depth=_ko_depth + 1)
 
+    async def enforce_bench_capacity(self):
+        """Bench-shrink ruling (Collapsed Stadium): every over-capacity player
+        picks their excess Benched Pokemon and discards the stacks -- NOT a
+        Knock Out (no prizes, no ON_KNOCKED_OUT). Loops until stable since a
+        discard can itself toggle capacity passives."""
+        if self._enforcing_bench:
+            return
+        self._enforcing_bench = True
+        try:
+            for _ in range(_MAX_BENCH_ENFORCE_PASSES):
+                if not await self._enforce_bench_capacity_once():
+                    await self.sync_bench_size()
+                    await self.resync_effective_max_hp()
+                    return
+            logging.error(
+                f"[Session {self.game_id}] Bench capacity never stabilized "
+                f"after {_MAX_BENCH_ENFORCE_PASSES} passes; giving up."
+            )
+            await self.sync_bench_size()
+            await self.resync_effective_max_hp()
+        finally:
+            self._enforcing_bench = False
+
+    async def resync_effective_max_hp(self):
+        """Re-syncs in-play Pokemon HP against the live effective max: a
+        suppression passive flipping with board position (Tool Jammer entering
+        or leaving the Active spot) changes a bonus without any stack change,
+        so the attach-site delta shifts never see it. Damage taken stays
+        constant; a bonus turning off can make existing damage lethal."""
+        lethal = []
+        for player_id in self.players:
+            for pokemon in list(self.board_state.pokemon_in_play(player_id)):
+                new_max = effective_max_hp(self.board_state, pokemon)
+                old_max = self._effective_max_seen.get(pokemon.entity_id)
+                self._effective_max_seen[pokemon.entity_id] = new_max
+                if old_max is None or old_max == new_max:
+                    continue
+                current = max(
+                    0, pokemon.get_attribute(AttrID.HP, 0) + (new_max - old_max)
+                )
+                pokemon.set_attribute(AttrID.HP, current)
+                envelope = self._sequence_envelope(
+                    EMPTY_SEQUENCE_ID, self._hp_attribute_msg(pokemon)
+                )
+                await self.broadcast_packet(
+                    OutboundMsg.SEQUENCE_MESSAGE.value, envelope
+                )
+                if current <= 0:
+                    lethal.append(pokemon)
+        for pokemon in lethal:
+            if pokemon.parent is not None:
+                await self._resolve_raw_knockout(pokemon)
+
+    async def sync_bench_size(self):
+        """Plays the bench-resize choreography when a capacity passive
+        (Collapsed Stadium entering/leaving, Eternatus VMAX) changed a
+        player's bench size since the last broadcast attr 201920 value."""
+        viewers = list(self.players.values())
+        for player_id in self.players:
+            bench = self.board_state.find_player_area(player_id, "bench")
+            if bench is None:
+                continue
+            capacity = effective_bench_capacity(self.board_state, player_id)
+            if bench.get_attribute(AttrID.AREA_SLOTS) == capacity:
+                continue
+            # Compact stamps to 0..n-1 (slot order): a survivor stamped beyond
+            # the shrunk width would render off the mat. Same-bench EntityMoveds
+            # re-stamp A.m via m.I -- never attr 10920, whose override would
+            # outlive the resize and hijack every later stamp.
+            moves = []
+            benched = sorted(
+                (c for c in bench.children if isinstance(c, PokemonEntity)),
+                key=self.board_state.bench_slot_of,
+            )
+            for new_slot, entity in enumerate(benched):
+                if self.board_state.bench_slot_of(entity) == new_slot:
+                    continue
+                self.board_state.move_card(entity.entity_id, bench.entity_id)
+                moves.append(self._entity_moved_msg(
+                    entity.entity_id, bench.entity_id, new_slot
+                ))
+            bench.set_attribute(AttrID.AREA_SLOTS, capacity)
+            occupied = {self.board_state.bench_slot_of(c) for c in bench.children}
+            empty = [s for s in range(capacity) if s not in occupied]
+            bench.set_attribute(AttrID.AREA_EMPTY_SLOTS, empty)
+            if moves:
+                await self.send_game_sequence(
+                    viewers, GameSequence.GROUPED_MOVE, moves
+                )
+            # M.A keys on the 201860 AttributeModified (IL-verified) and plays
+            # S.o re-layout flights for every bench child; the new width comes
+            # from attr 201920 (U.E.get_Slots -> BenchLayout.layoutSize).
+            await self.send_game_sequence(
+                viewers, GameSequence.BENCH_SIZE_MODIFIED,
+                [self._area_attr_msg(bench, AttrID.AREA_SLOTS, capacity),
+                 self._area_attr_msg(bench, AttrID.AREA_EMPTY_SLOTS, empty)],
+            )
+            logging.info(
+                f"[Session {self.game_id}] Bench of "
+                f"{self.players[player_id].screen_name} resized to {capacity}."
+            )
+
+    def _area_attr_msg(self, area, attr: AttrID, value) -> Dict[str, Any]:
+        """AttributeModified for a play-area attribute (bench slots/gaps)."""
+        return self._build_msg(
+            OutboundMsg.ATTRIBUTE_MODIFIED.value,
+            {
+                "gameID": self.game_id,
+                "entityID": area.entity_id,
+                "attribute": {
+                    "name": attr.value,
+                    "value": value,
+                    "originalValue": value,
+                    "modValue": None,
+                },
+            },
+        )
+
+    async def _enforce_bench_capacity_once(self) -> bool:
+        """One enforcement pass, active player first; True iff it discarded."""
+        order = self._turn_order()
+        active_id = self.turn_state.active_player_id
+        if active_id in self.players:
+            order = [active_id] + [p for p in order if p != active_id]
+        discarded = False
+        for player_id in order:
+            bench = self.board_state.find_player_area(player_id, "bench")
+            if bench is None:
+                continue
+            overflow = len(bench.children) - \
+                effective_bench_capacity(self.board_state, player_id)
+            if overflow <= 0:
+                continue
+            candidates = [c for c in bench.children if isinstance(c, PokemonEntity)]
+            overflow = min(overflow, len(candidates))
+            if overflow <= 0:
+                continue
+            picked_ids = await self.prompt_entity_picker(
+                player_id, candidates[0].entity_id, candidates, overflow,
+                prompt=PROMPT_DISCARD_BENCH,
+            )
+            for entity_id in picked_ids[:overflow]:
+                picked = self.board_state.get_entity(entity_id)
+                if isinstance(picked, PokemonEntity) and picked.parent is bench:
+                    await self._discard_bench_stack(player_id, picked)
+                    discarded = True
+        return discarded
+
+    async def _discard_bench_stack(self, player_id: str, pokemon):
+        """Discards a benched stack (Pokemon + attachments) for the bench-shrink
+        ruling: everything to the owner's discard in one GroupedMove bracket."""
+        discard = self.board_state.find_player_area(player_id, "discard")
+        if not discard:
+            return
+        stack = [pokemon] + _stack_descendants(pokemon)
+        moves = []
+        for entity in stack:
+            position = len(discard.children)
+            if self.board_state.move_card(entity.entity_id, discard.entity_id):
+                moves.append(self._entity_moved_msg(
+                    entity.entity_id, discard.entity_id, position
+                ))
+        for member in stack:
+            if isinstance(member, PokemonEntity):
+                self.clear_pokemon_effects(member)
+                self.reset_pokemon_damage(member)
+                self.reset_ability_usage(member)
+            viz_msg = self._clear_entity_visualizations_msg(member)
+            if viz_msg is not None:
+                moves.append(viz_msg)
+        if not moves:
+            return
+        # The client keeps rendering attr 200490 on discarded cards -- reset
+        # every stack Pokemon (tucked pre-evolutions included), not just the top.
+        for member in stack:
+            if isinstance(member, PokemonEntity):
+                moves.append(self._hp_attribute_msg(member))
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.GROUPED_MOVE, moves
+        )
+        logging.info(
+            f"[Session {self.game_id}] {pokemon.entity_id} "
+            f"({self.players[player_id].screen_name}) discarded to the bench "
+            f"capacity ruling."
+        )
+
     async def _take_prizes(self, player_id: str, count: int,
-                           destination: str = "hand"):
+                           destination: str = "hand",
+                           minimum: Optional[int] = None) -> List[Any]:
         """The player picks `count` face-down prizes and takes them to hand;
         a non-hand `destination` (Billowing Smoke's discard, Barbaracle's
-        lostZone) reroutes the picked prizes there after the reveal."""
+        lostZone) reroutes the picked prizes there after the reveal.
+        minimum<count makes the pick "up to count" (Peonia); returns the
+        cards actually taken."""
         prize_area = self.board_state.find_player_area(player_id, "prizePile")
         hand_area = self.board_state.find_player_area(player_id, "hand")
         if not prize_area or not hand_area:
-            return
+            return []
         count = min(count, len(prize_area.children))
         if count <= 0:
-            return
+            return []
         player = self.players[player_id]
         prize_ids = [c.entity_id for c in prize_area.children]
         if isinstance(player, AIPlayer):
             picked = prize_ids[:count]
         else:
-            picked = await self._prompt_prize_pick(player_id, prize_ids, count)
+            picked = await self._prompt_prize_pick(player_id, prize_ids, count,
+                                                   minimum=minimum)
         cards = [self.board_state.get_entity(i) for i in picked]
         intros = []
         moves = []
@@ -1754,7 +1988,8 @@ class GameSession:
                 card.entity_id, hand_area.entity_id, position
             ))
         if not moves:
-            return
+            return []
+        taken = [c for c in cards if c is not None and c.parent is hand_area]
         gap_msg = self._refresh_prize_gaps(player_id, prize_area)
         self.turn_state.prizes_taken[player_id] = (
             self.turn_state.prizes_taken.get(player_id, 0) + len(moves)
@@ -1772,13 +2007,19 @@ class GameSession:
                 GameSequence.WITH_OPEN_PRIZE_CARDS,
                 ((intros + moves) if pid == player_id else list(moves)) + [gap_msg],
             )
+        if destination == "hand":
+            # Prize-take provenance window (Dream Ball's ON_TAKEN_AS_PRIZE).
+            for card in cards:
+                if card is not None and card.parent is hand_area:
+                    await self._fire_triggered_abilities(
+                        player_id, card, Triggers.ON_TAKEN_AS_PRIZE)
         if destination != "hand":
             # Reroute the taken prizes: a plain GroupedMove after the reveal
             # flow, with intros to the opponent (public-pile arrival reveals).
             # needs live client verification: non-hand prize-take choreography
             dest_area = self.board_state.find_player_area(player_id, destination)
             if dest_area is None:
-                return
+                return taken
             reroute_intros, reroute_moves = [], []
             for card in cards:
                 if card is None or card.parent is not hand_area:
@@ -1796,6 +2037,7 @@ class GameSession:
                 await self.send_game_sequence(
                     list(self.players.values()), GameSequence.GROUPED_MOVE,
                     reroute_moves)
+        return taken
 
     def _refresh_prize_gaps(self, player_id: str, prize_area) -> Dict[str, Any]:
         """Marks taken prize positions in the pile's AREA_EMPTY_SLOTS so the
@@ -1823,18 +2065,29 @@ class GameSession:
         )
 
     async def _prompt_prize_pick(self, player_id: str, prize_ids: List[str],
-                                 count: int) -> List[str]:
-        """Prize-pile pick via the r.B fan-out UI; falls back to the top ones."""
+                                 count: int, prompt: Optional[str] = None,
+                                 minimum: Optional[int] = None,
+                                 prize_area=None) -> List[str]:
+        """Prize-pile pick via the r.B fan-out UI; falls back to the top ones.
+
+        minimum<count offers an "up to count" pick (Peonia); prize_area may be
+        the OPPONENT's pile (Shuffle Dance) -- r.B fans whichever pile owns
+        the validTargets (SelectingOpponentCards keys off the first one)."""
         player = self.players[player_id]
-        prize_area = self.board_state.find_player_area(player_id, "prizePile")
+        if isinstance(player, AIPlayer):
+            return prize_ids[:count]
+        prompt_id = prompt or PROMPT_TAKE_PRIZE
+        if prize_area is None:
+            prize_area = self.board_state.find_player_area(player_id, "prizePile")
+        needed = count if minimum is None else max(0, min(minimum, count))
         info = {
             "name": SelectionKind.PRIZE_CARD.value,
             "selected": True,
-            "targetPrompt": {"id": PROMPT_TAKE_PRIZE},
+            "targetPrompt": {"id": prompt_id},
             "validTargets": prize_ids,
             "numberToSelect": count,
-            "minimumToSelect": count,
-            "forced": True,
+            "minimumToSelect": needed,
+            "forced": needed > 0,
             # r.B gates the ENTIRE pile->slots fly-in on this flag; False
             # SetContents the fan cold (cards teleport into the pick grid).
             "presentPrizesAllowed": True,
@@ -1845,10 +2098,10 @@ class GameSession:
             offer = {
                 "gameID": self.game_id,
                 "counter": counter,
-                "prompt": {"id": PROMPT_TAKE_PRIZE},
+                "prompt": {"id": prompt_id},
                 "offerLength": 60000,
                 "startingTimestamp": int(time.time() * 1000),
-                "forced": True,
+                "forced": needed > 0,
                 "targetType": SelectionKind.PRIZE_CARD.value,
                 "ignoreFirst": True,
                 "selectionParams": {},
@@ -1873,7 +2126,7 @@ class GameSession:
                             t for t in (response.get("entityList") or [])
                             if t in prize_ids
                         )
-                if len(picked) >= count:
+                if len(picked) >= needed:
                     return picked[:count]
         return prize_ids[:count]
 
@@ -2265,6 +2518,20 @@ class GameSession:
         BETWEEN_TURNS triggered abilities for every in-play Pokemon."""
         active_id = active_id if active_id is not None else self.turn_state.active_player_id
         turn_number = self.turn_state.turn_number
+        # Scheduled cross-turn effects (Word of Ruin timers) fire FIRST, before
+        # conditions; due entries are removed whether their guard passes or not.
+        due = [s for s in self.scheduled_effects
+               if s["fire_at_checkup_of_turn"] <= turn_number]
+        if due:
+            due_ids = {id(s) for s in due}
+            self.scheduled_effects = [
+                s for s in self.scheduled_effects if id(s) not in due_ids
+            ]
+            for entry in due:
+                guard = entry.get("guard")
+                if guard is not None and not guard(self.board_state):
+                    continue
+                await entry["effect"](self)
         poisoned = CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.POISONED]
         burned = CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.BURNED]
         asleep = CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.ASLEEP]
@@ -2304,6 +2571,8 @@ class GameSession:
                 await self._fire_triggered_abilities(
                     player_id, pokemon, Triggers.BETWEEN_TURNS
                 )
+        # Checkup KOs/triggers may have toggled bench-capacity passives.
+        await self.enforce_bench_capacity()
 
     async def _checkup_poison(self, active):
         """Poison tick: 10 * poison_counters (default 1) raw damage."""
@@ -2655,11 +2924,17 @@ class GameSession:
         order = self._turn_order()
         if not order:
             return
+        active_id = order[self.turn_state.turn_number % len(order)]
         for _ in range(MAX_TURNS):
-            active_id = order[self.turn_state.turn_number % len(order)]
             await self._begin_turn(active_id)
             await self._run_player_turn(active_id)
+            await self._fire_end_of_turn_triggers(active_id)
+            if self.extra_turn_pending:
+                # Star Chronos / Yoga Loop: same player again, no checkup.
+                self.extra_turn_pending = False
+                continue
             await self._run_pokemon_checkup(active_id)
+            active_id = self._opponent_id(active_id)
         logging.error(
             f"[Session {self.game_id}] MAX_TURNS ({MAX_TURNS}) reached; "
             f"stopping the turn loop."
@@ -2707,6 +2982,12 @@ class GameSession:
                     GameSequence.DRAW,
                     (intros + [nested_moves]) if pid == active_id else [nested_moves],
                 )
+            # Turn-draw provenance window (Lombre "Top Entry"): the card
+            # visually lands in hand first -- accepted approximation of
+            # "before you put it into your hand".
+            for d in drawn:
+                await self._fire_triggered_abilities(
+                    active_id, d["card"], Triggers.ON_TURN_DRAWN)
 
     async def _run_player_turn(self, active_id: str):
         """Offers recomputed legal actions until the player ends their turn."""
@@ -2717,6 +2998,7 @@ class GameSession:
             return
 
         for _ in range(MAX_ACTIONS_PER_TURN):
+            await self._refresh_dynamic_attacks(active_id)
             target_map = compute_legal_actions(
                 self.board_state, self.turn_state, active_id, self.game_id
             )
@@ -2884,6 +3166,10 @@ class GameSession:
         if not self.board_state.move_card(card.entity_id, bench_area.entity_id):
             return
         self.turn_state.mark_entered_play(card.entity_id)
+        if card.get_attribute(AttrID.TRAINER_TYPE) is not None:
+            # A fossil bench play is an Item play rules-wise.
+            self._record_trainer_played(card)
+            self.stat_add(player_id, "trainersplayed")
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
             f"benched {card.entity_id}."
@@ -2894,19 +3180,33 @@ class GameSession:
             [self._entity_moved_msg(card.entity_id, bench_area.entity_id, position)],
             [card],
         )
+        await self.fire_pokemon_benched_triggers(player_id, card)
         await self._fire_triggered_abilities(player_id, card, Triggers.ON_PLAY)
 
     async def _fire_triggered_abilities(self, player_id: str, card, trigger: str,
                                         ctx_setup=None):
-        """Runs a Pokemon's abilities matching `trigger` (on-play, on-evolve,
-        on-knocked-out, between-turns); resolve_knockouts already flushed any
-        knockouts the effect caused, so the extra call here is empty-safe."""
+        """Runs a card's abilities matching `trigger` (on-play, on-evolve,
+        on-knocked-out, between-turns, turn-drawn, taken-as-prize); scans the
+        entity's PIE_ABILITIES plus the definition's declared abilities
+        (trainers carry no PIE slot -- Dream Ball's prize hook).
+        resolve_knockouts already flushed any knockouts the effect caused,
+        so the extra call here is empty-safe."""
+        seen = set()
+        abilities = []
         for entry in card.get_attribute(AttrID.PIE_ABILITIES) or []:
             if not isinstance(entry, dict):
                 continue
             ability_id = entry.get("abilityID")
             ability = ABILITIES_BY_ID.get(ability_id) if ability_id else None
-            if ability is not None and ability.has_trigger(trigger):
+            if ability is not None and ability_id not in seen:
+                seen.add(ability_id)
+                abilities.append(ability)
+        for ability in getattr(def_for(card.archetype_id), "abilities", None) or []:
+            if ability.ability_id not in seen:
+                seen.add(ability.ability_id)
+                abilities.append(ability)
+        for ability in abilities:
+            if ability.has_trigger(trigger):
                 # "1 per turn" abilities shared by name across copies (Dark Asset).
                 if ability.shared_once_per_turn \
                         and ability.shared_once_per_turn in self.turn_state.used_named_abilities:
@@ -2934,6 +3234,48 @@ class GameSession:
             for pokemon in list(self.board_state.pokemon_in_play(pid)):
                 await self._fire_triggered_abilities(
                     pid, pokemon, Triggers.ON_ENERGY_ATTACHED, ctx_setup=_setup)
+        await self._fire_stadium_triggers(
+            attaching_player_id, Triggers.ON_ENERGY_ATTACHED, _setup)
+
+    async def _fire_ally_evolved_triggers(self, player_id: str, evolution_card,
+                                          pre_evolution):
+        """ON_ALLY_EVOLVED for the owner's OTHER in-play Pokemon after a
+        hand-played evolution (Eevee's Resonant Evolution); the trigger ctx
+        carries evolved_pokemon / evolved_from."""
+        def _setup(c):
+            c.evolved_pokemon = evolution_card
+            c.evolved_from = pre_evolution
+        for ally in list(self.board_state.pokemon_in_play(player_id)):
+            if ally is evolution_card:
+                continue
+            await self._fire_triggered_abilities(
+                player_id, ally, Triggers.ON_ALLY_EVOLVED, ctx_setup=_setup)
+
+    async def _fire_end_of_turn_triggers(self, active_id: str):
+        """END_OF_TURN for the turn player's in-play Pokemon, after their turn
+        ends and before the checkup (Radiant Venusaur's Sunny Bloom)."""
+        for pokemon in list(self.board_state.pokemon_in_play(active_id)):
+            await self._fire_triggered_abilities(
+                active_id, pokemon, Triggers.END_OF_TURN)
+
+    async def _fire_stadium_triggers(self, acting_player_id: str, trigger: str,
+                                     ctx_setup=None):
+        """Declared-ability triggers on the in-play Stadium (Old Cemetery);
+        ctx.player_id is the ACTING player so counters on that player's own
+        Pokemon are never shielded as opposing effects."""
+        area = self.board_state.find_global_area("activeStadium")
+        for stadium in list(area.children if area else []):
+            await self._fire_triggered_abilities(
+                acting_player_id, stadium, trigger, ctx_setup=ctx_setup)
+
+    async def fire_pokemon_benched_triggers(self, benching_player_id: str, pokemon):
+        """ON_POKEMON_BENCHED for a manual from-hand bench play only (Gapejaw
+        Bog does not observe effect-driven benching from the deck)."""
+        def _setup(c):
+            c.benching_player_id = benching_player_id
+            c.benched_pokemon = pokemon
+        await self._fire_stadium_triggers(
+            benching_player_id, Triggers.ON_POKEMON_BENCHED, _setup)
 
     async def fire_move_to_active_triggers(self, pokemon):
         """ON_MOVE_TO_ACTIVE (Cinderace Libero), at most once per entity per
@@ -2969,6 +3311,14 @@ class GameSession:
                 f"[Session {self.game_id}] Energy {card.entity_id} may not "
                 f"attach to {target_id}; re-offering."
             )
+            return
+
+        # Slimy Room tax: the flip runs before anything else; tails discards
+        # the energy instead of attaching -- per the card text this does NOT
+        # use up the turn's energy attachment.
+        taxer = energy_attach_taxer(self.board_state, player_id, card, target)
+        if taxer is not None and \
+                not await self._resolve_attach_tax_flip(player_id, card, taxer):
             return
 
         # Attach cost (e.g. Aurora's discard) resolves first; declining the
@@ -3011,10 +3361,56 @@ class GameSession:
         # A manual attach from hand is what ON_ENERGY_ATTACHED observes.
         await self.fire_energy_attached_triggers(player_id, card, target)
 
+    async def _resolve_attach_tax_flip(self, player_id: str, energy, taxer) -> bool:
+        """Slimy Room flip on a manual energy attach: heads (True) proceeds;
+        tails discards the energy from hand (revealed) and returns False."""
+        flip = random.choice([0, 1])
+        heads = flip == 0
+        self.stat_add(player_id, "headsflipped", 1 if heads else 0)
+        self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
+        name = taxer.get_attribute(AttrID.NAME)
+        title = name.get("id", "") if isinstance(name, dict) else (name or "")
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.POKE_ABILITY,
+            [self._build_msg(
+                OutboundMsg.MULTIPLE_COIN_FLIP_WITH_CONTEXT_EFFECT.value,
+                {
+                    "gameID": self.game_id,
+                    "resultLst": [flip],
+                    "title": {"id": title or TEXT_ATTACH_TAX_CHECK},
+                    "gameText": {"id": TEXT_ATTACH_TAX_OK if heads
+                                 else TEXT_ATTACH_TAX_DISCARD},
+                    "source": taxer.entity_id,
+                    "targets": [taxer.entity_id],
+                },
+            )],
+        )
+        await self.choreo_pause(2.5)
+        if heads:
+            return True
+        discard = self.board_state.find_player_area(player_id, "discard")
+        if discard is not None:
+            position = len(discard.children)
+            if self.board_state.move_card(energy.entity_id, discard.entity_id):
+                # Entering a public pile reveals the card to the opponent.
+                opponent = self.players.get(self._opponent_id(player_id))
+                if opponent is not None:
+                    await self.send_game_sequence(
+                        [opponent], GameSequence.SERIAL_SEQUENCE,
+                        [self._entity_introduced_msg(energy)],
+                    )
+                await self.send_game_sequence(
+                    list(self.players.values()), GameSequence.GROUPED_MOVE,
+                    [self._entity_moved_msg(
+                        energy.entity_id, discard.entity_id, position)],
+                )
+        return False
+
     async def _refresh_max_hp(self, pokemon, max_before: int):
         """Re-broadcasts HP after a stack change shifted a max-HP bonus
         (e.g. Heat Fire Energy's +20): damage taken stays constant."""
         max_after = effective_max_hp(self.board_state, pokemon)
+        self._effective_max_seen[pokemon.entity_id] = max_after
         delta = max_after - max_before
         if delta == 0:
             return
@@ -3065,14 +3461,36 @@ class GameSession:
         await self.broadcast_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
 
     def _pie_ability_entries(self, pokemon: PokemonEntity) -> List[Dict[str, Any]]:
-        """`pokemon`'s canonical PIE_ABILITIES: printed entries plus every
-        currently attached tool's granted_abilities (Forest Seal Stone)."""
+        """`pokemon`'s canonical PIE_ABILITIES: printed entries, every attached
+        tool's granted_abilities (Forest Seal Stone), and passive-granted
+        dynamic attacks (Ditto, Memory Capsule) deduped by title+text."""
         definition = def_for(pokemon.archetype_id)
         entries = [a.to_dict() for a in (getattr(definition, "abilities", None) or [])]
         for child in pokemon.children:
             tool_def = def_for(child.archetype_id)
-            for granted in (getattr(tool_def, "granted_abilities", None) or []):
+            grants = getattr(tool_def, "granted_abilities", None) or []
+            # A jammed tool has "no effect": its grants drop out of the attr
+            # (re-synced by _refresh_dynamic_attacks before every offer).
+            if grants and tool_suppressed(self.board_state, child):
+                continue
+            for granted in grants:
                 entries.append(granted.to_dict())
+        # Dedupe on the full printed identity: same-named attacks with a
+        # different cost/damage are genuinely distinct grants and both offer.
+        def _identity(e: Dict[str, Any]):
+            return (
+                (e.get("title") or {}).get("id"),
+                (e.get("gameText") or {}).get("id"),
+                tuple(sorted((e.get("cost") or {}).items())),
+                e.get("damage"), e.get("amountOperator"),
+            )
+        seen = {_identity(e) for e in entries}
+        for attack in granted_extra_attacks(self.board_state, pokemon):
+            row = attack.to_dict()
+            key = _identity(row)
+            if key not in seen:
+                seen.add(key)
+                entries.append(row)
         return entries
 
     async def refresh_granted_abilities(self, pokemon: PokemonEntity):
@@ -3081,6 +3499,18 @@ class GameSession:
         await self._broadcast_entity_attribute(
             pokemon, AttrID.PIE_ABILITIES, self._pie_ability_entries(pokemon)
         )
+
+    async def _refresh_dynamic_attacks(self, player_id: str):
+        """Syncs the Active's PIE_ABILITIES before each offer so dynamic
+        attack grants (discard/stack contents changed) stay panel-resolvable."""
+        active = self.board_state.active_pokemon(player_id)
+        if active is None:
+            return
+        entries = self._pie_ability_entries(active)
+        if entries != (active.get_attribute(AttrID.PIE_ABILITIES) or []):
+            await self._broadcast_entity_attribute(
+                active, AttrID.PIE_ABILITIES, entries
+            )
 
     async def add_turn_stat_visualization(
         self, pokemon: PokemonEntity, arrow: str, display_type: str,
@@ -3375,12 +3805,15 @@ class GameSession:
             player_id, GameSequence.EVOLVE, data_effects + moves, [card]
         )
 
-        # Push the transferred damage so the evolution renders its HP tracker.
+        # Push the transferred damage so the evolution renders its HP tracker,
+        # and the tucked pre-evolution's reset so its stale damage never
+        # re-renders (e.g. in the discard pile after a later knockout).
         if damage_taken:
-            envelope = self._sequence_envelope(
-                EMPTY_SEQUENCE_ID, self._hp_attribute_msg(card)
-            )
-            await self.broadcast_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+            for entity in (card, target):
+                envelope = self._sequence_envelope(
+                    EMPTY_SEQUENCE_ID, self._hp_attribute_msg(entity)
+                )
+                await self.broadcast_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
 
         # Freshly entered play: cannot evolve again this turn.
         self.turn_state.mark_entered_play(card.entity_id)
@@ -3397,8 +3830,242 @@ class GameSession:
                  self._condition_attr_msg(target)],
             )
 
+        # Wyndon Stadium: heal a Pokemon just evolved from hand (deck-sourced
+        # evolutions ride from_zone_intro and are not "played from hand").
+        if not from_zone_intro:
+            heal = evolve_heal_amount(self.board_state, card, target, player_id)
+            if heal > 0:
+                heal_ctx = EffectContext(self, player_id, card, None)
+                if await heal_ctx.heal(heal, target=card):
+                    await self._flush_effect_runs(heal_ctx)
+
         await self._fire_triggered_abilities(player_id, card, Triggers.ON_EVOLVE)
+        # Hand-played evolutions also fire the owner's OTHER Pokemon (Eevee's
+        # Resonant Evolution); deck-sourced ones aren't "played from hand".
+        if not from_zone_intro:
+            await self._fire_ally_evolved_triggers(player_id, card, target)
+        # Tucking the pre-evolution can switch off a capacity-raising ability.
+        await self.enforce_bench_capacity()
         return True
+
+    async def perform_devolution(self, pokemon, destination_name: str = "hand",
+                                 clamp_nonlethal: bool = False):
+        """One devolution step: the top evolution card leaves the stack and
+        the previous stage takes its place, carrying the damage.
+
+        Devolve bracket (IL-verified, executor d.o): data effects From=<removed
+        evolution card> / Into=<remaining stage>, ALL moves pre-handled (the
+        executor plays the spin + DevolutionLeft/Right flights itself and
+        auto-flies Into toward the KO pile when its HP tracker hits 0 -- so a
+        non-final step clamps the sent HP above lethal via clamp_nonlethal).
+        Returns (promoted_stage, removed_card) or None.
+        """
+        area = pokemon.parent
+        owner_id = pokemon.owning_player_id
+        if area is None or owner_id is None:
+            return None
+        evolves_from = pokemon.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
+        prev = next(
+            (c for c in pokemon.children
+             if isinstance(c, PokemonEntity)
+             and c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from),
+            None,
+        )
+        dest = self.board_state.find_player_area(owner_id, destination_name)
+        if prev is None or dest is None:
+            return None
+        damage_taken = max(
+            0, effective_max_hp(self.board_state, pokemon)
+            - pokemon.get_attribute(AttrID.HP, 0)
+        )
+        slot = self.board_state.bench_slot_of(pokemon)
+
+        moves = []
+        # The previous stage takes the board spot...
+        self.board_state.move_card(prev.entity_id, area.entity_id)
+        moves.append(self._entity_moved_msg(prev.entity_id, area.entity_id, slot))
+        # ...inherits the attachments and any older stages...
+        for other in [c for c in list(pokemon.children)]:
+            position = len(prev.children)
+            self.board_state.attach_card(other.entity_id, prev.entity_id)
+            moves.append(self._entity_moved_msg(other.entity_id, prev.entity_id, position))
+        # ...and the removed evolution card goes to the hand/deck.
+        position = len(dest.children)
+        self.board_state.move_card(pokemon.entity_id, dest.entity_id)
+        moves.append(self._entity_moved_msg(pokemon.entity_id, dest.entity_id, position))
+
+        # Devolving removes Special Conditions (not damage); the removed card
+        # leaves play as a fresh card.
+        self.clear_pokemon_effects(pokemon)
+        self.reset_pokemon_damage(pokemon)
+        self.reset_ability_usage(pokemon)
+        prev_max = effective_max_hp(self.board_state, prev)
+        prev_hp = max(0, prev_max - damage_taken)
+        prev.set_attribute(AttrID.HP, prev_hp)
+        # Clamp only the SENT value on non-final steps: the executor flies
+        # Into toward the KO pile the moment its HP tracker reads 0.
+        sent_hp = max(10, prev_hp) if clamp_nonlethal else prev_hp
+
+        data_effects = [
+            self._entity_id_data_effect_msg("From", pokemon.entity_id),
+            self._entity_id_data_effect_msg("Into", prev.entity_id),
+        ]
+        attrs = [
+            self._build_msg(
+                OutboundMsg.ATTRIBUTE_MODIFIED.value,
+                {
+                    "gameID": self.game_id,
+                    "entityID": prev.entity_id,
+                    "attribute": {
+                        "name": AttrID.HP.value,
+                        "value": sent_hp,
+                        "originalValue": prev_max,
+                        "modValue": None,
+                    },
+                },
+            ),
+            self._hp_attribute_msg(pokemon),
+        ]
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.DEVOLVE,
+            data_effects + moves + attrs,
+        )
+        await self.refresh_granted_abilities(prev)
+        logging.info(
+            f"[Session {self.game_id}] {pokemon.entity_id} devolved into "
+            f"{prev.entity_id} ({destination_name})."
+        )
+        return prev, pokemon
+
+    def transfer_pokemon_state(self, old, new) -> List[str]:
+        """Rekeys every per-entity effect (Special Conditions, locks, turn
+        stamps, temporary passives) from `old` onto `new` for identity swaps
+        ("any other effects remain on the new Pokemon"). Once-per-turn ability
+        usage stays behind: the swapped-in card is a different Pokemon.
+        Returns the transferred conditions array."""
+        conditions = list(old.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+        new.set_attribute(AttrID.SPECIAL_CONDITIONS, conditions)
+        old.set_attribute(AttrID.SPECIAL_CONDITIONS, [])
+        old_id, new_id = old.entity_id, new.entity_id
+        ts = self.turn_state
+        # The incoming entity may carry stale keys from an earlier stint in
+        # play: its old entries are dropped even when `old` has none to move.
+        for entity_map in (self.sleep_checkup_coins, self.poison_counters,
+                           self.paralyzed_since, ts.entered_play_turn,
+                           ts.became_active_turn, ts.retreat_locks,
+                           ts.attach_restrictions, ts.attack_flip_checks,
+                           ts.damage_taken, ts.damage_taken_last_turn):
+            entity_map.pop(new_id, None)
+            if old_id in entity_map:
+                entity_map[new_id] = entity_map.pop(old_id)
+        for entity_set in (ts.retreated_entities, ts.healed_entities,
+                           ts.ignore_target_effects_entities,
+                           ts.on_move_to_active_fired):
+            entity_set.discard(new_id)
+            if old_id in entity_set:
+                entity_set.discard(old_id)
+                entity_set.add(new_id)
+        for key in [k for k in ts.attack_locks if k[0] == old_id]:
+            ts.attack_locks[(new_id, key[1])] = ts.attack_locks.pop(key)
+        for temp in self.board_state.temporary_passives:
+            if temp.carrier_entity_id == old_id:
+                temp.carrier_entity_id = new_id
+        return conditions
+
+    async def perform_identity_swap(self, outgoing, incoming,
+                                    destination_name: str = "discard",
+                                    transfer: bool = True):
+        """Switches an in-play Pokemon with a card from the owner's hand or
+        discard: `incoming` takes the exact board spot (Active or the same
+        bench slot) and `outgoing` goes to `destination_name`.
+
+        transfer=True carries attachments, damage, Special Conditions and
+        turn stamps onto the new Pokemon (Stance Change / V Transformation /
+        Thorton); transfer=False sends the attachments to the destination
+        pile with the outgoing card and the new Pokemon enters fresh
+        (Phantom Transformation). Returns `incoming`, or None on failure.
+        """
+        area = outgoing.parent
+        owner_id = outgoing.owning_player_id
+        if area is None or owner_id is None or incoming is None \
+                or incoming is outgoing:
+            return None
+        source_area = incoming._containing_area_name()
+        dest = self.board_state.find_player_area(owner_id, destination_name)
+        if dest is None or source_area is None:
+            return None
+        slot = self.board_state.bench_slot_of(outgoing)
+        damage_taken = max(
+            0, effective_max_hp(self.board_state, outgoing)
+            - outgoing.get_attribute(AttrID.HP, 0)
+        ) if transfer else 0
+        from_hidden = incoming.is_hidden_from(self._opponent_id(owner_id))
+
+        # The new Pokemon takes the vacated spot...
+        self.board_state.move_card(incoming.entity_id, area.entity_id, slot)
+        incoming_move = self._entity_moved_msg(incoming.entity_id, area.entity_id, slot)
+        moves = []
+        # ...the attachments follow it (or go to the pile with the old card)...
+        for other in list(outgoing.children):
+            if transfer:
+                position = len(incoming.children)
+                self.board_state.attach_card(other.entity_id, incoming.entity_id)
+                moves.append(self._entity_moved_msg(
+                    other.entity_id, incoming.entity_id, position))
+            else:
+                position = len(dest.children)
+                self.board_state.move_card(other.entity_id, dest.entity_id)
+                moves.append(self._entity_moved_msg(
+                    other.entity_id, dest.entity_id, position))
+        # ...and the old card leaves play.
+        position = len(dest.children)
+        self.board_state.move_card(outgoing.entity_id, dest.entity_id)
+        moves.append(self._entity_moved_msg(outgoing.entity_id, dest.entity_id, position))
+
+        conditions: List[str] = []
+        if transfer:
+            conditions = self.transfer_pokemon_state(outgoing, incoming)
+            new_max = effective_max_hp(self.board_state, incoming)
+            incoming.set_attribute(AttrID.HP, max(0, new_max - damage_taken))
+        else:
+            self.clear_pokemon_effects(outgoing)
+            self.turn_state.mark_entered_play(incoming.entity_id)
+        self.reset_pokemon_damage(outgoing)
+        self.reset_ability_usage(outgoing)
+
+        attrs = [self._hp_attribute_msg(incoming), self._hp_attribute_msg(outgoing)]
+        players = list(self.players.values())
+        # Wrap-FX rule: the moving card's intro rides a preceding SerialSequence.
+        await self.send_game_sequence(
+            players, GameSequence.SERIAL_SEQUENCE,
+            [self._entity_introduced_msg(incoming)],
+        )
+        if from_hidden:
+            # k.z's reveal delegation presents the card large before it lands;
+            # the pair must ride alone or other moves steal the presentation.
+            await self.send_game_sequence(
+                players, GameSequence.GROUPED_MOVE,
+                [self._reveal_card_msg(incoming.entity_id, True), incoming_move],
+            )
+            await self.send_game_sequence(
+                players, GameSequence.GROUPED_MOVE, moves + attrs)
+        else:
+            await self.send_game_sequence(
+                players, GameSequence.GROUPED_MOVE,
+                [incoming_move] + moves + attrs)
+        if conditions:
+            # Executor ctor (M.u) requires the "Target" data effect first.
+            await self.send_game_sequence(
+                players, GameSequence.ADD_SPECIAL_CONDITION,
+                [self._entity_id_data_effect_msg("Target", incoming.entity_id),
+                 self._condition_attr_msg(incoming)],
+            )
+        await self.refresh_granted_abilities(incoming)
+        logging.info(
+            f"[Session {self.game_id}] {outgoing.entity_id} identity-swapped "
+            f"with {incoming.entity_id} (out to {destination_name})."
+        )
+        return incoming
 
     async def _execute_play_trainer(self, player_id, card) -> bool:
         """Plays an Item/Supporter: revealed onto activeTrainer, effect resolves,
@@ -3463,6 +4130,8 @@ class GameSession:
             # the choreography flushes.
             for hook in ctx.deferred_actions:
                 await hook()
+            # The effect may have removed a Stadium / toggled capacity passives.
+            await self.enforce_bench_capacity()
         return ctx is not None and ctx.ends_turn
 
     def _record_trainer_played(self, card):
@@ -3502,6 +4171,8 @@ class GameSession:
             f"played stadium {card.entity_id} (effect pending effects API)."
         )
         await self._send_play_sequence(player_id, GameSequence.STADIUM_PRESENT, moves, [card])
+        # A capacity-reducing Stadium (Collapsed Stadium) shrinks benches now.
+        await self.enforce_bench_capacity()
 
     async def _execute_retreat(self, player_id, card, entry, target_ids):
         """Retreats the Active: pays the cost to discard, swaps with a benched Pokemon."""
@@ -3548,9 +4219,18 @@ class GameSession:
             self._entity_id_data_effect_msg("NewActive", new_active.entity_id),
         ]
         for eid in discard_ids:
-            position = len(discard_area.children)
-            if self.board_state.move_card(eid, discard_area.entity_id):
-                messages.append(self._entity_moved_msg(eid, discard_area.entity_id, position))
+            # A passive may redirect a retreat-cost energy (Skaters' Park
+            # returns basic Energy to "hand") instead of the discard pile.
+            energy = self.board_state.get_entity(eid)
+            dest_area = discard_area
+            dest_name = retreat_energy_destination(self.board_state, card, energy) \
+                if energy is not None else None
+            if dest_name:
+                dest_area = self.board_state.find_player_area(
+                    player_id, dest_name) or discard_area
+            position = len(dest_area.children)
+            if self.board_state.move_card(eid, dest_area.entity_id):
+                messages.append(self._entity_moved_msg(eid, dest_area.entity_id, position))
         # The old active takes the new active's rendered SLOT (client stamp),
         # captured before the active move overwrites new_active's stamp with 0.
         slot = self.board_state.bench_slot_of(new_active)
@@ -3582,7 +4262,22 @@ class GameSession:
         self.turn_state.retreated_entities.add(card.entity_id)
         self.turn_state.became_active_turn[new_active.entity_id] = \
             self.turn_state.turn_number
+        await self._apply_active_to_bench_counters(player_id, card)
         await self.fire_move_to_active_triggers(new_active)
+        # An Active-spot change can flip suppression passives (Tool Jammer).
+        await self.resync_effective_max_hp()
+
+    async def _apply_active_to_bench_counters(self, player_id, pokemon):
+        """Spikemuth: counters on an Active that moved to its owner's Bench
+        during their turn (the retreat path; effects ride switch_active)."""
+        counters = active_to_bench_counters(self.board_state, pokemon)
+        if counters <= 0 or pokemon.parent is None:
+            return
+        ctx = EffectContext(self, player_id, pokemon, None)
+        await ctx.deal_damage(counters * 10, target=pokemon, as_counters=True)
+        await self._flush_effect_runs(ctx)
+        if ctx.knockouts:
+            await self.resolve_knockouts(ctx)
 
     async def _execute_attack(self, player_id, card, entry) -> bool:
         """Resolves an attack through the effect engine; attacking ends the turn."""
@@ -3604,13 +4299,20 @@ class GameSession:
             if not await self._resolve_confusion_flip(player_id, card):
                 return True  # tails: the attack fizzles, but the turn still ends
 
+        # Smokescreen-family check, also before any bookkeeping: a cancelled
+        # attack never happened for VSTAR usage or attack locks either.
+        flip_title = self.turn_state.attack_flip_check(card.entity_id)
+        if flip_title is not None:
+            if not await self._resolve_attack_attempt_flip(player_id, card, flip_title):
+                return True  # tails: the attack does not happen; the turn ends
+
         if ability is not None:
             if getattr(ability, "locks_next_turn", False):
                 self.turn_state.lock_attack(card.entity_id, action_id)
             if ability.vstar:
                 self.turn_state.vstar_used.add(player_id)
 
-        await resolve_attack(self, player_id, card, ability, action_id)
+        ctx = await resolve_attack(self, player_id, card, ability, action_id)
         # Effects like Aqua Return can remove the attacker itself from play.
         for pid in list(self.players.keys()):
             if self.board_state.active_pokemon(pid) is None \
@@ -3619,7 +4321,50 @@ class GameSession:
                     self._opponent_id(pid),
                     f"{self.players[pid].screen_name} has no Pokémon left",
                 )
+        # An attack normally ends the turn; the effect (Additional Order-style
+        # ctx flag) or a passive (Fluffy Barrage, evaluated after promotions
+        # so "after your opponent chooses a new Active" holds) can keep it.
+        keeps = ctx is not None and (
+            ctx.attack_keeps_turn or any(
+                passive.attack_keeps_turn(card, ability, ctx, carrier)
+                for passive, carrier in active_passives(self.board_state)
+            )
+        )
+        if keeps:
+            logging.info(
+                f"[Session {self.game_id}] Attack kept the turn going for "
+                f"{self.players[player_id].screen_name}."
+            )
+            return False
         return True
+
+    async def _resolve_attack_attempt_flip(self, player_id: str, attacker,
+                                           title: str) -> bool:
+        """Smokescreen-family flip before attacking: tails and the attack does
+        not happen (no damage, no lock/VSTAR bookkeeping; the turn still
+        ends). PokeAbility bracket: M.s runs the L.x flip with no condition
+        pop-in (FlipToWakeUp would stamp the Asleep pop-in)."""
+        flip = random.choice([0, 1])
+        heads = flip == 0
+        self.stat_add(player_id, "headsflipped", 1 if heads else 0)
+        self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.POKE_ABILITY,
+            [self._build_msg(
+                OutboundMsg.MULTIPLE_COIN_FLIP_WITH_CONTEXT_EFFECT.value,
+                {
+                    "gameID": self.game_id,
+                    "resultLst": [flip],
+                    "title": {"id": title or TEXT_ATTACK_FLIP_CHECK},
+                    "gameText": {"id": TEXT_ATTACK_FLIP_PROCEEDS if heads
+                                 else TEXT_ATTACK_FLIP_FAILS},
+                    "source": attacker.entity_id,
+                    "targets": [attacker.entity_id],
+                },
+            )],
+        )
+        await self.choreo_pause(2.5)
+        return heads
 
     async def _resolve_confusion_flip(self, player_id: str, attacker) -> bool:
         """Confused Pokemon flip before attacking: heads proceeds into the

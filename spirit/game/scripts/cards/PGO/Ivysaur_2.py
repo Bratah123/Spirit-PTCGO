@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
 
 card = PokemonCardDef(
     guid="cc24f629-0c9d-51da-9bbb-0bd69465899f",
@@ -23,7 +25,10 @@ card = PokemonCardDef(
             title="Summoning Aroma",
             game_text="Search your deck for up to 2 Pok\u00e9mon, reveal them, and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(
+                is_pokemon_card, count=2, reveal=True,
+                prompt="Choose up to 2 Pokémon to put into your hand.",
+            ),
         ),
         Attack(
             title="Razor Leaf",

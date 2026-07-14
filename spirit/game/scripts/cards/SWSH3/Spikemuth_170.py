@@ -1,5 +1,15 @@
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.data_utils import StadiumCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive
+
+
+class _SpikemuthPassive(Passive):
+    """Whenever a player's Active Pokemon moves to the Bench during their
+    turn, put 2 damage counters on that Pokemon."""
+
+    def counters_on_active_to_bench(self, pokemon, carrier):
+        return 2
+
 
 card = StadiumCardDef(
     guid="d9d948bc-f256-5705-b541-ba076c9cb68f",
@@ -11,5 +21,5 @@ card = StadiumCardDef(
     collector_number=170,
     set_code="SWSH3",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=_SpikemuthPassive(),
 )

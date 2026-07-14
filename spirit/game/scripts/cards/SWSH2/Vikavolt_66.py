@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy, damage_per, recoil_attack
 
 card = PokemonCardDef(
     guid="afccfc67-85c0-5b37-971d-9c0957cb6f47",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("mine"), 20, base=60),
         ),
         Attack(
             title="Thunder Jolt Beam",
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 3},
             damage=170,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

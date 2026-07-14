@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+_TOOL_TYPES = (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+async def slosh_n_crash(ctx):
+    """Before damage: discard all Tools from the opponent's Active. If any
+    were discarded this way, this attack does 120 more damage."""
+    defender = ctx.defender
+    bonus = 0
+    if defender is not None and not ctx.effects_blocked(defender):
+        tools = [c for c in defender.children
+                 if c.get_attribute(AttrID.TRAINER_TYPE) in _TOOL_TYPES]
+        if tools:
+            await ctx.discard_cards(tools)
+            bonus = 120
+    await ctx.deal_damage(60 + bonus)
+
 
 card = PokemonCardDef(
     guid="257ca341-0fbd-543d-9343-145c83692f52",
@@ -23,14 +40,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.WATER: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=slosh_n_crash,
         ),
         Attack(
             title="Dragon Strike",
             game_text="During your next turn, this Pok\u00e9mon can't use Dragon Strike.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.WATER: 2},
             damage=210,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

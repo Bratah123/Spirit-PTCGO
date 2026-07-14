@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def deck_distiller(ctx):
+    heads = await ctx.flip_until_tails("Deck Distiller")
+    if heads <= 0:
+        return
+    top_cards = ctx.deck_top(heads, ctx.opponent_id)
+    if top_cards:
+        await ctx.discard_cards(top_cards)
 
 card = PokemonCardDef(
     guid="227f3371-a80d-5801-9dd9-7fce3191efe5",
@@ -22,7 +31,7 @@ card = PokemonCardDef(
             title="Deck Distiller",
             game_text="Flip a coin until you get tails. For each heads, discard the top card of your opponent's deck.",
             cost={PokemonTypes.FIGHTING: 1},
-            effect=unimplemented,
+            effect=deck_distiller,
         ),
         Attack(
             title="Rock Throw",

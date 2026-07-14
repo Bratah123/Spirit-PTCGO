@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def energy_slap(ctx):
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    energies = ctx.attached_energies(ctx.attacker)
+    if not bench or not energies:
+        return
+    if not await ctx.ask_yes_no(
+            "Move all Energy from this Pokémon to 1 of your Benched Pokémon?"):
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose a Benched Pokémon to move the Energy to")
+    if target is None:
+        return
+    for energy in list(energies):
+        await ctx.move_energy(energy, target)
 
 card = PokemonCardDef(
     guid="76e5f6e1-66a7-54ed-afa5-1b2385487968",
@@ -26,14 +44,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=30),
         ),
         Attack(
             title="Energy Slap",
             game_text="You may move all Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=energy_slap,
         ),
     ],
 )

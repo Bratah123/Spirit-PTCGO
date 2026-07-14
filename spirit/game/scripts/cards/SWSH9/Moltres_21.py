@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def inferno_wings(ctx):
+    """20, +70 more if this Pokemon has any damage counters on it; not
+    affected by Weakness."""
+    has_damage = ctx.source.get_attribute(AttrID.HP, 0) < ctx.max_hp(ctx.source)
+    amount = 20 + (70 if has_damage else 0)
+    await ctx.deal_damage(amount, ignore_weakness=True)
 
 card = PokemonCardDef(
     guid="8942b99f-e2bb-5195-bc27-5e5569161b58",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=inferno_wings,
         ),
     ],
 )

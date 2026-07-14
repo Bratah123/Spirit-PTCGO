@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
+
+def _has_cursed_shovel(ctx):
+    for tool, pokemon in ctx.tools_in_play():
+        if pokemon is ctx.attacker:
+            definition = def_for(tool.archetype_id)
+            if getattr(definition, "display_name", None) == "Cursed Shovel":
+                return True
+    return False
+
+
+async def sand_sink(ctx):
+    count = 3 if _has_cursed_shovel(ctx) else 1
+    await ctx.discard_cards(ctx.deck_top(count, player_id=ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="8efb553b-cfee-5681-8e21-dfccb14ac5fe",
@@ -24,14 +40,14 @@ card = PokemonCardDef(
             title="Sand Sink",
             game_text="Discard the top card of your opponent's deck. If this Pok\u00e9mon has a Cursed Shovel attached, discard 2 more cards from the top of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=sand_sink,
         ),
         Attack(
             title="Super Absorption",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
     ],
 )

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, TrainerType
+from spirit.game.session.effects import is_trainer_card
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+def _is_stadium_card(card):
+    return (
+        is_trainer_card(card)
+        and card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.STADIUM.value
+    )
+
+
+async def hydro_break(ctx):
+    """During your next turn, this Pokémon can't attack."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="40f96e02-b834-5e06-9de1-9e625c108cd8",
@@ -22,14 +39,15 @@ card = PokemonCardDef(
             title="Rule the Region",
             game_text="Search your deck for a Stadium card, reveal it, and put it into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=search_to_hand(_is_stadium_card, count=1, minimum=0, reveal=True,
+                                   prompt="Choose a Stadium card to put into your hand."),
         ),
         Attack(
             title="Hydro Break",
-            game_text="During your next turn, this Pok\u00e9mon can't attack.",
+            game_text="During your next turn, this Pokémon can't attack.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=200,
-            effect=unimplemented,
+            effect=hydro_break,
         ),
     ],
 )

@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_supporter_card
+
+
+async def inviting_ears(ctx):
+    """When played to evolve during your turn, you may search your deck for
+    up to 2 Supporter cards, reveal them, put them into your hand, shuffle."""
+    if not await ctx.ask_yes_no("Search your deck for up to 2 Supporter cards?"):
+        return
+    picks = await ctx.search_deck(
+        is_supporter_card, count=2, minimum=0,
+        prompt="Choose up to 2 Supporter cards to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="9987c931-7cb2-558d-9509-67055957e9a6",
@@ -23,7 +38,8 @@ card = PokemonCardDef(
         Ability(
             title="Inviting Ears",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may search your deck for up to 2 Supporter cards, reveal them, and put them into your hand. Then, shuffle your deck.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=inviting_ears,
         ),
         Attack(
             title="Super Psy Bolt",

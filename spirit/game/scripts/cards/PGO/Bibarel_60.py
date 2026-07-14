@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import Passive, carrier_pokemon, is_in_active_spot
+
+
+class ReassuringDamPassive(Passive):
+    def blocks_discard(self, card, carrier):
+        pokemon = carrier_pokemon(carrier)
+        if pokemon is None or is_in_active_spot(pokemon):
+            return False
+        if card.owning_player_id != pokemon.owning_player_id:
+            return False
+        parent = getattr(card, "parent", None)
+        return bool(parent) and parent.get_attribute(AttrID.NAME) == "deck"
+
 
 card = PokemonCardDef(
     guid="b836a69f-4559-5d3c-aba3-bdd242fdcf57",
@@ -21,8 +34,8 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Reassuring Dam",
-            game_text="As long as this Pok\u00e9mon is on your Bench, cards in your deck can't be discarded by effects of your opponent's attacks, Abilities, Item cards, or Supporter cards.",
-            effect=unimplemented,
+            game_text="As long as this Pokémon is on your Bench, cards in your deck can't be discarded by effects of your opponent's attacks, Abilities, Item cards, or Supporter cards.",
+            passive=ReassuringDamPassive(),
         ),
         Attack(
             title="Hammer In",

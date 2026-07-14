@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def pluck(ctx):
+    """Before doing damage, discard all Pokémon Tools from the opponent's Active."""
+    target = ctx.defender
+    if target is not None and not ctx.effects_blocked(target):
+        tools = [t for t, p in ctx.tools_in_play() if p is target]
+        if tools:
+            await ctx.discard_cards(tools)
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="75f1df96-2e2a-506d-b0f8-ebb1a8630804",
@@ -22,10 +33,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Pluck",
-            game_text="Before doing damage, discard all Pok\u00e9mon Tools from your opponent's Active Pok\u00e9mon.",
+            game_text="Before doing damage, discard all Pokémon Tools from your opponent's Active Pokémon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=pluck,
         ),
         Attack(
             title="Drill Peck",

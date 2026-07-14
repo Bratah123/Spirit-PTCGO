@@ -1,6 +1,7 @@
 from spirit.game.card_effects.pokemon import last_gift
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
 
 card = PokemonCardDef(
     guid="c8dc45e4-a227-51a1-98da-3f9bd15a2519",
@@ -33,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("defender"), 40, base=10),
         ),
     ],
 )

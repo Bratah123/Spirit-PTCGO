@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.pokemon import is_pokemon_vmax
+
+_opponent_has_vmax = lambda ctx: any(
+    is_pokemon_vmax(p.archetype_id) for p in ctx.opponent_pokemon_in_play()
+)
 
 card = PokemonCardDef(
     guid="894c5061-8e44-5472-9611-2af49a1aaed7",
@@ -23,7 +31,7 @@ card = PokemonCardDef(
             game_text="Attach a basic Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=is_basic_energy_card, count=1, target="self"),
         ),
         Attack(
             title="Amazing Sword",
@@ -31,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.METAL: 1},
             damage=150,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_opponent_has_vmax, 150),
         ),
     ],
 )

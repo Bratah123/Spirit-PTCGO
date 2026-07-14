@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import has_tool
+
+
+async def leek_strike(ctx):
+    tooled = has_tool(ctx.attacker)
+    await ctx.deal_damage(70 + (90 if tooled else 0), ignore_resistance=tooled)
+
 
 card = PokemonCardDef(
     guid="e64ac4a8-abea-5946-aabb-5a8a8cbecb16",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=leek_strike,
         ),
     ],
 )

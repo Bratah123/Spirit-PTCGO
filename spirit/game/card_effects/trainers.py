@@ -5,7 +5,8 @@ from spirit.game.attributes import (
 )
 from spirit.game.models.board import PokemonEntity
 from spirit.game.data_utils import (
-    Ability, Activations, has_rule_box, is_pokemon_v, subtypes_for,
+    Ability, Activations, Attack, def_for, has_rule_box, is_pokemon_v,
+    subtypes_for,
 )
 from spirit.game.session.constants import BENCH_CAPACITY
 from spirit.game.session.effects import (
@@ -22,7 +23,9 @@ from spirit.game.session.passives import (
     Passive,
     TurnDamageModifier,
     carrier_pokemon,
+    effective_bench_capacity,
     effective_max_hp,
+    trainer_play_blocked,
 )
 
 
@@ -584,6 +587,39 @@ async def battle_vip_pass(ctx):
     await ctx.shuffle_deck()
 
 
+def dream_ball_playable(board, player_id):
+    """Dream Ball never plays from hand: its window is the prize-take prompt."""
+    return False
+
+
+async def dream_ball(ctx):
+    """Search your deck for a Pokemon and put it onto your Bench."""
+    picks = await ctx.search_deck(
+        is_pokemon_card, count=1, minimum=0,
+        prompt="Choose a Pokémon to put onto your Bench.",
+    )
+    for card in picks:
+        await ctx.bench_pokemon(card)
+    await ctx.shuffle_deck()
+
+
+async def dream_ball_prize_window(ctx):
+    """Taken as a face-down Prize: you may play it before it settles in hand."""
+    ctx.suppress_announce = True
+    board, pid = ctx.board, ctx.player_id
+    bench = board.find_player_area(pid, "bench")
+    if not bench or len(bench.children) >= effective_bench_capacity(board, pid):
+        return
+    if not ctx.deck(pid):
+        return
+    if trainer_play_blocked(board, pid, ctx.source):
+        return
+    if not await ctx.ask_yes_no("Play Dream Ball? Search your deck for a "
+                                "Pokémon and put it onto your Bench."):
+        return
+    await ctx.session._execute_play_trainer(pid, ctx.source)
+
+
 async def power_tablet(ctx):
     """This turn, your Fusion Strike Pokemon's attacks do 30 more damage to
     the opponent's Active Pokemon (before Weakness and Resistance)."""
@@ -679,6 +715,30 @@ class LostCityPassive(Passive):
 
     def knockout_destination(self, pokemon, carrier):
         return "lostZone"
+
+
+class CollapsedStadiumPassive(Passive):
+    """Each player can't have more than 4 Benched Pokemon (excess is discarded
+    by enforce_bench_capacity when this comes into play)."""
+
+    def bench_capacity(self, player_id, carrier):
+        return 4
+
+
+async def gapejaw_bog_watch(ctx):
+    """Gapejaw Bog: 2 damage counters on any Basic just benched from hand."""
+    pokemon = ctx.benched_pokemon
+    if pokemon is None:
+        return
+    await ctx.deal_damage(20, target=pokemon, apply_modifiers=False,
+                          as_counters=True)
+
+
+class SkatersParkPassive(Passive):
+    """Basic Energy paid for either player's retreat goes to hand instead."""
+
+    def retreat_cost_destination(self, pokemon, energy, carrier):
+        return "hand" if is_basic_energy_card(energy) else None
 
 
 # ======================================================================
@@ -897,15 +957,54 @@ async def hisuian_heavy_ball(ctx):
     await ctx.look_at_prizes_take_basic()
 
 
+# --- Peonia (CRE, Supporter) ----------------------------------------------
+
+def peonia_playable(board, player_id) -> bool:
+    prizes = board.find_player_area(player_id, "prizePile")
+    return bool(prizes and prizes.children)
+
+
+async def peonia(ctx):
+    """Put up to 3 Prize cards into your hand. Then, for each Prize card put
+    into your hand this way, put a card from your hand face down as a Prize."""
+    taken = await ctx.take_prizes(3, minimum=1, check_win=False)
+    if not taken:
+        return
+    picks = await ctx.choose_cards(
+        list(ctx.hand()), len(taken), minimum=len(taken),
+        prompt=f"Choose {len(taken)} card(s) to put face down as Prize cards",
+    )
+    await ctx.put_in_prizes(picks)
+
+
 # --- Air Balloon (SSH, Pokemon Tool) -------------------------------------
 
 class AirBalloonPassive(Passive):
     """The Retreat Cost of the holder is [C][C] less."""
 
-    def modify_retreat_cost(self, cost, pokemon, carrier):
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
         if carrier_pokemon(carrier) is pokemon:
             return cost - 2
         return cost
+
+
+# --- Memory Capsule (SWSH4) ------------------------------------------------
+
+class MemoryCapsulePassive(Passive):
+    """The holder can use any attack from its tucked previous Evolutions
+    (energy costs still apply)."""
+
+    def granted_attacks(self, board, pokemon, carrier):
+        if carrier_pokemon(carrier) is not pokemon:
+            return []
+        attacks = []
+        for child in pokemon.children:
+            if not isinstance(child, PokemonEntity):
+                continue
+            for ability in getattr(def_for(child.archetype_id), "abilities", None) or []:
+                if isinstance(ability, Attack):
+                    attacks.append(ability)
+        return attacks
 
 
 # --- Training Court (RCL, Stadium) ---------------------------------------
@@ -927,6 +1026,44 @@ async def training_court(ctx):
     await ctx.put_in_hand(picks, reveal=False)
 
 
+# --- Thorton (SWSH11) -------------------------------------------------------
+
+def _basic_pokemon_in_play(board, player_id):
+    """In-play Basics; fossils count (Basic Pokemon in play, Trainer CARD_TYPE)."""
+    from spirit.game.attributes import AttrID, PokemonStage
+    from spirit.game.models.board import PokemonEntity
+    return [
+        p for p in board.pokemon_in_play(player_id)
+        if isinstance(p, PokemonEntity)
+        and p.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value
+    ]
+
+
+def thorton_condition(board, player_id):
+    if not any(is_basic_pokemon(c) for c in _discard(board, player_id)):
+        return False
+    return bool(_basic_pokemon_in_play(board, player_id))
+
+
+async def thorton(ctx):
+    """Choose a Basic Pokemon in your discard pile and switch it with 1 of
+    your Basic Pokemon in play; everything remains on the new Pokemon."""
+    candidates = [c for c in ctx.discard_pile() if is_basic_pokemon(c)]
+    in_play = _basic_pokemon_in_play(ctx.board, ctx.player_id)
+    if not candidates or not in_play:
+        return
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=1,
+        prompt="Choose a Basic Pokémon from your discard pile",
+    )
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(
+        in_play, "Choose 1 of your Basic Pokémon in play to switch it with")
+    if target is not None:
+        await ctx.identity_swap(target, picks[0], destination="discard")
+
+
 TRAINING_COURT_ABILITY = Ability(
     title="Training Court",
     game_text="Once during each player's turn, that player may put a basic Energy card from their discard pile into their hand.",
@@ -934,3 +1071,80 @@ TRAINING_COURT_ABILITY = Ability(
     effect=training_court,
     condition=training_court_condition,
 )
+
+
+# --- Fossils (Unidentified Fossil / Rare Fossil) ---------------------------
+
+class FossilBodyPassive(Passive):
+    """Fossil rules text: this card can't retreat; Rare Fossil additionally
+    can't be affected by Special Conditions."""
+
+    def __init__(self, blocks_conditions: bool = False):
+        self.condition_immune = blocks_conditions
+
+    def blocks_retreat(self, pokemon, carrier):
+        return pokemon is carrier
+
+    def blocks_special_conditions(self, target, condition, carrier):
+        return self.condition_immune and target is carrier
+
+
+async def fossil_discard(ctx):
+    """Discard this fossil from play; attached cards go to the discard too."""
+    fossil = ctx.source
+    was_active = fossil is ctx.my_active()
+    discard = ctx.board.find_player_area(ctx.player_id, "discard")
+    if discard is not None and discard.entity_id not in ctx.visual_targets:
+        ctx.visual_targets.append(discard.entity_id)
+    await ctx.discard_cards([c for c in full_stack(fossil) if c is not fossil])
+    await ctx.discard_cards([fossil])
+    if was_active:
+        async def _promote():
+            if not await ctx.session._promote_new_active(ctx.player_id):
+                screen_name = ctx.session.players[ctx.player_id].screen_name
+                await ctx.session.end_game(
+                    ctx.opponent_id, f"{screen_name} has no Pokémon left"
+                )
+        ctx.deferred_actions.append(_promote)
+
+
+def fossil_discard_ability() -> Ability:
+    """"At any time during your turn, you may discard this card from play."
+    Fresh instance per print: ability_id derives from the owning card GUID."""
+    return Ability(
+        "Discard",
+        "At any time during your turn, you may discard this card from play.",
+        activation=Activations.ONCE_PER_TURN,
+        effect=fossil_discard,
+    )
+
+
+def is_rare_fossil(card) -> bool:
+    return getattr(def_for(card.archetype_id), "display_name", None) == "Rare Fossil"
+
+
+def bench_has_room(board, player_id):
+    bench = board.find_player_area(player_id, "bench")
+    return bench is not None \
+        and len(bench.children) < effective_bench_capacity(board, player_id)
+
+
+def fossil_search(fossil_predicate, count: int = 2,
+                  label: str = "Rare Fossil"):
+    """Search your deck for up to `count` matching fossil cards and put them
+    onto your Bench; then shuffle (Relicanth's Fossil Search, Cara Liss)."""
+    async def effect(ctx):
+        bench = ctx.board.find_player_area(ctx.player_id, "bench")
+        space = effective_bench_capacity(ctx.board, ctx.player_id) \
+            - len(bench.children) if bench else 0
+        if space <= 0:
+            return
+        picks = await ctx.search_deck(
+            fossil_predicate, count=min(count, space), minimum=0,
+            prompt=f"Choose up to {min(count, space)} {label} cards to put "
+                   f"onto your Bench.",
+        )
+        for card in picks:
+            await ctx.bench_pokemon(card)
+        await ctx.shuffle_deck()
+    return effect

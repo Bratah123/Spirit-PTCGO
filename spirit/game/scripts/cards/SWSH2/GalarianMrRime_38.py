@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.passives_common import attack_effect_shield_passive
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _has_energy_attached(pokemon) -> bool:
+    return any(is_energy_card(c) for c in getattr(pokemon, "children", []))
+
+
+def _screen_cleaner_protects(target, carrier) -> bool:
+    return target.owning_player_id == carrier.owning_player_id \
+        and _has_energy_attached(target)
+
 
 card = PokemonCardDef(
     guid="8fb41ba0-f1ad-54ae-b56c-91d0ef89c4e5",
@@ -21,8 +34,8 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Screen Cleaner",
-            game_text="Prevent all effects of your opponent's attacks, except damage, done to all of your Pok\u00e9mon that have Energy attached. (Existing effects are not removed.)",
-            effect=unimplemented,
+            game_text="Prevent all effects of your opponent's attacks, except damage, done to all of your Pokémon that have Energy attached. (Existing effects are not removed.)",
+            passive=attack_effect_shield_passive(protects=_screen_cleaner_protects),
         ),
         Attack(
             title="Triple Spin",
@@ -30,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=50),
         ),
     ],
 )

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import AttrID, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _hp_90_or_less(card):
+    return is_pokemon_card(card) and (card.get_attribute(AttrID.HP) or 0) <= 90
+
 
 card = ItemCardDef(
     guid="311e4f3c-068f-589e-962c-530d05d4a0f1",
@@ -11,5 +18,8 @@ card = ItemCardDef(
     collector_number=181,
     set_code="SWSH5",
     rarity=Rarities.RareSecret,
-    effect=unimplemented
+    effect=search_to_hand(
+        _hp_90_or_less, count=1,
+        prompt="Choose a Pokémon with 90 HP or less to put into your hand.",
+    )
 )

@@ -15,6 +15,7 @@ SKIP_DIRS = {"__pycache__", "CUSTOM", "Free_Energy"}
 CARD_CLASSES = {
     "PokemonCardDef", "ItemCardDef", "SupporterCardDef",
     "StadiumCardDef", "PokemonToolCardDef", "EnergyCardDef",
+    "FossilItemCardDef",
 }
 ABILITY_CALL_NAMES = {"Attack", "Ability"}
 

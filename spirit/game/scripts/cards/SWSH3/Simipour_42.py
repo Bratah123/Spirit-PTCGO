@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def giga_impact(ctx):
+    """110 damage; during your next turn, this Pokémon can't attack."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
 
 card = PokemonCardDef(
     guid="40de2afc-e4bd-546b-9055-3ef770b6ad17",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=110,
-            effect=unimplemented,
+            effect=giga_impact,
         ),
     ],
 )

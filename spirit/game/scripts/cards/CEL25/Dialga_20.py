@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import recover_from_discard, requires_discard
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
 
 card = PokemonCardDef(
     guid="03fc082d-f894-5f17-96af-f266f3ae3d82",
@@ -23,7 +25,8 @@ card = PokemonCardDef(
             title="Temporal Backflow",
             game_text="Put a card from your discard pile into your hand.",
             cost={PokemonTypes.METAL: 1},
-            effect=unimplemented,
+            condition=requires_discard(),
+            effect=recover_from_discard(count=1, minimum=1, reveal=False, to="hand"),
         ),
         Attack(
             title="Metal Blast",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("self", energy_type=PokemonTypes.METAL), 20, base=60),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
 
 card = PokemonCardDef(
     guid="e5de5d4a-5604-5394-a129-80c522af8ded",
@@ -25,7 +26,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(
+                lambda ctx: count_energy("mine", energy_type=PokemonTypes.DARKNESS)(ctx) >= 3,
+                90, base=30),
         ),
         Attack(
             title="Pierce",

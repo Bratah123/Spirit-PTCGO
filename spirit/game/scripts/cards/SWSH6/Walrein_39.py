@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def hail_prison(ctx):
+    """160 damage, discard 2 Energy from this Pokémon, opponent's Active is now Paralyzed."""
+    await ctx.deal_damage()
+    await ctx.discard_energy_from(ctx.attacker, 2)
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="c210b715-c9dc-5218-bdf3-0e6eebf33c86",
@@ -29,7 +37,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Energy from this Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=hail_prison,
         ),
     ],
 )

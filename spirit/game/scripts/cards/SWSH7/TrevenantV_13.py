@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import discard_random_from_hand
+
+
+async def shadow_claw(ctx):
+    """120. Discard a random card from your opponent's hand."""
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, player_id=ctx.opponent_id, count=1)
 
 card = PokemonCardDef(
     guid="cd42d379-3507-5b8a-8a42-229f76d0b5d0",
@@ -23,14 +31,14 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=heal_attack(30, target="self"),
         ),
         Attack(
             title="Shadow Claw",
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=shadow_claw,
         ),
     ],
 )

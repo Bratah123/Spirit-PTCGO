@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class SpectralBreachPassive(Passive):
+    """All Special Energy (both players') provide only Colorless Energy."""
+
+    def suppresses_special_energy(self, energy, carrier) -> bool:
+        return True
+
 
 card = PokemonCardDef(
     guid="2547c701-72a5-5fd2-9cee-3552a1f4da1c",
@@ -22,8 +31,8 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Spectral Breach",
-            game_text="All Special Energy attached to Pok\u00e9mon (both yours and your opponent's) provide Colorless Energy and have no other effect.",
-            effect=unimplemented,
+            game_text="All Special Energy attached to Pokémon (both yours and your opponent's) provide Colorless Energy and have no other effect.",
+            passive=SpectralBreachPassive(),
         ),
         Attack(
             title="Spooky Shot",

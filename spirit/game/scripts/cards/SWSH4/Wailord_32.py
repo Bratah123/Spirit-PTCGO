@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+async def water_veil(ctx):
+    """Whenever you attach an Energy card from your hand to this Pokémon, remove all Special Conditions from it."""
+    if ctx.attaching_player_id != ctx.player_id or ctx.energy_receiver is not ctx.source:
+        return
+    await ctx.cure_all_conditions(ctx.source)
 
 card = PokemonCardDef(
     guid="7029b0f0-63c1-5d4d-99da-3e67d170fd0c",
@@ -22,7 +30,8 @@ card = PokemonCardDef(
         Ability(
             title="Water Veil",
             game_text="Whenever you attach an Energy card from your hand to this Pok\u00e9mon, remove all Special Conditions from it.",
-            effect=unimplemented,
+            trigger=Triggers.ON_ENERGY_ATTACHED,
+            effect=water_veil,
         ),
         Attack(
             title="Hydro Pump",
@@ -30,7 +39,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("self", energy_type=PokemonTypes.WATER), 40, base=10
+            ),
         ),
     ],
 )

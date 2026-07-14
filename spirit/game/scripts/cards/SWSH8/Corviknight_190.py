@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+
+
+async def power_cyclone(ctx):
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    energies = ctx.attached_energies(ctx.attacker)
+    if not bench or not energies:
+        return
+    picks = await ctx.choose_cards(
+        energies, 1, prompt="Choose an Energy to move to 1 of your Benched Pokémon"
+    )
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose a Benched Pokémon to move the Energy to"
+    )
+    if target is not None:
+        await ctx.move_energy(picks[0], target)
+
 
 card = PokemonCardDef(
     guid="1ed74e86-4962-548b-8910-d8fb0d187d5f",
@@ -25,14 +45,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1},
             damage=50,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
         Attack(
             title="Power Cyclone",
             game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=160,
-            effect=unimplemented,
+            effect=power_cyclone,
         ),
     ],
 )

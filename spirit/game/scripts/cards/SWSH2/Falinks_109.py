@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+from spirit.game.card_effects.support_common import search_to_bench, is_basic
+
+
+def _falinks_named(p):
+    d = def_for(p.archetype_id)
+    return bool(d and d.display_name and "Falinks" in d.display_name)
 
 card = PokemonCardDef(
     guid="9e23a960-4d99-50a7-a248-1874244c2d31",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for up to 2 Basic Pok\u00e9mon and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(is_basic, count=2),
         ),
         Attack(
             title="Team Attack",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_bench("mine", pred=_falinks_named), 30),
         ),
     ],
 )

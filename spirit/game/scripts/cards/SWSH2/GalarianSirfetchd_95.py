@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.legal_actions import LOCK_UNTIL_LEAVES_ACTIVE
+
+
+async def meteor_assault(ctx):
+    """180. Can't use Meteor Assault again until this Pokemon leaves Active."""
+    await ctx.deal_damage()
+    ctx.session.turn_state.attack_locks[
+        (ctx.attacker.entity_id, ctx.ability.ability_id)
+    ] = LOCK_UNTIL_LEAVES_ACTIVE
+
 
 card = PokemonCardDef(
     guid="b11806af-f339-559e-886d-cfaf80104b14",
@@ -29,7 +39,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon can't use Meteor Assault again until it leaves the Active Spot.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=180,
-            effect=unimplemented,
+            effect=meteor_assault,
         ),
     ],
 )

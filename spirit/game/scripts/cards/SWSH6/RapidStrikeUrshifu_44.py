@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+
+
+def _is_rapid_strike(pokemon):
+    return "Rapid Strike" in subtypes_for(pokemon.archetype_id)
+
 
 card = PokemonCardDef(
     guid="1dcd2998-5a26-54f6-9755-276cd53b7e23",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play(side="mine", pred=_is_rapid_strike), 30),
         ),
     ],
 )

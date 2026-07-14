@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def vengeful_cut(ctx):
+    """30 more damage for each damage counter on all of your Benched
+    Pawniard."""
+    counters = 0
+    for pokemon in ctx.my_bench():
+        if pokemon.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Pawniard":
+            counters += max(
+                0, (ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)) // 10
+            )
+    await ctx.deal_damage(30 + 30 * counters)
+
 
 card = PokemonCardDef(
     guid="0db2735c-68ba-5f30-8a8c-477790d124da",
@@ -26,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=vengeful_cut,
         ),
         Attack(
             title="Slicing Blade",

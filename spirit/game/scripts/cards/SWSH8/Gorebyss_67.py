@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.passives_common import ability_lock_passive, opposing_pokemon
+
+
+def _rapid_strike_lock(pokemon, carrier):
+    return opposing_pokemon(pokemon, carrier) and "Rapid Strike" in subtypes_for(pokemon.archetype_id)
 
 card = PokemonCardDef(
     guid="2f698a4c-92c4-55f9-a0b5-99cb79912b5c",
@@ -22,14 +28,14 @@ card = PokemonCardDef(
         Ability(
             title="Rapid Strike Canceler",
             game_text="Your opponent's Rapid Strike Pok\u00e9mon in play have no Abilities.",
-            effect=unimplemented,
+            passive=ability_lock_passive(_rapid_strike_lock),
         ),
         Attack(
             title="Draining Kiss",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=heal_attack(30, target="self"),
         ),
     ],
 )

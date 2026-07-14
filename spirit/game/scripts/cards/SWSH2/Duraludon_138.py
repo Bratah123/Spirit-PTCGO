@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_metal_energy_card
 
 card = PokemonCardDef(
     guid="c7413238-7dbe-514b-b9e8-6157c55e52ec",
@@ -24,7 +26,10 @@ card = PokemonCardDef(
             game_text="Attach a Metal Energy card from your discard pile to 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_metal_energy_card, count=1, target="choice",
+                prompt="Choose a Metal Energy card to attach",
+            ),
         ),
         Attack(
             title="Power Beam",

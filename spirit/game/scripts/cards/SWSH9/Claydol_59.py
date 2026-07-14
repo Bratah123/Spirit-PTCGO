@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _same_bench_count(ctx):
+    return len(ctx.my_bench()) == len(ctx.opponent_bench())
+
 
 card = PokemonCardDef(
     guid="24134d58-7fec-5960-be75-3310b5208a0b",
@@ -31,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_same_bench_count, 90),
         ),
     ],
 )

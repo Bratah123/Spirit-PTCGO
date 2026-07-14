@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
 
 card = PokemonCardDef(
     guid="ea73bad4-a7bf-57f2-90e8-ff01f0d564b2",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Gather the Crew",
             game_text="Search your deck for up to 2 Basic Pok\u00e9mon and put them onto your Bench. Then, shuffle your deck.",
             cost={},
-            effect=unimplemented,
+            effect=search_to_bench(count=2),
         ),
         Attack(
             title="Tackle",

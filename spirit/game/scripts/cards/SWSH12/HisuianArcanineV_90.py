@@ -1,5 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _irresistible_force_condition(board, player_id, pokemon):
+    others = [p for p in board.pokemon_in_play(player_id) if p is not pokemon]
+    return any(
+        energy_provides_type(e, PokemonTypes.FIGHTING)
+        for p in others for e in board.attached_energies(p)
+    )
+
+
+async def irresistible_force(ctx):
+    others = [p for p in ctx.my_pokemon_in_play() if p is not ctx.source]
+    pool = [e for p in others for e in ctx.attached_energies(p)
+            if energy_provides_type(e, PokemonTypes.FIGHTING)]
+    if not pool:
+        return
+    picked = await ctx.choose_cards(
+        pool, 1, prompt="Choose a Fighting Energy to move to this Pokémon")
+    if picked:
+        await ctx.move_energy(picked[0], ctx.source)
+
 
 card = PokemonCardDef(
     guid="6176cd9c-9e88-5d36-a093-b249df90d6a8",
@@ -21,7 +44,9 @@ card = PokemonCardDef(
         Ability(
             title="Irresistible Force",
             game_text="As often as you like during your turn, you may move a Fighting Energy from 1 of your other Pok\u00e9mon to this Pok\u00e9mon.",
-            effect=unimplemented,
+            activation=Activations.UNLIMITED,
+            condition=_irresistible_force_condition,
+            effect=irresistible_force,
         ),
         Attack(
             title="Rock Bullet",
@@ -29,7 +54,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("self", energy_type=PokemonTypes.FIGHTING), 30, base=90),
         ),
     ],
 )

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _transfer_break(ctx):
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    energies = ctx.attached_energies(ctx.attacker)
+    if not bench or not energies:
+        return
+    picked = await ctx.choose_cards(energies, 1, minimum=1, prompt="Choose an Energy to move")
+    if not picked:
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose the Benched Pokémon to move the Energy to"
+    )
+    if target is not None:
+        await ctx.move_energy(picked[0], target)
+
 
 card = PokemonCardDef(
     guid="09d83eb7-1d28-555c-ba85-a8ad58e6d7e1",
@@ -29,7 +46,7 @@ card = PokemonCardDef(
             game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=_transfer_break,
         ),
     ],
 )

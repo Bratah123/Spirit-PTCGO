@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+
+
+def _is_dragon(p):
+    return PokemonTypes.DRAGON.value in (p.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="952c22cb-ebfb-552c-b4e8-947c865d54e0",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Souvenir",
             game_text="Search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=search_to_hand(count=2),
         ),
         Attack(
             title="Wonder Flash",
@@ -31,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(_is_dragon), 90, base=90),
         ),
     ],
 )

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _evolved_this_turn(ctx) -> bool:
+    turn_state = ctx.session.turn_state
+    return turn_state.entered_play_turn.get(ctx.attacker.entity_id) == turn_state.turn_number
+
 
 card = PokemonCardDef(
     guid="036eec95-ef8e-555c-94e4-492ddbef4175",
@@ -26,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_evolved_this_turn, 90),
         ),
         Attack(
             title="Gust",

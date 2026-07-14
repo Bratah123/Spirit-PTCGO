@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def sheer_cold(ctx):
+    """40 damage; the Defending Pokemon can't attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    lock_defender_attacks(ctx)
 
 card = PokemonCardDef(
     guid="431093c3-5d00-5b05-8861-479090185f97",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't attack.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=sheer_cold,
         ),
         Attack(
             title="Frost Smash",

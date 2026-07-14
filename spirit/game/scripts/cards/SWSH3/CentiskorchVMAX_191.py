@@ -1,5 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def g_max_centiferno(ctx):
+    """40 more damage for each Fire Energy attached to this Pokémon. If you did any damage, you may attach a Fire Energy card from your discard pile to this Pokémon."""
+    amount = 40 * count_energy("self", energy_type=PokemonTypes.FIRE)(ctx)
+    dealt = await ctx.deal_damage(amount) if amount > 0 else 0
+    if dealt <= 0:
+        return
+    if not await ctx.ask_yes_no("Attach a Fire Energy card from your discard pile to this Pokémon?"):
+        return
+    energies = [c for c in ctx.discard_pile() if energy_provides_type(c, PokemonTypes.FIRE.value)]
+    picks = await ctx.choose_cards(
+        energies, 1, minimum=1,
+        prompt="Choose a Fire Energy card to attach to this Pokémon.")
+    for card in picks:
+        await ctx.attach_energy(card, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="e67a2398-6c80-523d-a2ad-86279b03dc6e",
@@ -25,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=g_max_centiferno,
         ),
     ],
 )

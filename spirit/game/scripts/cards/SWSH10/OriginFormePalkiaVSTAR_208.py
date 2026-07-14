@@ -1,5 +1,38 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+from spirit.game.card_effects.support_common import distribute_energy, requires_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.session.effects import is_water_pokemon
+
+
+def _is_water_energy(card):
+    return is_basic_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def star_portal(ctx):
+    pool = [c for c in ctx.discard_pile() if _is_water_energy(c)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(
+        pool, 3, minimum=1,
+        prompt="Choose up to 3 Water Energy cards to attach from your discard pile.",
+    )
+    if not picks:
+        return
+    targets = [p for p in ctx.my_pokemon_in_play() if is_water_pokemon(p)]
+    if not targets:
+        return
+    await distribute_energy(ctx, picks, targets)
+
+
+def _star_portal_condition(board, player_id, pokemon=None):
+    return requires_discard(_is_water_energy)(board, player_id, pokemon) and \
+        any(is_water_pokemon(p) for p in board.pokemon_in_play(player_id))
+
+
+subspace_swell = damage_per(count_bench("both"), 20, base=60)
 
 card = PokemonCardDef(
     guid="321b46d1-9d32-5ff4-bb5c-efc2cc599292",
@@ -22,7 +55,10 @@ card = PokemonCardDef(
         Ability(
             title="Star Portal",
             game_text="During your turn, you may attach up to 3 Water Energy cards from your discard pile to your Water Pok\u00e9mon in any way you like. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            vstar=True,
+            effect=star_portal,
+            condition=_star_portal_condition,
         ),
         Attack(
             title="Subspace Swell",
@@ -30,7 +66,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=subspace_swell,
         ),
     ],
 )

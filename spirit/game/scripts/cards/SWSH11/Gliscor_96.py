@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def hurricane_shock(ctx):
+    """Flip 4 coins. 50 damage for each heads; if at least 2 are heads, the
+    opponent's Active Pokémon is now Paralyzed."""
+    results = await ctx.flip_coins(4, "Hurricane Shock")
+    heads = sum(1 for r in results if r)
+    if heads > 0:
+        await ctx.deal_damage(heads * 50)
+    if heads >= 2:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="6299830c-db10-5d94-b580-5c13937f4793",
@@ -25,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=hurricane_shock,
         ),
     ],
 )

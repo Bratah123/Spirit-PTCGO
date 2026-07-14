@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_trainer_card
+
+
+async def poltergeist(ctx):
+    """Opponent reveals their hand; 40 damage for each Trainer card found there."""
+    cards = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    count = sum(1 for c in cards if is_trainer_card(c))
+    await ctx.deal_damage(40 * count)
+
 
 card = PokemonCardDef(
     guid="dbfbb3b0-ef85-5940-9f80-9c1c7a858990",
@@ -22,7 +32,7 @@ card = PokemonCardDef(
             title="Confuse Ray",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Poltergeist",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=poltergeist,
         ),
     ],
 )

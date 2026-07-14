@@ -1,5 +1,34 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+def _attack_entries(pokemon):
+    return [e for e in (pokemon.get_attribute(AttrID.PIE_ABILITIES) or [])
+            if isinstance(e, dict) and e.get("abilityType") == "Attack"
+            and e.get("abilityID")]
+
+
+async def torment(ctx):
+    """20. Choose 1 of your opponent's Active Pokemon's attacks. During your
+    opponent's next turn, that Pokemon can't use that attack."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    entries = _attack_entries(defender)
+    if not entries:
+        return
+    index = 0
+    if len(entries) > 1:
+        index = await ctx.choose(
+            "Choose an attack that can't be used during your opponent's next turn",
+            [e["title"]["id"] for e in entries],
+        )
+    entry = entries[index]
+    state = ctx.session.turn_state
+    state.attack_locks[(defender.entity_id, entry["abilityID"])] = state.turn_number + 1
+
 
 card = PokemonCardDef(
     guid="6cdb27ed-9e14-53ae-9a91-b1cc6f5d6e88",
@@ -20,17 +49,17 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Torment",
-            game_text="Choose 1 of your opponent's Active Pok\u00e9mon's attacks. During your opponent's next turn, that Pok\u00e9mon can't use that attack.",
+            game_text="Choose 1 of your opponent's Active Pokémon's attacks. During your opponent's next turn, that Pokémon can't use that attack.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=torment,
         ),
         Attack(
             title="Spark",
-            game_text="This attack also does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            game_text="This attack also does 20 damage to 1 of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=snipe_attack(20, pool="bench", count=1, also_base=True),
         ),
     ],
 )

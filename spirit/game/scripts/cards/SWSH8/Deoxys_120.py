@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, subtypes_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _has_fusion_strike_energy(ctx):
+    return any(
+        "Fusion Strike" in subtypes_for(c.archetype_id)
+        for c in ctx.attached_energies(ctx.attacker)
+    )
+
 
 card = PokemonCardDef(
     guid="af08582d-bde3-50d1-b090-a9016a286e8a",
@@ -25,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_fusion_strike_energy, 80),
         ),
     ],
 )

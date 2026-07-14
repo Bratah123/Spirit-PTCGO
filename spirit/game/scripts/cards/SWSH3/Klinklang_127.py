@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+_KLINK_NAME = "Klink"
+_KLANG_NAME = "Klang"
+
+
+async def clockwork(ctx):
+    """200 damage; does nothing unless you have Klink AND Klang on your Bench."""
+    bench_names = {p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) for p in ctx.my_bench()}
+    if _KLINK_NAME not in bench_names or _KLANG_NAME not in bench_names:
+        return
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="d8fd31aa-1719-576d-b8e0-ab168a72645f",
@@ -30,7 +42,7 @@ card = PokemonCardDef(
             game_text="If you don't have Klink and Klang on your Bench, this attack does nothing.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=200,
-            effect=unimplemented,
+            effect=clockwork,
         ),
     ],
 )

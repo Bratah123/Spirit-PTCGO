@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 card = PokemonCardDef(
     guid="7cf01536-fbc5-54ed-af1f-6872961eb578",
@@ -24,14 +26,17 @@ card = PokemonCardDef(
             title="Zap Traction",
             game_text="Search your deck for up to 2 cards and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.METAL: 1},
-            effect=unimplemented,
+            effect=search_to_hand(
+                count=2, minimum=0, reveal=False,
+                prompt="Choose up to 2 cards to put into your hand.",
+            ),
         ),
         Attack(
             title="Max Rush",
             game_text="During your next turn, this Pok\u00e9mon's Max Rush attack does 150 more damage.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=boost_own_next_turn(150, attack_title="Max Rush"),
         ),
     ],
 )

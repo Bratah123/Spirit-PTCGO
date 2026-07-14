@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _has_fire_energy(ctx):
+    return any(energy_provides_type(e, PokemonTypes.FIRE.value)
+               for e in ctx.attached_energies(ctx.attacker))
+
 
 card = PokemonCardDef(
     guid="8dd80462-ad54-5b1c-960d-451fc62d77dc",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
         Attack(
             title="Iron Hammer",
@@ -32,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_fire_energy, 80),
         ),
     ],
 )

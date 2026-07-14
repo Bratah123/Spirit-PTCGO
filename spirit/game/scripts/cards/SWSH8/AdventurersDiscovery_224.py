@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef, is_pokemon_v
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import search_to_hand
 
 card = SupporterCardDef(
     guid="8b2a1f93-0a8e-5180-8346-621c218ef61e",
@@ -11,5 +12,8 @@ card = SupporterCardDef(
     collector_number=224,
     set_code="SWSH8",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=search_to_hand(
+        lambda c: is_pokemon_v(c.archetype_id), count=3,
+        prompt="Choose up to 3 Pokémon V",
+    ),
 )

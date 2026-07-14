@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+async def _amazing_bloom(ctx):
+    bench = ctx.my_bench()
+    if not bench:
+        return
+    for pokemon in bench:
+        logic_name = pokemon.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+        if not logic_name:
+            continue
+        picks = await ctx.search_deck(
+            lambda c, name=logic_name: c.get_attribute(AttrID.EVOLUTION_LOGIC_FROM) == name,
+            count=1, minimum=0,
+            prompt="Choose a card that evolves from that Pokémon.",
+        )
+        if picks:
+            await ctx.evolve_pokemon(pokemon, picks[0])
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="36e1ec87-a2da-5747-8ca3-fb237186af7f",
@@ -24,13 +44,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 30),
         ),
         Attack(
             title="Amazing Bloom",
             game_text="For each of your Benched Pok\u00e9mon, search your deck for a card that evolves from that Pok\u00e9mon and put it onto that Pok\u00e9mon to evolve it. Then, shuffle your deck.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_amazing_bloom,
         ),
     ],
 )

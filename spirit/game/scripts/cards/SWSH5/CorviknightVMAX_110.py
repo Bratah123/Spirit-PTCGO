@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class LustrousBodyPassive(Passive):
+    """Prevent all effects of your opponent's Pokémon's Abilities done to this Pokémon."""
+
+    def blocks_ability_effects(self, target, carrier):
+        return target is carrier_pokemon(carrier)
+
 
 card = PokemonCardDef(
     guid="5f9dcb26-d56a-5603-8cdb-0c3a6902eece",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
         Ability(
             title="Lustrous Body",
             game_text="Prevent all effects of your opponent's Pok\u00e9mon's Abilities done to this Pok\u00e9mon.",
-            effect=unimplemented,
+            passive=LustrousBodyPassive(),
         ),
         Attack(
             title="G-Max Hurricane",
             game_text="During your next turn, this Pok\u00e9mon can't use G-Max Hurricane.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=240,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

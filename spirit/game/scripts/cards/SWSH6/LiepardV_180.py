@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+
+
+async def hidden_claw(ctx):
+    """On play from hand to bench: you may discard a Pokémon Tool from a Pokémon (either side)."""
+    tools = [(t, p) for t, p in ctx.tools_in_play()
+             if p.owning_player_id == ctx.player_id or not ctx.effects_blocked(p)]
+    if not tools:
+        return
+    if not await ctx.ask_yes_no("Discard a Pokémon Tool from a Pokémon?"):
+        return
+    tool_cards = [t for t, p in tools]
+    picks = await ctx.choose_cards(tool_cards, 1, prompt="Choose a Pokémon Tool to discard")
+    await ctx.discard_cards(picks)
+
 
 card = PokemonCardDef(
     guid="320309c8-237c-5a29-8572-cc01d205a5ae",
@@ -21,14 +36,15 @@ card = PokemonCardDef(
         Ability(
             title="Hidden Claw",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench during your turn, you may discard a Pok\u00e9mon Tool from a Pok\u00e9mon (yours or your opponent's).",
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=hidden_claw,
         ),
         Attack(
             title="Shadow Ripper",
             game_text="You may put this Pok\u00e9mon and all attached cards into your hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=110,
-            effect=unimplemented,
+            effect=remove_self_from_play(destination="hand", with_attachments="same", optional=True),
         ),
     ],
 )

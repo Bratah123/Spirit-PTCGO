@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def hydro_snipe(ctx):
+    """60 damage, then you may put an Energy attached to the opponent's Active into their hand."""
+    await ctx.deal_damage()
+    active = ctx.opponent_active()
+    if active is None or ctx.effects_blocked(active):
+        return
+    energies = ctx.attached_energies(active)
+    if not energies:
+        return
+    if not await ctx.ask_yes_no(
+            "Put an Energy attached to your opponent's Active Pokémon into their hand?"):
+        return
+    picked = await ctx.choose_cards(
+        energies, 1, minimum=1, prompt="Choose an Energy card to return to its owner's hand")
+    if picked:
+        await ctx.put_in_hand(picked, reveal=False)
+
 
 card = PokemonCardDef(
     guid="a6ae21f4-2228-5e61-965b-0c7d9fe711c2",
@@ -24,14 +44,14 @@ card = PokemonCardDef(
             game_text="You may put an Energy attached to your opponent's Active Pok\u00e9mon into their hand.",
             cost={PokemonTypes.WATER: 1},
             damage=60,
-            effect=unimplemented,
+            effect=hydro_snipe,
         ),
         Attack(
             title="Max Bullet",
             game_text="This attack also does 60 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=snipe_attack(60, also_base=True),
         ),
     ],
 )

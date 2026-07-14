@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def double_ko(ctx):
+    """Both Active Pokemon are Knocked Out."""
+    await ctx.knock_out(ctx.defender)
+    await ctx.knock_out(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="e86a0894-8d25-5489-bbeb-71107950358f",
@@ -25,13 +33,13 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon also does 30 damage to itself.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
         Attack(
             title="Double KO",
             game_text="Both Active Pok\u00e9mon are Knocked Out.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=double_ko,
         ),
     ],
 )

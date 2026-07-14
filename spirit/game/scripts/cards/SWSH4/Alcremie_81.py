@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def sharing_sweets(ctx):
+    """On evolve: you may have each player draw a card."""
+    if await ctx.ask_yes_no("Have each player draw a card?"):
+        await ctx.draw_cards(1)
+        await ctx.draw_cards(1, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="caed74b9-f0e0-53cd-a5aa-837cd01b4fa8",
@@ -21,15 +30,16 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Sharing Sweets",
-            game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may have each player draw a card.",
-            effect=unimplemented,
+            game_text="When you play this Pokémon from your hand to evolve 1 of your Pokémon during your turn, you may have each player draw a card.",
+            trigger=Triggers.ON_EVOLVE,
+            effect=sharing_sweets,
         ),
         Attack(
             title="Wonder Shine",
-            game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
+            game_text="Your opponent's Active Pokémon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

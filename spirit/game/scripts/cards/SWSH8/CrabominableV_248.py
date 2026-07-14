@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, mill_attack
 
 card = PokemonCardDef(
     guid="670fe908-b30f-5809-b4e7-473a9a7964a8",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Trigger Avalanche",
             game_text="Discard the top 2 cards of your opponent's deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=mill_attack(2),
         ),
         Attack(
             title="Destroyer Punch",
@@ -30,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("defender"), 60, base=90),
         ),
     ],
 )

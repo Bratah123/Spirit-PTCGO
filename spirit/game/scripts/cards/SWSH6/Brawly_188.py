@@ -1,5 +1,12 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef, subtypes_for
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_basic_pokemon
+from spirit.game.card_effects.support_common import search_to_bench
+
+
+def _is_basic_rapid_strike(card):
+    return is_basic_pokemon(card) and "Rapid Strike" in subtypes_for(card.archetype_id)
+
 
 card = SupporterCardDef(
     guid="6d30053d-22c1-55a9-bb85-f766a6804537",
@@ -11,5 +18,5 @@ card = SupporterCardDef(
     collector_number=188,
     set_code="SWSH6",
     rarity=Rarities.RareUltra,
-    effect=unimplemented
+    effect=search_to_bench(_is_basic_rapid_strike, count=3),
 )

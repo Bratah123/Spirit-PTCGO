@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def splash_loop(ctx):
+    """160. Put 2 Energy attached to this Pokémon into your hand."""
+    await ctx.deal_damage()
+    energies = ctx.attached_energies(ctx.source)
+    if not energies:
+        return
+    count = min(2, len(energies))
+    picks = await ctx.choose_cards(
+        energies, count, minimum=count,
+        prompt="Choose Energy to put into your hand",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="cfd4bfd0-7fbb-556d-a67d-41323c344d6d",
@@ -24,14 +40,14 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.WATER: 1},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Splash Loop",
             game_text="Put 2 Energy attached to this Pok\u00e9mon into your hand.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=160,
-            effect=unimplemented,
+            effect=splash_loop,
         ),
     ],
 )

@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def tricolored_scales(ctx):
+    """You may make your opponent's Active Pokémon Burned, Confused, and Poisoned."""
+    if not await ctx.ask_yes_no(
+        "Make your opponent's Active Pokémon Burned, Confused, and Poisoned?"
+    ):
+        return
+    target = ctx.opponent_active()
+    if target is None:
+        return
+    for condition in (
+        SpecialConditions.BURNED, SpecialConditions.CONFUSED,
+        SpecialConditions.POISONED,
+    ):
+        await ctx.apply_special_condition(target, condition)
+
 
 card = PokemonCardDef(
     guid="2dd60b54-9a33-5572-ae63-d7c07cbb1daf",
@@ -22,7 +39,8 @@ card = PokemonCardDef(
         Ability(
             title="Tricolored Scales",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon during your turn, you may make your opponent's Active Pok\u00e9mon Burned, Confused, and Poisoned.",
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=tricolored_scales,
         ),
         Attack(
             title="Gust",

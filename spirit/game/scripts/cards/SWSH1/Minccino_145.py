@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def glance(ctx):
+    """Look at the top card of your opponent's deck."""
+    top = ctx.deck_top(1, player_id=ctx.opponent_id)
+    if not top:
+        return
+    await ctx.present_card_choice(
+        top[0], "Top card of your opponent's deck", ["OK"])
 
 card = PokemonCardDef(
     guid="8b5d3f00-2323-56c4-a204-eb60c05ac21e",
@@ -22,7 +32,7 @@ card = PokemonCardDef(
             title="Glance",
             game_text="Look at the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=glance,
         ),
         Attack(
             title="Tail Slap",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=20),
         ),
     ],
 )

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def sonic_boom(ctx):
+    """40. This attack's damage isn't affected by Weakness or Resistance."""
+    await ctx.deal_damage(apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="ce991882-03ac-55cd-a73f-10955608854d",
@@ -24,14 +31,14 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness or Resistance.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=sonic_boom,
         ),
         Attack(
             title="Explosion",
             game_text="This Pok\u00e9mon also does 90 damage to itself.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(90),
         ),
     ],
 )

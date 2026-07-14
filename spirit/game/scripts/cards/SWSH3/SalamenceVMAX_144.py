@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 card = PokemonCardDef(
     guid="bb349d05-047e-562a-b8cf-80b19c7d35b8",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             title="Sonic Double",
             game_text="This attack does 40 damage to 2 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=snipe_attack(40, pool="any", count=2),
         ),
         Attack(
             title="Max Wings",
             game_text="During your next turn, this Pok\u00e9mon can't use Max Wings.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=240,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

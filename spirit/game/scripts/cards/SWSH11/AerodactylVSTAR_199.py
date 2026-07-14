@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import lost_dive, ancient_star
 
 card = PokemonCardDef(
     guid="5cf7a202-67a0-50ac-9616-b354a4f743a7",
@@ -24,13 +25,14 @@ card = PokemonCardDef(
             game_text="Put the top 3 cards of your deck in the Lost Zone.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=240,
-            effect=unimplemented,
+            effect=lost_dive,
         ),
         Attack(
             title="Ancient Star",
-            game_text="Until this Pok\u00e9mon leaves play, it gains an Ability that has the effect \"Your opponent's Pok\u00e9mon V in play, except any Aerodactyl VSTAR, have no Abilities.\" (You can't use more than 1 VSTAR Power in a game.)",
+            game_text="Until this Pokémon leaves play, it gains an Ability that has the effect \"Your opponent's Pokémon V in play, except any Aerodactyl VSTAR, have no Abilities.\" (You can't use more than 1 VSTAR Power in a game.)",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            vstar=True,
+            effect=ancient_star,
         ),
     ],
 )

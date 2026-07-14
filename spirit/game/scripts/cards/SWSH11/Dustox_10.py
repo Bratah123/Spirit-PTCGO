@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="509d2a69-ecab-5d21-aba8-ed46f8063d2e",
@@ -23,7 +24,9 @@ card = PokemonCardDef(
             title="Nadir Powder",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused and Poisoned. During Pok\u00e9mon Checkup, put 8 damage counters on that Pok\u00e9mon instead of 1.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=condition_attack(
+                SpecialConditions.CONFUSED, SpecialConditions.POISONED, counters=8
+            ),
         ),
         Attack(
             title="Cutting Wind",

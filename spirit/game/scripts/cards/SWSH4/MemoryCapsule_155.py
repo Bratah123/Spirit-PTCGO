@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import MemoryCapsulePassive
 
 card = PokemonToolCardDef(
     guid="b891cd7c-3b67-56ea-a84e-a0065e194be6",
@@ -11,5 +12,5 @@ card = PokemonToolCardDef(
     collector_number=155,
     set_code="SWSH4",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=MemoryCapsulePassive(),
 )

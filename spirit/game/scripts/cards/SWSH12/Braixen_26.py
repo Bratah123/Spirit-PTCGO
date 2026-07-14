@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+
+
+def _is_serena_card(card):
+    definition = def_for(getattr(card, "archetype_id", None) or "")
+    return getattr(definition, "display_name", None) == "Serena"
+
 
 card = PokemonCardDef(
     guid="df24acfb-0268-5a75-920d-ef3a6039bdef",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_discard("mine", _is_serena_card), 60),
         ),
     ],
 )

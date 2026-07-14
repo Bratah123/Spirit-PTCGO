@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+
+
+def _yoga_guard_pred(calc, carrier):
+    return calc.is_attack and calc.target is carrier and not calc.to_active
+
 
 card = PokemonCardDef(
     guid="ed8b924f-2399-5e48-b8b4-5357ab191590",
@@ -22,7 +28,7 @@ card = PokemonCardDef(
         Ability(
             title="Yoga Guard",
             game_text="As long as this Pok\u00e9mon is on your Bench, prevent all damage done to this Pok\u00e9mon by attacks (both yours and your opponent's).",
-            effect=unimplemented,
+            passive=prevent_damage_when(_yoga_guard_pred, attacks_only=False),
         ),
         Attack(
             title="Psyshot",

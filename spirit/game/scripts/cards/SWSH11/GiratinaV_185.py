@@ -1,5 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def abyss_seeking(ctx):
+    """Look at the top 4 cards of your deck. Put 2 into your hand, the rest in the Lost Zone."""
+    top = ctx.deck_top(4)
+    if not top:
+        return
+    picks = await ctx.choose_cards(
+        top, 2, minimum=2,
+        prompt="Choose 2 cards to put into your hand; the rest go to the Lost Zone.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+    rest = [c for c in top if c not in picks]
+    if rest:
+        await ctx.move_to_lost_zone(rest)
+
+
+async def shred(ctx):
+    """160. This attack's damage isn't affected by any effects on the opponent's Active Pokemon."""
+    await ctx.deal_damage(160, ignore_target_effects=True)
+
 
 card = PokemonCardDef(
     guid="c31fabb9-f820-59da-b811-59650a825893",
@@ -21,14 +42,14 @@ card = PokemonCardDef(
             title="Abyss Seeking",
             game_text="Look at the top 4 cards of your deck and put 2 of them into your hand. Put the other cards in the Lost Zone.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=abyss_seeking,
         ),
         Attack(
             title="Shred",
-            game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
+            game_text="This attack's damage isn't affected by any effects on your opponent's Active Pokémon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=160,
-            effect=unimplemented,
+            effect=shred,
         ),
     ],
 )

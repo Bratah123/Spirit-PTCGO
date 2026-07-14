@@ -1,5 +1,14 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def copycat(ctx):
+    """Shuffle your hand into your deck. Draw a card for each card in your opponent's hand."""
+    await ctx.shuffle_into_deck(ctx.hand(), ctx.player_id)
+    count = ctx.hand_size(ctx.opponent_id)
+    if count > 0:
+        await ctx.draw_cards(count)
+
 
 card = SupporterCardDef(
     guid="6a28f459-7cf7-5dad-92d7-3594ad806962",
@@ -11,5 +20,5 @@ card = SupporterCardDef(
     collector_number=143,
     set_code="SWSH7",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=copycat
 )

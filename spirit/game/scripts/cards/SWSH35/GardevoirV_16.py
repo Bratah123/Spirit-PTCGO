@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _healed_this_turn(ctx):
+    return ctx.attacker.entity_id in ctx.session.turn_state.healed_entities
+
 
 card = PokemonCardDef(
     guid="7aca8ca1-5bee-5796-a864-844d62096c66",
@@ -29,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_healed_this_turn, 80),
         ),
     ],
 )

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack, damage_per
+
+
+def _defender_condition_count(ctx):
+    defender = ctx.defender
+    if defender is None:
+        return 0
+    return len(defender.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
 
 card = PokemonCardDef(
     guid="3df6a189-2dcb-5f3e-9b2d-120937b90b9e",
@@ -23,7 +32,7 @@ card = PokemonCardDef(
             title="Perplex",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Derisive Roasting",
@@ -31,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=90,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_defender_condition_count, 90),
         ),
     ],
 )

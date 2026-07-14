@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def tailwind_draw(ctx):
+    await ctx.draw_cards(1)
+    session = ctx.session
+    going_second = ctx.player_id != session.first_player_id
+    if going_second and session.turn_state.turn_number == 2:
+        await ctx.draw_cards(3)
 
 card = PokemonCardDef(
     guid="48f2a108-c0af-51ef-b085-cd51a5e52778",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
             title="Tailwind Draw",
             game_text="Draw a card. If you go second and it's your first turn, draw 3 more cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=tailwind_draw,
         ),
         Attack(
             title="Surprise Attack",
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

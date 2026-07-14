@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, damage_counters_on
+
+
+def _ten_or_more_counters(ctx):
+    return damage_counters_on("self")(ctx) >= 10
+
 
 card = PokemonCardDef(
     guid="4c7ec035-54c6-5359-b5eb-256b7cb95e40",
@@ -29,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_ten_or_more_counters, 150),
         ),
     ],
 )

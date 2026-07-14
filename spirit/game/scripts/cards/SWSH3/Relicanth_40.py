@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import fossil_search, is_rare_fossil
 
 card = PokemonCardDef(
     guid="5610a1f5-b6ed-5b97-bdfc-93f525baa035",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Fossil Search",
             game_text="Search your deck for up to 2 Rare Fossil cards and put them onto your Bench. Then, shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=fossil_search(is_rare_fossil),
         ),
         Attack(
             title="Surf",

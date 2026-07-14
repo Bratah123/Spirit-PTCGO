@@ -1,5 +1,14 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.data_utils import is_pokemon_v
+
+
+async def honey(ctx):
+    """Draw a card for each of your opponent's Benched Pokemon V."""
+    count = sum(1 for p in ctx.opponent_bench() if is_pokemon_v(p.archetype_id))
+    if count:
+        await ctx.draw_cards(count)
+
 
 card = SupporterCardDef(
     guid="f05d29cd-fd6f-597b-9830-1da1ef089e1d",
@@ -11,5 +20,5 @@ card = SupporterCardDef(
     collector_number=192,
     set_code="SWSH6",
     rarity=Rarities.RareUltra,
-    effect=unimplemented
+    effect=honey,
 )

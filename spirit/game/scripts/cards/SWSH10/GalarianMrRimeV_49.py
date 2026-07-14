@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.attacks_common import bonus_if, has_tool
+from spirit.game.session.effects import is_item_card
 
 card = PokemonCardDef(
     guid="505bdf56-6674-52ff-aa9b-743f89d0698b",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Surprising Hand",
             game_text="Search your deck for up to 3 Item cards, reveal them, and put them into your hand. Then, shuffle your deck.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=search_to_hand(is_item_card, count=3, minimum=0, reveal=True),
         ),
         Attack(
             title="Customized Cane",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: has_tool(ctx.attacker), 90),
         ),
     ],
 )

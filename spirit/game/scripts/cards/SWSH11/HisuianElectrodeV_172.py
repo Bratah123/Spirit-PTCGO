@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, self_energy_discard_attack
+
+
+def _condition_count(ctx):
+    conditions = ctx.attacker.get_attribute(AttrID.SPECIAL_CONDITIONS) or []
+    return len(conditions)
+
 
 card = PokemonCardDef(
     guid="3cd2388b-cff7-5c31-82f0-3518bced8c4f",
@@ -24,14 +31,14 @@ card = PokemonCardDef(
             cost={},
             damage=100,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_condition_count, 100),
         ),
         Attack(
             title="Solar Shot",
             game_text="Discard all Energy from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(all_energy=True),
         ),
     ],
 )

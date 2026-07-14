@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+def _is_grass_pokemon(card):
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_pokemon_card(card) and PokemonTypes.GRASS.value in types
+
 
 card = PokemonCardDef(
     guid="5c87b09b-c170-5200-b71d-e21ddb8d18fb",
@@ -22,7 +30,11 @@ card = PokemonCardDef(
         Ability(
             title="Sun-Drenched Shell",
             game_text="Once during your turn, you may search your deck for a Grass Pok\u00e9mon, reveal it, and put it into your hand. Then, shuffle your deck.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=search_to_hand(
+                _is_grass_pokemon, count=1, minimum=0, reveal=True,
+                prompt="Choose a Grass Pok\u00e9mon to reveal and put into your hand.",
+            ),
         ),
         Attack(
             title="Razor Leaf",

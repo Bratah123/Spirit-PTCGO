@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import apply_protection
+
+
+async def triple_heads(ctx):
+    """Flip 3 coins, 60 damage per heads; all heads also shields the user next turn."""
+    results = await ctx.flip_coins(3, "Triple Heads")
+    heads = sum(1 for r in results if r)
+    if heads:
+        await ctx.deal_damage(60 * heads)
+    if heads == 3:
+        await apply_protection(ctx, prevent=True, effects_too=True)
 
 card = PokemonCardDef(
     guid="7070e3c5-17cc-51d0-9a79-f938fafb8e1e",
@@ -25,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=triple_heads,
         ),
     ],
 )

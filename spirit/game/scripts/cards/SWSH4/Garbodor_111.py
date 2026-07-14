@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import condition_attack
+
+_TOOL_TYPES = (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+def _is_tool_card(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in _TOOL_TYPES
+
+
+async def trash_cyclone(ctx):
+    """30 damage for each Pokemon Tool card in your discard pile. Then,
+    shuffle those cards into your deck."""
+    tools = [c for c in ctx.discard_pile() if _is_tool_card(c)]
+    await ctx.deal_damage(30 * len(tools))
+    if tools:
+        await ctx.shuffle_into_deck(tools, ctx.player_id)
+
 
 card = PokemonCardDef(
     guid="95fe0850-6bb7-5d27-9e62-83d87f517693",
@@ -21,18 +38,18 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Trash Cyclone",
-            game_text="This attack does 30 damage for each Pok\u00e9mon Tool card in your discard pile. Then, shuffle those cards into your deck.",
+            game_text="This attack does 30 damage for each Pokémon Tool card in your discard pile. Then, shuffle those cards into your deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=trash_cyclone,
         ),
         Attack(
             title="Poison Spray",
-            game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
+            game_text="Your opponent's Active Pokémon is now Poisoned.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def soak_in_water(ctx):
+    """Attach a Water Energy card from your hand to this Pokemon."""
+    water = [c for c in ctx.hand() if energy_provides_type(c, PokemonTypes.WATER.value)]
+    if not water:
+        return
+    picks = await ctx.choose_cards(water, 1, prompt="Choose a Water Energy card to attach.")
+    for card in picks:
+        await ctx.attach_energy(card, ctx.source)
+
 
 card = PokemonCardDef(
     guid="291c4d11-37f9-5734-8245-3492ebc97898",
@@ -22,7 +34,7 @@ card = PokemonCardDef(
             title="Soak in Water",
             game_text="Attach a Water Energy card from your hand to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=soak_in_water,
         ),
         Attack(
             title="Spinning Attack",

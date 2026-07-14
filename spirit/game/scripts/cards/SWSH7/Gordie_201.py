@@ -1,5 +1,23 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def gordie(ctx):
+    """Look at the top 7 cards of your deck. You may reveal any number of
+    Energy cards you find there and put them into your hand. Shuffle the
+    other cards back into your deck."""
+    top = ctx.deck_top(7)
+    candidates = [c for c in top if is_energy_card(c)]
+    if candidates:
+        picks = await ctx.choose_cards(
+            candidates, len(candidates), minimum=0,
+            prompt="Choose Energy cards to put into your hand.",
+            display_cards=top,
+        )
+        await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
 
 card = SupporterCardDef(
     guid="10ab6181-77a0-5a87-ad42-83686c81930c",
@@ -11,5 +29,5 @@ card = SupporterCardDef(
     collector_number=201,
     set_code="SWSH7",
     rarity=Rarities.RareUltra,
-    effect=unimplemented
+    effect=gordie
 )

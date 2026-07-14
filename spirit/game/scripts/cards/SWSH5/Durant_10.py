@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def devour(ctx):
+    """For each of your Durant in play, discard the top card of your
+    opponent's deck."""
+    count = sum(
+        1 for p in ctx.my_pokemon_in_play()
+        if p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Durant"
+    )
+    if count:
+        await ctx.discard_cards(ctx.deck_top(count, player_id=ctx.opponent_id))
 
 card = PokemonCardDef(
     guid="330eda35-2701-51b9-ab21-d990bb0f6db6",
@@ -27,7 +38,7 @@ card = PokemonCardDef(
             title="Devour",
             game_text="For each of your Durant in play, discard the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=devour,
         ),
     ],
 )

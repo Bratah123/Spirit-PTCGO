@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def drowning_ball(ctx):
+    """20 damage; on heads, Paralyze the Defending Pokémon and discard an Energy from it."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, "Drowning Ball"))[0]
+    if not heads:
+        return
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    await ctx.apply_special_condition(defender, SpecialConditions.PARALYZED)
+    await ctx.discard_energy_from(
+        defender, 1, prompt="Choose an Energy to discard from the Defending Pokémon")
+
 
 card = PokemonCardDef(
     guid="a64cf849-dc93-5c33-af8e-7a7f496cfa05",
@@ -24,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed, and discard an Energy from that Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
             damage=20,
-            effect=unimplemented,
+            effect=drowning_ball,
         ),
         Attack(
             title="Headbutt Bounce",

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
 
 card = PokemonCardDef(
     guid="43af9110-c618-53a7-a962-c631c148afed",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
             title="Stomp Off",
             game_text="Discard the top 2 cards of your opponent's deck.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=mill_attack(2),
         ),
         Attack(
             title="Land Crush",

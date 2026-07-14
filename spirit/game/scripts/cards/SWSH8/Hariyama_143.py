@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import guts_survive_passive
 
 card = PokemonCardDef(
     guid="7274b474-ca05-58b3-80b8-660997eeb80f",
@@ -22,7 +23,7 @@ card = PokemonCardDef(
         Ability(
             title="Guts",
             game_text="If this Pok\u00e9mon would be Knocked Out by damage from an attack, flip a coin. If heads, this Pok\u00e9mon is not Knocked Out, and its remaining HP becomes 10.",
-            effect=unimplemented,
+            passive=guts_survive_passive(hp_floor=10, title="Guts", flip=True),
         ),
         Attack(
             title="Hammer In",

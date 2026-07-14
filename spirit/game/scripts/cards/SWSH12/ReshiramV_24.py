@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def white_blaze(ctx):
+    """Flip a coin. If tails, during your next turn, this Pokémon can't attack."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if not heads:
+        lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="e7d6acfc-61c0-50e0-b7f6-8a9438848df6",
@@ -22,14 +34,14 @@ card = PokemonCardDef(
             title="Sparkling Wing",
             game_text="Search your deck for up to 2 basic Energy cards and attach them to 1 of your Pok\u00e9mon. Then, shuffle your deck.",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(is_basic_energy_card, count=2, distribute=False),
         ),
         Attack(
             title="White Blaze",
             game_text="Flip a coin. If tails, during your next turn, this Pok\u00e9mon can't attack.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=200,
-            effect=unimplemented,
+            effect=white_blaze,
         ),
     ],
 )

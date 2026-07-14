@@ -1,4 +1,5 @@
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.card_effects.trainers import gapejaw_bog_watch
+from spirit.game.data_utils import StadiumCardDef, Ability, Triggers
 from spirit.game.attributes import Rarities
 
 card = StadiumCardDef(
@@ -11,5 +12,12 @@ card = StadiumCardDef(
     collector_number=142,
     set_code="SWSH10",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    abilities=[
+        Ability(
+            title="Gapejaw Bog",
+            game_text="Whenever either player puts a Basic Pokémon from their hand onto their Bench, put 2 damage counters on that Pokémon.",
+            trigger=Triggers.ON_POKEMON_BENCHED,
+            effect=gapejaw_bog_watch,
+        ),
+    ],
 )

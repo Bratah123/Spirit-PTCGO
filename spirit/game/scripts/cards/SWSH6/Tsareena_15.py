@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+def _defender_retreat_cost(ctx):
+    active = ctx.opponent_active()
+    return int(active.get_attribute(AttrID.RETREAT_COST) or 0) if active else 0
+
 
 card = PokemonCardDef(
     guid="9efe8ff2-f51a-5597-b5c2-82fc75ff7cff",
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 50, base=10),
         ),
         Attack(
             title="Solar Beam",

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
+
+
+async def sudden_cyclone(ctx):
+    """On play from hand: you may have your opponent switch their Active
+    Pokémon with 1 of their Benched Pokémon."""
+    if ctx.opponent_bench() and await ctx.ask_yes_no(
+        "Have your opponent switch their Active Pokémon with 1 of their "
+        "Benched Pokémon?"
+    ):
+        await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="f5efc250-82e1-5a20-9ce9-d8544857ef02",
@@ -22,7 +34,8 @@ card = PokemonCardDef(
         Ability(
             title="Sudden Cyclone",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench, you may have your opponent switch their Active Pok\u00e9mon with 1 of their Benched Pok\u00e9mon.",
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=sudden_cyclone,
         ),
         Attack(
             title="Blasting Wind",
