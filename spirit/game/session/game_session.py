@@ -1344,11 +1344,23 @@ class GameSession:
             "minimumToSelect": min_to_select,
             "forced": forced,
         }
-        return await self._run_pick_offer(
+        picked = await self._run_pick_offer(
             player_id, source_entity_id, node,
             SelectionKind.ENTITY_LIST.value,
             valid, count, min(min_to_select, len(valid)), forced,
         )
+        await self._dismiss_pulled_out_picker_card(player_id)
+        return picked
+
+    async def _dismiss_pulled_out_picker_card(self, player_id: str):
+        """In-place pick commands (r.e/R.w/d.j) park the targets' holder
+        Pokemon in abilitySelectArea with no advance-exit tuck; the
+        DismissAbilitySelect executor flies it home (no-op when empty)."""
+        viewer = self.players.get(player_id)
+        if viewer is not None:
+            await self.send_game_sequence(
+                [viewer], GameSequence.DISMISS_ABILITY_SELECT, []
+            )
 
     async def prompt_energy_unit_picker(
         self,
@@ -1415,6 +1427,7 @@ class GameSession:
             SelectionKind.RETREAT_COST_ENTITY_LIST.value,
             valid, amount, 1, True,
         )
+        await self._dismiss_pulled_out_picker_card(player_id)
         if enough(picked):
             return picked
         logging.warning(
