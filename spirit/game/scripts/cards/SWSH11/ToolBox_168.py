@@ -16,13 +16,12 @@ async def tool_box(ctx):
     if not top:
         return
     tools = [c for c in top if _is_pokemon_tool_card(c)]
-    picks = []
-    if tools:
-        picks = await ctx.choose_cards(
-            tools, len(tools), minimum=0,
-            prompt="Choose any number of Pokémon Tool cards to put into your hand.",
-            display_cards=top,
-        )
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        tools, max(len(tools), 1), minimum=0,
+        prompt="Choose any number of Pokémon Tool cards to put into your hand.",
+        display_cards=top,
+    )
     if picks:
         await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()

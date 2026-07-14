@@ -153,9 +153,10 @@ def look_top_attach_energy(n, predicate=is_energy, rest="shuffle",
         await _deal_printed(ctx)
         top = ctx.deck_top(n)
         matches = [c for c in top if predicate(c)]
-        if matches:
+        if top:
+            # No matches still shows the looked-at cards (nothing selectable).
             picks = await ctx.choose_cards(
-                matches, len(matches), minimum=minimum,
+                matches, max(len(matches), 1), minimum=minimum,
                 prompt="Choose Energy cards to attach to your Pokémon.",
                 display_cards=top,
             )
@@ -318,13 +319,15 @@ def look_at_top(n, take=1, predicate=None, rest="shuffle", minimum=None,
             return
         candidates = [c for c in top if predicate is None or predicate(c)]
         picks: List[CardEntity] = []
-        if candidates and take > 0:
+        if take > 0:
+            # No matches still shows the looked-at cards (nothing selectable).
             picks = await ctx.choose_cards(
                 candidates, take, minimum=minimum,
                 prompt=prompt or "Choose a card to put into your hand.",
                 display_cards=top if len(candidates) < len(top) else None,
             )
-            await ctx.put_in_hand(picks, reveal=False)
+            if picks:
+                await ctx.put_in_hand(picks, reveal=False)
         if rest == "shuffle":
             await ctx.shuffle_deck()
         elif rest == "bottom":

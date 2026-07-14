@@ -9,13 +9,13 @@ async def energy_loto(ctx):
     top = ctx.deck_top(7)
     if top:
         candidates = [c for c in top if is_energy_card(c)]
-        if candidates:
-            picks = await ctx.choose_cards(
-                candidates, 1, minimum=0,
-                prompt="You may choose an Energy card to reveal and put into your hand.",
-                display_cards=top if len(candidates) < len(top) else None,
-            )
-            await ctx.put_in_hand(picks, reveal=True)
+        # No matches still shows the looked-at cards (nothing selectable).
+        picks = await ctx.choose_cards(
+            candidates, 1, minimum=0,
+            prompt="You may choose an Energy card to reveal and put into your hand.",
+            display_cards=top if len(candidates) < len(top) else None,
+        )
+        await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()
 
 

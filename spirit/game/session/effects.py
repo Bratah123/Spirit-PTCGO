@@ -480,6 +480,17 @@ class EffectContext:
         target.set_attribute(AttrID.HP, current + healed)
         self.session.turn_state.healed_entities.add(target.entity_id)
         self.session.stat_add(self.player_id, "damagehealed", healed)
+        # Heal FX + fly-text (L.y) must precede the HP update, like CakeAttackEffect.
+        self._queue(self.session._build_msg(
+            OutboundMsg.CREATURE_HEAL_WITH_CONTEXT_EVENT.value,
+            {
+                "gameID": self.game_id,
+                "source": self.source.entity_id if self.source is not None
+                else target.entity_id,
+                "targets": [target.entity_id],
+                "amount": healed,
+            },
+        ))
         self._queue_hp_update(target)
         return healed
 

@@ -12,12 +12,12 @@ async def shining_arcana(ctx):
     if not top:
         return
     energies = [c for c in top if is_basic_energy_card(c)]
-    picks = []
-    if energies:
-        picks = await ctx.choose_cards(
-            energies, len(energies), minimum=0,
-            prompt="Choose basic Energy cards to attach to your Pokémon.",
-        )
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        energies, max(len(energies), 1), minimum=0,
+        prompt="Choose basic Energy cards to attach to your Pokémon.",
+        display_cards=top,
+    )
     if picks:
         await distribute_energy(ctx, picks, ctx.my_pokemon_in_play())
     remaining = [c for c in top if c not in picks]

@@ -17,18 +17,18 @@ async def energy_garden(ctx):
             continue
         seen_types.append(types[0])
         reps.append(card)
-    if reps:
-        picks = await ctx.choose_cards(
-            reps, 3, minimum=0,
-            prompt="Choose up to 3 basic Energy cards of different types.",
-            display_cards=deck_cards,
+    # No matches still shows the deck browser (nothing selectable).
+    picks = await ctx.choose_cards(
+        reps, 3, minimum=0,
+        prompt="Choose up to 3 basic Energy cards of different types.",
+        display_cards=deck_cards,
+    )
+    for energy in picks:
+        target = await ctx.choose_pokemon(
+            ctx.my_pokemon_in_play(), "Choose a Pokémon to attach the Energy to"
         )
-        for energy in picks:
-            target = await ctx.choose_pokemon(
-                ctx.my_pokemon_in_play(), "Choose a Pokémon to attach the Energy to"
-            )
-            if target is not None:
-                await ctx.attach_energy(energy, target)
+        if target is not None:
+            await ctx.attach_energy(energy, target)
     await ctx.shuffle_deck()
 
 

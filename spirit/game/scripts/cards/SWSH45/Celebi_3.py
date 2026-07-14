@@ -10,13 +10,12 @@ async def _woodland_stroll(ctx):
     if not top:
         return
     candidates = [c for c in top if is_energy_card(c)]
-    picks = []
-    if candidates:
-        picks = await ctx.choose_cards(
-            candidates, 1, minimum=0,
-            prompt="Reveal an Energy card you find there and put it into your hand.",
-            display_cards=top,
-        )
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=0,
+        prompt="Reveal an Energy card you find there and put it into your hand.",
+        display_cards=top,
+    )
     if picks:
         await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()

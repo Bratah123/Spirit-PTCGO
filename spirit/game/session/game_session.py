@@ -1150,7 +1150,9 @@ class GameSession:
         if isinstance(player, AIPlayer):
             return valid[:count]
 
-        min_to_select = count if minimum is None else minimum
+        # Clamp to the pickable set: a look-at/search with no (or few) matches
+        # still shows the browser, Done enabled once every match is taken.
+        min_to_select = min(count if minimum is None else minimum, len(valid))
         forced = min_to_select > 0
         # The browser DISPLAYS revealEntities' keys; selectability comes from
         # selections[0].validTargets (constraints are read from selections[0],

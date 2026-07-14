@@ -8,13 +8,13 @@ async def great_ball(ctx):
     find there and put it into your hand. Shuffle the other cards back."""
     top = ctx.deck_top(7)
     candidates = [c for c in top if is_pokemon_card(c)]
-    if candidates:
-        picks = await ctx.choose_cards(
-            candidates, 1, minimum=0,
-            prompt="You may put a Pokémon into your hand.",
-            display_cards=top,
-        )
-        await ctx.put_in_hand(picks, reveal=True)
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=0,
+        prompt="You may put a Pokémon into your hand.",
+        display_cards=top,
+    )
+    await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()
 
 

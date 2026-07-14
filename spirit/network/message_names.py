@@ -615,6 +615,8 @@ class OutboundMsg(str, Enum):
     # Raw damage-counter placement (Poison/Burn checkup ticks, Confusion self-hit):
     # no W/R, no passive pipeline -- damage counters, not attack damage.
     PLACE_DAMAGE_EFFECT = "PlaceDamageEffect"
+    # Heal FX + green fly-text (command L.y): {source, targets, amount}.
+    CREATURE_HEAL_WITH_CONTEXT_EVENT = "CreatureHealWithContextEvent"
     # Replaces one attribute on an introduced entity (AttributeModifiedCommand).
     ATTRIBUTE_MODIFIED = "AttributeModified"
     ABILITY_FINISHED_EFFECT = "AbilityFinishedEffect"

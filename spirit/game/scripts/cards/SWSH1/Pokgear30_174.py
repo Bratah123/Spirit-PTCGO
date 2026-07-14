@@ -10,13 +10,13 @@ async def pokegear_30(ctx):
     if not top:
         return
     candidates = [c for c in top if is_supporter_card(c)]
-    if candidates:
-        picks = await ctx.choose_cards(
-            candidates, 1, minimum=0,
-            prompt="Choose a Supporter card to put into your hand.",
-            display_cards=top,
-        )
-        await ctx.put_in_hand(picks, reveal=True)
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=0,
+        prompt="Choose a Supporter card to put into your hand.",
+        display_cards=top,
+    )
+    await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()
 
 

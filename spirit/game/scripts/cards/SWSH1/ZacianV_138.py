@@ -10,13 +10,12 @@ async def intrepid_sword(ctx):
     if not top:
         return
     metal = [c for c in top if is_metal_energy_card(c)]
-    picks = []
-    if metal:
-        picks = await ctx.choose_cards(
-            metal, len(metal), minimum=0,
-            prompt="Attach any number of Metal Energy cards to this Pokémon.",
-            display_cards=top,
-        )
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        metal, max(len(metal), 1), minimum=0,
+        prompt="Attach any number of Metal Energy cards to this Pokémon.",
+        display_cards=top,
+    )
     for energy in picks:
         await ctx.attach_energy(energy, ctx.source)
     rest = [c for c in top if c not in picks]

@@ -11,13 +11,12 @@ async def ocean_search(ctx):
         return
     top = ctx.deck_top(6)
     candidates = [c for c in top if is_pokemon_card(c)]
-    picks = []
-    if candidates:
-        picks = await ctx.choose_cards(
-            candidates, 1, minimum=0,
-            prompt="Choose a Pokémon to put into your hand.",
-            display_cards=top,
-        )
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        candidates, 1, minimum=0,
+        prompt="Choose a Pokémon to put into your hand.",
+        display_cards=top,
+    )
     await ctx.put_in_hand(picks, reveal=True)
     await ctx.shuffle_deck()
 

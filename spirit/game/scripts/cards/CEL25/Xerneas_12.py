@@ -22,10 +22,7 @@ async def breath_of_life(ctx):
         reps.append(card)
         labels[card.entity_id] = f"{CLIENT_POKEMON_TYPE_NAMES[PokemonTypes(types[0])]} Energy"
 
-    if not reps:
-        await ctx.shuffle_deck()
-        return
-
+    # No matches still shows the deck browser (nothing selectable).
     picks = await ctx.choose_cards(
         reps, 3, minimum=0,
         prompt="Choose up to 3 basic Energy cards of different types.",

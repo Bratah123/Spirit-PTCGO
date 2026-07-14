@@ -11,14 +11,14 @@ async def miss_fortune_sisters(ctx):
     if not top:
         return
     items = [c for c in top if is_item_card(c)]
-    if items:
-        picks = await ctx.choose_cards(
-            items, len(items), minimum=0,
-            prompt="Choose any number of Item cards to discard",
-            display_cards=top if len(items) < len(top) else None,
-        )
-        if picks:
-            await ctx.discard_cards(picks)
+    # No matches still shows the looked-at cards (nothing selectable).
+    picks = await ctx.choose_cards(
+        items, max(len(items), 1), minimum=0,
+        prompt="Choose any number of Item cards to discard",
+        display_cards=top if len(items) < len(top) else None,
+    )
+    if picks:
+        await ctx.discard_cards(picks)
     await ctx.shuffle_deck(ctx.opponent_id)
 
 
