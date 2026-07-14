@@ -34,6 +34,7 @@ SET_CODE_MAP = {
     "ASR": "SWSH10",
     "LOR": "SWSH11",
     "SIT": "SWSH12",
+    "CRZ": "CZ",
     "CEL": "CEL25",
     "PGO": "PGO",
 }
