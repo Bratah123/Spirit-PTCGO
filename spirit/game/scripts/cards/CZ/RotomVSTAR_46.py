@@ -1,5 +1,41 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+
+def _is_pokemon_tool_card(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value,
+    )
+
+
+def _conversion_star_condition(board, player_id, pokemon):
+    hand = board.find_player_area(player_id, "hand")
+    return bool(hand) and bool(hand.children)
+
+
+async def conversion_star(ctx):
+    """VSTAR Power: discard any number of cards from your hand, then draw that many."""
+    hand = ctx.hand()
+    discarded = await ctx.discard_from_hand(
+        len(hand), minimum=0, prompt="Discard any number of cards from your hand",
+    ) if hand else []
+    if discarded:
+        await ctx.draw_cards(len(discarded))
+
+
+async def scrap_pulse(ctx):
+    """80. Put any number of Pokémon Tool cards from discard into the Lost Zone; +40 damage per card moved this way."""
+    tools = [c for c in ctx.discard_pile() if _is_pokemon_tool_card(c)]
+    picks = []
+    if tools:
+        picks = await ctx.choose_cards(
+            tools, len(tools), minimum=0,
+            prompt="Put any number of Pokémon Tool cards from your discard pile in the Lost Zone.",
+        )
+    if picks:
+        await ctx.move_to_lost_zone(picks)
+    await ctx.deal_damage(80 + 40 * len(picks))
+
 
 card = PokemonCardDef(
     guid="cbd69b89-554e-5b7b-96c8-bbc2d3da9271",
@@ -22,7 +58,10 @@ card = PokemonCardDef(
         Ability(
             title="Conversion Star",
             game_text="During your turn, you may use this Ability. Discard any number of cards from your hand. Then, draw that many cards. (You can't use more than 1 VSTAR Power in a game.)",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            vstar=True,
+            condition=_conversion_star_condition,
+            effect=conversion_star,
         ),
         Attack(
             title="Scrap Pulse",
@@ -30,7 +69,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=scrap_pulse,
         ),
     ],
 )

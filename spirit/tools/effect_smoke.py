@@ -139,12 +139,17 @@ def pick_filler_basic() -> Any:
 
 
 def pick_filler_item() -> Optional[Any]:
-    """A vanilla Item card (no effect) so 'other Item in hand' conditions hold."""
+    """A plain Item card so 'other Item in hand' conditions hold.
+
+    Exact ItemCardDef only (a Tool/Fossil subclass carries board machinery
+    that breaks filler roles); its effect never runs, so effect-less defs
+    merely sort first now that every real Item is scripted.
+    """
     from spirit.game.data_utils import ItemCardDef
     candidates = [d for d in CARD_DEFS_BY_GUID.values()
-                  if isinstance(d, ItemCardDef) and d.effect is None
-                  and d.condition is None]
-    candidates.sort(key=lambda d: d.guid)
+                  if type(d) is ItemCardDef and d.condition is None
+                  and getattr(d, "passive", None) is None]
+    candidates.sort(key=lambda d: (d.effect is not None, d.guid))
     return candidates[0] if candidates else None
 
 

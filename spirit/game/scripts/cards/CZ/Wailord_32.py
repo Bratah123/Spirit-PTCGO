@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def bubble_drain(ctx):
+    """80. Heal 30 damage from this Pokémon."""
+    await ctx.deal_damage()
+    await ctx.heal(30, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="67c92019-6ea5-5152-8523-2b3fed96ba98",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            effect=unimplemented,
+            effect=bubble_drain,
         ),
         Attack(
             title="Heavy Impact",

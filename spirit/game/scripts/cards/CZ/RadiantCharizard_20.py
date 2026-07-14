@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.pokemon import ExcitedHeartPassive
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -20,15 +21,15 @@ card = PokemonCardDef(
     abilities=[
         Ability(
             title="Excited Heart",
-            game_text="This Pok\u00e9mon's attacks cost Colorless less for each Prize card your opponent has taken.",
-            effect=unimplemented,
+            game_text="This Pokémon's attacks cost Colorless less for each Prize card your opponent has taken.",
+            passive=ExcitedHeartPassive(),
         ),
         Attack(
             title="Combustion Blast",
-            game_text="During your next turn, this Pok\u00e9mon can't use Combustion Blast.",
+            game_text="During your next turn, this Pokémon can't use Combustion Blast.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 4},
             damage=250,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

@@ -1,16 +1,29 @@
 from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
-from spirit.game.card_effects.support_common import requires_in_play
 from spirit.game.models.board import BoardState
+from spirit.game.session.legal_actions import energy_provided_count
 
 
-def _has_two_energy(pokemon):
-    return len(BoardState.attached_energies(pokemon)) >= 2
+def _has_two_energy(board, pokemon):
+    return sum(
+        energy_provided_count(energy, board)
+        for energy in BoardState.attached_energies(pokemon)
+    ) >= 2
+
+
+def _hyper_potion_playable(board, player_id):
+    return any(
+        _has_two_energy(board, pokemon)
+        for pokemon in board.pokemon_in_play(player_id)
+    )
 
 
 async def hyper_potion(ctx):
     """Heal 120 from 1 of your Pokemon with >=2 Energy attached; if healed, discard 2 Energy from it."""
-    candidates = [p for p in ctx.my_pokemon_in_play() if _has_two_energy(p)]
+    candidates = [
+        pokemon for pokemon in ctx.my_pokemon_in_play()
+        if _has_two_energy(ctx.board, pokemon)
+    ]
     if not candidates:
         return
     target = await ctx.choose_pokemon(
@@ -20,7 +33,9 @@ async def hyper_potion(ctx):
         return
     healed = await ctx.heal(120, target)
     if healed:
-        await ctx.discard_energy_from(target, 2, prompt="Discard 2 Energy")
+        await ctx.discard_energy_units_from(
+            target, 2, prompt="Discard 2 Energy"
+        )
 
 
 card = ItemCardDef(
@@ -34,5 +49,5 @@ card = ItemCardDef(
     set_code="SWSH1",
     rarity=Rarities.Uncommon,
     effect=hyper_potion,
-    condition=requires_in_play(_has_two_energy),
+    condition=_hyper_potion_playable,
 )

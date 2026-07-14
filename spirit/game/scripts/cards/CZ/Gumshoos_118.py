@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _stakeout_bonus(ctx):
+    active = ctx.opponent_active()
+    if active is None:
+        return False
+    turn_state = ctx.session.turn_state
+    return turn_state.became_active_turn.get(active.entity_id) == turn_state.turn_number - 1
+
 
 card = PokemonCardDef(
     guid="e70c910b-dcf4-5666-9b5d-db5ece37d83f",
@@ -25,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_stakeout_bonus, 120),
         ),
         Attack(
             title="Lunge Out",

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+async def draining_kiss(ctx):
+    """20. Heal 20 damage from this Pokémon."""
+    await ctx.deal_damage()
+    await ctx.heal(20, ctx.attacker)
+
+
+def _same_hand_size(ctx):
+    return ctx.hand_size() == ctx.hand_size(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="fa3103ab-be3e-5b66-a8f1-ea0e4e94d521",
@@ -23,7 +35,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            effect=unimplemented,
+            effect=draining_kiss,
         ),
         Attack(
             title="Loving Sympathy",
@@ -31,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_same_hand_size, 70),
         ),
     ],
 )

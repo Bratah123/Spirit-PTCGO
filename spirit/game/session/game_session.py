@@ -1350,6 +1350,79 @@ class GameSession:
             valid, count, min(min_to_select, len(valid)), forced,
         )
 
+    async def prompt_energy_unit_picker(
+        self,
+        player_id: str,
+        source_entity_id: str,
+        energies: List[EnergyEntity],
+        amount: int,
+        prompt: str = "Choose Energy to discard",
+    ) -> List[str]:
+        """Pick attached Energy cards that provide at least ``amount`` Energy.
+
+        This is deliberately distinct from ``prompt_entity_picker``'s card
+        count. The retreat-cost node tallies each selected card's live
+        ENERGY_INFO value, so one Double Turbo Energy satisfies an amount of
+        two while effects that explicitly count Energy *cards* keep using the
+        ordinary entity picker.
+        """
+        if not energies or amount <= 0:
+            return []
+
+        def enough(entity_ids: List[str]) -> bool:
+            selected = set(entity_ids)
+            return sum(
+                energy_provided_count(energy, self.board_state)
+                for energy in energies if energy.entity_id in selected
+            ) >= amount
+
+        def automatic_payment() -> List[str]:
+            # Prefer the fewest physical cards for AI play and malformed-client
+            # fallback; any overpayment is the whole selected Energy card.
+            picked: List[str] = []
+            paid = 0
+            for energy in sorted(
+                energies,
+                key=lambda e: energy_provided_count(e, self.board_state),
+                reverse=True,
+            ):
+                picked.append(energy.entity_id)
+                paid += energy_provided_count(energy, self.board_state)
+                if paid >= amount:
+                    break
+            return picked if paid >= amount else []
+
+        player = self.players[player_id]
+        if isinstance(player, AIPlayer):
+            return automatic_payment()
+
+        valid = [energy.entity_id for energy in energies]
+        node = {
+            "name": SelectionKind.RETREAT_COST_ENTITY_LIST.value,
+            "selected": True,
+            "targetPrompt": {"id": prompt},
+            "validTargets": valid,
+            # The pip tray gates Done on valueToSelect. numberToSelect merely
+            # caps physical cards, so an amount-2 Double Turbo payment may
+            # finish after selecting one card.
+            "numberToSelect": amount,
+            "minimumToSelect": -1,
+            "valueToSelect": amount,
+            "forced": True,
+        }
+        picked = await self._run_pick_offer(
+            player_id, source_entity_id, node,
+            SelectionKind.RETREAT_COST_ENTITY_LIST.value,
+            valid, amount, 1, True,
+        )
+        if enough(picked):
+            return picked
+        logging.warning(
+            f"[Session {self.game_id}] Energy payment {amount} underpaid by "
+            f"{picked}; applying a legal automatic payment."
+        )
+        return automatic_payment()
+
     async def prompt_damage_counter_placement(
         self,
         player_id: str,
@@ -1582,12 +1655,26 @@ class GameSession:
             count = prize_value(pokemon.archetype_id)
             for passive, carrier in passive_pairs:
                 count = passive.modify_prizes_for_knockout(pokemon, ctx, count, carrier)
+            # This-turn bonus-prize watchers (Star Order): attack-damage KOs
+            # only, evaluated pre-move so Active-spot predicates still hold.
+            taker_id = self._opponent_id(owner_id)
+            if _damage_ko(pokemon) and ctx.attacker.owning_player_id == taker_id:
+                for watcher in self.turn_state.extra_prize_watchers:
+                    if watcher["player_id"] != taker_id:
+                        continue
+                    attacker_ok = watcher.get("attacker_predicate")
+                    target_ok = watcher.get("target_predicate")
+                    if attacker_ok is not None and not attacker_ok(ctx.attacker):
+                        continue
+                    if target_ok is not None and not target_ok(pokemon):
+                        continue
+                    count += watcher.get("prizes", 1)
             mode = next(
                 (m for passive, carrier in passive_pairs
                  for m in [passive.prize_destination(pokemon, ctx, carrier)] if m),
                 "hand",
             )
-            prize_plans.append((self._opponent_id(owner_id), max(0, count), mode))
+            prize_plans.append((taker_id, max(0, count), mode))
             ko_from_attack = _damage_ko(pokemon) \
                 and ctx.attacker.owning_player_id != owner_id
             for ally in self.board_state.pokemon_in_play(owner_id):
@@ -2744,7 +2831,7 @@ class GameSession:
         while True:
             needs_mulligan = [
                 pid for pid in self._turn_order()
-                if not board.has_basic_pokemon_in_hand(pid)
+                if not board.setup_active_candidates(pid)
             ]
             if not needs_mulligan:
                 break
@@ -3116,7 +3203,7 @@ class GameSession:
             return False
         description = entry["selectableAction"]["description"]
         if description == ACTION_PLAY_POKEMON:
-            await self._execute_play_basic(player_id, card)
+            return bool(await self._execute_play_basic(player_id, card))
         elif description == ACTION_PLAY_ENERGY:
             await self._execute_attach_energy(player_id, card, entry, target_ids)
         elif description == ACTION_ATTACH_TOOL:
@@ -3183,16 +3270,19 @@ class GameSession:
             [card],
         )
         await self.fire_pokemon_benched_triggers(player_id, card)
-        await self._fire_triggered_abilities(player_id, card, Triggers.ON_PLAY)
+        return await self._fire_triggered_abilities(
+            player_id, card, Triggers.ON_PLAY)
 
     async def _fire_triggered_abilities(self, player_id: str, card, trigger: str,
-                                        ctx_setup=None):
+                                        ctx_setup=None) -> bool:
         """Runs a card's abilities matching `trigger` (on-play, on-evolve,
         on-knocked-out, between-turns, turn-drawn, taken-as-prize); scans the
         entity's PIE_ABILITIES plus the definition's declared abilities
         (trainers carry no PIE slot -- Dream Ball's prize hook).
         resolve_knockouts already flushed any knockouts the effect caused,
-        so the extra call here is empty-safe."""
+        so the extra call here is empty-safe. Returns True when a resolved
+        trigger ends the turn (Climactic Gate's "your turn ends")."""
+        ends_turn = False
         seen = set()
         abilities = []
         for entry in card.get_attribute(AttrID.PIE_ABILITIES) or []:
@@ -3222,6 +3312,9 @@ class GameSession:
                     self.turn_state.used_named_abilities.add(ability.shared_once_per_turn)
                 if trigger_ctx is not None and trigger_ctx.knockouts:
                     await self.resolve_knockouts(trigger_ctx)
+                if trigger_ctx is not None and trigger_ctx.ends_turn:
+                    ends_turn = True
+        return ends_turn
 
     async def fire_energy_attached_triggers(self, attaching_player_id: str,
                                             energy, receiver):
@@ -4417,7 +4510,7 @@ class GameSession:
 
         try:
             if isinstance(player, AIPlayer):
-                basics = board.basic_pokemon_in_hand(player_id)
+                basics = board.setup_active_candidates(player_id)
                 if basics:
                     await self._place_setup_card(player_id, basics[0].entity_id, active_area)
                 return
@@ -4426,7 +4519,7 @@ class GameSession:
             for _ in range(MAX_SELECTION_RETRIES):
                 if active_area.children:
                     break
-                basics = board.basic_pokemon_in_hand(player_id)
+                basics = board.setup_active_candidates(player_id)
                 if not basics:
                     logging.error(
                         f"[Session {self.game_id}] {player.screen_name} has no Basic "

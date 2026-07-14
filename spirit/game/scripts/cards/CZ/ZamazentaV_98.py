@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_taken
+
+
+async def regal_stance(ctx):
+    """Once per turn: discard your hand and draw 5 cards. Ends your turn."""
+    await ctx.discard_cards(ctx.hand())
+    await ctx.draw_cards(5)
+
 
 card = PokemonCardDef(
     guid="5b024777-3cb0-519c-8ab2-73f338a044e6",
@@ -22,7 +30,9 @@ card = PokemonCardDef(
         Ability(
             title="Regal Stance",
             game_text="Once during your turn, you may discard your hand and draw 5 cards. If you use this Ability, your turn ends.",
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            ends_turn=True,
+            effect=regal_stance,
         ),
         Attack(
             title="Revenge Blast",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_prizes_taken("opponent"), 30, base=120),
         ),
     ],
 )

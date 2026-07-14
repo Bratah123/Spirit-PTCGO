@@ -1,4 +1,5 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import lost_vacuum, lost_vacuum_playable
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +12,6 @@ card = ItemCardDef(
     collector_number=135,
     set_code="CZ",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=lost_vacuum,
+    condition=lost_vacuum_playable
 )

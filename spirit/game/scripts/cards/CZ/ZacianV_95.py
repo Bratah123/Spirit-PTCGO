@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, defender_is_vmax
+
+
+async def piercing_strike(ctx):
+    """40. Ignores Weakness, Resistance, and effects on the opponent's Active."""
+    await ctx.deal_damage(ignore_weakness=True, ignore_resistance=True,
+                          ignore_target_effects=True)
+
 
 card = PokemonCardDef(
     guid="731c79e4-cce6-5993-b2a2-1bdd01e1b6a0",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness or Resistance, or by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1},
             damage=40,
-            effect=unimplemented,
+            effect=piercing_strike,
         ),
         Attack(
             title="Behemoth Blade",
@@ -32,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(defender_is_vmax, 160),
         ),
     ],
 )

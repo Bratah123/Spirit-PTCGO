@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def battle_legion(ctx):
+    """20+10 per Benched Pokemon; ignores Weakness and effects on the Active."""
+    amount = 20 + 10 * len(ctx.my_bench())
+    await ctx.deal_damage(amount, ignore_weakness=True, ignore_target_effects=True)
+
 
 card = PokemonCardDef(
     guid="5fb73471-acf0-589f-85db-f5100a774a14",
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=battle_legion,
         ),
         Attack(
             title="Slicing Blade",

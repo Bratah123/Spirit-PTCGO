@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def invite_out(ctx):
+    """Flip a coin. If heads, switch 1 of your opponent's Benched Pokémon
+    with their Active Pokémon."""
+    heads = (await ctx.flip_coins(1, "Invite Out"))[0]
+    if not heads:
+        return
+    active = ctx.opponent_active()
+    bench = ctx.opponent_bench()
+    if active is None or not bench or ctx.effects_blocked(active):
+        return
+    target = await ctx.choose_pokemon(
+        bench, "Choose the opponent's new Active Pokémon"
+    ) or bench[0]
+    await ctx.switch_active(ctx.opponent_id, target)
+
 
 card = PokemonCardDef(
     guid="498a4795-0542-573f-96e5-54f951ec5e36",
@@ -22,7 +39,7 @@ card = PokemonCardDef(
             title="Invite Out",
             game_text="Flip a coin. If heads, switch 1 of your opponent's Benched Pok\u00e9mon with their Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=invite_out,
         ),
         Attack(
             title="Smash Kick",

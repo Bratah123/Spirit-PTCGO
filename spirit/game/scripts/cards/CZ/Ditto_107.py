@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import SuddenTransformationPassive
 
 card = PokemonCardDef(
     guid="d561efa6-d36b-5004-b823-04531ff6bbdb",
@@ -21,7 +22,7 @@ card = PokemonCardDef(
         Ability(
             title="Sudden Transformation",
             game_text="This Pok\u00e9mon can use the attacks of any Basic Pok\u00e9mon in your discard pile, except for Pok\u00e9mon with a Rule Box (Pok\u00e9mon V, Pok\u00e9mon-GX, etc. have Rule Boxes). (You still need the necessary Energy to use each attack.)",
-            effect=unimplemented,
+            passive=SuddenTransformationPassive(),
         ),
     ],
 )

@@ -1,3 +1,4 @@
+from spirit.game.card_effects.trainers import serena, serena_playable
 from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 
@@ -10,5 +11,7 @@ card = SupporterCardDef(
     subtypes=["Supporter"],
     collector_number=164,
     set_code="SWSH12",
-    rarity=Rarities.Uncommon
+    rarity=Rarities.Uncommon,
+    effect=serena,
+    condition=serena_playable
 )

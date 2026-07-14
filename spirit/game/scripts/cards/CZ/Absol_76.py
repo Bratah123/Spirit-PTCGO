@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+import random
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def lost_claw(ctx):
+    """70. Put a random card from your opponent's hand in the Lost Zone."""
+    await ctx.deal_damage()
+    hand = ctx.hand(ctx.opponent_id)
+    if hand:
+        await ctx.move_to_lost_zone([random.choice(hand)])
+
 
 card = PokemonCardDef(
     guid="b8a98898-af7d-52a3-a682-ab6a0ff76dae",
@@ -28,7 +39,7 @@ card = PokemonCardDef(
             game_text="Put a random card from your opponent's hand in the Lost Zone.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            effect=unimplemented,
+            effect=lost_claw,
         ),
     ],
 )

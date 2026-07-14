@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -21,10 +22,10 @@ card = PokemonCardDef(
     abilities=[
         Attack(
             title="Reckless Charge",
-            game_text="This Pok\u00e9mon also does 10 damage to itself.",
+            game_text="This Pokémon also does 10 damage to itself.",
             cost={PokemonTypes.METAL: 1},
             damage=30,
-            effect=unimplemented,
+            effect=recoil_attack(10),
         ),
     ],
 )

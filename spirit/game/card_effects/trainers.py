@@ -1129,6 +1129,217 @@ def bench_has_room(board, player_id):
         and len(bench.children) < effective_bench_capacity(board, player_id)
 
 
+# --- Brandon (SWSH12) -------------------------------------------------------
+
+def brandon_playable(board, player_id) -> bool:
+    hand = board.find_player_area(player_id, "hand")
+    return bool(hand) and len(hand.children) == 1
+
+
+async def brandon(ctx):
+    """Draw a card for each Benched Pokemon (both yours and your opponent's)."""
+    count = len(_bench_pokemon(ctx.board, ctx.player_id)) \
+        + len(_bench_pokemon(ctx.board, ctx.opponent_id))
+    if count > 0:
+        await ctx.draw_cards(count)
+
+
+# --- Candice (SWSH12) --------------------------------------------------------
+
+def is_water_energy_card(card) -> bool:
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.WATER.value in types
+
+
+def candice_predicate(card) -> bool:
+    return is_water_pokemon(card) or is_water_energy_card(card)
+
+
+# --- Capturing Aroma (SWSH12) ------------------------------------------------
+
+async def capturing_aroma(ctx):
+    """Flip a coin: heads searches for an Evolution Pokemon, tails a Basic
+    Pokemon; reveal it and put it into your hand. Then, shuffle your deck."""
+    heads, = await ctx.flip_coins(1, "Capturing Aroma")
+    predicate = is_evolution_pokemon if heads else is_basic_pokemon
+    prompt = "Choose an Evolution Pokémon to put into your hand." if heads \
+        else "Choose a Basic Pokémon to put into your hand."
+    picks = await ctx.search_deck(predicate, count=1, minimum=0, prompt=prompt)
+    await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
+
+# --- Earthen Seal Stone (SWSH12) ---------------------------------------------
+
+async def star_gravity(ctx):
+    """Put damage counters on each of the opponent's Pokemon V until its
+    remaining HP is 100 (VSTAR Power)."""
+    for pokemon in ctx.opponent_pokemon_in_play():
+        if not is_pokemon_v(pokemon.archetype_id):
+            continue
+        current = pokemon.get_attribute(AttrID.HP, ctx.max_hp(pokemon))
+        if current > 100:
+            await ctx.deal_damage(current - 100, target=pokemon,
+                                  apply_modifiers=False, as_counters=True)
+
+
+# --- Emergency Jelly (SWSH12) -------------------------------------------------
+
+async def emergency_jelly(ctx):
+    """End of each turn: if the holder has 30 HP or less remaining and any
+    damage counters on it, heal 120 damage from it and discard this card."""
+    pokemon = ctx.source
+    hp = pokemon.get_attribute(AttrID.HP, 0)
+    max_hp = ctx.max_hp(pokemon)
+    if hp <= 30 and hp < max_hp:
+        await ctx.heal(120, target=pokemon)
+        tool = next((t for t, p in ctx.tools_in_play() if p is pokemon), None)
+        if tool is not None:
+            await ctx.discard_cards([tool])
+
+
+# --- Furisode Girl (SWSH12) ---------------------------------------------------
+
+async def furisode_girl(ctx):
+    """Search the deck for a Basic Pokemon and put it onto the Bench; then
+    shuffle. You may switch that Pokemon with your Active Pokemon."""
+    picks = await ctx.search_deck(
+        is_basic_pokemon, count=1, minimum=0,
+        prompt="Choose a Basic Pokémon to put onto your Bench.",
+    )
+    if not picks:
+        await ctx.shuffle_deck()
+        return
+    target = picks[0]
+    await ctx.bench_pokemon(target)
+    await ctx.shuffle_deck()
+    if await ctx.ask_yes_no("Switch that Pokémon with your Active Pokémon?"):
+        await ctx.switch_active(ctx.player_id, target)
+
+
+# --- Lance (SWSH12) -----------------------------------------------------------
+
+def is_dragon_pokemon(card) -> bool:
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_pokemon_card(card) and PokemonTypes.DRAGON.value in types
+
+
+async def lance(ctx):
+    """Search the deck for up to 3 Dragon Pokemon, reveal them, and put them
+    into your hand. Then, shuffle your deck."""
+    picks = await ctx.search_deck(
+        is_dragon_pokemon, count=3, minimum=0,
+        prompt="Choose up to 3 Dragon Pokémon to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
+
+# --- Leafy Camo Poncho (SWSH12) -----------------------------------------------
+
+def leafy_camo_poncho_protects(affected_entity, carrier):
+    holder = carrier_pokemon(carrier)
+    return holder is not None and affected_entity is holder
+
+
+def leafy_camo_poncho_condition(board, carrier):
+    holder = carrier_pokemon(carrier)
+    if holder is None:
+        return False
+    subs = subtypes_for(holder.archetype_id)
+    return "VSTAR" in subs or "VMAX" in subs
+
+
+# --- Primordial Altar (SWSH12) ------------------------------------------------
+
+def primordial_altar_condition(board, player_id, stadium):
+    return deck_nonempty(board, player_id)
+
+
+async def primordial_altar(ctx):
+    """Once during each player's turn: look at the top card of the deck and
+    may discard it."""
+    top = ctx.deck_top(1)
+    if not top:
+        return
+    card = top[0]
+    idx = await ctx.present_card_choice(
+        card, "Discard the top card of your deck?",
+        ["Discard", "Keep it on top"],
+    )
+    if idx == 0:
+        await ctx.discard_cards([card])
+
+
+PRIMORDIAL_ALTAR_ABILITY = Ability(
+    title="Primordial Altar",
+    game_text="Once during each player's turn, that player may look at the top card of their deck. They may discard that card.",
+    activation=Activations.ONCE_PER_TURN,
+    effect=primordial_altar,
+    condition=primordial_altar_condition,
+)
+
+
+# --- Professor Laventon (SWSH12) ----------------------------------------------
+
+def _is_hisuian_pokemon(card) -> bool:
+    if not is_pokemon_card(card):
+        return False
+    name = getattr(def_for(card.archetype_id), "display_name", "") or ""
+    return "Hisuian" in name
+
+
+def professor_laventon_playable(board, player_id) -> bool:
+    return any(_is_hisuian_pokemon(c) for c in _discard(board, player_id))
+
+
+async def professor_laventon(ctx):
+    """Put up to 3 Pokemon that have "Hisuian" in their names from the
+    discard pile into your hand."""
+    candidates = [c for c in ctx.discard_pile() if _is_hisuian_pokemon(c)]
+    picks = await ctx.choose_cards(
+        candidates, 3, minimum=0,
+        prompt="Choose up to 3 Hisuian Pokémon from your discard pile.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
+
+# --- Quad Stone (SWSH12) -------------------------------------------------------
+
+async def quad_stone(ctx):
+    """Use 1: heal 10 from your Active. Use 4 at once (this + 3 more from
+    hand): heal all damage from each of your Pokemon."""
+    others = [c for c in ctx.hand()
+              if c is not ctx.source and c.archetype_id == ctx.source.archetype_id]
+    use_four = False
+    if len(others) >= 3 and await ctx.ask_yes_no(
+        "Use 3 more Quad Stone cards from your hand to heal all damage from "
+        "each of your Pokémon instead of healing 10 from your Active Pokémon?"
+    ):
+        picks = await ctx.choose_cards(
+            others, 3, minimum=3, prompt="Choose 3 more Quad Stone cards to use",
+        )
+        if len(picks) >= 3:
+            await ctx.discard_cards(picks)
+            for pokemon in ctx.my_pokemon_in_play():
+                await ctx.heal(9999, pokemon)
+            use_four = True
+    if not use_four:
+        active = ctx.my_active()
+        if active is not None:
+            await ctx.heal(10, active)
+
+
+# --- Wallace (SWSH12) ----------------------------------------------------------
+
+async def wallace(ctx):
+    """Draw 3 cards. Your opponent may draw a card; if they do, draw 1 more."""
+    await ctx.draw_cards(3)
+    if await ctx.ask_yes_no("Draw a card?", player_id=ctx.opponent_id):
+        await ctx.draw_cards(1, ctx.opponent_id)
+        await ctx.draw_cards(1)
+
+
 def fossil_search(fossil_predicate, count: int = 2,
                   label: str = "Rare Fossil"):
     """Search your deck for up to `count` matching fossil cards and put them

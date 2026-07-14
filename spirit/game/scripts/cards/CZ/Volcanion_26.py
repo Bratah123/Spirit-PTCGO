@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
+_WATER_ENERGY_ON_SELF = count_energy("self", energy_type=PokemonTypes.WATER)
 
 card = PokemonCardDef(
     guid="201678ff-c7bd-5a5c-8318-b16d195b297a",
@@ -29,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _WATER_ENERGY_ON_SELF(ctx) > 0, 80),
         ),
     ],
 )

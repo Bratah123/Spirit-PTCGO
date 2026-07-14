@@ -10,7 +10,7 @@ inline before any choreography is flushed.
 import logging
 import random
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
-
+from .legal_actions import energy_provided_count
 from spirit.game.attributes import (
     AbilityTypes,
     AttrID,
@@ -608,6 +608,18 @@ class EffectContext:
     def add_turn_damage_modifier(self, mod) -> None:
         """Registers a TurnDamageModifier (expires_after_turn None = this turn)."""
         self.session.turn_state.damage_modifiers.append(mod)
+
+    def add_extra_prize_watcher(self, attacker_predicate=None,
+                                target_predicate=None, prizes: int = 1) -> None:
+        """This-turn bonus-prize watch (Star Order): when this player's attack
+        KOs by damage a Pokemon passing target_predicate and the attacker
+        passes attacker_predicate, resolve_knockouts adds `prizes` to the take."""
+        self.session.turn_state.extra_prize_watchers.append({
+            "player_id": self.player_id,
+            "attacker_predicate": attacker_predicate,
+            "target_predicate": target_predicate,
+            "prizes": prizes,
+        })
 
     def add_temporary_passive(self, target, passive,
                               expires_after_turn: Optional[int] = None) -> None:
@@ -1326,6 +1338,53 @@ class EffectContext:
                 energies, count, minimum=count if minimum is None else minimum,
                 prompt=prompt,
             )
+        await self.discard_cards(picked)
+        return picked
+
+    async def discard_energy_units_from(
+        self, pokemon: PokemonEntity, amount: int,
+        predicate: Optional[Callable[[CardEntity], bool]] = None,
+        prompt: str = "Choose Energy to discard",
+    ) -> List[CardEntity]:
+        """Discard cards providing at least ``amount`` attached Energy.
+
+        Use this for card text that counts Energy as a provided value (for
+        example, Hyper Potion's "discard 2 Energy"). ``discard_energy_from``
+        remains the physical-card-count primitive for text that says "Energy
+        cards" or otherwise requires a specific number of card entities.
+        """
+
+        energies = [
+            energy for energy in self.attached_energies(pokemon)
+            if predicate is None or predicate(energy)
+        ]
+        total = sum(
+            energy_provided_count(energy, self.board) for energy in energies
+        )
+        if amount <= 0 or total < amount:
+            return []
+
+        if total <= amount:
+            picked = energies
+        else:
+            picked_ids = await self.session.prompt_energy_unit_picker(
+                self.player_id,
+                self.source.entity_id,
+                energies,
+                amount,
+                prompt,
+            )
+            by_id = {energy.entity_id: energy for energy in energies}
+            picked = [by_id[entity_id] for entity_id in picked_ids
+                      if entity_id in by_id]
+
+        paid = sum(energy_provided_count(energy, self.board) for energy in picked)
+        if paid < amount:
+            logging.warning(
+                f"[Effects {self.game_id}] Energy payment {amount} resolved "
+                f"with only {paid}; no cards discarded."
+            )
+            return []
         await self.discard_cards(picked)
         return picked
 
@@ -2174,6 +2233,10 @@ async def resolve_triggered_ability(
     if ctx_setup is not None:
         ctx_setup(ctx)
     await ability.effect(ctx)
+    # Same rule as activated abilities: a declined "you may" queues no
+    # messages and must not end the turn (Climactic Gate).
+    if getattr(ability, "ends_turn", False) and ctx._messages:
+        ctx.ends_turn = True
     await _send_ability_brackets(session, ctx, pokemon, ability, _ko_depth=_ko_depth)
     return ctx
 

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def emotional_draw(ctx):
+    """Shuffle your hand into your deck. Then, draw 5 cards."""
+    await ctx.shuffle_into_deck(ctx.hand(), ctx.player_id)
+    await ctx.draw_cards(5)
+
 
 card = PokemonCardDef(
     guid="0367b96d-ec56-5b5f-96f8-e5ee7689be85",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Emotional Draw",
             game_text="Shuffle your hand into your deck. Then, draw 5 cards.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=emotional_draw,
         ),
         Attack(
             title="Tackle",

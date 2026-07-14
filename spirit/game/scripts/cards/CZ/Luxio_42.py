@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import has_tool
+
+
+async def shorting_spark(ctx):
+    """90 to each opponent Pokemon with a Pokemon Tool attached (Bench takes no W/R)."""
+    active = ctx.opponent_active()
+    for target in ctx.opponent_pokemon_in_play():
+        if has_tool(target):
+            await ctx.deal_damage(90, target=target, apply_modifiers=target is active)
+
 
 card = PokemonCardDef(
     guid="323885a3-01bb-580d-98ad-49079cb9379f",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Shorting Spark",
             game_text="This attack does 90 damage to each of your opponent's Pok\u00e9mon that has a Pok\u00e9mon Tool attached. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1},
-            effect=unimplemented,
+            effect=shorting_spark,
         ),
         Attack(
             title="Bite",

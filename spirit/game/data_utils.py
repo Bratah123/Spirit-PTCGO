@@ -376,7 +376,8 @@ class PokemonCardDef(CardDefinition):
         subtypes: Optional[List[str]] = None,
         attributes: Optional[dict] = None,
         passive: Optional[Any] = None,
-        unplayable_from_hand: bool = False
+        unplayable_from_hand: bool = False,
+        setup_as_active: bool = False
     ):
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes)
         # Card-level continuous effect while this Pokemon is top-level in play
@@ -384,6 +385,9 @@ class PokemonCardDef(CardDefinition):
         self.passive = passive
         # Shedinja: never offered as a hand bench-play (enters play by effect).
         self.unplayable_from_hand = unplayable_from_hand
+        # Luxray CZ's Explosiveness: may be placed as the opening Active
+        # despite its stage (setup only; bench plays stay Basics-only).
+        self.setup_as_active = setup_as_active
 
         # Add Pokemon-specific defaults to extra_attributes
         self.extra_attributes.update({

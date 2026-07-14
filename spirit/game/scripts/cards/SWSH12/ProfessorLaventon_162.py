@@ -1,3 +1,4 @@
+from spirit.game.card_effects.trainers import professor_laventon, professor_laventon_playable
 from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 
@@ -10,5 +11,7 @@ card = SupporterCardDef(
     subtypes=["Supporter"],
     collector_number=162,
     set_code="SWSH12",
-    rarity=Rarities.Uncommon
+    rarity=Rarities.Uncommon,
+    effect=professor_laventon,
+    condition=professor_laventon_playable
 )

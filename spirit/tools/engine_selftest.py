@@ -50,6 +50,7 @@ from spirit.game.session.legal_actions import (
     ACTION_RETREAT,
     ACTION_USE_ABILITY,
     ACTION_USE_ATTACK,
+    ACTION_USE_TRAINER,
     TurnState,
     compute_legal_actions,
 )
@@ -937,6 +938,61 @@ async def test_modify_energy_provided():
         [[PokemonTypes.COLORLESS.value]]
     assert legal_actions._energy_provided_types(energy, board) == \
         {PokemonTypes.COLORLESS.value}
+
+
+async def test_hyper_potion_double_turbo_energy():
+    hyper_guid = card_loader.cards_by_stem["HyperPotion_166"]
+    hyper = CARD_DEFS_BY_GUID[hyper_guid.lower()]
+    alt_guid = card_loader.cards_by_stem["HyperPotion_54"]
+    alt_hyper = CARD_DEFS_BY_GUID[alt_guid.lower()]
+    rig = Rig(hyper, FILLER, ENERGY_GUIDS, ITEM)
+    e = rig.setup("trainer")
+    board = rig.board
+    active = e["p1_active"]
+    trainer = e["target"]
+    energies = board.attached_energies(active)
+    assert len(energies) >= 2
+
+    # Leave one physical Energy card attached. As a basic Energy it provides
+    # only one unit, so neither printing may be offered.
+    energy = energies[0]
+    deck = board.find_player_area(P1, "deck")
+    for extra in energies[1:]:
+        board.move_card(extra.entity_id, deck.entity_id)
+
+    def hyper_is_offered():
+        return any(
+            entry["entityID"] == trainer.entity_id
+            and entry["selectableAction"]["description"] == ACTION_USE_TRAINER
+            for entry in compute_legal_actions(
+                board, rig.session.turn_state, P1, rig.session.game_id
+            )
+        )
+
+    assert not hyper_is_offered(), \
+        "one Energy card providing one Energy must not enable Hyper Potion"
+    assert not alt_hyper.condition(board, P1)
+
+    # Give that same physical card Double Turbo's [[C, C]] provided value.
+    # Legality and payment must count two Energy units, not two entities.
+    energy.set_attribute(
+        AttrID.ENERGY_INFO,
+        {"options": [[PokemonTypes.COLORLESS.value,
+                      PokemonTypes.COLORLESS.value]]},
+    )
+    assert hyper_is_offered(), \
+        "one Double Turbo Energy must enable Hyper Potion"
+    assert alt_hyper.condition(board, P1), \
+        "both Hyper Potion printings must share provided-Energy legality"
+
+    max_hp = passives.effective_max_hp(board, active)
+    active.set_attribute(AttrID.HP, max_hp - 50)
+    await resolve_trainer_effect(rig.session, P1, trainer)
+    assert active.get_attribute(AttrID.HP) == max_hp, \
+        "Hyper Potion heals the damaged target"
+    discard = board.find_player_area(P1, "discard")
+    assert energy.parent is discard, \
+        "the one Double Turbo card pays and is discarded as two Energy"
 
 
 async def test_on_move_to_active_once():
@@ -1845,6 +1901,79 @@ async def test_usable_despite_conditions():
         ABILITIES_BY_ID.pop(slow_id, None)
 
 
+async def test_on_play_trigger_ends_turn():
+    rig, e = new_rig()
+    pokemon = e["p1_active"]
+    saved = pokemon.get_attribute(AttrID.PIE_ABILITIES)
+
+    async def _draw_one(c):
+        await c.draw_cards(1)
+
+    ability = Ability("Test Gate", trigger=Triggers.ON_PLAY,
+                      ends_turn=True, effect=_draw_one)
+    aid = register_ability(ability)
+    try:
+        pokemon.set_attribute(AttrID.PIE_ABILITIES, [{"abilityID": aid}])
+        over = await rig.session._fire_triggered_abilities(
+            P1, pokemon, Triggers.ON_PLAY)
+        assert over is True, "resolved ON_PLAY ends_turn trigger must end the turn"
+    finally:
+        ABILITIES_BY_ID.pop(aid, None)
+
+    async def _noop(c):
+        pass
+
+    ability = Ability("Test Gate Declined", trigger=Triggers.ON_PLAY,
+                      ends_turn=True, effect=_noop)
+    aid = register_ability(ability)
+    try:
+        pokemon.set_attribute(AttrID.PIE_ABILITIES, [{"abilityID": aid}])
+        over = await rig.session._fire_triggered_abilities(
+            P1, pokemon, Triggers.ON_PLAY)
+        assert over is False, "a declined/no-op trigger must not end the turn"
+    finally:
+        ABILITIES_BY_ID.pop(aid, None)
+        pokemon.set_attribute(AttrID.PIE_ABILITIES, saved)
+
+
+async def test_extra_prize_watchers():
+    rig, e = new_rig()
+    board, ts = rig.board, rig.session.turn_state
+    neutralize_wr(e)
+    board.deal_from_deck(P1, "prizePile", 6)
+    attacker, target = e["p1_active"], e["p2_active"]
+    ctx = attack_ctx(rig, e)
+    ctx.add_extra_prize_watcher(lambda a: False, None)  # never matches
+    ctx.add_extra_prize_watcher(
+        lambda a: a is attacker, lambda t: t is target, prizes=1)
+    await ctx.deal_damage(1000)
+    await rig.session.resolve_knockouts(ctx)
+    assert len(board.find_player_area(P1, "prizePile").children) == 4, \
+        "matching watcher adds +1 to the take; non-matching adds nothing"
+    ts.begin_turn(P2, board)
+    assert ts.extra_prize_watchers == [], "watchers are this-turn only"
+
+
+async def test_setup_as_active():
+    from spirit.game.data_utils import def_for
+    luxray = def_for("ef8ca3ef-7c49-55f9-8a3b-0bf871f8e524")  # CZ Luxray
+    assert luxray is not None and getattr(luxray, "setup_as_active", False), \
+        "CZ Luxray must carry setup_as_active"
+    rig = Rig(luxray, FILLER, ENERGY_GUIDS, ITEM)
+    rig.setup("pokemon")
+    board = rig.board
+    in_hand = rig.to_area(rig.pull_guid(P1, luxray.guid), P1, "hand")
+    assert in_hand is not None
+    basics = board.basic_pokemon_in_hand(P1)
+    assert in_hand not in basics, \
+        "Stage 2 stays out of the Basic scans (bench offer / bench plays)"
+    candidates = board.setup_active_candidates(P1)
+    assert in_hand in candidates, "setup_as_active joins the opening-Active offer"
+    assert candidates[:len(basics)] == basics, \
+        "Basics stay first (the AI pick prefers a true Basic)"
+    assert board.player_has_any_basic(P1)
+
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -1873,6 +2002,7 @@ TESTS = [
     test_prize_hooks,
     test_move_damage_counters,
     test_modify_energy_provided,
+    test_hyper_potion_double_turbo_energy,
     test_on_move_to_active_once,
     test_on_ally_knocked_out,
     test_evolution_gate_passives,
@@ -1905,6 +2035,9 @@ TESTS = [
     test_retreat_cost_board_param,
     test_ignore_target_effects_turn_flag,
     test_usable_despite_conditions,
+    test_on_play_trigger_ends_turn,
+    test_extra_prize_watchers,
+    test_setup_as_active,
 ]
 
 

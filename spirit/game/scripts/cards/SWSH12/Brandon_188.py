@@ -1,3 +1,4 @@
+from spirit.game.card_effects.trainers import brandon, brandon_playable
 from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 
@@ -10,5 +11,7 @@ card = SupporterCardDef(
     subtypes=["Supporter"],
     collector_number=188,
     set_code="SWSH12",
-    rarity=Rarities.RareUltra
+    rarity=Rarities.RareUltra,
+    effect=brandon,
+    condition=brandon_playable
 )

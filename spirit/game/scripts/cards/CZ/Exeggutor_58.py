@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
 
 card = PokemonCardDef(
     guid="08260c2c-df89-5676-96ef-75f2b9a433b8",
@@ -24,7 +25,9 @@ card = PokemonCardDef(
             title="Powerful Storm",
             game_text="This attack does 20 damage for each Energy attached to all of your Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            damage=20,
+            damage_operator="x",
+            effect=damage_per(count_energy("mine"), 20),
         ),
         Attack(
             title="Stampede",

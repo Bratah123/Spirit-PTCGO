@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import trekking_shoes, deck_nonempty
 
 card = ItemCardDef(
     guid="907ef9c5-8fe9-5606-9442-e02595c3a5ea",
@@ -11,5 +12,6 @@ card = ItemCardDef(
     collector_number=145,
     set_code="CZ",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    condition=deck_nonempty,
+    effect=trekking_shoes,
 )

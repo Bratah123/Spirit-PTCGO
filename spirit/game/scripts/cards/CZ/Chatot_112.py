@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import discard_then_draw
 
 card = PokemonCardDef(
     guid="f1fbc56e-ecba-5831-94b7-573419e85f04",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Cycle Draw",
             game_text="Discard a card from your hand. If you do, draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=discard_then_draw(1, 2, optional=True),
         ),
         Attack(
             title="Flap",

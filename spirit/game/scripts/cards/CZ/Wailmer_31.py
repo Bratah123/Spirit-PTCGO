@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def nap(ctx):
+    """Heal 30 damage from this Pokémon."""
+    await ctx.heal(30, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="b0250e76-ad91-5b56-aaab-bb7ecc361b83",
@@ -22,7 +28,7 @@ card = PokemonCardDef(
             title="Nap",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=nap,
         ),
         Attack(
             title="Water Gun",

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus, bonus_if, active_is
+from spirit.game.session.effects import is_basic_pokemon
 
 card = PokemonCardDef(
     guid="66f9da28-828f-5625-8278-048a8d4908bd",
@@ -26,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
         Attack(
             title="Dangerous Claws",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_basic_pokemon), 80),
         ),
     ],
 )

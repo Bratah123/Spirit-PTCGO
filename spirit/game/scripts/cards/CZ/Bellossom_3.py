@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _switch_self(ctx):
+    bench = ctx.my_bench()
+    if not bench:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+    if target is not None:
+        await ctx.switch_active(ctx.player_id, target)
+
 
 card = PokemonCardDef(
     guid="d57c93dd-02e6-5ad1-9b55-7ea441dd4e43",
@@ -25,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=80, also=_switch_self),
         ),
     ],
 )

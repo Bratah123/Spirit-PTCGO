@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="d41fce1f-9097-555b-b507-4504bf9d6d06",
@@ -22,14 +23,14 @@ card = PokemonCardDef(
             title="Festering Saliva",
             game_text="Your opponent's Active Pok\u00e9mon is now Burned and Poisoned.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED, SpecialConditions.POISONED),
         ),
         Attack(
             title="Bind Down",
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon can't retreat.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

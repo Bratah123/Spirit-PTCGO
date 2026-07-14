@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def wreak_havoc(ctx):
+    """80. Flip a coin until tails; discard opponent's top deck card per heads."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_until_tails(ctx.ability.title)
+    if heads:
+        await ctx.discard_cards(ctx.deck_top(heads, player_id=ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="76a0f9a8-6eea-5977-87ed-453818144afb",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin until you get tails. For each heads, discard the top card of your opponent's deck.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=wreak_havoc,
         ),
     ],
 )

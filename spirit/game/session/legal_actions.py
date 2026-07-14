@@ -155,6 +155,10 @@ class TurnState:
     # player_id -> attack titles that player declared on THEIR previous turn
     # ("If 1 of your Pokemon used Yoga Loop during your last turn...").
     attack_titles_prev_turn_by_player: Dict[str, List[str]] = field(default_factory=dict)
+    # This-turn bonus-prize watches (Sky Seal Stone's Star Order):
+    # {player_id, attacker_predicate, target_predicate, prizes}; consulted by
+    # resolve_knockouts on attack-damage KOs, cleared every begin_turn.
+    extra_prize_watchers: List[Dict[str, Any]] = field(default_factory=list)
 
     def begin_turn(self, player_id: str, board: Optional[Any] = None):
         """Advances to the next turn, resets the once-per-turn flags, rotates
@@ -207,6 +211,7 @@ class TurnState:
             if entry[0] >= self.turn_number
         }
         self.ignore_target_effects_entities = set()
+        self.extra_prize_watchers = []
         if board is not None:
             board.temporary_passives = [
                 tp for tp in (getattr(board, "temporary_passives", None) or [])

@@ -1,3 +1,4 @@
+from spirit.game.card_effects.trainers import PRIMORDIAL_ALTAR_ABILITY
 from spirit.game.data_utils import StadiumCardDef
 from spirit.game.attributes import Rarities
 
@@ -10,5 +11,6 @@ card = StadiumCardDef(
     subtypes=["Stadium"],
     collector_number=161,
     set_code="SWSH12",
-    rarity=Rarities.Uncommon
+    rarity=Rarities.Uncommon,
+    ability=PRIMORDIAL_ALTAR_ABILITY,
 )

@@ -1,5 +1,21 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import opponent_has_energy_attached
+
+
+async def crushing_hammer(ctx):
+    """Flip a coin. If heads, discard an Energy from 1 of your opponent's Pokémon."""
+    results = await ctx.flip_coins(1, "Crushing Hammer")
+    if not results or not results[0]:
+        return
+    candidates = [p for p in ctx.opponent_pokemon_in_play() if ctx.attached_energies(p)]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(candidates, "Choose 1 of your opponent's Pokémon")
+    if target is None:
+        return
+    await ctx.discard_energy_from(target, 1)
+
 
 card = ItemCardDef(
     guid="fdc218bf-196c-5954-bb04-bca1ec80a911",
@@ -11,5 +27,6 @@ card = ItemCardDef(
     collector_number=125,
     set_code="CZ",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=crushing_hammer,
+    condition=opponent_has_energy_attached
 )

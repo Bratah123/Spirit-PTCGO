@@ -1,3 +1,4 @@
+from spirit.game.card_effects.trainers import quad_stone
 from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
@@ -10,5 +11,6 @@ card = ItemCardDef(
     subtypes=["Item"],
     collector_number=163,
     set_code="SWSH12",
-    rarity=Rarities.Uncommon
+    rarity=Rarities.Uncommon,
+    effect=quad_stone
 )

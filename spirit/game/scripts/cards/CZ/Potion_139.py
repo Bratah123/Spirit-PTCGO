@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import heal_item, requires_damaged_pokemon
 
 card = ItemCardDef(
     guid="0673acf4-d7f4-52c1-87cd-67e9eda9f4e1",
@@ -11,5 +12,6 @@ card = ItemCardDef(
     collector_number=139,
     set_code="CZ",
     rarity=Rarities.Common,
-    effect=unimplemented
+    condition=requires_damaged_pokemon(),
+    effect=heal_item(30)
 )

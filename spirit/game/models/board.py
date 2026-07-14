@@ -487,16 +487,34 @@ class BoardState:
         """
         return bool(self.basic_pokemon_in_hand(player_id))
 
+    def setup_active_candidates(self, player_id: str) -> List['PokemonEntity']:
+        """Cards playable as the opening Active: Basics first, then hand
+        Pokemon whose def sets setup_as_active (Luxray CZ's Explosiveness).
+        The bench offer and mid-game bench plays stay Basics-only."""
+        from spirit.game.data_utils import def_for  # circular-import guard
+        candidates = self.basic_pokemon_in_hand(player_id)
+        hand_area = self.find_player_area(player_id, "hand")
+        for c in (hand_area.children if hand_area else []):
+            if isinstance(c, PokemonEntity) and c not in candidates \
+                    and getattr(def_for(c.archetype_id), "setup_as_active", False):
+                candidates.append(c)
+        return candidates
+
     def player_has_any_basic(self, player_id: str) -> bool:
         """True if the player has a Basic Pokemon anywhere in deck or hand.
 
         Guards the mulligan loop against decks that can never produce a legal
         opening hand (which would otherwise reshuffle forever).
         """
+        from spirit.game.data_utils import def_for  # circular-import guard
         for area_name in ("deck", "hand"):
             area = self.find_player_area(player_id, area_name)
-            if area and any(self._is_basic_pokemon(c) for c in area.children):
-                return True
+            for c in (area.children if area else []):
+                if self._is_basic_pokemon(c):
+                    return True
+                if isinstance(c, PokemonEntity) \
+                        and getattr(def_for(c.archetype_id), "setup_as_active", False):
+                    return True
         return False
 
     def pokemon_in_play(self, player_id: str) -> List['PokemonEntity']:

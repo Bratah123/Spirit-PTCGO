@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import TakesLessPassive
+
+
+async def leaf_guard(ctx):
+    """30. During your opponent's next turn, this Pokémon takes 30 less
+    damage from attacks (after applying Weakness and Resistance)."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, TakesLessPassive(30))
+
 
 card = PokemonCardDef(
     guid="af49d502-c4b6-5599-bde4-b5c95992105a",
@@ -23,14 +32,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon takes 30 less damage from attacks (after applying Weakness and Resistance).",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=leaf_guard,
         ),
         Attack(
             title="Slashing Strike",
             game_text="During your next turn, this Pok\u00e9mon can't use Slashing Strike.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=180,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

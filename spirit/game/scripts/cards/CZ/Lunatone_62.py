@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import read_the_wind
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
 
 card = PokemonCardDef(
     guid="2629a956-6b0c-58b5-a372-91927fa03c96",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Cycle Draw",
             game_text="Discard a card from your hand. If you do, draw 3 cards.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=read_the_wind,
         ),
         Attack(
             title="Moon Kinesis",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("self", energy_type=PokemonTypes.PSYCHIC.value), 30),
         ),
     ],
 )
