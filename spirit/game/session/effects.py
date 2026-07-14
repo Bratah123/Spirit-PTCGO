@@ -481,14 +481,26 @@ class EffectContext:
         self.session.turn_state.healed_entities.add(target.entity_id)
         self.session.stat_add(self.player_id, "damagehealed", healed)
         # Heal FX + fly-text (L.y) must precede the HP update, like CakeAttackEffect.
+        source_id = self.source.entity_id if self.source is not None \
+            else target.entity_id
         self._queue(self.session._build_msg(
             OutboundMsg.CREATURE_HEAL_WITH_CONTEXT_EVENT.value,
             {
                 "gameID": self.game_id,
-                "source": self.source.entity_id if self.source is not None
-                else target.entity_id,
+                "source": source_id,
                 "targets": [target.entity_id],
                 "amount": healed,
+            },
+        ))
+        # Trailing empty-targets event: forces k.z's fire-and-forget path on the
+        # real one (awaited L.y can stall the client's sequence pump forever).
+        self._queue(self.session._build_msg(
+            OutboundMsg.CREATURE_HEAL_WITH_CONTEXT_EVENT.value,
+            {
+                "gameID": self.game_id,
+                "source": source_id,
+                "targets": [],
+                "amount": 0,
             },
         ))
         self._queue_hp_update(target)
