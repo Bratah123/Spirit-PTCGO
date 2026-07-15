@@ -135,7 +135,11 @@ GAME_OPTION_RECONNECTING_KEY = "Reconnecting"
 GAME_OPTION_RECONNECTING_VALUE = "true"
 # Grace window a detached player has to reconnect before the game is awarded to
 # the connected opponent (via the concede/end_game flow).
-RECONNECT_GRACE_SECONDS = 90
+RECONNECT_GRACE_SECONDS = 30
+RECONNECT_SEQUENCE_SETTLE_SECONDS = 1.75
+# ForceSelectionFinished's client command (m.d) ends by clearing the same
+# prompt override the disconnect banner sets; the banner must wait it out.
+FORCE_SELECTION_SETTLE_SECONDS = 1.5
 
 
 # Prompt sort types (informational on the wire; the client routes selection

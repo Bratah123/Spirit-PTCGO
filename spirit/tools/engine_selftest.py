@@ -953,6 +953,11 @@ async def test_hyper_potion_double_turbo_energy():
     energies = board.attached_energies(active)
     assert len(energies) >= 2
 
+    # Damage the Active so the heal gate holds; legality below is then
+    # purely about provided-Energy counting.
+    max_hp = passives.effective_max_hp(board, active)
+    active.set_attribute(AttrID.HP, max_hp - 50)
+
     # Leave one physical Energy card attached. As a basic Energy it provides
     # only one unit, so neither printing may be offered.
     energy = energies[0]
@@ -985,8 +990,13 @@ async def test_hyper_potion_double_turbo_energy():
     assert alt_hyper.condition(board, P1), \
         "both Hyper Potion printings must share provided-Energy legality"
 
-    max_hp = passives.effective_max_hp(board, active)
+    # With no damage in play the card does nothing and may not be offered.
+    active.set_attribute(AttrID.HP, max_hp)
+    assert not hyper_is_offered(), \
+        "an undamaged board must not enable Hyper Potion"
+    assert not alt_hyper.condition(board, P1)
     active.set_attribute(AttrID.HP, max_hp - 50)
+
     await resolve_trainer_effect(rig.session, P1, trainer)
     assert active.get_attribute(AttrID.HP) == max_hp, \
         "Hyper Potion heals the damaged target"

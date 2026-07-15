@@ -123,7 +123,9 @@ class ClientHandler:
                     manager = GameSessionManager()
                     session = manager.get_session_by_player_id(self.player.account_id)
                     if session is not None and session.game_phase != GamePhase.GAME_OVER:
-                        await session.on_player_disconnect(self.player.account_id)
+                        await session.on_player_disconnect(
+                            self.player.account_id, client_handler=self
+                        )
                     else:
                         manager.remove_session_by_player_id(self.player.account_id)
                 except Exception as e:

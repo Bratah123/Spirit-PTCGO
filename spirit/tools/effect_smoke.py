@@ -403,6 +403,21 @@ def _condition_blocks(definition, ability, rig, entities) -> Optional[str]:
             board.deal_from_deck(pid, "prizePile", 6)
     if check():
         return None
+    # Fallback 4: stamp damage on both boards (heal-gated cards -- Potion).
+    for pid in (P1, P2):
+        for pokemon in board.pokemon_in_play(pid):
+            pokemon.set_attribute(
+                AttrID.HP,
+                max(10, passives.effective_max_hp(board, pokemon) - 30))
+    if check():
+        return None
+    # Fallback 4b: two Energy on the damaged Active (Hyper Potion).
+    p1_active = entities.get("p1_active")
+    if isinstance(p1_active, PokemonEntity):
+        rig.attach_energy_type(P1, p1_active, PokemonTypes.WATER.value)
+        rig.attach_energy_type(P1, p1_active, PokemonTypes.WATER.value)
+        if check():
+            return None
     rig.session.turn_state.turn_number = 3
     return f"{label} condition returned False on the smoke board (all fallbacks)"
 

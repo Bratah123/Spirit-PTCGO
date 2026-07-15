@@ -10,7 +10,9 @@ class GameplayHandler(BaseHandler):
         logging.info(f"[Gameplay] Player {self.client.player.username} made {label}: {message}")
         session = GameSessionManager().get_session_by_player_id(account_id)
         if session:
-            await session.receive_player_action(account_id, message)
+            await session.receive_player_action(
+                account_id, message, client_handler=self.client
+            )
 
     @handle(InboundMsg.PLAYER_READY)
     async def handle_player_ready(self, message, request_id, flags):
@@ -19,7 +21,7 @@ class GameplayHandler(BaseHandler):
 
         session = GameSessionManager().get_session_by_player_id(account_id)
         if session:
-            await session.mark_player_ready(account_id)
+            await session.mark_player_ready(account_id, client_handler=self.client)
         else:
             logging.warning(f"[Gameplay] PlayerReady received but player {account_id} has no active GameSession")
 

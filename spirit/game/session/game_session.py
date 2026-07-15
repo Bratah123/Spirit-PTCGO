@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import copy
 import random
 import time
 import uuid
@@ -26,6 +27,8 @@ from .constants import (
     GAME_OPTION_RECONNECTING_KEY,
     GAME_OPTION_RECONNECTING_VALUE,
     RECONNECT_GRACE_SECONDS,
+    RECONNECT_SEQUENCE_SETTLE_SECONDS,
+    FORCE_SELECTION_SETTLE_SECONDS,
     TOKEN_GX,
     TOKEN_VSTAR,
     TARGET_TYPE_ACTIVE,
@@ -217,14 +220,28 @@ class GameSession:
         self.players: Dict[str, GamePlayer] = {}
         self._initialize_players()
         self.ready_players: set = set()
-        # account_ids that have reconnected and are awaiting their PlayerReady so
-        # we re-send SerializedGameState (+ replay their pending offer) to them.
+        # Live clients waiting for their reconnect playmat scene to send PlayerReady.
         self._reconnecting: set = set()
-        # account_ids with an OUTSTANDING disconnect the opponent was told about
-        # (a "Disconnection!" dialog is showing on their screen). Pairs 1:1 with a
-        # later PlayerReconnected; gates both so eviction races / duplicate
-        # ReconnectToGame never orphan a stuck dialog or double the popup.
+        # Network players with no currently bound socket.
         self._disconnected: set = set()
+        self._connection_resumed = asyncio.Event()
+        self._connection_resumed.set()
+        # Reconnect snapshots target only clients that actually left.
+        self._resync_epoch: int = 0
+        self._resync_players: set = set()
+        self._resync_ready: set = set()
+        self._resync_inflight: Dict[str, object] = {}
+        self._offers_to_restore: set = set()
+        self._restoring_offers: set = set()
+        self._pause_prompts: Dict[str, str] = {}
+        # Keeps Start/inner/Stop runs contiguous with reconnect control packets.
+        self._wire_lock = asyncio.Lock()
+        self._last_sequence_sent_at: float = 0.0
+        # Cleared while an authoritative state transition is being applied.
+        self._state_checkpoint = asyncio.Event()
+        self._state_checkpoint.set()
+        self._state_unit_tasks: Dict[asyncio.Task, int] = {}
+        self._prompt_checkpoint_tasks: set = set()
         # detached account_id -> grace-window timer task (awards the win on expiry).
         self._grace_tasks: Dict[str, asyncio.Task] = {}
 
@@ -303,6 +320,38 @@ class GameSession:
         """Sleep that paces client animations; no-op when pauses are disabled."""
         if self.choreography_pauses:
             await asyncio.sleep(seconds)
+
+    async def _run_state_unit(self, awaitable):
+        """Runs one authoritative state transition as a reconnect checkpoint."""
+        task = asyncio.current_task()
+        self._state_unit_tasks[task] = self._state_unit_tasks.get(task, 0) + 1
+        self._refresh_state_checkpoint()
+        try:
+            return await awaitable
+        finally:
+            depth = self._state_unit_tasks.get(task, 1) - 1
+            if depth:
+                self._state_unit_tasks[task] = depth
+            else:
+                self._state_unit_tasks.pop(task, None)
+                self._prompt_checkpoint_tasks.discard(task)
+            self._refresh_state_checkpoint()
+
+    def _refresh_state_checkpoint(self):
+        active = set(self._state_unit_tasks)
+        if not active or active.issubset(self._prompt_checkpoint_tasks):
+            self._state_checkpoint.set()
+        else:
+            self._state_checkpoint.clear()
+
+    def _mark_prompt_checkpoint(self):
+        """Marks an input wait as a stable point for reconnect snapshots."""
+        self._prompt_checkpoint_tasks.add(asyncio.current_task())
+        self._refresh_state_checkpoint()
+
+    def _leave_prompt_checkpoint(self):
+        self._prompt_checkpoint_tasks.discard(asyncio.current_task())
+        self._refresh_state_checkpoint()
 
     def cleanup(self):
         """Cancels any pending futures, tasks, and cleans up references."""
@@ -458,10 +507,17 @@ class GameSession:
 
     async def broadcast_packet(self, name: str, value: Dict[str, Any], flags: int = 0):
         """Utility to send a packet to all network-connected players in the match, ensuring no duplicate transmission to any single client handler."""
-        tasks = [player.send_packet(name, value, flags)
-                 for _, player in self._unique_recipients()]
-        if tasks:
-            await asyncio.gather(*tasks)
+        async def send_all():
+            tasks = [player.send_packet(name, value, flags)
+                     for _, player in self._unique_recipients()]
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        if name == OutboundMsg.SEQUENCE_MESSAGE.value:
+            async with self._wire_lock:
+                await send_all()
+        else:
+            await send_all()
 
     @staticmethod
     def _build_msg(name: str, value: Dict[str, Any]) -> Dict[str, Any]:
@@ -511,9 +567,11 @@ class GameSession:
                 {"gameID": self.game_id, "sequenceID": sequence_id, "name": name},
             ))
         )
-        for _, player in self._unique_recipients(players):
-            for packet in packets:
-                await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, packet)
+        async with self._wire_lock:
+            for _, player in self._unique_recipients(players):
+                for packet in packets:
+                    await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, packet)
+            self._last_sequence_sent_at = time.monotonic()
 
     def _nested_sequence_envelopes(self, nested: NestedSequence) -> List[Dict[str, Any]]:
         """Builds the Start/inner/Stop envelope run for a child sequence.
@@ -558,15 +616,18 @@ class GameSession:
         """
         if self.game_phase == GamePhase.GAME_OVER:
             raise GameOver()
+        await self._wait_for_connection_resume()
         envelope = self._sequence_envelope(
             EMPTY_SEQUENCE_ID, self._build_msg(msg_name, value)
         )
         loop = asyncio.get_running_loop()
         player.pending_choice_future = loop.create_future()
         player._pending_offer = (OutboundMsg.SEQUENCE_MESSAGE.value, envelope, 0)
-        await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+        async with self._wire_lock:
+            await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
         try:
             while True:
+                self._mark_prompt_checkpoint()
                 if isinstance(player, AIPlayer):
                     # AI prompts resolve only via simulated tasks (pregame coin
                     # flip); anything else must never hang the gameplay task.
@@ -583,6 +644,8 @@ class GameSession:
                         return {"selection": None}
                 else:
                     reply = await player.pending_choice_future
+                await self._wait_for_connection_resume()
+                self._leave_prompt_checkpoint()
                 reply_counter = reply.get("counter") if isinstance(reply, dict) else None
                 if expected_counter is None or reply_counter in (None, expected_counter):
                     return reply
@@ -592,10 +655,13 @@ class GameSession:
                 )
                 player.pending_choice_future = loop.create_future()
         finally:
+            self._leave_prompt_checkpoint()
             player.pending_choice_future = None
             player._pending_offer = None
 
-    async def _send_pause_prompt(self, player: GamePlayer, prompt_text: str):
+    async def _send_pause_prompt(
+        self, player: GamePlayer, prompt_text: str, remember: bool = True
+    ):
         """Shows the center-screen prompt override on one client.
 
         PauseOnPromptEffect (m.l) with doPause=false displays `prompt` in the
@@ -603,30 +669,22 @@ class GameSession:
         up (NextButton checks OverrideShowPrompt). It stays until
         ClosePauseOnPromptEffect.
         """
-        envelope = self._sequence_envelope(
-            EMPTY_SEQUENCE_ID,
-            self._build_msg(
-                OutboundMsg.PAUSE_ON_PROMPT_EFFECT.value,
-                {
-                    "gameID": self.game_id,
-                    "prompt": {"id": prompt_text},
-                    "buttonText": None,
-                    "doPause": False,
-                },
-            ),
-        )
-        await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+        if remember:
+            self._pause_prompts[player.account_id] = prompt_text
+        async with self._wire_lock:
+            await player.send_packet(
+                OutboundMsg.SEQUENCE_MESSAGE.value,
+                self._pause_prompt_envelope(prompt_text),
+            )
 
     async def _send_close_pause_prompt(self, player: GamePlayer):
         """Clears the center-screen prompt override (harmless if none is up)."""
-        envelope = self._sequence_envelope(
-            EMPTY_SEQUENCE_ID,
-            self._build_msg(
-                OutboundMsg.CLOSE_PAUSE_ON_PROMPT_EFFECT.value,
-                {"gameID": self.game_id},
-            ),
-        )
-        await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+        self._pause_prompts.pop(player.account_id, None)
+        async with self._wire_lock:
+            await player.send_packet(
+                OutboundMsg.SEQUENCE_MESSAGE.value,
+                self._close_pause_prompt_envelope(),
+            )
 
     def _choice_offer_value(self, selecting_player_id: str, buttons: List[str]) -> Dict[str, Any]:
         """Builds a CustomChoiceOfferMessage value describing the opponent's pending choice.
@@ -649,12 +707,34 @@ class GameSession:
             "correctChoice": None,
         }
 
-    async def receive_player_action(self, account_id: str, action_data: Dict[str, Any]):
+    async def receive_player_action(
+        self,
+        account_id: str,
+        action_data: Dict[str, Any],
+        client_handler=None,
+    ):
         """Handler for receiving target or action selection inputs from a player (network or AI)."""
         logging.info(f"[Session {self.game_id}] Received action from player {account_id}: {action_data}")
+
+        player = self.players.get(account_id)
+        if (client_handler is not None and isinstance(player, NetworkPlayer)
+                and player.client_handler is not client_handler):
+            logging.info(
+                f"[Session {self.game_id}] Ignoring action from stale socket for "
+                f"{account_id}."
+            )
+            return
+
+        if (not self._connection_resumed.is_set()
+                and account_id not in self._restoring_offers
+                and not isinstance(player, AIPlayer)):
+            logging.info(
+                f"[Session {self.game_id}] Ignoring action from {account_id} while "
+                "gameplay is paused for reconnection."
+            )
+            return
         
         # Resolve any active inline choice first
-        player = self.players.get(account_id)
         if player and player.pending_choice_future and not player.pending_choice_future.done():
             player.pending_choice_future.set_result(action_data)
             return
@@ -662,80 +742,221 @@ class GameSession:
         # TODO(bratah123): Feed selection into Game Engine rules to proceed turn sequence.
         pass
 
-    async def mark_player_ready(self, account_id: str):
+    async def mark_player_ready(self, account_id: str, client_handler=None):
         """Marks a player as ready and broadcasts SerializedGameState once both players are ready."""
         logging.info(f"[Session {self.game_id}] Player {account_id} reported ready.")
 
-        # Reconnect: this player's fresh playmat scene is up. Re-send state to
-        # just them and replay any offer they owed a reply to. The gameplay task
-        # kept running (or parked on their still-live future) throughout.
+        player = self.players.get(account_id)
+        if (client_handler is not None and isinstance(player, NetworkPlayer)
+                and player.client_handler is not client_handler):
+            logging.info(
+                f"[Session {self.game_id}] Ignoring PlayerReady from stale socket "
+                f"for {account_id}."
+            )
+            return
+
+        # A reconnecting client installs its own snapshot after initial dispatch.
         if account_id in self._reconnecting:
-            self._reconnecting.discard(account_id)
+            if not self._state_dispatched:
+                self._reconnecting.discard(account_id)
+                self._cancel_reconnect_grace(account_id)
+                self.ready_players.add(account_id)
+                await self._dispatch_initial_state_if_ready()
+                return
             await self._resend_state_to(account_id)
             return
 
         self.ready_players.add(account_id)
+        await self._dispatch_initial_state_if_ready()
 
+    async def _dispatch_initial_state_if_ready(self):
+        """Sends the first snapshot after every network scene is ready."""
         if self._state_dispatched:
             return
+        network_ids = set(self._network_players())
+        if (self._disconnected or self._reconnecting
+                or not network_ids.issubset(self.ready_players)):
+            return
+        self._state_dispatched = True
+        logging.info(
+            f"[Session {self.game_id}] All network players ready. "
+            "Dispatched SerializedGameState."
+        )
+        await self.send_serialized_game_state()
+        self._resync_players.clear()
+        self._resync_ready.clear()
+        self._resync_inflight.clear()
+        self._offers_to_restore.clear()
+        self._restoring_offers.clear()
+        self._connection_resumed.set()
+        self.gameplay_task = self._spawn(self.run_gameplay_sequence())
 
-        # Check if all network players are ready
-        network_players_count = sum(1 for p in self.players.values() if isinstance(p, NetworkPlayer))
-        if len(self.ready_players) >= network_players_count:
-            self._state_dispatched = True
-            logging.info(f"[Session {self.game_id}] All network players ready. Dispatched SerializedGameState.")
-            await self.send_serialized_game_state()
-            # Start the sequential gameplay sequence!
-            self.gameplay_task = asyncio.create_task(self.run_gameplay_sequence())
+    async def _wait_for_connection_resume(self):
+        """Parks gameplay while any network player is disconnected."""
+        if not self._connection_resumed.is_set():
+            self._mark_prompt_checkpoint()
+        try:
+            await self._connection_resumed.wait()
+        finally:
+            self._leave_prompt_checkpoint()
+        if self.game_phase == GamePhase.GAME_OVER:
+            raise GameOver()
 
-    async def _notify_opponents_connection(self, subject_id: str, message_name: str,
-                                           extra: Optional[Dict[str, Any]] = None):
-        """Pushes a connection-status message about subject_id to the OTHER connected players."""
-        # gameID is REQUIRED: GameQueueManager routes every GameMessage into a
-        # per-game queue keyed by it (ContainsKey(null) crashes without it).
-        payload = {"gameID": self.game_id, "accountID": subject_id, **(extra or {})}
-        for pid, viewer in self.players.items():
-            if pid == subject_id:
-                continue
-            if isinstance(viewer, NetworkPlayer) and viewer.connected:
-                await viewer.send_packet(message_name, payload)
+    def _network_players(self) -> Dict[str, NetworkPlayer]:
+        return {
+            pid: player for pid, player in self.players.items()
+            if isinstance(player, NetworkPlayer)
+        }
 
-    async def on_player_disconnect(self, account_id: str):
+    def _pause_prompt_envelope(self, prompt_text: str) -> Dict[str, Any]:
+        return self._sequence_envelope(
+            EMPTY_SEQUENCE_ID,
+            self._build_msg(
+                OutboundMsg.PAUSE_ON_PROMPT_EFFECT.value,
+                {
+                    "gameID": self.game_id,
+                    "prompt": {"id": prompt_text},
+                    "buttonText": None,
+                    "doPause": False,
+                },
+            ),
+        )
+
+    def _close_pause_prompt_envelope(self) -> Dict[str, Any]:
+        return self._sequence_envelope(
+            EMPTY_SEQUENCE_ID,
+            self._build_msg(
+                OutboundMsg.CLOSE_PAUSE_ON_PROMPT_EFFECT.value,
+                {"gameID": self.game_id},
+            ),
+        )
+
+    def _connection_wait_text(self) -> str:
+        return (
+            f"Opponent disconnected. Waiting up to {RECONNECT_GRACE_SECONDS} "
+            "seconds for them to reconnect."
+        )
+
+    @staticmethod
+    def _offer_for_replay(offer):
+        """Copies an offer and restarts its client-side expiration clock."""
+        name, value, flags = offer
+        replay_value = copy.deepcopy(value)
+        selection_value = replay_value
+        if name == OutboundMsg.SEQUENCE_MESSAGE.value:
+            selection_value = (replay_value.get("msg") or {}).get("value")
+        if (isinstance(selection_value, dict)
+                and "startingTimestamp" in selection_value):
+            selection_value["startingTimestamp"] = int(time.time() * 1000)
+        return name, replay_value, flags
+
+    def _connection_pause_stale(self, subject_id: str, epoch: int) -> bool:
+        return (self.game_phase == GamePhase.GAME_OVER
+                or epoch != self._resync_epoch
+                or subject_id not in self._disconnected)
+
+    async def _show_connection_pause(self, subject_id: str, epoch: int):
+        """Ends live offers and shows a non-modal reconnect banner."""
+        if not self._state_dispatched:
+            return
+        # Place reconnect control only at an authoritative checkpoint.
+        await self._state_checkpoint.wait()
+        settle_remaining = RECONNECT_SEQUENCE_SETTLE_SECONDS - (
+            time.monotonic() - self._last_sequence_sent_at
+        )
+        if settle_remaining > 0:
+            await self.choreo_pause(settle_remaining)
+        force_ended = False
+        async with self._wire_lock:
+            if self._connection_pause_stale(subject_id, epoch):
+                return
+            for pid, viewer in self._network_players().items():
+                if pid == subject_id or not viewer.connected:
+                    continue
+                future = viewer.pending_choice_future
+                if (viewer._pending_offer is not None and future is not None
+                        and not future.done()):
+                    await viewer.send_packet(
+                        OutboundMsg.FORCE_SELECTION_FINISHED.value, {}
+                    )
+                    self._offers_to_restore.add(pid)
+                    force_ended = True
+        if force_ended:
+            # m.d ends by wiping the prompt override the banner sets; a banner
+            # sent before it finishes is erased a frame later.
+            await self.choreo_pause(FORCE_SELECTION_SETTLE_SECONDS)
+        async with self._wire_lock:
+            if self._connection_pause_stale(subject_id, epoch):
+                return
+            for pid, viewer in self._network_players().items():
+                if pid == subject_id or not viewer.connected:
+                    continue
+                await viewer.send_packet(
+                    OutboundMsg.SEQUENCE_MESSAGE.value,
+                    self._pause_prompt_envelope(self._connection_wait_text()),
+                )
+
+    def _cancel_reconnect_grace(self, account_id: str):
+        task = self._grace_tasks.pop(account_id, None)
+        if task is not None and not task.done():
+            task.cancel()
+
+    def _arm_reconnect_grace(self, account_id: str):
+        self._cancel_reconnect_grace(account_id)
+        self._grace_tasks[account_id] = self._spawn(
+            self._disconnect_grace(account_id)
+        )
+
+    async def on_player_disconnect(self, account_id: str, client_handler=None):
         """Detaches a player's socket without ending the game; starts the grace timer.
 
-        The gameplay task keeps running (or parks on the player's still-live
-        selection future); their sends no-op until they reconnect.
+        Stale socket teardown is ignored so it cannot detach a newer reconnect.
         """
         player = self.players.get(account_id)
         if not isinstance(player, NetworkPlayer):
             return
         if self.game_phase == GamePhase.GAME_OVER:
             return
-        # Detach + (re)arm grace ALWAYS (liveness), but the opponent-facing dialog
-        # message is guarded: a 2nd PlayerDisconnected while one is still outstanding
-        # stacks a 2nd "Disconnection!" popup the client can no longer dismiss (m.q
-        # overwrites its single dialog reference, orphaning the first on-screen).
+        if client_handler is not None and player.client_handler is not client_handler:
+            logging.info(
+                f"[Session {self.game_id}] Ignoring stale disconnect for {account_id}."
+            )
+            return
+        if player.client_handler is None and account_id in self._disconnected:
+            return
+        was_resumed = self._connection_resumed.is_set()
+        if was_resumed:
+            self._resync_players.clear()
+            self._resync_ready.clear()
+            self._resync_inflight.clear()
+            self._offers_to_restore.clear()
+            self._restoring_offers.clear()
+        if not self._state_dispatched:
+            self.ready_players.discard(account_id)
+        # Duplicate teardown was handled above; this is a new reconnect epoch.
         already_notified = account_id in self._disconnected
         logging.info(
-            f"[Session {self.game_id}] Player {account_id} disconnected — detaching "
+            f"[Session {self.game_id}] Player {account_id} disconnected - detaching "
             f"(grace {RECONNECT_GRACE_SECONDS}s, already_notified={already_notified})."
         )
+        future = player.pending_choice_future
+        if (player._pending_offer is not None and future is not None
+                and not future.done()):
+            # This offer vanished with the disconnected client's scene.
+            self._offers_to_restore.add(account_id)
         player.client_handler = None
         self._reconnecting.discard(account_id)
-        existing = self._grace_tasks.pop(account_id, None)
-        if existing is not None and not existing.done():
-            existing.cancel()
-        self._grace_tasks[account_id] = self._spawn(self._disconnect_grace(account_id))
-        if already_notified:
-            return
+        self._connection_resumed.clear()
         self._disconnected.add(account_id)
-        # PlayerDisconnected (m.q): shows the opponent the "disconnected, waiting Ns"
-        # dialog and freezes the chess clock until PlayerReconnected.
-        logging.info(f"[Session {self.game_id}] -> PlayerDisconnected to opponents of {account_id}.")
-        await self._notify_opponents_connection(
-            account_id, OutboundMsg.PLAYER_DISCONNECTED.value,
-            {"waitTime": RECONNECT_GRACE_SECONDS * 1000},
-        )
+        self._resync_epoch += 1
+        epoch = self._resync_epoch
+        self._resync_players.add(account_id)
+        self._resync_ready.discard(account_id)
+        self._resync_inflight.pop(account_id, None)
+        self._restoring_offers.discard(account_id)
+        self._arm_reconnect_grace(account_id)
+        logging.info(f"[Session {self.game_id}] Pausing play for disconnect of {account_id}.")
+        self._spawn(self._show_connection_pause(account_id, epoch))
 
     async def _disconnect_grace(self, account_id: str):
         """Awards the game to the connected opponent if the player never returns."""
@@ -745,8 +966,10 @@ class GameSession:
             return
         self._grace_tasks.pop(account_id, None)
         player = self.players.get(account_id)
-        if (player is None or getattr(player, "connected", True)
-                or self.game_phase == GamePhase.GAME_OVER):
+        still_pending = (
+            account_id in self._disconnected or account_id in self._reconnecting
+        )
+        if player is None or not still_pending or self.game_phase == GamePhase.GAME_OVER:
             return
         logging.info(
             f"[Session {self.game_id}] Reconnect grace expired for {account_id}; "
@@ -763,69 +986,153 @@ class GameSession:
             GameSessionManager().remove_session(self.game_id)
 
     async def reconnect_player(self, client_handler, account_id: str):
-        """Rebinds a reconnecting player's socket and drives them back onto the playmat.
-
-        Sends MatchFound(Reconnecting); the client rebuilds the match model, loads
-        the playmat scene, and sends PlayerReady -> mark_player_ready resync.
-        """
+        """Rebinds one socket and starts that client's native scene rebuild."""
         player = self.players.get(account_id)
         if not isinstance(player, NetworkPlayer):
             return
+        if not getattr(client_handler, "running", False):
+            logging.info(
+                f"[Session {self.game_id}] Ignoring reconnect from closed socket "
+                f"for {account_id}."
+            )
+            return
+        if (player.client_handler is client_handler and player.connected
+                and account_id not in self._reconnecting):
+            logging.info(
+                f"[Session {self.game_id}] Ignoring duplicate reconnect for {account_id}."
+            )
+            return
+        if (player.client_handler is client_handler
+                and account_id in self._reconnecting):
+            logging.info(
+                f"[Session {self.game_id}] Reconnect already loading for {account_id}."
+            )
+            return
         logging.info(f"[Session {self.game_id}] Player {account_id} reconnecting.")
-        grace = self._grace_tasks.pop(account_id, None)
-        if grace is not None and not grace.done():
-            grace.cancel()
-        # Rebind the live socket (self-heal, like live_tournament.resolve_client).
+        if player.client_handler is not client_handler:
+            self._reconnecting.discard(account_id)
+            self._resync_inflight.pop(account_id, None)
+            self._resync_ready.discard(account_id)
+            self._restoring_offers.discard(account_id)
         player.client_handler = client_handler
+        self._disconnected.discard(account_id)
+        self._connection_resumed.clear()
+        self._resync_players.add(account_id)
         self._reconnecting.add(account_id)
-        await player.send_packet(
-            OutboundMsg.MATCH_FOUND.value,
-            self._build_match_found_payload(reconnecting=True),
+        self._arm_reconnect_grace(account_id)
+        async with self._wire_lock:
+            await player.send_packet(
+                OutboundMsg.MATCH_FOUND.value,
+                self._build_match_found_payload(reconnecting=True),
+            )
+        logging.info(
+            f"[Session {self.game_id}] Reconnect epoch {self._resync_epoch} is "
+            f"rebuilding playmat for {account_id}."
         )
 
     async def _resend_state_to(self, account_id: str):
-        """Re-sends the board snapshot + replays any pending offer to a reconnected player."""
+        """Installs one reconnect snapshot and resumes after all returnees load."""
         player = self.players.get(account_id)
-        if not isinstance(player, NetworkPlayer) or not player.connected:
+        if (not isinstance(player, NetworkPlayer) or not player.connected
+                or account_id not in self._reconnecting
+                or account_id in self._resync_inflight):
             return
-        # Resync the board + replay the pending offer. Never let a serialization
-        # error swallow the PlayerReconnected below — that would strand the
-        # opponent's "Disconnection!" dialog on-screen forever.
+        reconnect_handler = player.client_handler
+        inflight_token = object()
+        self._resync_inflight[account_id] = inflight_token
         try:
+            await self._state_checkpoint.wait()
+            if (not player.connected or player.client_handler is not reconnect_handler
+                    or account_id not in self._reconnecting):
+                return
             await self.send_serialized_game_state(only_player_id=account_id)
-            offer = player._pending_offer
-            if offer is not None:
-                name, value, flags = offer
-                await player.send_packet(name, value, flags)
-                logging.info(
-                    f"[Session {self.game_id}] Replayed pending offer to reconnected {account_id}."
+            await self.choreo_pause(0.5)
+            if (not player.connected or player.client_handler is not reconnect_handler
+                    or account_id not in self._reconnecting):
+                return
+            other_returnees = self._reconnecting - {account_id}
+            if self._disconnected or other_returnees:
+                wait_text = (
+                    self._connection_wait_text() if self._disconnected
+                    else "Synchronizing the other player. Please wait."
                 )
+                await self._send_pause_prompt(player, wait_text, remember=False)
         except Exception as e:
             logging.exception(
                 f"[Session {self.game_id}] Error resyncing state to reconnected {account_id}: {e}"
             )
-        # PlayerReconnected (m.r): dismisses the opponent's wait dialog and restarts
-        # the chess clock. Paired 1:1 with the outstanding disconnect — a duplicate
-        # ReconnectToGame still resyncs the board above but must NOT fire a second
-        # Reconnection popup, so only send it when a disconnect is actually pending.
-        if account_id in self._disconnected:
-            self._disconnected.discard(account_id)
-            logging.info(f"[Session {self.game_id}] -> PlayerReconnected to opponents of {account_id}.")
-            await self._notify_opponents_connection(
-                account_id, OutboundMsg.PLAYER_RECONNECTED.value,
-            )
-        else:
-            logging.info(
-                f"[Session {self.game_id}] Reconnect resync for {account_id} with no outstanding "
-                f"disconnect (duplicate ReconnectToGame) — no PlayerReconnected sent."
-            )
+            return
+        finally:
+            if self._resync_inflight.get(account_id) is inflight_token:
+                self._resync_inflight.pop(account_id, None)
+        if (not player.connected or player.client_handler is not reconnect_handler
+                or account_id not in self._reconnecting):
+            return
+        self._reconnecting.discard(account_id)
+        self._cancel_reconnect_grace(account_id)
+        self._resync_ready.add(account_id)
+        if (self._resync_players
+                and self._resync_players.issubset(self._resync_ready)
+                and not self._reconnecting and not self._disconnected):
+            await self._resume_reconnect_cycle(self._resync_epoch)
+
+    async def _resume_reconnect_cycle(self, epoch: int):
+        """Clears wait banners and restores only unresolved real offers."""
+        if (epoch != self._resync_epoch or self._disconnected
+                or self._reconnecting
+                or not self._resync_players.issubset(self._resync_ready)):
+            return
+        try:
+            async with self._wire_lock:
+                for pid, player in self._network_players().items():
+                    if epoch != self._resync_epoch or not player.connected:
+                        return
+                    await player.send_packet(
+                        OutboundMsg.SEQUENCE_MESSAGE.value,
+                        self._close_pause_prompt_envelope(),
+                    )
+                    offer = player._pending_offer
+                    future = player.pending_choice_future
+                    if (pid in self._offers_to_restore and offer is not None
+                            and future is not None and not future.done()):
+                        self._restoring_offers.add(pid)
+                        name, value, flags = self._offer_for_replay(offer)
+                        await player.send_packet(name, value, flags)
+                        logging.info(
+                            f"[Session {self.game_id}] Restored pending offer for {pid}."
+                        )
+                    prompt_text = self._pause_prompts.get(pid)
+                    if prompt_text is not None:
+                        await player.send_packet(
+                            OutboundMsg.SEQUENCE_MESSAGE.value,
+                            self._pause_prompt_envelope(prompt_text),
+                        )
+        except Exception:
+            self._restoring_offers.clear()
+            raise
+        if (epoch != self._resync_epoch or self._disconnected
+                or self._reconnecting
+                or not self._resync_players.issubset(self._resync_ready)):
+            self._restoring_offers.clear()
+            return
+        self._resync_players.clear()
+        self._resync_ready.clear()
+        self._offers_to_restore.clear()
+        self._connection_resumed.set()
+        self._restoring_offers.clear()
+        logging.info(f"[Session {self.game_id}] Reconnect epoch {epoch} resumed play.")
 
     async def run_gameplay_sequence(self):
         """Sequential gameplay workflow starting from the pre-game coin flip."""
         try:
-            await self.run_pregame_coin_flip()
-            await self.run_setup_phase()
-            await self.run_mulligan_phase()
+            for phase in (
+                self.run_pregame_coin_flip,
+                self.run_setup_phase,
+                self.run_mulligan_phase,
+            ):
+                await self._wait_for_connection_resume()
+                await self._run_state_unit(phase())
+            await self._wait_for_connection_resume()
             await self.run_placement_phase()
             await self.run_turn_loop()
         except GameOver:
@@ -2439,6 +2746,8 @@ class GameSession:
             "reason": reason,
         }
         self.game_phase = GamePhase.GAME_OVER
+        # Wake a gameplay task parked at a disconnect boundary so it can unwind.
+        self._connection_resumed.set()
         return self.game_result
 
     async def end_game(self, winner_id: str, reason: str):
@@ -2996,23 +3305,29 @@ class GameSession:
 
         done_players: set = set()
         await asyncio.gather(*(
-            self._run_active_placement(pid, done_players) for pid in self._turn_order()
+            self._run_state_unit(self._run_active_placement(pid, done_players))
+            for pid in self._turn_order()
         ))
         # Barrier reached: clear any lingering "please wait" prompts.
         for player in self.players.values():
+            await self._wait_for_connection_resume()
             await self._send_close_pause_prompt(player)
 
         done_players = set()
         await asyncio.gather(*(
-            self._run_bench_placement(pid, done_players) for pid in self._turn_order()
+            self._run_state_unit(self._run_bench_placement(pid, done_players))
+            for pid in self._turn_order()
         ))
         for player in self.players.values():
+            await self._wait_for_connection_resume()
             await self._send_close_pause_prompt(player)
 
-        await self._introduce_initial_pokemon()
+        await self._wait_for_connection_resume()
+        await self._run_state_unit(self._introduce_initial_pokemon())
 
         self.game_phase = GamePhase.PRIZE_DEAL
-        await self._deal_prize_cards()
+        await self._wait_for_connection_resume()
+        await self._run_state_unit(self._deal_prize_cards())
         self.game_phase = GamePhase.SETUP_COMPLETE
         logging.info(f"[Session {self.game_id}] Setup complete; board is ready for turn 1.")
 
@@ -3028,14 +3343,17 @@ class GameSession:
             return
         active_id = order[self.turn_state.turn_number % len(order)]
         for _ in range(MAX_TURNS):
-            await self._begin_turn(active_id)
+            await self._wait_for_connection_resume()
+            await self._run_state_unit(self._begin_turn(active_id))
             await self._run_player_turn(active_id)
-            await self._fire_end_of_turn_triggers(active_id)
+            await self._wait_for_connection_resume()
+            await self._run_state_unit(self._fire_end_of_turn_triggers(active_id))
             if self.extra_turn_pending:
                 # Star Chronos / Yoga Loop: same player again, no checkup.
                 self.extra_turn_pending = False
                 continue
-            await self._run_pokemon_checkup(active_id)
+            await self._wait_for_connection_resume()
+            await self._run_state_unit(self._run_pokemon_checkup(active_id))
             active_id = self._opponent_id(active_id)
         logging.error(
             f"[Session {self.game_id}] MAX_TURNS ({MAX_TURNS}) reached; "
@@ -3100,7 +3418,8 @@ class GameSession:
             return
 
         for _ in range(MAX_ACTIONS_PER_TURN):
-            await self._refresh_dynamic_attacks(active_id)
+            await self._wait_for_connection_resume()
+            await self._run_state_unit(self._refresh_dynamic_attacks(active_id))
             target_map = compute_legal_actions(
                 self.board_state, self.turn_state, active_id, self.game_id
             )
@@ -3124,7 +3443,9 @@ class GameSession:
             if not parsed:
                 continue
             entry, target_ids = parsed
-            turn_over = await self._apply_player_action(active_id, entry, target_ids)
+            turn_over = await self._run_state_unit(
+                self._apply_player_action(active_id, entry, target_ids)
+            )
             if turn_over:
                 return
         logging.warning(
@@ -4893,20 +5214,21 @@ class GameSession:
             recipients = [(only_player_id, self.players[only_player_id])]
         else:
             recipients = list(self._unique_recipients())
-        for player_id, player in recipients:
-            serialized_state = self.board_state.serialize(player_id)
-            # The network router only strips the top-level messageName; the nested
-            # envelope carries the class name in "name" instead.
-            serialized_state.pop("messageName", None)
-            payload = {
-                "sequenceID": EMPTY_SEQUENCE_ID,
-                "gameID": self.game_id,
-                "msg": {
-                    "name": OutboundMsg.SERIALIZED_GAME_STATE.value,
-                    "value": serialized_state,
-                },
-            }
-            await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, payload)
+        async with self._wire_lock:
+            for player_id, player in recipients:
+                serialized_state = self.board_state.serialize(player_id)
+                # The network router only strips the top-level messageName; the nested
+                # envelope carries the class name in "name" instead.
+                serialized_state.pop("messageName", None)
+                payload = {
+                    "sequenceID": EMPTY_SEQUENCE_ID,
+                    "gameID": self.game_id,
+                    "msg": {
+                        "name": OutboundMsg.SERIALIZED_GAME_STATE.value,
+                        "value": serialized_state,
+                    },
+                }
+                await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, payload)
 
 
 def _stack_descendants(entity) -> List[Any]:

@@ -468,10 +468,10 @@ class OutboundMsg(str, Enum):
     # Source: PlayerStillInGame.cs (drives PlayerStillInGameObserver -> ReconnectToGame at login)
     PLAYER_STILL_IN_GAME = "PlayerStillInGame"
 
-    # In-match opponent-disconnect indicator (client cmd m.q): shows the no-button
-    # "opponent disconnected, waiting Ns" dialog and stops the chess clock.
-    # {accountID: <dropped player>, waitTime: <ms>}. PlayerReconnected (m.r)
-    # dismisses it and restarts the clock. {accountID: <returned player>}.
+    # Legacy in-match opponent-disconnect dialogs (client cmds m.q/m.r). These
+    # are intentionally not emitted: m.q can orphan its no-button popup across
+    # reconnect races. GameSession uses ForceSelectionFinished only when a real
+    # offer is live, plus a non-modal PauseOnPromptEffect status banner.
     PLAYER_DISCONNECTED = "PlayerDisconnected"
     PLAYER_RECONNECTED = "PlayerReconnected"
 
