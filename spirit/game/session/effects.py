@@ -1724,13 +1724,15 @@ class EffectContext:
         """Switches an in-play Pokemon with a hand/discard card; see
         GameSession.perform_identity_swap. transfer=True carries attachments/
         damage/conditions/turn stamps onto the new Pokemon; a transferred
-        damage total covering its HP queues a knockout. Flushes queued
-        choreography first so the swap brackets land in order."""
+        damage total covering its HP queues a knockout. The TransformSwap
+        choreography queues on this ctx so the announce/orb bracket (aimed at
+        the pile the card came from) plays before the shine."""
         if outgoing is None or incoming is None:
             return False
-        await self.flush_choreography()
+        self._note_visual_source(incoming)
         result = await self.session.perform_identity_swap(
-            outgoing, incoming, destination_name=destination, transfer=transfer)
+            outgoing, incoming, destination_name=destination, transfer=transfer,
+            ctx=self)
         if result is None:
             return False
         if outgoing in self.knockouts:

@@ -1277,10 +1277,22 @@ class GameSession:
             },
         )
 
-    def _entity_moved_msg(self, entity_id: str, destination_id: str, position: int) -> Dict[str, Any]:
-        """Builds an EntityMoved game message (moves an existing entity into a new parent)."""
+    def _entity_moved_msg(
+        self,
+        entity_id: str,
+        destination_id: str,
+        position: int,
+        *,
+        stamp_slot: bool = True,
+    ) -> Dict[str, Any]:
+        """Builds an EntityMoved game message.
+
+        ``stamp_slot=False`` is reserved for visual-only intermediate moves:
+        the client may briefly park a card in another area while the server's
+        authoritative tree already contains the card at its final destination.
+        """
         entity = self.board_state.get_entity(entity_id)
-        if entity is not None:
+        if entity is not None and stamp_slot:
             # Mirror the client: every EntityMoved stamps A.m = positionInParent.
             entity.board_slot = position
         return self._build_msg(
@@ -4552,7 +4564,8 @@ class GameSession:
             return None
         source_area = incoming._containing_area_name()
         dest = self.board_state.find_player_area(owner_id, destination_name)
-        if dest is None or source_area is None:
+        out_of_play = self.board_state.find_global_area("outOfPlay")
+        if dest is None or out_of_play is None or source_area is None:
             return None
         slot = self.board_state.bench_slot_of(outgoing)
         damage_taken = max(
@@ -4561,26 +4574,31 @@ class GameSession:
         ) if transfer else 0
         from_hidden = incoming.is_hidden_from(self._opponent_id(owner_id))
 
+        # Snapshot the stack before the authoritative surgery. The same list
+        # drives the client's visual-only outOfPlay detour below.
+        stack_cards = list(outgoing.children)
+
         # The new Pokemon takes the vacated spot...
         self.board_state.move_card(incoming.entity_id, area.entity_id, slot)
         incoming_move = self._entity_moved_msg(incoming.entity_id, area.entity_id, slot)
-        moves = []
+        stack_moves = []
         # ...the attachments follow it (or go to the pile with the old card)...
-        for other in list(outgoing.children):
+        for other in stack_cards:
             if transfer:
                 position = len(incoming.children)
                 self.board_state.attach_card(other.entity_id, incoming.entity_id)
-                moves.append(self._entity_moved_msg(
+                stack_moves.append(self._entity_moved_msg(
                     other.entity_id, incoming.entity_id, position))
             else:
                 position = len(dest.children)
                 self.board_state.move_card(other.entity_id, dest.entity_id)
-                moves.append(self._entity_moved_msg(
+                stack_moves.append(self._entity_moved_msg(
                     other.entity_id, dest.entity_id, position))
         # ...and the old card leaves play.
         position = len(dest.children)
         self.board_state.move_card(outgoing.entity_id, dest.entity_id)
-        moves.append(self._entity_moved_msg(outgoing.entity_id, dest.entity_id, position))
+        outgoing_move = self._entity_moved_msg(
+            outgoing.entity_id, dest.entity_id, position)
 
         conditions: List[str] = []
         if transfer:
@@ -4602,16 +4620,24 @@ class GameSession:
             # clears it home itself, so the TransformSwap shine does the swap.
             runs.append((GameSequence.GROUPED_MOVE,
                          [self._reveal_card_msg(incoming.entity_id, True)]))
-        # v.U partitions the bracket's EntityIDDataEffect entities and plays
-        # the "TransformEntity" shine on both while the commands run under it.
-        # The moves MUST ride a nested RevealAndSkipMove child: r.N wraps every
-        # EntityMoved in l.c (pre-handled = data-only), while a flat move makes
-        # k.z fly the card across the board mid-shine.
+            
+        parking_position = len(out_of_play.children)
+        parking_moves = []
+        for parked in [incoming] + stack_cards + [outgoing]:
+            parking_moves.append(self._entity_moved_msg(
+                parked.entity_id,
+                out_of_play.entity_id,
+                parking_position,
+                stamp_slot=False,
+            ))
+            parking_position += 1
         runs.append((GameSequence.TRANSFORM_SWAP,
                      [self._entity_id_data_effect_msg("From", outgoing.entity_id),
                       self._entity_id_data_effect_msg("Into", incoming.entity_id),
-                      NestedSequence(GameSequence.REVEAL_AND_SKIP_MOVE,
-                                     [incoming_move] + moves)] + attrs))
+                      NestedSequence(GameSequence.ROBO_SUBSTITUTE,
+                                     parking_moves)] + attrs))
+        runs.append((GameSequence.ROBO_SUBSTITUTE,
+                     stack_moves + [outgoing_move, incoming_move]))
         if conditions:
             # Executor ctor (M.u) requires the "Target" data effect first.
             runs.append((GameSequence.ADD_SPECIAL_CONDITION,
