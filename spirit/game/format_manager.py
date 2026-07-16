@@ -107,6 +107,19 @@ class FormatManager:
     def by_guid(self, format_guid: str) -> Optional[GameFormat]:
         return self._by_guid.get((format_guid or "").lower())
 
+    def resolve_format_guid(self, value: str) -> Optional[str]:
+        """Resolves a format GUID, config key, or client wire name to its GUID."""
+        normalized = str(value or "").strip().lower()
+        if not normalized:
+            return None
+        fmt = self.by_guid(normalized)
+        if fmt:
+            return fmt.guid
+        for fmt in self.formats:
+            if normalized in (fmt.key.lower(), fmt.format_name.lower()):
+                return fmt.guid
+        return None
+
     def format_name(self, format_guid: str) -> str:
         fmt = self.by_guid(format_guid)
         if fmt:
