@@ -46,7 +46,8 @@ class DeckValidator:
         self.deck_id = deck_dict.get("deckID")
         self.deck_name = deck_dict.get("deckName", "Unknown Deck")
         piles = deck_dict.get("piles") or {}
-        self.guids: List[str] = [str(g).lower() for g in (piles.get("deck") or [])]
+        pile_cards = piles.get("deck") or piles.get("CakePile") or []
+        self.guids: List[str] = [str(g).lower() for g in pile_cards]
         self.owned_counts = owned_counts
         self.manager = FormatManager()
         if not card_loader.cards:

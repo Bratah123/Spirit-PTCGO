@@ -21,8 +21,8 @@ def check(cond, label):
         FAILURES.append(label)
 
 
-def deck(guids, name="Test Deck"):
-    return {"deckID": str(uuid.uuid4()), "deckName": name, "piles": {"deck": list(guids)}}
+def deck(guids, name="Test Deck", pile_name="deck"):
+    return {"deckID": str(uuid.uuid4()), "deckName": name, "piles": {pile_name: list(guids)}}
 
 
 def failure_types(row):
@@ -74,6 +74,9 @@ def main():
     check(set(rules.valid_format_names(legal)) == {"Modified", "Expanded", "Legacy", "Unlimited"}
           or set(rules.valid_format_names(legal)) == {"Modified", "Expanded", "Unlimited"},
           f"attr-10860 names sane: {rules.valid_format_names(legal)}")
+    client_legal = deck([swsh_basic.guid] * 4 + [water.guid] * 56, pile_name="CakePile")
+    rows = rules.validate_deck(client_legal, [std, exp, unl])
+    check(all(r["valid"] for r in rows), "client CakePile accepted as the main deck pile")
 
     print("[2] deck size must be exactly 60")
     for n, label in ((59, "59 cards"), (61, "61 cards")):
