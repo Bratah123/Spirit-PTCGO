@@ -334,6 +334,7 @@ class OutboundMsg(str, Enum):
     TOURNAMENT_QUEUE_LEFT = "TournamentQueueLeft"
     TOURNAMENT_QUEUE_LEFT_FAILED = "TournamentQueueLeftFailed"
     JOIN_TOURNAMENT_FAILED = "JoinTournamentFailed"
+    JOIN_TOURNAMENT_FAILED_INVALID_DECK = "JoinTournamentFailedInvalidDeck"
     TOURNAMENT_STARTED = "TournamentStarted"
     TOURNAMENT_ROUND_UPDATED = "TournamentRoundUpdated"
     TOURNAMENT_NEXT_ROUND_STARTING = "TournamentNextRoundStarting"

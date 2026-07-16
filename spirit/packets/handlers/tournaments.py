@@ -4,6 +4,9 @@ import uuid
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.async_utils import run_db
 from spirit.database import tournament_data
+from spirit.database.player_data import get_owned_counts
+from spirit.game import rules
+from spirit.game.format_manager import FormatManager
 from spirit.game.tournament_manager import (
     TournamentManager, STATE_OPEN, STATE_ENTRY_CLOSED, STATE_RESOLVED, STATE_HIDDEN,
     now_ms,
@@ -32,6 +35,37 @@ def serializable_deck(deck_data: dict, name: str = "Tournament Deck") -> dict:
         "piles": {"deck": guids},
         "attributes": deck_data.get("attributes") or [],
     }
+
+
+def tournament_format_value(tournament, legacy: bool = False):
+    """Returns the configured format identifier for one tournament flow."""
+    definition = getattr(tournament, "definition", {}) or {}
+    if legacy:
+        return definition.get("format") or "Unlimited"
+    game = definition.get("game") or {}
+    return game.get("format") or definition.get("format") or "Unlimited"
+
+
+def validate_tournament_deck(deck: dict, tournament, owned_counts=None,
+                             legacy: bool = False):
+    """Validates a tournament deck and returns (results, format_error)."""
+    format_value = tournament_format_value(tournament, legacy=legacy)
+    format_guid = FormatManager().resolve_format_guid(format_value)
+    if format_guid is None:
+        return [], f"The {format_value} tournament format is not available on this server."
+    return rules.validate_deck(
+        deck, [format_guid], owned_counts=owned_counts), None
+
+
+def validation_error_text(results: list) -> str:
+    """Returns the first human-readable deck validation failure."""
+    if results:
+        details = results[0].get("results") or []
+        if details:
+            explanation = details[0].get("explanation") or {}
+            if explanation.get("id"):
+                return str(explanation["id"])
+    return "This deck is not valid for this tournament."
 
 
 def progress_dict(entry: dict) -> dict:
@@ -71,6 +105,11 @@ class TournamentHandler(BaseHandler):
                 return serializable_deck(d["deck_data"], d.get("name") or "Tournament Deck")
         return None
 
+    async def _validate_tournament_deck(self, deck: dict, tournament, legacy: bool = False):
+        owned = await run_db(get_owned_counts, self._account_id())
+        return validate_tournament_deck(
+            deck, tournament, owned_counts=owned, legacy=legacy)
+
     # ------------------------------------------------------------- listing
 
     @handle(InboundMsg.GET_ACTIVE_ASYNC_TOURNAMENTS)
@@ -103,6 +142,12 @@ class TournamentHandler(BaseHandler):
         await self.send({
             "messageName": OutboundMsg.JOIN_TOURNAMENT_FAILED.value,
             "reason": {"id": text},
+        }, request_id)
+
+    async def _join_invalid_deck(self, results: list, request_id: int = 0):
+        await self.send({
+            "messageName": OutboundMsg.JOIN_TOURNAMENT_FAILED_INVALID_DECK.value,
+            "deckValidationResult": results,
         }, request_id)
 
     @handle(InboundMsg.GET_ACTIVE_TOURNAMENTS)
@@ -141,8 +186,14 @@ class TournamentHandler(BaseHandler):
             return await self._join_failed("You are already in a tournament.", request_id)
 
         deck_json = self._resolve_deck_json(message.get("deck"))
-        if not deck_json or not deck_json.get("piles", {}).get("deck"):
-            return await self._join_failed("tournament.error.invalid_deck", request_id)
+        if not deck_json:
+            return await self._join_failed("The selected deck could not be found.", request_id)
+        validation, format_error = await self._validate_tournament_deck(
+            deck_json, tournament, legacy=True)
+        if format_error:
+            return await self._join_failed(format_error, request_id)
+        if not validation or not validation[0]["valid"]:
+            return await self._join_invalid_deck(validation, request_id)
 
         fees = tournament.legacy_entry_fees()
         error = await run_db(tournament_data.charge_fees, account_id, fees)
@@ -251,7 +302,21 @@ class TournamentHandler(BaseHandler):
                 OutboundMsg.JOIN_ASYNC_TOURNAMENT_ERROR.value,
                 "This tournament is not open for entries.", request_id)
 
-        deck_json = self._resolve_deck_json(deck_id) or {}
+        deck_json = self._resolve_deck_json(deck_id)
+        if not deck_json:
+            return await self._error(
+                OutboundMsg.JOIN_ASYNC_TOURNAMENT_ERROR.value,
+                "The selected deck could not be found.", request_id)
+        validation, format_error = await self._validate_tournament_deck(
+            deck_json, tournament)
+        if format_error:
+            return await self._error(
+                OutboundMsg.JOIN_ASYNC_TOURNAMENT_ERROR.value,
+                format_error, request_id)
+        if not validation or not validation[0]["valid"]:
+            return await self._error(
+                OutboundMsg.JOIN_ASYNC_TOURNAMENT_ERROR.value,
+                validation_error_text(validation), request_id)
         entry, error = await run_db(
             tournament_data.create_entry, self._account_id(),
             tournament.tournament_id, tournament.definition, currency, deck_json)
@@ -298,23 +363,42 @@ class TournamentHandler(BaseHandler):
         run = tournament.run_config
         if deck_id and run.get("allowDeckSwitching", True):
             deck_json = self._resolve_deck_json(deck_id)
-            if deck_json:
-                await run_db(tournament_data.update_entry_deck,
-                             entry_id, self._account_id(), deck_json)
-                entry["deck"] = deck_json
-                await self.send({
-                    "messageName": OutboundMsg.ASYNC_TOURNAMENT_DECK_UPDATED.value,
-                    "tournamentID": entry["tournament_id"],
-                    "entryID": entry_id,
-                    "deck": deck_json,
-                    "limitedCollection": [],
-                }, 0)
+            if not deck_json:
+                return await self._error(
+                    OutboundMsg.START_ASYNC_TOURNAMENT_GAME_ERROR.value,
+                    "The selected deck could not be found.", request_id)
+            validation, format_error = await self._validate_tournament_deck(
+                deck_json, tournament)
+            if format_error:
+                return await self._error(
+                    OutboundMsg.START_ASYNC_TOURNAMENT_GAME_ERROR.value,
+                    format_error, request_id)
+            if not validation or not validation[0]["valid"]:
+                return await self._error(
+                    OutboundMsg.START_ASYNC_TOURNAMENT_GAME_ERROR.value,
+                    validation_error_text(validation), request_id)
+            await run_db(tournament_data.update_entry_deck,
+                         entry_id, self._account_id(), deck_json)
+            entry["deck"] = deck_json
+            await self.send({
+                "messageName": OutboundMsg.ASYNC_TOURNAMENT_DECK_UPDATED.value,
+                "tournamentID": entry["tournament_id"],
+                "entryID": entry_id,
+                "deck": deck_json,
+                "limitedCollection": [],
+            }, 0)
 
         deck = entry.get("deck") or {}
-        if not deck.get("piles", {}).get("deck"):
+        validation, format_error = await self._validate_tournament_deck(
+            deck, tournament)
+        if format_error:
             return await self._error(
                 OutboundMsg.START_ASYNC_TOURNAMENT_GAME_ERROR.value,
-                "No valid deck for this tournament run.", request_id)
+                format_error, request_id)
+        if not validation or not validation[0]["valid"]:
+            return await self._error(
+                OutboundMsg.START_ASYNC_TOURNAMENT_GAME_ERROR.value,
+                validation_error_text(validation), request_id)
 
         # Complete the RPC, then ride the normal matchmaking pipeline
         # (MatchQueueEntered -> ConfirmReadyForMatch -> MatchFound).
