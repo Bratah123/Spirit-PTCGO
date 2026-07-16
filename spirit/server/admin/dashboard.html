@@ -145,7 +145,7 @@
 
 <section id="tab-accounts">
   <div class="card"><h2>Accounts</h2>
-    <div class="muted">Debug tools. "Give 4× all cards" grants 4 <b>tradable</b> copies of every card (basic energy excluded) for testing the trade system. The player sees them on their next collection refresh / login.</div>
+    <div class="muted">Debug tools. "Give 4× all cards" grants 4 <b>tradable</b> copies of every card (basic energy excluded) for testing the trade system; "Give 1× all products" grants 1 tradable copy of every product (boosters, decks, coins, sleeves, deck boxes). The player sees them on their next collection refresh / login.</div>
     <table id="accountsTable"><thead><tr><th>Username</th><th>Screen Name</th><th>Account ID</th><th>Admin</th><th></th></tr></thead><tbody></tbody></table>
   </div>
 </section>
@@ -497,6 +497,7 @@ async function loadAccounts() {
       <td class="muted">${esc(a.account_id)}</td>
       <td>${a.is_admin ? '<span class="pill on">admin</span>' : '<span class="muted">—</span>'}</td>
       <td><button class="mini" onclick="grantAllCards('${esc(a.account_id)}', this)">Give 4× all cards</button>
+          <button class="mini" onclick="grantAllProducts('${esc(a.account_id)}', this)">Give 1× all products</button>
           <button class="mini" onclick="setAdmin('${esc(a.account_id)}', ${!a.is_admin})">${a.is_admin ? 'Revoke admin' : 'Make admin'}</button></td></tr>`).join('')
       || '<tr><td colspan="5" class="muted">No accounts.</td></tr>';
   } catch(e) { toast('Accounts: ' + e.message, true); }
@@ -514,6 +515,15 @@ async function grantAllCards(account_id, btn) {
     toast(`Granted 4× of ${d.granted} cards`);
   } catch(e) { toast(e.message, true); }
   finally { if (btn) { btn.disabled = false; btn.textContent = 'Give 4× all cards'; } }
+}
+async function grantAllProducts(account_id, btn) {
+  if (!confirm('Give 1 tradable copy of every product (boosters, decks, coins, sleeves, deck boxes) to this account?')) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Granting…'; }
+  try {
+    const d = await api('accounts/grant-all-products', {account_id, count: 1});
+    toast(`Granted 1× of ${d.granted} products`);
+  } catch(e) { toast(e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Give 1× all products'; } }
 }
 
 /* ---------------- Codes ---------------- */

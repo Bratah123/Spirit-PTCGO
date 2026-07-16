@@ -235,6 +235,18 @@ def _dispatch(method, endpoint, data):
         granted = grant_all_cards(account_id, count=count, is_tradable=True)
         return _ok({"granted": granted, "count": count})
 
+    if method == 'POST' and endpoint == 'accounts/grant-all-products':
+        account_id = data.get("account_id")
+        if not account_id:
+            return _err(400, "account_id required")
+        with db_session() as session:
+            if not session.query(Account).filter_by(account_id=account_id).first():
+                return _err(404, "account not found")
+        from spirit.database.player_data import grant_all_products
+        count = max(1, int(data.get("count") or 1))
+        granted = grant_all_products(account_id, count=count, is_tradable=True)
+        return _ok({"granted": granted, "count": count})
+
     if method == 'POST' and endpoint == 'accounts/set-admin':
         from spirit.database.admin_data import set_admin
         account_id = data.get("account_id")

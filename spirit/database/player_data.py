@@ -310,6 +310,39 @@ def grant_all_cards(account_id, count=4, is_tradable=True):
     logging.info(f"[DB] grant_all_cards: gave {count}x of {granted} cards to {account_id}")
     return granted
 
+def grant_all_products(account_id, count=1, is_tradable=True):
+    """Debug: ensure the account owns `count` copies of every loaded product in one transaction."""
+    try:
+        if not product_loader.products:
+            product_loader.load_all()
+        products = product_loader.products
+    except Exception as e:
+        logging.error(f"[DB] grant_all_products: failed to load products: {e}")
+        return 0
+    granted = 0
+    try:
+        with db_session() as session:
+            existing = {c.archetype_id: c for c in
+                        session.query(Collection).filter_by(account_id=account_id).all()}
+            for product in products:
+                row = existing.get(product.guid)
+                if row is None:
+                    row = Collection(account_id=account_id, archetype_id=product.guid,
+                                     tradable_count=0, nontradable_count=0)
+                    session.add(row)
+                    existing[product.guid] = row
+                if is_tradable:
+                    row.tradable_count = max(row.tradable_count, count)
+                else:
+                    row.nontradable_count = max(row.nontradable_count, count)
+                granted += 1
+    except Exception as e:
+        logging.error(f"[DB] grant_all_products failed for {account_id}: {e}")
+        return 0
+    logging.info(f"[DB] grant_all_products: gave {count}x of {granted} products to {account_id}")
+    return granted
+
+
 def add_to_collection(account_id, archetype_id, count=1, is_tradable=False):
     """Adds an item to the account's collection."""
     logging.info(f"[DB] Adding {count}x {archetype_id} (tradable={is_tradable}) to account {account_id}")
