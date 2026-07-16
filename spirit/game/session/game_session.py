@@ -20,6 +20,8 @@ from .constants import (
     MAX_SELECTION_RETRIES,
     MAX_TURNS,
     MAX_ACTIONS_PER_TURN,
+    ACTION_COUNTDOWN_DURATION_MS,
+    ACTION_TIMEOUT_MS,
     TURN_OFFER_LENGTH_MS,
     TARGET_TYPE_MAIN_TURN,
     EMPTY_SEQUENCE_ID,
@@ -226,6 +228,7 @@ class GameSession:
         self._disconnected: set = set()
         self._connection_resumed = asyncio.Event()
         self._connection_resumed.set()
+        self._connection_pause_event = asyncio.Event()
         # Reconnect snapshots target only clients that actually left.
         self._resync_epoch: int = 0
         self._resync_players: set = set()
@@ -599,6 +602,7 @@ class GameSession:
         msg_name: str,
         value: Dict[str, Any],
         expected_counter: Optional[int] = None,
+        idle_timeout_ms: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Sends a SelectionMessage prompt and waits inline for the reply.
 
@@ -623,31 +627,118 @@ class GameSession:
         loop = asyncio.get_running_loop()
         player.pending_choice_future = loop.create_future()
         player._pending_offer = (OutboundMsg.SEQUENCE_MESSAGE.value, envelope, 0)
+        timed = idle_timeout_ms is not None and isinstance(player, NetworkPlayer)
+        remaining = max(0.0, (idle_timeout_ms or 0) / 1000)
+        timer_running = False
         async with self._wire_lock:
             await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+            if timed:
+                await player.send_packet(
+                    OutboundMsg.SET_IDLE_TIMER.value,
+                    self._idle_timer_payload(player.account_id, idle_timeout_ms or 0),
+                )
+                timer_running = remaining > 0
         try:
             while True:
                 self._mark_prompt_checkpoint()
-                if isinstance(player, AIPlayer):
-                    # AI prompts resolve only via simulated tasks (pregame coin
-                    # flip); anything else must never hang the gameplay task.
-                    try:
-                        reply = await asyncio.wait_for(
-                            player.pending_choice_future, AI_PROMPT_GRACE_SECONDS
+                wait_status = "reply"
+                try:
+                    if isinstance(player, AIPlayer):
+                        # AI prompts resolve only via simulated tasks (pregame coin
+                        # flip); anything else must never hang the gameplay task.
+                        try:
+                            reply = await asyncio.wait_for(
+                                player.pending_choice_future, AI_PROMPT_GRACE_SECONDS
+                            )
+                        except asyncio.TimeoutError:
+                            logging.error(
+                                f"[Session {self.game_id}] Prompt '{msg_name}' hit "
+                                f"the wire for AI player {player.screen_name} with "
+                                f"no auto-answer; returning a null selection."
+                            )
+                            return {"selection": None}
+                    elif timed:
+                        if remaining <= 0:
+                            wait_status = "timeout"
+                            reply = None
+                        else:
+                            pause_wait = asyncio.create_task(
+                                self._connection_pause_event.wait()
+                            )
+                            wait_started = loop.time()
+                            try:
+                                done, _ = await asyncio.wait(
+                                    {player.pending_choice_future, pause_wait},
+                                    timeout=remaining,
+                                    return_when=asyncio.FIRST_COMPLETED,
+                                )
+                            finally:
+                                remaining = max(
+                                    0.0, remaining - (loop.time() - wait_started)
+                                )
+                                if not pause_wait.done():
+                                    pause_wait.cancel()
+                                await asyncio.gather(
+                                    pause_wait, return_exceptions=True
+                                )
+                            if player.pending_choice_future in done:
+                                reply = player.pending_choice_future.result()
+                            elif pause_wait in done:
+                                wait_status = "pause"
+                                reply = None
+                            else:
+                                wait_status = "timeout"
+                                reply = None
+                    else:
+                        reply = await player.pending_choice_future
+                finally:
+                    self._leave_prompt_checkpoint()
+
+                if self.game_phase == GamePhase.GAME_OVER:
+                    raise GameOver()
+                if wait_status == "timeout" and not self._connection_resumed.is_set():
+                    wait_status = "pause"
+                if wait_status == "pause":
+                    if (player.account_id in self._disconnected
+                            or player.account_id in self._reconnecting):
+                        self._offers_to_restore.add(player.account_id)
+                    if timer_running:
+                        await self._send_idle_timer(player, 0)
+                        timer_running = False
+                    await self._wait_for_connection_resume()
+                    if remaining > 0:
+                        await self._send_idle_timer(
+                            player, round(remaining * 1000)
                         )
-                    except asyncio.TimeoutError:
-                        logging.error(
-                            f"[Session {self.game_id}] Prompt '{msg_name}' hit "
-                            f"the wire for AI player {player.screen_name} with "
-                            f"no auto-answer; returning a null selection."
+                        timer_running = True
+                    continue
+                if wait_status == "timeout":
+                    async with self._wire_lock:
+                        await player.send_packet(
+                            OutboundMsg.SET_IDLE_TIMER.value,
+                            self._idle_timer_payload(player.account_id, 0),
                         )
-                        return {"selection": None}
-                else:
-                    reply = await player.pending_choice_future
-                await self._wait_for_connection_resume()
-                self._leave_prompt_checkpoint()
+                        await player.send_packet(
+                            OutboundMsg.FORCE_SELECTION_FINISHED.value, {}
+                        )
+                    timer_running = False
+                    await self.choreo_pause(FORCE_SELECTION_SETTLE_SECONDS)
+                    logging.info(
+                        f"[Session {self.game_id}] {player.screen_name}'s "
+                        "action timer expired."
+                    )
+                    return {
+                        "selection": None,
+                        "counter": expected_counter,
+                        "_timed_out": True,
+                    }
+
                 reply_counter = reply.get("counter") if isinstance(reply, dict) else None
                 if expected_counter is None or reply_counter in (None, expected_counter):
+                    if timer_running:
+                        await self._send_idle_timer(player, 0)
+                        timer_running = False
+                    await self._wait_for_connection_resume()
                     return reply
                 logging.info(
                     f"[Session {self.game_id}] Ignoring stale selection reply "
@@ -656,8 +747,30 @@ class GameSession:
                 player.pending_choice_future = loop.create_future()
         finally:
             self._leave_prompt_checkpoint()
+            if timer_running:
+                await self._send_idle_timer(player, 0)
             player.pending_choice_future = None
             player._pending_offer = None
+
+    @staticmethod
+    def _idle_timer_payload(player_id: str, remaining_ms: int) -> Dict[str, Any]:
+        """Builds the stock playmat timer payload for a remaining duration."""
+        remaining_ms = max(0, int(remaining_ms))
+        countdown_ms = min(ACTION_COUNTDOWN_DURATION_MS, remaining_ms)
+        return {
+            "playerID": player_id,
+            "inactivityDuration": remaining_ms - countdown_ms,
+            "endTurnDuration": countdown_ms,
+            "forced": False,
+        }
+
+    async def _send_idle_timer(self, player: NetworkPlayer, remaining_ms: int):
+        """Starts, restarts, or stops one player's stock playmat timer."""
+        async with self._wire_lock:
+            await player.send_packet(
+                OutboundMsg.SET_IDLE_TIMER.value,
+                self._idle_timer_payload(player.account_id, remaining_ms),
+            )
 
     async def _send_pause_prompt(
         self, player: GamePlayer, prompt_text: str, remember: bool = True
@@ -788,6 +901,7 @@ class GameSession:
         self._resync_inflight.clear()
         self._offers_to_restore.clear()
         self._restoring_offers.clear()
+        self._connection_pause_event = asyncio.Event()
         self._connection_resumed.set()
         self.gameplay_task = self._spawn(self.run_gameplay_sequence())
 
@@ -947,6 +1061,7 @@ class GameSession:
         player.client_handler = None
         self._reconnecting.discard(account_id)
         self._connection_resumed.clear()
+        self._connection_pause_event.set()
         self._disconnected.add(account_id)
         self._resync_epoch += 1
         epoch = self._resync_epoch
@@ -1017,6 +1132,7 @@ class GameSession:
         player.client_handler = client_handler
         self._disconnected.discard(account_id)
         self._connection_resumed.clear()
+        self._connection_pause_event.set()
         self._resync_players.add(account_id)
         self._reconnecting.add(account_id)
         self._arm_reconnect_grace(account_id)
@@ -1118,6 +1234,7 @@ class GameSession:
         self._resync_players.clear()
         self._resync_ready.clear()
         self._offers_to_restore.clear()
+        self._connection_pause_event = asyncio.Event()
         self._connection_resumed.set()
         self._restoring_offers.clear()
         logging.info(f"[Session {self.game_id}] Reconnect epoch {epoch} resumed play.")
@@ -2747,6 +2864,7 @@ class GameSession:
         }
         self.game_phase = GamePhase.GAME_OVER
         # Wake a gameplay task parked at a disconnect boundary so it can unwind.
+        self._connection_pause_event.set()
         self._connection_resumed.set()
         return self.game_result
 
@@ -3434,10 +3552,20 @@ class GameSession:
                 OutboundMsg.SELECTION_WITH_TARGETS_AND_ACTIONS_REQUIRED.value,
                 offer,
                 expected_counter=offer["counter"],
+                idle_timeout_ms=ACTION_TIMEOUT_MS,
             )
             selection = reply.get("selection")
             if selection is None:
-                logging.info(f"[Session {self.game_id}] {player.screen_name} ends turn.")
+                if reply.get("_timed_out"):
+                    logging.info(
+                        f"[Session {self.game_id}] {player.screen_name}'s turn "
+                        f"was skipped after {ACTION_TIMEOUT_MS // 1000} seconds "
+                        "of inactivity."
+                    )
+                else:
+                    logging.info(
+                        f"[Session {self.game_id}] {player.screen_name} ends turn."
+                    )
                 return
             parsed = self._parse_action_reply(selection, target_map)
             if not parsed:
@@ -3463,7 +3591,7 @@ class GameSession:
             # No prompt: any DisplayText renders as a persistent banner
             # (CanShowPrompt); the turn announcement is ActivePlayerSet.
             "prompt": None,
-            "offerLength": TURN_OFFER_LENGTH_MS,
+            "offerLength": ACTION_TIMEOUT_MS,
             "startingTimestamp": int(time.time() * 1000),
             "forced": False,
             "targetType": TARGET_TYPE_MAIN_TURN,
@@ -4403,7 +4531,8 @@ class GameSession:
 
     async def perform_identity_swap(self, outgoing, incoming,
                                     destination_name: str = "discard",
-                                    transfer: bool = True):
+                                    transfer: bool = True,
+                                    ctx=None):
         """Switches an in-play Pokemon with a card from the owner's hand or
         discard: `incoming` takes the exact board spot (Active or the same
         bench slot) and `outgoing` goes to `destination_name`.
@@ -4412,7 +4541,9 @@ class GameSession:
         turn stamps onto the new Pokemon (Stance Change / V Transformation /
         Thorton); transfer=False sends the attachments to the destination
         pile with the outgoing card and the new Pokemon enters fresh
-        (Phantom Transformation). Returns `incoming`, or None on failure.
+        (Phantom Transformation). With ctx the choreography is QUEUED on it
+        (so the ability announce/orb bracket plays first) instead of sent.
+        Returns `incoming`, or None on failure.
         """
         area = outgoing.parent
         owner_id = outgoing.owning_player_id
@@ -4463,33 +4594,40 @@ class GameSession:
         self.reset_ability_usage(outgoing)
 
         attrs = [self._hp_attribute_msg(incoming), self._hp_attribute_msg(outgoing)]
-        players = list(self.players.values())
         # Wrap-FX rule: the moving card's intro rides a preceding SerialSequence.
-        await self.send_game_sequence(
-            players, GameSequence.SERIAL_SEQUENCE,
-            [self._entity_introduced_msg(incoming)],
-        )
+        runs = [(GameSequence.SERIAL_SEQUENCE,
+                 [self._entity_introduced_msg(incoming)])]
         if from_hidden:
-            # k.z's reveal delegation presents the card large before it lands;
-            # the pair must ride alone or other moves steal the presentation.
-            await self.send_game_sequence(
-                players, GameSequence.GROUPED_MOVE,
-                [self._reveal_card_msg(incoming.entity_id, True), incoming_move],
-            )
-            await self.send_game_sequence(
-                players, GameSequence.GROUPED_MOVE, moves + attrs)
-        else:
-            await self.send_game_sequence(
-                players, GameSequence.GROUPED_MOVE,
-                [incoming_move] + moves + attrs)
+            # Standalone Return:true reveal: m.u presents the card large and
+            # clears it home itself, so the TransformSwap shine does the swap.
+            runs.append((GameSequence.GROUPED_MOVE,
+                         [self._reveal_card_msg(incoming.entity_id, True)]))
+        # v.U partitions the bracket's EntityIDDataEffect entities and plays
+        # the "TransformEntity" shine on both while the commands run under it.
+        # The moves MUST ride a nested RevealAndSkipMove child: r.N wraps every
+        # EntityMoved in l.c (pre-handled = data-only), while a flat move makes
+        # k.z fly the card across the board mid-shine.
+        runs.append((GameSequence.TRANSFORM_SWAP,
+                     [self._entity_id_data_effect_msg("From", outgoing.entity_id),
+                      self._entity_id_data_effect_msg("Into", incoming.entity_id),
+                      NestedSequence(GameSequence.REVEAL_AND_SKIP_MOVE,
+                                     [incoming_move] + moves)] + attrs))
         if conditions:
             # Executor ctor (M.u) requires the "Target" data effect first.
-            await self.send_game_sequence(
-                players, GameSequence.ADD_SPECIAL_CONDITION,
-                [self._entity_id_data_effect_msg("Target", incoming.entity_id),
-                 self._condition_attr_msg(incoming)],
-            )
-        await self.refresh_granted_abilities(incoming)
+            runs.append((GameSequence.ADD_SPECIAL_CONDITION,
+                         [self._entity_id_data_effect_msg("Target", incoming.entity_id),
+                          self._condition_attr_msg(incoming)]))
+        if ctx is not None:
+            for bracket, msgs in runs:
+                for msg in msgs:
+                    ctx._queue(msg, bracket=bracket.value)
+            ctx.deferred_actions.append(
+                lambda p=incoming: self.refresh_granted_abilities(p))
+        else:
+            players = list(self.players.values())
+            for bracket, msgs in runs:
+                await self.send_game_sequence(players, bracket, msgs)
+            await self.refresh_granted_abilities(incoming)
         logging.info(
             f"[Session {self.game_id}] {outgoing.entity_id} identity-swapped "
             f"with {incoming.entity_id} (out to {destination_name})."

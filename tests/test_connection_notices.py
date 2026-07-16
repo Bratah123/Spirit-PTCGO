@@ -52,6 +52,7 @@ class ConnectionNoticeTests(unittest.IsolatedAsyncioTestCase):
         session._disconnected = set()
         session._connection_resumed = asyncio.Event()
         session._connection_resumed.set()
+        session._connection_pause_event = asyncio.Event()
         session._resync_epoch = 0
         session._resync_players = set()
         session._resync_ready = set()

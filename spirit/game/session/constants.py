@@ -41,10 +41,13 @@ PRIZE_COUNT = 6
 # cannot spin the placement loop forever.
 MAX_SELECTION_RETRIES = 50
 
-# Turn-loop safety bounds and the main action offer's timer (milliseconds).
+# Turn-loop safety bounds and the main action timer (milliseconds).
 MAX_TURNS = 500
 MAX_ACTIONS_PER_TURN = 100
 TURN_OFFER_LENGTH_MS = 90000
+ACTION_INACTIVITY_DURATION_MS = 15_000
+ACTION_COUNTDOWN_DURATION_MS = 15_000
+ACTION_TIMEOUT_MS = ACTION_INACTIVITY_DURATION_MS + ACTION_COUNTDOWN_DURATION_MS
 
 
 # SequenceID for standalone (unbracketed) SequenceMessages. The client's

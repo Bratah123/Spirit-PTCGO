@@ -568,6 +568,7 @@ class OutboundMsg(str, Enum):
     MULTIPLE_COIN_FLIP_WITH_CONTEXT_EFFECT = "MultipleCoinFlipWithContextEffect"
     GO_FIRST_CHOICE_REQUIRED = "GoFirstChoiceRequired"
     FORCE_SELECTION_FINISHED = "ForceSelectionFinished"
+    SET_IDLE_TIMER = "SetIdleTimer"
     START_SEQUENCE = "StartSequence"
     SEQUENCE_MESSAGE = "SequenceMessage"
     STOP_SEQUENCE = "StopSequence"
