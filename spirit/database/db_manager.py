@@ -71,12 +71,16 @@ class DBQueueManagerCrossThread:
 
     async def execute_write(self, action_func: Callable) -> Any:
         """Pushes a write job to the queue and awaits its completion."""
+        if not self.running:
+            # Fail fast rather than enqueue into a stopped writer (whose Event would
+            # never be set, hanging the awaiter forever).
+            raise RuntimeError("DB write worker is not running")
         loop = asyncio.get_running_loop()
         job = DBWriteJob(action_func, loop)
         self.write_queue.put(job)
-        
+
         await job.event.wait()
-        
+
         if job.error:
             raise job.error
         return job.result

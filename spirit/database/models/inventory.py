@@ -36,7 +36,7 @@ class Deck(Base):
     __tablename__ = 'decks'
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    account_id: Mapped[str] = mapped_column(ForeignKey('accounts.account_id'), nullable=False)
+    account_id: Mapped[str] = mapped_column(ForeignKey('accounts.account_id'), nullable=False, index=True)
     name: Mapped[str] = mapped_column(nullable=False)
     deck_data: Mapped[dict] = mapped_column(JSONEncodedDict, nullable=False)
     is_avatar: Mapped[bool] = mapped_column(default=False)

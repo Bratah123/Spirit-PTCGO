@@ -4,7 +4,12 @@ import asyncio
 
 from typing import Dict, List, Any, Optional
 from spirit.network.message_names import OutboundMsg
+from spirit.server import metrics
 from .game_session import GameSession
+
+# A client-supplied queueName longer than this is rejected (abuse: the queues dict
+# is keyed by this string). Real format/tournament names are short.
+_MAX_QUEUE_NAME_LEN = 64
 
 
 class GameSessionManager:
@@ -42,6 +47,11 @@ class GameSessionManager:
 
         # Flag to automatically confirm matchmaking readiness for real clients (bypassing unused client ready checks)
         self.auto_confirm_ready = True
+
+        metrics.register_gauge("active_matches", lambda: len(self.active_sessions))
+        metrics.register_gauge("matchmaking_queued",
+                               lambda: sum(len(q) for q in self.queues.values()))
+        metrics.register_gauge("pending_pairings", lambda: len(self.pending_pairings))
 
     def _spawn(self, coro) -> asyncio.Task:
         """Creates a tracked background task that self-removes when done."""
@@ -96,6 +106,9 @@ class GameSessionManager:
     async def add_to_queue(self, client, queue_name: str, deck_data: dict, client_options: dict,
                            request_id: int = 0, tournament_context: dict = None):
         """Adds a client to the matchmaking queue for a format."""
+        if not isinstance(queue_name, str) or len(queue_name) > _MAX_QUEUE_NAME_LEN:
+            logging.warning(f"[Matchmaking] Rejecting oversized/invalid queueName from {client.addr}")
+            return
         # Clean up any existing queue registrations and active sessions for this client first
         await self.remove_from_queue(client, send_left_packet=False)
         self.remove_session_by_player_id(client.player.account_id)
@@ -224,11 +237,8 @@ class GameSessionManager:
         self._spawn(send_confirm())
 
     def _find_online_client(self, source_client, account_id: str):
-        """Finds a logged-in client on the same server by account ID."""
-        for other in list(source_client.server.clients):
-            if other.player and other.player.account_id == account_id:
-                return other
-        return None
+        """Finds a logged-in client on the same server by account ID. O(1)."""
+        return source_client.server.clients_by_account.get(account_id)
 
     async def _send_challenge_failed(self, client, text: str, request_id: int = 0):
         await client.send_packet({
@@ -365,11 +375,16 @@ class GameSessionManager:
     async def remove_from_queue(self, client, send_left_packet: bool = True):
         """Removes a client from all format queues."""
         removed = False
-        for queue_name, entries in self.queues.items():
+        for queue_name in list(self.queues.keys()):
+            entries = self.queues[queue_name]
             filtered = [e for e in entries if e["client"] != client]
             if len(filtered) < len(entries):
                 removed = True
+            if filtered:
                 self.queues[queue_name] = filtered
+            else:
+                # Prune empty queues so the dict can't grow unboundedly under churn.
+                del self.queues[queue_name]
 
         if removed:
             logging.info(f"[Matchmaking] Removed player {client.player.username} from all queues.")
@@ -409,6 +424,7 @@ class GameSessionManager:
         # Instantiate GameSession
         session = GameSession(game_id, pairing)
         self.active_sessions[game_id] = session
+        metrics.inc("matches_started")
         for account_id in session.players:
             self.session_ids_by_player[account_id] = game_id
 

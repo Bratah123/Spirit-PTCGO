@@ -251,6 +251,35 @@ def _card_final_attrs(card_data, key):
     return attrs
 
 
+def _proto_uuid_write(uuid_obj, proto_uuid):
+    """Pure UUID->proto (lo/hi fixed64) transform, shared by the byte-cache builder
+    and the handler's _to_proto_uuid (identical semantics)."""
+    b = uuid_obj.bytes
+    proto_uuid.lo = int.from_bytes(b[8:16], 'big')
+    proto_uuid.hi = int.from_bytes(b[0:8], 'big')
+
+
+def _cached_card_archetypes_bytes(key):
+    """Serialized bytes of an ArchetypesFound carrying ONLY the CARDS for `key` (no
+    key/checksum/products). Built once per key and cached; the per-request handler
+    MergeFromString's these onto a fresh proto, which is byte-identical to building
+    the card archetypes attr-by-attr every time (repeated fields concatenate on the
+    wire). Products stay per-request because a product GUID can span keys and needs
+    the per-connection dedup. Invalidated by _clear_derived_caches on content reload."""
+    def build():
+        proto = collection_pb2.ArchetypesFound()
+        for card_data in CARDS_BY_KEY.get(key, ()):
+            arch = proto.archetypes.add()
+            _proto_uuid_write(uuid.UUID(card_data.guid), arch.guid)
+            for aid_str, aval in _card_final_attrs(card_data, key).items():
+                attr = arch.attributes.add()
+                attr.name = int(aid_str)
+                _write_attr(attr, aval.get("type"), aval.get("value"))
+        return proto.SerializeToString()
+
+    return _cached_payload(f"archproto:{key}", build)
+
+
 class DataSyncHandler(BaseHandler):
     @handle(InboundMsg.ACKNOWLEDGE_NOTIFICATION)
     async def handle_acknowledge_notification(self, message, request_id, flags):
@@ -540,20 +569,16 @@ class DataSyncHandler(BaseHandler):
         proto.checksum = f"spirit_{key}_{int(time.time() / 3600)}"
         count = 0
 
-        for card_data in CARDS_BY_KEY.get(key, ()):
-            guid = card_data.guid
-            if guid in self.client.sent_archetypes:
-                continue
-
-            arch = proto.archetypes.add()
-            self._to_proto_uuid(uuid.UUID(guid), arch.guid)
-            self.client.sent_archetypes.add(guid)
-
-            for aid_str, aval in _card_final_attrs(card_data, key).items():
-                attr = arch.attributes.add()
-                attr.name = int(aid_str)
-                _write_attr(attr, aval.get("type"), aval.get("value"))
-            count += 1
+        # Cards never span keys, so per-KEY dedup is equivalent to per-guid dedup for
+        # cards — but lets us MergeFromString the once-built card bytes instead of
+        # rebuilding the archetypes attr-by-attr per client (the ~90 ms hot path).
+        card_guids = CARDS_BY_KEY.get(key, ())
+        if card_guids and key not in self.client.sent_archetype_keys:
+            proto.MergeFromString(_cached_card_archetypes_bytes(key))
+            self.client.sent_archetype_keys.add(key)
+            for card_data in card_guids:
+                self.client.sent_archetypes.add(card_data.guid)
+            count += len(card_guids)
 
         p_count = 0
         for p_data in PRODUCTS_DB:

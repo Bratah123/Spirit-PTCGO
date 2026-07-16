@@ -20,8 +20,8 @@ class TournamentEntry(Base):
     __tablename__ = 'tournament_entries'
 
     entry_id: Mapped[str] = mapped_column(primary_key=True)
-    tournament_id: Mapped[str] = mapped_column(ForeignKey('async_tournaments.tournament_id'), nullable=False)
-    account_id: Mapped[str] = mapped_column(nullable=False)
+    tournament_id: Mapped[str] = mapped_column(ForeignKey('async_tournaments.tournament_id'), nullable=False, index=True)
+    account_id: Mapped[str] = mapped_column(nullable=False, index=True)
     # SerializableDeck snapshot taken at join time
     deck_json: Mapped[dict] = mapped_column(JSONEncodedDict, default=dict)
     wins: Mapped[int] = mapped_column(default=0)

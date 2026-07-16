@@ -15,8 +15,9 @@ from typing import Any
 from spirit import config
 import spirit.server.state as state
 
-from spirit.server.state import PENDING_TICKETS
+from spirit.server.state import issue_ticket
 from spirit.database.accounts import get_account_by_username, verify_password, create_account
+from spirit.server import metrics
 from spirit.server.manifest_manager import ManifestManager
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
@@ -42,10 +43,25 @@ elif os.path.exists(local_external_cache):
 
 manifest_manager = ManifestManager(ASSET_PATHS)
 
-# LRU cache for customized virtual-split bundles (multi-MB blobs; bounded + thread-safe)
+# LRU cache for customized virtual-split bundles. Bounded by TOTAL BYTES, not entry
+# count: a split bundle can be ~84 MB, so a 128-entry count cap could pin ~7.7 GB.
 VIRTUAL_BUNDLE_CACHE = OrderedDict()
-VIRTUAL_BUNDLE_CACHE_MAX = 128
+VIRTUAL_BUNDLE_CACHE_MAX_BYTES = int(os.environ.get("SPIRIT_BUNDLE_CACHE_BYTES", str(1536 * 1024 * 1024)))  # 1.5 GB
+_VIRTUAL_BUNDLE_BYTES = 0
 _VIRTUAL_BUNDLE_LOCK = threading.Lock()
+
+# Per-key build locks so a stampede of first requests for one split does ONE UnityPy
+# reparse (a 60 MB bundle costs ~3s) while the rest wait and then hit the cache.
+_VIRTUAL_BUILD_LOCKS = {}
+_VIRTUAL_BUILD_LOCKS_GUARD = threading.Lock()
+
+def _bundle_build_lock(key):
+    with _VIRTUAL_BUILD_LOCKS_GUARD:
+        lock = _VIRTUAL_BUILD_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _VIRTUAL_BUILD_LOCKS[key] = lock
+        return lock
 
 def _bundle_cache_get(key):
     with _VIRTUAL_BUNDLE_LOCK:
@@ -55,11 +71,17 @@ def _bundle_cache_get(key):
         return data
 
 def _bundle_cache_put(key, data):
+    global _VIRTUAL_BUNDLE_BYTES
     with _VIRTUAL_BUNDLE_LOCK:
+        old = VIRTUAL_BUNDLE_CACHE.get(key)
+        if old is not None:
+            _VIRTUAL_BUNDLE_BYTES -= len(old)
         VIRTUAL_BUNDLE_CACHE[key] = data
         VIRTUAL_BUNDLE_CACHE.move_to_end(key)
-        while len(VIRTUAL_BUNDLE_CACHE) > VIRTUAL_BUNDLE_CACHE_MAX:
-            VIRTUAL_BUNDLE_CACHE.popitem(last=False)
+        _VIRTUAL_BUNDLE_BYTES += len(data)
+        while _VIRTUAL_BUNDLE_BYTES > VIRTUAL_BUNDLE_CACHE_MAX_BYTES and len(VIRTUAL_BUNDLE_CACHE) > 1:
+            _, evicted = VIRTUAL_BUNDLE_CACHE.popitem(last=False)
+            _VIRTUAL_BUNDLE_BYTES -= len(evicted)
 
 # LRU cache of filename -> resolved on-disk path (skips the os.walk probing per request)
 ASSET_PATH_CACHE = OrderedDict()
@@ -100,7 +122,7 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.close_connection = True
 
     def log_message(self, format, *args):
-        logging.info(f"[HTTP] {self.client_address[0]} - - [{self.log_date_time_string()}] {format%args}")
+        logging.debug(f"[HTTP] {self.client_address[0]} - - [{self.log_date_time_string()}] {format%args}")
 
     def log_error(self, format, *args):
         # Routine keep-alive reaping (idle timeout / reset) surfaces here — keep it out of INFO.
@@ -124,10 +146,16 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_GET(self):
-        logging.info(f"[HTTP] GET Request received for path: {self.path}")
+        logging.debug(f"[HTTP] GET Request received for path: {self.path}")
+        metrics.inc("http_requests")
 
         # Clean the path to ignore query parameters
         parsed_path = urlparse(self.path).path
+
+        if parsed_path == '/health':
+            return self._serve_health()
+        if parsed_path == '/admin/api/metrics':
+            return self.serve_admin('GET', parsed_path)
 
         if parsed_path == '/admin' or parsed_path.startswith('/admin/'):
             return self.serve_admin('GET', parsed_path)
@@ -174,7 +202,7 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 for cand in candidates:
                     product_path = os.path.join(d, cand)
                     if os.path.exists(product_path) and os.path.isfile(product_path):
-                        logging.info(f"[HTTP] Product Image Match Found: {parsed_path} -> {product_path}")
+                        logging.debug(f"[HTTP] Product Image Match Found: {parsed_path} -> {product_path}")
                         return self.serve_static_file(product_path, 'image/png')
 
         for route_key, handler in routes.items():
@@ -191,14 +219,31 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         privacy_path = os.path.join(ASSET_DIR, "eula", "en_us_privacy_policy_pc.txt")
         return self.serve_static_file(privacy_path, 'text/plain; charset=utf-8')
 
+    def _serve_health(self):
+        """Liveness/readiness probe: 200 once content is loaded, else 503."""
+        try:
+            from spirit.packets.handlers import data_sync
+            ready = bool(getattr(data_sync, "CARDS_DB", None))
+        except Exception:
+            ready = False
+        payload = json.dumps({"status": "ok" if ready else "loading", "ready": ready}).encode('utf-8')
+        self.send_response(200 if ready else 503)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def serve_static_file(self, file_path, content_type):
         if os.path.exists(file_path):
             self.send_response(200)
             self.send_header('Content-type', content_type)
             self.send_header('Content-Length', str(os.path.getsize(file_path)))
             self.end_headers()
+            # Stream in chunks: a full f.read() of a large asset holds the whole file
+            # in RAM per handler thread (up to ~84 MB for a set bundle).
+            import shutil
             with open(file_path, 'rb') as f:
-                self.wfile.write(f.read())
+                shutil.copyfileobj(f, self.wfile, 256 * 1024)
         else:
             logging.warning(f"[HTTP] File Not Found: {file_path}")
             return self.handle_default()
@@ -216,7 +261,8 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length).decode('utf-8')
-        logging.info(f"[HTTP] POST Request received for path: {self.path} Data: {post_data}")
+        # NEVER log the body: CAS login and /admin POST carry passwords/tickets.
+        logging.debug(f"[HTTP] POST path={self.path} ({content_length} bytes)")
         parsed_path = urlparse(self.path).path
 
         if parsed_path == '/admin' or parsed_path.startswith('/admin/'):
@@ -341,7 +387,7 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     for root, _, files in os.walk(potential_folder):
                         if "__data" in files:
                             asset_full_path = os.path.join(root, "__data")
-                            logging.info(f"[HTTP] Match Found: {filename} -> {asset_full_path} (via {candidate})")
+                            logging.debug(f"[HTTP] Match Found: {filename} -> {asset_full_path} (via {candidate})")
                             break
                 if asset_full_path: break
             if asset_full_path: break
@@ -364,7 +410,7 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if asset_full_path: break
             if asset_full_path: break
 
-        logging.info(f"[HTTP] Asset Requested: {filename} (Path: {path})")
+        logging.debug(f"[HTTP] Asset Requested: {filename} (Path: {path})")
 
         if asset_full_path and cached_path is None:
             _asset_path_cache_put(filename, asset_full_path)
@@ -375,54 +421,20 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             cached_bytes = _bundle_cache_get(filename) if is_virtual_split else None
             if cached_bytes is not None:
                 file_bytes = cached_bytes
-                logging.info(f"[HTTP] Serving dynamically customized CAB for {filename} from MEMORY CACHE (0ms)")
+                logging.debug(f"[HTTP] Serving customized CAB for {filename} from MEMORY CACHE")
+            elif is_virtual_split:
+                # Serialize concurrent first-requests for this key onto ONE rebuild.
+                build_lock = _bundle_build_lock(filename)
+                with build_lock:
+                    cached_bytes = _bundle_cache_get(filename)
+                    if cached_bytes is not None:
+                        file_bytes = cached_bytes
+                    else:
+                        file_bytes = self._build_virtual_split(
+                            filename, asset_full_path, clean_base)
             else:
-                # Load the file bytes
                 with open(asset_full_path, 'rb') as f:
                     file_bytes = f.read()
-
-                # If this is a virtual split request, dynamically replace the CAB name to prevent duplicate load conflicts in Unity
-                if is_virtual_split:
-                    # Define stable, unique CAB name for this virtual split bundle based on its name
-                    h_virt = hashlib.md5(clean_base.encode('utf-8')).hexdigest()
-                    new_cab_name = f"CAB-{h_virt}"
-
-                    try:
-                        # Parse and safely rename inside the AssetBundle structure using UnityPy
-                        env: Any = UnityPy.load(file_bytes)
-                        
-                        # 1. Rename the entry key in env.file.files
-                        if hasattr(env, 'file') and hasattr(env.file, 'files'):
-                            old_keys = [k for k in env.file.files.keys() if k.startswith('CAB-')]
-                            for old_key in old_keys:
-                                env.file.files[new_cab_name] = env.file.files.pop(old_key)
-                        
-                        # 2. Update all asset names inside env.assets
-                        for asset in env.assets:
-                            if hasattr(asset, 'name') and asset.name.startswith('CAB-'):
-                                asset.name = new_cab_name
-                        
-                        # 3. Serialize back with LZ4 packer
-                        file_bytes = env.file.save(packer="lz4")
-                        _bundle_cache_put(filename, file_bytes)
-                        logging.info(f"[HTTP] Dynamically customized CAB name using UnityPy for {filename} -> {new_cab_name} and cached.")
-                    except Exception as e:
-                        logging.warning(f"[HTTP] Failed to safely customize CAB with UnityPy ({e}). Falling back to raw byte replacement.")
-                        # Fallback to byte replacement for non-standard/mock asset bundles (e.g. in test suites)
-                        new_cab_bytes = new_cab_name.encode('utf-8')
-                        old_cab_legacy = b"CAB-698f1293cb9396443b3f13ebe0cec855"
-                        
-                        # Get physical CAB name to also replace if it matches
-                        physical_bundle_name = os.path.basename(os.path.dirname(os.path.dirname(asset_full_path)))
-                        h_phys = hashlib.md5(physical_bundle_name.encode('utf-8')).hexdigest()
-                        old_cab_phys = f"CAB-{h_phys}".encode('utf-8')
-
-                        if old_cab_legacy in file_bytes:
-                            file_bytes = file_bytes.replace(old_cab_legacy, new_cab_bytes)
-                        if old_cab_phys in file_bytes:
-                            file_bytes = file_bytes.replace(old_cab_phys, new_cab_bytes)
-
-                        _bundle_cache_put(filename, file_bytes)
 
             self.send_response(200)
             self.send_header('Content-type', 'application/vnd.unity')
@@ -431,12 +443,60 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'public, max-age=31536000')
             self.end_headers()
             self.wfile.write(file_bytes)
-            logging.info(f"[HTTP] Asset Sent Successfully: {filename} from {asset_full_path}")
+            logging.debug(f"[HTTP] Asset Sent Successfully: {filename} from {asset_full_path}")
+            return
         else:
             logging.warning(f"[HTTP] Asset Not Found on Disk: {filename}")
             self.send_response(404)
             self.send_header('Content-Length', '0')
             self.end_headers()
+
+    def _build_virtual_split(self, filename, asset_full_path, clean_base):
+        """CAB-renames a virtual-split bundle and caches the result. Caller holds
+        the per-key build lock so only one rebuild runs per key."""
+        with open(asset_full_path, 'rb') as f:
+            file_bytes = f.read()
+
+        # Stable, unique CAB name for this virtual split bundle (deterministic).
+        h_virt = hashlib.md5(clean_base.encode('utf-8')).hexdigest()
+        new_cab_name = f"CAB-{h_virt}"
+
+        try:
+            # Parse and safely rename inside the AssetBundle structure using UnityPy
+            env: Any = UnityPy.load(file_bytes)
+
+            # 1. Rename the entry key in env.file.files
+            if hasattr(env, 'file') and hasattr(env.file, 'files'):
+                old_keys = [k for k in env.file.files.keys() if k.startswith('CAB-')]
+                for old_key in old_keys:
+                    env.file.files[new_cab_name] = env.file.files.pop(old_key)
+
+            # 2. Update all asset names inside env.assets
+            for asset in env.assets:
+                if hasattr(asset, 'name') and asset.name.startswith('CAB-'):
+                    asset.name = new_cab_name
+
+            # 3. Serialize back with LZ4 packer
+            file_bytes = env.file.save(packer="lz4")
+            _bundle_cache_put(filename, file_bytes)
+            logging.info(f"[HTTP] Customized CAB via UnityPy for {filename} -> {new_cab_name} and cached.")
+        except Exception as e:
+            logging.warning(f"[HTTP] UnityPy CAB customize failed ({e}); raw byte replacement fallback.")
+            # Fallback to byte replacement for non-standard/mock asset bundles (e.g. in test suites)
+            new_cab_bytes = new_cab_name.encode('utf-8')
+            old_cab_legacy = b"CAB-698f1293cb9396443b3f13ebe0cec855"
+
+            physical_bundle_name = os.path.basename(os.path.dirname(os.path.dirname(asset_full_path)))
+            h_phys = hashlib.md5(physical_bundle_name.encode('utf-8')).hexdigest()
+            old_cab_phys = f"CAB-{h_phys}".encode('utf-8')
+
+            if old_cab_legacy in file_bytes:
+                file_bytes = file_bytes.replace(old_cab_legacy, new_cab_bytes)
+            if old_cab_phys in file_bytes:
+                file_bytes = file_bytes.replace(old_cab_phys, new_cab_bytes)
+
+            _bundle_cache_put(filename, file_bytes)
+        return file_bytes
 
     def handle_config(self):
         """Source Logic: PieDynamicConfig.cs"""
@@ -524,11 +584,13 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 account = create_account(username, password)
 
             if account and verify_password(account['password_hash'], password):
-                # 3. Success! Generate a Ticket
+                # 3. Success! Generate a Ticket (never log the ticket — it is a live
+                # bearer credential valid for the CAS TTL).
                 ticket = f"ST-{uuid.uuid4()}"
                 state.sweep_expired_tickets()
-                PENDING_TICKETS[ticket] = (username, time.monotonic())
-                logging.info(f"[HTTP] Password verified for '{username}'. Issued ticket: {ticket}")
+                issue_ticket(ticket, username)
+                logging.info(f"[HTTP] Password verified for '{username}'. Ticket issued.")
+                metrics.inc("cas_tickets_issued")
 
                 # 4. Redirect with Ticket
                 host = self.headers.get("Host", state.SERVER_HOST)

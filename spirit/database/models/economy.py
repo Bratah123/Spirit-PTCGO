@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import func, ForeignKey, UniqueConstraint
+from sqlalchemy import func, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from spirit.database.base import Base
 from spirit.database.models.inventory import JSONEncodedDict
@@ -43,11 +43,17 @@ class ShopItem(Base):
 
 class TradeOffer(Base):
     __tablename__ = 'trade_offers'
+    # Composite indexes for the public/private/my-lots tab filters (status + owner).
+    __table_args__ = (
+        Index('ix_trade_offers_status_created', 'status', 'created_at'),
+        Index('ix_trade_offers_status_recipient', 'status', 'recipient_id'),
+        Index('ix_trade_offers_status_sender', 'status', 'sender_id'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     offer_id: Mapped[str] = mapped_column(unique=True, nullable=False)
-    sender_id: Mapped[str] = mapped_column(nullable=False)
-    recipient_id: Mapped[str | None] = mapped_column(nullable=True)  # None = public offer
+    sender_id: Mapped[str] = mapped_column(nullable=False, index=True)
+    recipient_id: Mapped[str | None] = mapped_column(nullable=True, index=True)  # None = public offer
     # {archetype_guid: count}
     offering_json: Mapped[dict] = mapped_column(JSONEncodedDict, nullable=False)
     requesting_json: Mapped[dict] = mapped_column(JSONEncodedDict, nullable=False)

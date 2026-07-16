@@ -1,29 +1,56 @@
 import time
 import logging
+import logging.handlers
+import queue
 import os
 import json
 import asyncio
 
-# Configure logging at the very start
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 from spirit import config
-from spirit.server.server import PTCGOServer
-from spirit.server.http_server import AssetHTTPServer, manifest_manager
-from spirit.server.auto_bundle import check_and_generate_bundles
-from spirit.database import Base, engine
-from spirit.database.migrations import run_light_migrations
-from spirit.database.admin_data import bootstrap_admins_from_env
+
+
+def _configure_logging():
+    """Off-thread, non-blocking logging: a QueueHandler feeds a QueueListener so hot
+    paths never block on a slow stderr (Windows console especially). Level is
+    SPIRIT_LOG_LEVEL-overridable."""
+    log_queue = queue.Queue(-1)
+    fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    stream = logging.StreamHandler()
+    stream.setFormatter(fmt)
+    listener = logging.handlers.QueueListener(log_queue, stream, respect_handler_level=True)
+    listener.start()
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.addHandler(logging.handlers.QueueHandler(log_queue))
+    root.setLevel(getattr(logging, config.LOG_LEVEL, logging.INFO))
+    return listener
+
+
+_LOG_LISTENER = _configure_logging()
+
+# Imports below are intentionally after logging setup so import-time logs use the
+# queue handler (E402 is expected here).
+from spirit.server.server import PTCGOServer  # noqa: E402
+from spirit.server.http_server import AssetHTTPServer, manifest_manager  # noqa: E402
+from spirit.server.auto_bundle import check_and_generate_bundles  # noqa: E402
+from spirit.server import metrics  # noqa: E402
+from spirit.database import Base, engine  # noqa: E402
+from spirit.database.migrations import run_light_migrations  # noqa: E402
+from spirit.database.admin_data import bootstrap_admins_from_env  # noqa: E402
 
 async def run_server():
     tcp_server = PTCGOServer()
-    
+
+    # Sample event-loop lag continuously (tracked task, cancelled on shutdown).
+    lag_task = asyncio.ensure_future(metrics.sample_loop_lag(1.0))
+
     # We want to catch asyncio.CancelledError to stop server gracefully
     try:
         await tcp_server.start()
     except asyncio.CancelledError:
         pass
     finally:
+        lag_task.cancel()
         await tcp_server.stop()
 
 def main():

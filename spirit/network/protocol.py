@@ -4,6 +4,8 @@ import zlib
 import sys
 import os
 
+from spirit import config
+
 # Ensure path is loaded
 protobuf_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'protobuf', 'compiled'))
 if protobuf_path not in sys.path:
@@ -67,9 +69,17 @@ class WargProtocol:
     @staticmethod
     def decode_body(body, flags):
         if flags & WargFlags.COMPRESSED:
-            # Skip first 2 bytes if compressed (Zlib header)
-            body = zlib.decompress(body[2:], -zlib.MAX_WBITS) # Raw deflate
-        
+            # Skip first 2 bytes if compressed (Zlib header). Bound the OUTPUT size:
+            # deflate reaches ~1000:1, so an unbounded decompress of a 10 MB body can
+            # allocate ~10 GB from a single unauthenticated packet. Cap the expansion
+            # and reject anything larger — the read loop tears the connection down.
+            limit = config.MAX_DECOMPRESSED_BYTES
+            decompressor = zlib.decompressobj(-zlib.MAX_WBITS)  # Raw deflate
+            body = decompressor.decompress(body[2:], limit)
+            if decompressor.unconsumed_tail:
+                raise ConnectionError(
+                    f"Decompressed body exceeds {limit}-byte cap (possible zlib bomb)")
+
         if flags & WargFlags.PROTOBUF:
             # The structure for Protobuf in PTCGO is generally just the binary payload.
             # However, because there are multiple possible root messages, Warg Server

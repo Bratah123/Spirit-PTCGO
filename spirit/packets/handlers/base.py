@@ -52,10 +52,10 @@ class BaseHandler:
         })
 
     def online_client(self, account_id: str, exclude_self: bool = False):
-        """Finds a logged-in client on this server by account ID, or None."""
-        for other in list(self.client.server.clients):
-            if exclude_self and other is self.client:
-                continue
-            if other.player and other.player.account_id == account_id:
-                return other
-        return None
+        """Finds a logged-in client on this server by account ID, or None. O(1)."""
+        other = self.client.server.clients_by_account.get(account_id)
+        if other is None:
+            return None
+        if exclude_self and other is self.client:
+            return None
+        return other

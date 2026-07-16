@@ -7,7 +7,7 @@ from spirit.game.attributes import AttrID
 from spirit.game.season_manager import VersusSeasonManager
 from spirit.game.account_attributes import build_account_attributes, anchor_versus_animation
 from .base import BaseHandler, handle
-from spirit.server.state import PENDING_TICKETS, sweep_expired_tickets
+from spirit.server.state import consume_ticket, sweep_expired_tickets
 from .social import SocialHandler
 from spirit.game.models.player import Player
 from spirit.game.session.manager import GameSessionManager
@@ -15,6 +15,7 @@ from spirit.game.session.constants import GamePhase
 from spirit.database.async_utils import run_db
 from spirit.database.daily_rewards import process_daily_login
 from spirit.game.daily_rewards import DailyRewardManager
+from spirit.server import metrics
 
 
 def _get_or_create_account(username, password):
@@ -35,15 +36,11 @@ class AuthHandler(BaseHandler):
 
         logging.info(f"[TCP] User {username} is attempting CAS login with ticket {ticket} for service {service}")
         
-        # 1. Verify Ticket
+        # 1. Verify + consume the ticket atomically (thread-safe vs the HTTP issuer)
         sweep_expired_tickets()
-        entry = PENDING_TICKETS.get(ticket)
-        if entry is None or entry[0] != username:
+        if not consume_ticket(ticket, username):
             logging.warning(f"[TCP] [{self.client.addr}] Invalid CAS ticket: {ticket} for user: {username}")
             return await self._send_auth_failed(request_id, "Invalid CAS Ticket.")
-
-        # Consume the ticket
-        del PENDING_TICKETS[ticket]
 
         # 2. Look up the account
         account = await run_db(get_account_by_username, username)
@@ -130,7 +127,14 @@ class AuthHandler(BaseHandler):
         account_id = account_data['account_id']
         username = account_data['username']
 
+        server = self.client.server
         other_client = self.online_client(account_id, exclude_self=True)
+        # Claim the account synchronously (before any await) so two concurrent logins
+        # for one account can't both pass the guard during the DB-load window.
+        if other_client is None and account_id in server.logins_in_flight:
+            logging.warning(f"[TCP] [{self.client.addr}] Concurrent login race for '{username}' blocked.")
+            await self._send_auth_failed(request_id, "The account you are trying to login is already online.")
+            return
         if other_client:
             # An active (non-finished) game session means this is a reconnect:
             # evict the stale/ghost socket and continue, instead of rejecting.
@@ -141,7 +145,13 @@ class AuthHandler(BaseHandler):
                 logging.warning(f"[TCP] [{self.client.addr}] Prevented concurrent login: User '{username}' is already logged in on client {other_client.addr}")
                 await self._send_auth_failed(request_id, "The account you are trying to login is already online.")
                 return
+        server.logins_in_flight.add(account_id)
+        try:
+            await self._complete_auth_success(request_id, account_data, account_id, username)
+        finally:
+            server.logins_in_flight.discard(account_id)
 
+    async def _complete_auth_success(self, request_id, account_data, account_id, username):
         # One thread hop for the whole DB-heavy login load (player profile,
         # account attributes, daily login progress).
         def _load_login_state():
@@ -155,6 +165,9 @@ class AuthHandler(BaseHandler):
 
         player, account_attributes, daily_info = await run_db(_load_login_state)
         self.client.player = player
+        # Index the authenticated client so presence/challenge/login-guard are O(1).
+        self.client.server.register_account(self.client)
+        metrics.inc("logins_success")
 
         # Notify friends that we are online
         social_handler = SocialHandler(self.client)

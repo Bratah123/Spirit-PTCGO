@@ -88,6 +88,12 @@ from spirit.game.data_utils import (
 from spirit.database.player_data import COINS_PER_WIN, COINS_PER_LOSS, grant_coins
 from spirit.database.versus_data import award_match_points, get_progress
 from spirit.database.async_utils import run_db
+
+
+def _persist_match_result(account_id: str, coins: int, is_winner: bool):
+    """One thread hop for a player's match-end persistence (coins + ladder points)."""
+    grant_coins(account_id, coins)
+    award_match_points(account_id, is_winner)
 from spirit.game.models.board import BoardEntity, BoardState, EnergyEntity, PokemonEntity
 from .effects import (
     EffectContext,
@@ -406,12 +412,28 @@ class GameSession:
                 )
 
     def _player_rating(self, player) -> int:
-        """Ladder rating for the upset-NUX comparison: 1000 + all-time versus points."""
+        """Ladder rating for the upset-NUX comparison: 1000 + all-time versus points.
+
+        Reads a prefetched cache (populated off the event loop in start()) to avoid a
+        blocking SQLite read on the loop; falls back to a direct read for headless
+        tests that build gameOptions without the prefetch."""
         account_id = getattr(player, "account_id", None)
         if not isinstance(player, NetworkPlayer) or not account_id:
             return 1000
+        cache = getattr(self, "_rating_cache", None)
+        if cache is not None and account_id in cache:
+            return cache[account_id]
         _, all_time = get_progress(account_id, "")
         return 1000 + all_time
+
+    def _prefetch_ratings(self) -> Dict[str, int]:
+        """Reads every NetworkPlayer's rating in one thread hop (called via run_db)."""
+        ratings = {}
+        for account_id, player in self.players.items():
+            if isinstance(player, NetworkPlayer):
+                _, all_time = get_progress(account_id, "")
+                ratings[account_id] = 1000 + all_time
+        return ratings
 
     def _build_game_options(self) -> Dict[str, Any]:
         """Builds the full gameOptions dict (cosmetics, tokens, elo, tournament ID)."""
@@ -485,6 +507,10 @@ class GameSession:
     async def start(self):
         """Fires the MatchFound packet to notify clients of the finalized match and start transition."""
         logging.info(f"[Session {self.game_id}] Starting GameSession.")
+
+        # Prefetch ladder ratings off the event loop so _build_game_options never
+        # blocks the loop on SQLite reads.
+        self._rating_cache = await run_db(self._prefetch_ratings)
 
         # Build the full gameOptions (cosmetics/tokens/elo) once and persist it so
         # both MatchFound and SerializedGameState carry player avatars/cosmetics.
@@ -1239,6 +1265,19 @@ class GameSession:
         self._restoring_offers.clear()
         logging.info(f"[Session {self.game_id}] Reconnect epoch {epoch} resumed play.")
 
+    def _crash_fallback_winner(self):
+        """Picks a winner for a crash-abort ending: prefer the non-acting player,
+        then any connected player, then any player id. None only if no players."""
+        active = getattr(self.turn_state, "active_player_id", None)
+        if active is not None:
+            opp = self._opponent_id(active)
+            if opp in self.players:
+                return opp
+        for pid, player in self.players.items():
+            if isinstance(player, NetworkPlayer) and player.connected:
+                return pid
+        return next(iter(self.players), None)
+
     async def run_gameplay_sequence(self):
         """Sequential gameplay workflow starting from the pre-game coin flip."""
         try:
@@ -1256,6 +1295,18 @@ class GameSession:
             logging.info(f"[Session {self.game_id}] Gameplay sequence finished (game over).")
         except Exception as e:
             logging.exception(f"[Session {self.game_id}] Error in gameplay sequence: {e}")
+            # A card-effect crash must not strand both clients on a dead playmat with
+            # no EOG dialog. Best-effort structured ending: award the non-acting side
+            # (or either connected player) so both scenes receive GameCompletedMessage.
+            if self.game_phase != GamePhase.GAME_OVER:
+                try:
+                    winner = self._crash_fallback_winner()
+                    if winner is not None:
+                        await self.end_game(winner, "A game error occurred.")
+                except GameOver:
+                    pass
+                except Exception as inner:
+                    logging.error(f"[Session {self.game_id}] Best-effort end_game failed: {inner}")
         finally:
             from spirit.game.session.manager import GameSessionManager  # circular-import guard
             GameSessionManager().remove_session(self.game_id)
@@ -2890,8 +2941,9 @@ class GameSession:
         for pid, player in self._unique_recipients():
             coins = COINS_PER_WIN if pid == winner_id else COINS_PER_LOSS
             if isinstance(player, NetworkPlayer):
-                grant_coins(player.account_id, coins)
-                award_match_points(player.account_id, pid == winner_id)
+                # Off the event loop: match-end money/ladder writes can otherwise
+                # stall the loop up to the busy timeout under write contention.
+                await run_db(_persist_match_result, player.account_id, coins, pid == winner_id)
             reward_list = []
             if coins > 0:
                 reward_list.append({
@@ -3042,13 +3094,14 @@ class GameSession:
             if not isinstance(player, NetworkPlayer) or player.account_id in pushed:
                 continue
             pushed.add(player.account_id)
+            attributes = await run_db(build_account_attributes, player.account_id)
             await player.send_packet(
                 OutboundMsg.ACCOUNT_UPDATED.value,
                 {
                     "account": {
                         "username": player.username,
                         "accountID": player.account_id,
-                        "attributes": build_account_attributes(player.account_id),
+                        "attributes": attributes,
                     }
                 },
             )

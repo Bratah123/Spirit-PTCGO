@@ -6,10 +6,11 @@ import re
 from spirit.database import db_session, Account, TradeOffer
 from spirit.database import economy_data
 from spirit.game import season_manager
-from spirit.game.attributes import AttrID, ProductType
+from spirit.game.attributes import AttrID
 from spirit.game.models.versus import VersusSeason
 from spirit.game.set_utils import card_script_counts, eligible_booster_sets
 from spirit.server import admin_auth
+from spirit.server import metrics
 
 DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), 'admin', 'dashboard.html')
 CARDS_IMG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'cards')
@@ -205,6 +206,10 @@ def route_admin(method, path, body, headers=None):
 
 
 def _dispatch(method, endpoint, data):
+    # ------------------------------------------------ metrics (ops observability)
+    if method == 'GET' and endpoint == 'metrics':
+        return _json(200, metrics.snapshot())
+
     # ------------------------------------------------ overview / reference data
     if method == 'GET' and endpoint == 'overview':
         return _ok({

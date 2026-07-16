@@ -343,6 +343,34 @@ def grant_all_products(account_id, count=1, is_tradable=True):
     return granted
 
 
+def add_many_to_collection(account_id, grants, is_tradable=False):
+    """Adds many {archetype_id: count} grants to a collection in ONE transaction.
+
+    Replaces N per-row db_session round trips (account creation issued ~140) with a
+    single bulk-read + upsert, mirroring grant_all_cards' pattern."""
+    if not grants:
+        return True
+    try:
+        with db_session() as session:
+            existing = {c.archetype_id: c for c in
+                        session.query(Collection).filter_by(account_id=account_id).all()}
+            for archetype_id, count in grants.items():
+                row = existing.get(archetype_id)
+                if row is None:
+                    row = Collection(account_id=account_id, archetype_id=archetype_id,
+                                     tradable_count=0, nontradable_count=0)
+                    session.add(row)
+                    existing[archetype_id] = row
+                if is_tradable:
+                    row.tradable_count += count
+                else:
+                    row.nontradable_count += count
+            return True
+    except Exception as e:
+        logging.error(f"Error bulk-adding to collection for {account_id}: {e}")
+        return False
+
+
 def add_to_collection(account_id, archetype_id, count=1, is_tradable=False):
     """Adds an item to the account's collection."""
     logging.info(f"[DB] Adding {count}x {archetype_id} (tradable={is_tradable}) to account {account_id}")
