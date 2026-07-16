@@ -31,9 +31,11 @@ from spirit.game.attributes import (
 )
 
 from spirit.database.social import get_incoming_invites_by_account_id
-from spirit.database.player_data import get_merged_collection_payload, get_archetype_flags
+from spirit.database.player_data import get_merged_collection_payload, get_archetype_flags, get_owned_counts
 from spirit.database.async_utils import run_db
 from spirit.game.models.card import Card, PokemonCard, Rarities
+from spirit.game import rules
+from spirit.game.format_manager import FormatManager
 
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.game.scripts.products import loader as product_loader
@@ -108,9 +110,13 @@ def reload_sets():
             # featuredArchetypes hold original-PTCGO card GUIDs we never load; the pack "i" popup
             # feeds them UNFILTERED into CachedViewModel (KeyNotFoundException). Clear them so the
             # popup falls back to the cache-safe preview-cards path (attr 201505) or the text panel.
+            manager = FormatManager()
             for s in SETS_DB:
                 if s.get("featuredArchetypes"):
                     s["featuredArchetypes"] = []
+                # formats.json is the single source of truth for set legality
+                if isinstance(s.get("name"), str):
+                    s["legalFormats"] = manager.legal_format_guids_for_set(s["name"])
             logging.info(f"[DB] Loaded {len(SETS_DB)} sets.")
         except Exception as e:
             logging.error(f"[DB] Failed to load sets: {e}")
@@ -193,15 +199,6 @@ BASIC_ENERGY_NAMES = [
     "Fairy Energy", "Basic M Energy", "Basic P Energy"
 ]
 
-FORMAT_GUID_TO_NAME = {
-    DeckFormat.STANDARD.value: "Modified",
-    DeckFormat.EXPANDED.value: "Expanded",
-    DeckFormat.UNLIMITED.value: "Unlimited",
-    DeckFormat.LEGACY.value: "Legacy",
-    DeckFormat.THEME.value: "ThemeDeck",
-    DeckFormat.TRAINER_CHALLENGE.value: "TrainerChallenge"
-}
-
 DEFAULT_VALIDATION_FORMATS = [
     DeckFormat.STANDARD.value,
     DeckFormat.EXPANDED.value,
@@ -212,19 +209,10 @@ DEFAULT_VALIDATION_FORMATS = [
 ]
 
 
-def _validation_results(deck_ids, formats_list):
-    """Builds the always-valid DecksValidated result rows for each deck/format pair."""
-    return [
-        {
-            "deckID": deck_id,
-            "format": fmt,
-            "formatName": FORMAT_GUID_TO_NAME.get(fmt, "Standard"),
-            "valid": True,
-            "results": []
-        }
-        for deck_id in deck_ids
-        for fmt in formats_list
-    ]
+def _is_avatar_deck(deck_dict):
+    piles = deck_dict.get("piles", {}) or {}
+    cards = deck_dict.get("cards", {}) or {}
+    return ("AvatarItems" in piles) or ("AvatarItems" in cards)
 
 
 def _write_attr(attr, vt, vd, coerce=False):
@@ -731,23 +719,29 @@ class DataSyncHandler(BaseHandler):
                 "value": "e129b0d3-b934-4fbd-b021-545106c75694"
             }
 
+        # Validate the deck; an illegal deck still SAVES (PTCGO keeps WIP decks),
+        # legality only gates the client's format badges and play flows.
+        is_avatar = _is_avatar_deck(deck_dict)
+        validation_results = []
+        if not is_avatar:
+            owned = None
+            if self.client.player:
+                owned = await run_db(get_owned_counts, self.client.player.account_id)
+            validator = rules.DeckValidator(deck_dict, owned_counts=owned)
+            validation_results = validator.validate(FormatManager().play_format_guids())
+            valid_names = [r["formatName"] for r in validation_results if r["valid"]]
+            attrs_dict[str(AttrID.VALID_FORMATS.value)] = {
+                "name": AttrID.VALID_FORMATS.value,
+                "value": valid_names
+            }
+
         # Normalize attributes back to a list of dictionaries for JSON-compatibility
         deck_dict["attributes"] = list(attrs_dict.values())
 
         # Save deck using the player model
         if self.client.player:
-            piles = deck_dict.get("piles", {}) or {}
-            cards = deck_dict.get("cards", {}) or {}
-            is_avatar = ("AvatarItems" in piles) or ("AvatarItems" in cards)
             await run_db(self.client.player.save_deck_data, deck_dict, is_avatar=is_avatar)
             logging.info(f"[TCP] [{self.client.addr}] Saved deck '{deck_name}' ({deck_id}) (is_avatar={is_avatar}) successfully.")
-
-        # Validation results satisfy client-side deck legality checks
-        validation_results = _validation_results([deck_id], [
-            DeckFormat.STANDARD.value,
-            DeckFormat.EXPANDED.value,
-            DeckFormat.UNLIMITED.value
-        ])
 
         res = {
             "messageName": OutboundMsg.DECK_SAVED.value,
@@ -791,9 +785,16 @@ class DataSyncHandler(BaseHandler):
         decks_list = message.get("decks", [])
         formats_list = message.get("formats", []) or DEFAULT_VALIDATION_FORMATS
 
-        # TODO(brandon): Actually validate decks using rule logic
-        deck_ids = [d.get("deckID") or d.get("DeckID") for d in decks_list]
-        results = _validation_results([did for did in deck_ids if did], formats_list)
+        owned = None
+        if self.client.player:
+            owned = await run_db(get_owned_counts, self.client.player.account_id)
+
+        # ValidateDecks carries FULL deck contents (the builder validates unsaved decks)
+        results = []
+        for deck_dict in decks_list:
+            if not isinstance(deck_dict, dict) or _is_avatar_deck(deck_dict):
+                continue
+            results.extend(rules.validate_deck(deck_dict, formats_list, owned_counts=owned))
 
         res = {
             "messageName": OutboundMsg.DECKS_VALIDATED.value,
@@ -809,8 +810,12 @@ class DataSyncHandler(BaseHandler):
 
         results = []
         if self.client.player:
-            deck_ids = [d.get("id") for d in self.client.player.decks if d.get("id")]
-            results = _validation_results(deck_ids, formats_list)
+            owned = await run_db(get_owned_counts, self.client.player.account_id)
+            for deck in self.client.player.decks:
+                deck_dict = deck.get("deck_data")
+                if not isinstance(deck_dict, dict) or _is_avatar_deck(deck_dict):
+                    continue
+                results.extend(rules.validate_deck(deck_dict, formats_list, owned_counts=owned))
 
         res = {
             "messageName": OutboundMsg.DECKS_VALIDATED.value,
@@ -938,8 +943,14 @@ class DataSyncHandler(BaseHandler):
 
     @staticmethod
     def _build_format_legality():
-        ll = [{"archetypeID": c.guid, "formatLegality": [True]*4,
-               "formatLegalityTime": [0]*4} for c in CARDS_DB]
+        # FormatLegalityProvider slots: [0]=Modified, [1]=Expanded, [2]=Legacy ([3] unused)
+        manager = FormatManager()
+        slots = [DeckFormat.STANDARD.value, DeckFormat.EXPANDED.value,
+                 DeckFormat.LEGACY.value, DeckFormat.UNLIMITED.value]
+        ll = [{"archetypeID": c.guid,
+               "formatLegality": [manager.is_card_eventually_legal(f, c) for f in slots],
+               "formatLegalityTime": [manager.legal_time_ms(f, c) for f in slots]}
+              for c in CARDS_DB]
         for i in [2, 3]:
             ll.append({"archetypeID": f"00000000-0000-0000-0000-00000000000{i}",
                        "formatLegality": [True]*4,

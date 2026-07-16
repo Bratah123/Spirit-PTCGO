@@ -129,6 +129,7 @@
   <button data-tab="codes">Redemption Codes</button>
   <button data-tab="versus">Versus Seasons</button>
   <button data-tab="tournaments">Tournaments</button>
+  <button data-tab="formats">Formats</button>
   <button data-tab="shop">Shop</button>
   <button data-tab="pages">Dynamic Pages</button>
   <button data-tab="trades">Trades</button>
@@ -268,6 +269,23 @@
     <div id="tLbPrizes"></div>
     <button class="btn ghost" onclick="addPrizeRow('leaderboard')">+ Add prize row</button>
     <div id="tStandings" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="tab-formats">
+  <div class="card">
+    <h2>Play Formats (deck legality)</h2>
+    <div class="muted" style="margin-bottom:12px">Which card sets are legal in each format. Decks are validated against this table when they are saved and when the client asks at login. Backed by <code>spirit/database/json_data/formats.json</code> (hand-editable; Save hot-reloads the server). <b>Unlimited</b> allows every set; basic energy is always legal everywhere.</div>
+    <div class="row">
+      <div><button class="btn" onclick="saveFormats()">Save Formats</button></div>
+      <div><span id="fmtDirty" class="pill off" style="display:none">unsaved changes</span></div>
+    </div>
+    <table id="formatMatrix"><thead></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h2>Card Exceptions</h2>
+    <div class="muted" style="margin-bottom:12px">Per-format overrides beating the set rule. Accepts archetype GUIDs or <code>SET/number</code> refs (e.g. <code>SWSH8/215</code>), separated by commas or new lines. Find GUIDs/numbers via the card search in the Codes reward picker.</div>
+    <div id="formatExceptions"></div>
   </div>
 </section>
 
@@ -913,6 +931,56 @@ function tFeesChanged() {
   tDef().run.entryFee = fees; tDirty(true);
 }
 
+/* ---------------- Play formats ---------------- */
+let FORMATS = [], FORMAT_SETS = [];
+function fmtDirty(on) { $('#fmtDirty').style.display = on ? '' : 'none'; }
+async function loadFormats() {
+  try {
+    const d = await api('formats');
+    FORMATS = d.formats; FORMAT_SETS = d.sets;
+    renderFormats(); fmtDirty(false);
+  } catch(e) { toast('Formats: ' + e.message, true); }
+}
+function renderFormats() {
+  $('#formatMatrix thead').innerHTML = '<tr><th>Set</th>' +
+    FORMATS.map(f => `<th style="text-align:center">${esc(f.key)}</th>`).join('') + '</tr>';
+  $('#formatMatrix tbody').innerHTML = FORMAT_SETS.map(set =>
+    `<tr><td><code>${esc(set)}</code></td>` + FORMATS.map((f, fi) => {
+      const on = f.allSets || f.sets.includes(set);
+      return `<td style="text-align:center"><input type="checkbox" ${on ? 'checked' : ''}` +
+             `${f.allSets ? ' disabled title="format allows all sets"' : ''}` +
+             ` onchange="fmtToggleSet(${fi}, '${esc(set)}', this.checked)"></td>`;
+    }).join('') + '</tr>').join('');
+  $('#formatExceptions').innerHTML = FORMATS.map((f, fi) => `
+    <div style="margin-bottom:16px">
+      <b>${esc(f.key)}</b> <span class="muted">(${f.allSets ? 'all sets' : f.sets.length + ' sets'})</span>
+      <div class="row">
+        <div style="flex:1;min-width:280px"><label>Banned cards</label>
+          <textarea rows="2" style="width:100%" onchange="fmtRefs(${fi}, 'bannedCards', this.value)">${esc(f.bannedCards.join(', '))}</textarea></div>
+        <div style="flex:1;min-width:280px"><label>Extra legal cards</label>
+          <textarea rows="2" style="width:100%" onchange="fmtRefs(${fi}, 'extraLegalCards', this.value)">${esc(f.extraLegalCards.join(', '))}</textarea></div>
+      </div>
+    </div>`).join('');
+}
+function fmtToggleSet(fi, set, on) {
+  const sets = FORMATS[fi].sets;
+  const i = sets.indexOf(set);
+  if (on && i < 0) sets.push(set);
+  if (!on && i >= 0) sets.splice(i, 1);
+  fmtDirty(true);
+}
+function fmtRefs(fi, field, value) {
+  FORMATS[fi][field] = value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  fmtDirty(true);
+}
+async function saveFormats() {
+  try {
+    const d = await api('formats', {formats: FORMATS});
+    FORMATS = d.formats; renderFormats(); fmtDirty(false);
+    toast('Formats saved — deck validation reloaded');
+  } catch(e) { toast('Save failed: ' + e.message, true); }
+}
+
 async function loadTournaments() {
   try {
     const d = await api('tournaments');
@@ -1197,7 +1265,7 @@ function dispatchReward(reward) { dispatchRewards([reward]); }
 
 async function bootData() {
   await loadProducts();
-  loadOverview(); loadAccounts(); loadCodes(); loadShop(); loadPages(); loadTrades(); loadVersus(); loadTournaments();
+  loadOverview(); loadAccounts(); loadCodes(); loadShop(); loadPages(); loadTrades(); loadVersus(); loadTournaments(); loadFormats();
 }
 (async function init() {
   try {

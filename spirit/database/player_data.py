@@ -269,6 +269,15 @@ def get_merged_collection_payload(account_id):
 
     return cl
 
+
+def get_owned_counts(account_id):
+    """{archetype_guid: total owned copies} for deck validation (basic energy is exempt there)."""
+    return {
+        item["archetype_id"].lower(): int(item["tradable_count"]) + int(item["nontradable_count"])
+        for item in get_collection_by_account_id(account_id)
+    }
+
+
 def grant_all_cards(account_id, count=4, is_tradable=True):
     """Debug: ensure the account owns `count` copies of every non-basic card in one transaction."""
     try:

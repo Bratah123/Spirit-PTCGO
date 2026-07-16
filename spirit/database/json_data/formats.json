@@ -1,0 +1,89 @@
+{
+  "formats": [
+    {
+      "key": "Standard",
+      "guid": "6402e830-7fed-4cd1-b172-2a320047c2bb",
+      "formatName": "Modified",
+      "sets": [
+        "Free_Energy",
+        "CUSTOM",
+        "SWSH1",
+        "SWSH2",
+        "SWSH3",
+        "SWSH35",
+        "SWSH4",
+        "SWSH45",
+        "SWSH5",
+        "SWSH6",
+        "SWSH7",
+        "SWSH8",
+        "SWSH9",
+        "SWSH10",
+        "SWSH11",
+        "SWSH12",
+        "CEL25",
+        "PGO",
+        "CZ"
+      ],
+      "allSets": false,
+      "bannedCards": [],
+      "extraLegalCards": [],
+      "legalFrom": {}
+    },
+    {
+      "key": "Expanded",
+      "guid": "98c83df9-ec82-4193-84a8-104115ce4e25",
+      "formatName": "Expanded",
+      "sets": [
+        "Free_Energy",
+        "CUSTOM",
+        "BW1",
+        "SWSH1",
+        "SWSH2",
+        "SWSH3",
+        "SWSH35",
+        "SWSH4",
+        "SWSH45",
+        "SWSH5",
+        "SWSH6",
+        "SWSH7",
+        "SWSH8",
+        "SWSH9",
+        "SWSH10",
+        "SWSH11",
+        "SWSH12",
+        "CEL25",
+        "PGO",
+        "CZ"
+      ],
+      "allSets": false,
+      "bannedCards": [],
+      "extraLegalCards": [],
+      "legalFrom": {}
+    },
+    {
+      "key": "Legacy",
+      "guid": "6b33d420-73cc-40d4-ada5-88a7d68063a9",
+      "formatName": "Legacy",
+      "sets": [
+        "Free_Energy",
+        "CUSTOM",
+        "BW1"
+      ],
+      "allSets": false,
+      "bannedCards": [],
+      "extraLegalCards": [],
+      "legalFrom": {}
+    },
+    {
+      "key": "Unlimited",
+      "guid": "6a1dec5a-34db-4cee-a503-4ee759304135",
+      "formatName": "Unlimited",
+      "sets": [],
+      "allSets": true,
+      "bannedCards": [],
+      "extraLegalCards": [],
+      "legalFrom": {}
+    }
+  ]
+}

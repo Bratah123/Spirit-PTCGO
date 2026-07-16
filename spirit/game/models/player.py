@@ -79,26 +79,25 @@ class Player:
     def get_wallet_data(self):
         return self.wallet.serialize()
 
-    def _inject_validation_attributes(self, deck_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _inject_validation_attributes(self, deck_dict: Dict[str, Any], is_avatar: bool = False) -> Dict[str, Any]:
+        """Overwrites deck attr 10860 (VALID_FORMATS) with the freshly computed format names."""
+        from spirit.game import rules
+
         deck_copy = copy.deepcopy(deck_dict)
         attributes = deck_copy.setdefault("attributes", [])
-        
-        # TODO: Add actual validation on the deck to see if every card is legal for Standard, etc...
-        # return a list of valid formats ["Standard", "Unlimited"]
 
-        # Check if attribute VALID_FORMATS is already present
-        has_formats = False
-        for attr in attributes:
-            if attr.get("name") == AttrID.VALID_FORMATS.value:
-                has_formats = True
-                break
-                
-        if not has_formats:
-            attributes.append({
-                "name": AttrID.VALID_FORMATS.value,
-                "value": ["Modified", "Expanded", "Unlimited", "Legacy"]
-            })
-            
+        if is_avatar:
+            names = ["Modified", "Expanded", "Unlimited", "Legacy"]
+        else:
+            names = rules.valid_format_names(deck_copy)
+
+        # Recompute every time — formats.json may have changed since the deck was saved
+        attributes[:] = [a for a in attributes if a.get("name") != AttrID.VALID_FORMATS.value]
+        attributes.append({
+            "name": AttrID.VALID_FORMATS.value,
+            "value": names
+        })
+
         return deck_copy
 
     def get_decks_data(self):
@@ -107,7 +106,7 @@ class Player:
         return {"decks": serialized_decks}
 
     def get_avatar_decks_data(self):
-        serialized_avatar_decks = [self._inject_validation_attributes(deck["deck_data"]) for deck in self.avatar_decks]
+        serialized_avatar_decks = [self._inject_validation_attributes(deck["deck_data"], is_avatar=True) for deck in self.avatar_decks]
         return {"decks": serialized_avatar_decks}
 
     def get_friends_roster_data(self):

@@ -318,6 +318,27 @@ def _dispatch(method, endpoint, data):
             season_manager.VersusSeasonManager().load_seasons()
             return _ok({"seasons": normalized})
 
+    # ------------------------------------------------ play formats
+    if endpoint == 'formats':
+        from spirit.game import format_manager
+        if method == 'GET':
+            mgr = format_manager.FormatManager()
+            return _ok({
+                "formats": [fmt.to_dict() for fmt in mgr.formats],
+                "sets": sorted(card_script_counts().keys())
+            })
+        if method == 'POST':
+            normalized, error = format_manager.validate_formats(data.get("formats"))
+            if error:
+                return _err(400, error)
+            with open(format_manager.FORMATS_PATH, 'w', encoding='utf-8') as f:
+                json.dump({"formats": normalized}, f, indent=2)
+            format_manager.FormatManager().load_formats()
+            # Re-derive set legalFormats and drop cached format-legality payloads
+            from spirit.packets.handlers import data_sync
+            data_sync.reload_sets()
+            return _ok({"formats": normalized})
+
     # ------------------------------------------------ async tournaments
     if endpoint == 'tournaments':
         from spirit.database import tournament_data
