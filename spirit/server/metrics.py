@@ -3,9 +3,10 @@
 import time
 import asyncio
 import logging
+from typing import Callable
 
 _counters: dict[str, int] = {}
-_gauges: dict[str, callable] = {}
+_gauges: dict[str, Callable] = {}
 
 # Event-loop lag ring buffer (ms), filled by sample_loop_lag().
 _lag_samples: list[float] = []
