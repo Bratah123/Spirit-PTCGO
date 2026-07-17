@@ -1,9 +1,12 @@
+import base64
+import binascii
 import json
 import logging
 import os
 import re
-from urllib.parse import unquote
 
+from urllib.parse import unquote
+from spirit.server import http_server
 from spirit.database import db_session, Account, TradeOffer
 from spirit.database import economy_data
 from spirit.game import season_manager
@@ -30,6 +33,27 @@ def _ok(payload=None):
 
 def _err(status, message):
     return _json(status, {"ok": False, "error": message})
+
+
+def _decode_image_data_url(value):
+    if not isinstance(value, str):
+        raise ValueError("image data is required")
+    header, separator, encoded = value.partition(',')
+    allowed = {
+        'data:image/png;base64',
+        'data:image/jpeg;base64',
+        'data:image/jpg;base64',
+        'data:image/webp;base64',
+    }
+    if separator != ',' or header.lower() not in allowed:
+        raise ValueError("upload a PNG, JPEG, or WebP image")
+    max_encoded = ((dynamic_pages.MAX_CUSTOM_IMAGE_BYTES + 2) // 3) * 4
+    if len(encoded) > max_encoded:
+        raise ValueError("custom artwork must be 12 MB or smaller")
+    try:
+        return base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("image upload is not valid base64 data") from exc
 
 
 def _products_summary():
@@ -493,7 +517,38 @@ def _dispatch(method, endpoint, data):
 
     if method == 'POST' and endpoint == 'pages/assets/refresh':
         dynamic_pages.invalidate_asset_catalog()
-        return _ok(dynamic_pages.asset_catalog_payload())
+        try:
+            build = dynamic_pages.compile_custom_landing_bundle(force=True)
+        except dynamic_pages.PageValidationError as exc:
+            return _err(400, str(exc))
+        dynamic_pages.invalidate_asset_catalog()
+        if build.get("built"):
+            http_server.register_asset_path(dynamic_pages.BUNDLE_CACHE_DIR)
+        return _ok({**dynamic_pages.asset_catalog_payload(), "custom_build": build})
+
+    if method == 'POST' and endpoint == 'pages/assets/custom':
+        try:
+            image_bytes = _decode_image_data_url(data.get("image"))
+            imported = dynamic_pages.save_custom_landing_image(
+                data.get("name", ""),
+                image_bytes,
+                replace=bool(data.get("replace", False)),
+            )
+        except (ValueError, dynamic_pages.PageValidationError) as exc:
+            return _err(400, str(exc))
+
+        from spirit.server import http_server
+        http_server.register_asset_path(dynamic_pages.BUNDLE_CACHE_DIR)
+        catalog = dynamic_pages.asset_catalog_payload()
+        imported["catalog_asset"] = next(
+            (
+                asset
+                for asset in catalog["assets"]
+                if asset["name"].casefold() == imported["name"].casefold()
+            ),
+            None,
+        )
+        return _ok({"asset": imported, **catalog})
 
     if method == 'GET' and endpoint.startswith('pages/assets/thumb/'):
         asset_name = unquote(endpoint[len('pages/assets/thumb/'):])

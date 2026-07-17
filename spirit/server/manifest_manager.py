@@ -162,9 +162,29 @@ class ManifestManager:
                             prefix = "vstartoken"
                         elif "landingpage" in lower_entry:
                             prefix = "LandingPage"
-                            
+
+                        exported_texture_ids = None
+                        if "landingpage" in lower_entry:
+                            for obj in env.objects:
+                                if obj.type.name != "AssetBundle":
+                                    continue
+                                try:
+                                    bundle = obj.read()
+                                    exported_texture_ids = {
+                                        int(info.asset.m_PathID)
+                                        for _, info in bundle.m_Container
+                                    }
+                                except Exception:
+                                    exported_texture_ids = None
+                                break
+
                         for obj in env.objects:
                             if obj.type.name == "Texture2D":
+                                if (
+                                    exported_texture_ids is not None
+                                    and int(obj.path_id) not in exported_texture_ids
+                                ):
+                                    continue
                                 tex_name = obj.read().m_Name.lower()
                                 exact_assets.append(tex_name)
                                 if prefix:

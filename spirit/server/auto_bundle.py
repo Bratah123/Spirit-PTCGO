@@ -10,6 +10,7 @@ from PIL import Image, ImageFilter
 from spirit.game.attributes import AttrID, TrainerType
 from spirit.game.scripts.cards import loader
 from spirit.server.auto_bundle_cosmetics import compile_all_cosmetics
+from spirit.server import dynamic_pages
 
 ASSETS_DIR = "spirit/assets"
 BUNDLE_CACHE_DIR = os.path.join(ASSETS_DIR, "bundleCache")
@@ -222,6 +223,12 @@ def check_and_generate_bundles() -> int:
         compile_all_cosmetics()
     except Exception as e:
         logging.error(f"[AutoBundle] Failed to compile cosmetics: {e}")
+
+    logging.info("[AutoBundle] Checking custom landing-page artwork...")
+    try:
+        dynamic_pages.compile_custom_landing_bundle()
+    except Exception as e:
+        logging.error(f"[AutoBundle] Failed to compile custom landing pages: {e}")
 
     logging.info("[AutoBundle] Checking for missing card AssetBundles...")
     

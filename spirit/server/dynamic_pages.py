@@ -14,16 +14,19 @@ players can load the same art that an admin selected in the preview.
 from __future__ import annotations
 
 import copy
+import hashlib
 import io
 import logging
 import os
+import re
 import shutil
 import threading
+import unicodedata
 from collections import OrderedDict
 from pathlib import Path
 
 import UnityPy
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 LANDING_TEMPLATES = {
@@ -49,6 +52,14 @@ _PROJECT_DIR = _SPIRIT_DIR.parent
 BUNDLE_CACHE_DIR = _SPIRIT_DIR / "assets" / "bundleCache"
 EXTERNAL_CACHE_DIR = _SPIRIT_DIR / "assets" / "externalCache"
 ORIGINAL_CACHE_DIR = _PROJECT_DIR / "original_game_cache"
+CUSTOM_IMAGE_DIR = _SPIRIT_DIR / "assets" / "landing_pages"
+CUSTOM_BUNDLE_NAME = "en_US_LandingPage_Custom"
+CUSTOM_BUNDLE_DIR = BUNDLE_CACHE_DIR / CUSTOM_BUNDLE_NAME
+CUSTOM_BUNDLE_DATA_PATH = (
+    CUSTOM_BUNDLE_DIR / "00000000000000000000000001000000" / "__data"
+)
+MAX_CUSTOM_IMAGE_BYTES = 12 * 1024 * 1024
+MAX_CUSTOM_IMAGE_PIXELS = 40_000_000
 
 _catalog_lock = threading.RLock()
 _catalog: dict[str, dict] | None = None
@@ -58,6 +69,8 @@ _catalog_errors: list[str] = []
 _image_lock = threading.RLock()
 _image_cache: OrderedDict[tuple, bytes] = OrderedDict()
 _IMAGE_CACHE_MAX = 128
+
+_custom_bundle_lock = threading.RLock()
 
 
 class PageValidationError(ValueError):
@@ -150,6 +163,29 @@ def _asset_rank(asset: dict) -> tuple:
     )
 
 
+def _bundle_texture_path_ids(env) -> set[int] | None:
+    """Returns Texture2D PathIDs exported by an AssetBundle container.
+
+    UnityPy exposes orphaned serialized objects too.  Custom bundles are rebuilt
+    from a real landing bundle and may retain unused prototype objects, so only
+    container-exported textures belong in the dashboard/manifest catalog.
+    Environments without an AssetBundle object (including loose test fixtures)
+    intentionally return ``None`` and keep the historical scan behavior.
+    """
+    for obj in env.objects:
+        if obj.type.name != "AssetBundle":
+            continue
+        try:
+            bundle = obj.read()
+            return {
+                int(info.asset.m_PathID)
+                for _, info in getattr(bundle, "m_Container", [])
+            }
+        except Exception:
+            return None
+    return None
+
+
 def _scan_catalog() -> tuple[dict[str, dict], list[dict], list[str]]:
     assets: dict[str, dict] = {}
     roots_public: list[dict] = []
@@ -180,8 +216,14 @@ def _scan_catalog() -> tuple[dict[str, dict], list[dict], list[str]]:
             try:
                 stat = data_path.stat()
                 env = UnityPy.load(str(data_path))
+                exported_texture_ids = _bundle_texture_path_ids(env)
                 for obj in env.objects:
                     if obj.type.name != "Texture2D":
+                        continue
+                    if (
+                        exported_texture_ids is not None
+                        and int(obj.path_id) not in exported_texture_ids
+                    ):
                         continue
                     texture = obj.read()
                     name = str(getattr(texture, "m_Name", "") or "").strip()
@@ -197,6 +239,8 @@ def _scan_catalog() -> tuple[dict[str, dict], list[dict], list[str]]:
                         "width": int(getattr(texture, "m_Width", 0) or 0),
                         "height": int(getattr(texture, "m_Height", 0) or 0),
                         "installed": bool(installed),
+                        "custom": bundle_dir.name.casefold()
+                        == CUSTOM_BUNDLE_NAME.casefold(),
                         "source": source,
                         "data_path": str(data_path),
                         "bundle_dir": str(bundle_dir),
@@ -253,7 +297,14 @@ def asset_catalog_payload() -> dict:
         roots = copy.deepcopy(_catalog_roots)
         errors = list(_catalog_errors)
     public_assets = []
-    for item in sorted(catalog.values(), key=lambda a: (a["title"].casefold(), a["name"].casefold())):
+    for item in sorted(
+        catalog.values(),
+        key=lambda a: (
+            not bool(a.get("custom")),
+            a["title"].casefold(),
+            a["name"].casefold(),
+        ),
+    ):
         public_assets.append(
             {
                 key: item[key]
@@ -265,6 +316,7 @@ def asset_catalog_payload() -> dict:
                     "width",
                     "height",
                     "installed",
+                    "custom",
                     "source",
                 )
             }
@@ -342,6 +394,283 @@ def render_asset_jpeg(name_or_path: str, variant: str = "preview") -> bytes | No
     rendered = output.getvalue()
     _image_cache_put(cache_key, rendered)
     return rendered
+
+
+def normalize_custom_asset_name(value: str) -> str:
+    """Turns an upload/file name into a collision-resistant Unity asset name."""
+    text = Path(str(value or "").strip().replace("\\", "/")).name
+    text = Path(text).stem
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_").lower()
+    text = re.sub(r"_+", "_", text)
+    if not text:
+        raise PageValidationError("Custom artwork needs a file-safe asset name")
+    suffix = "_landingpage"
+    if not text.endswith(suffix):
+        text += suffix
+    if len(text) > 96:
+        text = text[: 96 - len(suffix)].rstrip("_") + suffix
+    return text
+
+
+def _custom_source_images() -> list[tuple[str, Path]]:
+    if not CUSTOM_IMAGE_DIR.is_dir():
+        return []
+    sources: dict[str, Path] = {}
+    paths = (
+        path
+        for path in CUSTOM_IMAGE_DIR.iterdir()
+        if path.is_file() and path.suffix.casefold() == ".png"
+    )
+    for path in sorted(paths, key=lambda item: item.name.casefold()):
+        asset_name = normalize_custom_asset_name(path.name)
+        previous = sources.get(asset_name)
+        if previous is not None:
+            raise PageValidationError(
+                f"{previous.name} and {path.name} normalize to the same landing asset name"
+            )
+        sources[asset_name] = path
+    return list(sources.items())
+
+
+def _prepare_custom_texture(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """Packs a normal 16:9 image into the square texture sampled by the prefab."""
+    width, height = size
+    x, y, crop_w, crop_h = _LANDING_UV_RECT
+    left = max(0, round(width * x))
+    top = max(0, round(height * y))
+    right = min(width, round(width * (x + crop_w)))
+    bottom = min(height, round(height * (y + crop_h)))
+    visible_size = (max(1, right - left), max(1, bottom - top))
+    artwork = ImageOps.fit(
+        ImageOps.exif_transpose(image).convert("RGBA"),
+        visible_size,
+        method=Image.Resampling.LANCZOS,
+        centering=(0.5, 0.5),
+    )
+    texture = Image.new("RGBA", size, (0, 0, 0, 255))
+    texture.paste(artwork, (left, top))
+    return texture
+
+
+def _custom_bundle_template_path() -> Path:
+    catalog = _get_catalog()
+    candidates = [
+        Path(item["data_path"])
+        for item in catalog.values()
+        if item.get("bundle", "").casefold() != CUSTOM_BUNDLE_NAME.casefold()
+    ]
+    if candidates:
+        return sorted(candidates, key=lambda path: str(path).casefold())[0]
+    if CUSTOM_BUNDLE_DATA_PATH.is_file():
+        return CUSTOM_BUNDLE_DATA_PATH
+    raise PageValidationError(
+        "A real LandingPage Unity bundle is required as the custom-art template. "
+        "Set PTCGO_CACHE_DIR or add the original game cache, then rescan."
+    )
+
+
+def _rename_custom_bundle_cab(env) -> None:
+    new_cab = f"CAB-{hashlib.md5(CUSTOM_BUNDLE_NAME.encode('utf-8')).hexdigest()}"
+    bundle_file = env.file
+    files = getattr(bundle_file, "files", None)
+    if isinstance(files, dict):
+        old_keys = [key for key in list(files) if str(key).startswith("CAB-")]
+        if old_keys:
+            serialized_file = files.pop(old_keys[0])
+            for duplicate in old_keys[1:]:
+                files.pop(duplicate, None)
+            files[new_cab] = serialized_file
+    for asset in env.assets:
+        if hasattr(asset, "name"):
+            asset.name = new_cab
+
+
+def compile_custom_landing_bundle(force: bool = False) -> dict:
+    """Builds all ``assets/landing_pages/*.png`` files into one Unity bundle.
+
+    This mirrors the custom-card workflow: source PNGs remain easy to edit and
+    the ignored bundleCache output is regenerated on startup or from the admin
+    artwork rescan button.
+    """
+    with _custom_bundle_lock:
+        sources = _custom_source_images()
+        if not sources:
+            return {
+                "built": False,
+                "assets": 0,
+                "bundle": CUSTOM_BUNDLE_NAME,
+            }
+
+        newest_source = max(
+            [path.stat().st_mtime_ns for _, path in sources]
+            + [Path(__file__).stat().st_mtime_ns]
+        )
+        if (
+            not force
+            and CUSTOM_BUNDLE_DATA_PATH.is_file()
+            and CUSTOM_BUNDLE_DATA_PATH.stat().st_mtime_ns >= newest_source
+        ):
+            return {
+                "built": False,
+                "assets": len(sources),
+                "bundle": CUSTOM_BUNDLE_NAME,
+            }
+
+        template_path = _custom_bundle_template_path()
+        env = UnityPy.load(str(template_path))
+
+        serialized_asset = None
+        asset_bundle_obj = None
+        texture_objects = []
+        for asset in env.assets:
+            objects = list(asset.objects.values())
+            bundle_obj = next(
+                (obj for obj in objects if obj.type.name == "AssetBundle"), None
+            )
+            textures = [obj for obj in objects if obj.type.name == "Texture2D"]
+            if bundle_obj is not None and textures:
+                serialized_asset = asset
+                asset_bundle_obj = bundle_obj
+                texture_objects = textures
+                break
+        if serialized_asset is None or asset_bundle_obj is None or not texture_objects:
+            raise PageValidationError("LandingPage template has no editable Texture2D assets")
+
+        asset_bundle = asset_bundle_obj.read()
+        prototype = texture_objects[0]
+        prototype_info = next(
+            (
+                info
+                for _, info in asset_bundle.m_Container
+                if info.asset.m_PathID == prototype.path_id
+            ),
+            None,
+        )
+        if prototype_info is None:
+            raise PageValidationError("LandingPage template has no texture container mapping")
+
+        # Reuse existing texture slots first.  Clone the prototype only when the
+        # custom collection is larger than its source template.
+        target_objects = texture_objects[: len(sources)]
+        next_path_id = max(serialized_asset.objects) + 1
+        while len(target_objects) < len(sources):
+            cloned = copy.copy(prototype)
+            cloned.path_id = next_path_id
+            serialized_asset.objects[next_path_id] = cloned
+            target_objects.append(cloned)
+            next_path_id += 1
+
+        new_mappings = []
+        for (asset_name, source_path), target_obj in zip(sources, target_objects):
+            texture = target_obj.read()
+            with Image.open(source_path) as source_image:
+                texture.image = _prepare_custom_texture(
+                    source_image,
+                    (int(texture.m_Width), int(texture.m_Height)),
+                )
+            texture.m_Name = asset_name
+            target_obj.save_typetree(texture)
+
+            mapping = copy.copy(prototype_info)
+            mapping.asset = copy.copy(prototype_info.asset)
+            mapping.asset.m_PathID = target_obj.path_id
+            new_mappings.append((asset_name, mapping))
+
+        asset_bundle.m_Container = new_mappings
+        asset_bundle.m_Name = CUSTOM_BUNDLE_NAME
+        asset_bundle_obj.save_typetree(asset_bundle)
+
+        used_path_ids = {obj.path_id for obj in target_objects}
+        for obj in texture_objects:
+            if obj.path_id not in used_path_ids:
+                serialized_asset.objects.pop(obj.path_id, None)
+
+        _rename_custom_bundle_cab(env)
+        CUSTOM_BUNDLE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = CUSTOM_BUNDLE_DATA_PATH.with_name(
+            f"{CUSTOM_BUNDLE_DATA_PATH.name}.{threading.get_ident()}.tmp"
+        )
+        try:
+            temp_path.write_bytes(env.file.save(packer="lz4"))
+            os.replace(temp_path, CUSTOM_BUNDLE_DATA_PATH)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+        invalidate_asset_catalog()
+        logging.info(
+            "[Admin] Built %s with %d custom landing artworks",
+            CUSTOM_BUNDLE_NAME,
+            len(sources),
+        )
+        return {
+            "built": True,
+            "assets": len(sources),
+            "bundle": CUSTOM_BUNDLE_NAME,
+        }
+
+
+def save_custom_landing_image(
+    name: str,
+    payload: bytes,
+    *,
+    replace: bool = False,
+) -> dict:
+    """Validates, stores, and bundles an admin-uploaded landing-page image."""
+    if not isinstance(payload, bytes) or not payload:
+        raise PageValidationError("Choose a PNG, JPEG, or WebP image to upload")
+    if len(payload) > MAX_CUSTOM_IMAGE_BYTES:
+        raise PageValidationError("Custom artwork must be 12 MB or smaller")
+
+    asset_name = normalize_custom_asset_name(name)
+    existing_catalog_asset = _get_catalog().get(asset_name.casefold())
+    if existing_catalog_asset and not existing_catalog_asset.get("custom"):
+        raise PageValidationError(
+            f"{asset_name} conflicts with original game artwork; choose another name"
+        )
+
+    try:
+        with Image.open(io.BytesIO(payload)) as uploaded:
+            width, height = uploaded.size
+            if width * height > MAX_CUSTOM_IMAGE_PIXELS:
+                raise PageValidationError("Custom artwork may not exceed 40 megapixels")
+            if width < 320 or height < 180:
+                raise PageValidationError("Custom artwork must be at least 320x180 pixels")
+            if uploaded.format not in {"PNG", "JPEG", "WEBP"}:
+                raise PageValidationError("Custom artwork must be PNG, JPEG, or WebP")
+            uploaded.load()
+            normalized_image = ImageOps.exif_transpose(uploaded).convert("RGBA")
+    except PageValidationError:
+        raise
+    except Exception as exc:
+        raise PageValidationError("The uploaded file is not a readable image") from exc
+
+    with _custom_bundle_lock:
+        CUSTOM_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+        target = CUSTOM_IMAGE_DIR / f"{asset_name}.png"
+        if target.exists() and not replace:
+            raise PageValidationError(
+                f"{asset_name} already exists; enable Replace existing artwork to update it"
+            )
+        temp_path = target.with_name(f".{target.name}.{threading.get_ident()}.tmp")
+        try:
+            normalized_image.save(temp_path, format="PNG", optimize=True)
+            os.replace(temp_path, target)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+        build = compile_custom_landing_bundle(force=True)
+
+    asset = _get_catalog().get(asset_name.casefold())
+    if asset is None:
+        raise PageValidationError("Custom artwork bundle was built but could not be indexed")
+    return {
+        "name": asset_name,
+        "request_path": f"LandingPage/{asset_name}",
+        "width": width,
+        "height": height,
+        "build": build,
+    }
 
 
 def _background_asset_paths(content: dict) -> set[str]:

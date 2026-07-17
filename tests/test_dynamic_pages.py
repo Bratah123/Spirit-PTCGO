@@ -262,6 +262,69 @@ class DynamicPageAssetTests(unittest.TestCase):
             self.assertFalse(installed)
             self.assertEqual(unresolved, ["Custom/preview_art"])
 
+    def test_custom_art_is_packed_into_the_native_visible_texture_region(self):
+        source = Image.new("RGB", (1600, 900), (25, 140, 220))
+
+        texture = dynamic_pages._prepare_custom_texture(source, (2048, 2048))
+
+        self.assertEqual(texture.size, (2048, 2048))
+        self.assertEqual(texture.getpixel((0, 0)), (0, 0, 0, 255))
+        red, green, blue, alpha = texture.getpixel((1024, 1024))
+        self.assertLess(red, 35)
+        self.assertGreater(green, 130)
+        self.assertGreater(blue, 210)
+        self.assertEqual(alpha, 255)
+
+    def test_custom_upload_normalizes_saves_and_rebuilds_the_bundle(self):
+        image = Image.new("RGB", (1280, 720), "purple")
+        payload = io.BytesIO()
+        image.save(payload, format="PNG")
+        asset_name = "summer_event_landingpage"
+        catalog_asset = {
+            "name": asset_name,
+            "custom": True,
+            "request_path": f"LandingPage/{asset_name}",
+        }
+
+        with workspace_temp_dir() as root:
+            with (
+                patch.object(dynamic_pages, "CUSTOM_IMAGE_DIR", root),
+                patch.object(
+                    dynamic_pages,
+                    "_get_catalog",
+                    side_effect=[{}, {asset_name: catalog_asset}],
+                ),
+                patch.object(
+                    dynamic_pages,
+                    "compile_custom_landing_bundle",
+                    return_value={"built": True, "assets": 1},
+                ) as compile_bundle,
+            ):
+                imported = dynamic_pages.save_custom_landing_image(
+                    "Summer Event.jpg", payload.getvalue()
+                )
+
+            saved = root / f"{asset_name}.png"
+            self.assertTrue(saved.is_file())
+            with Image.open(saved) as saved_image:
+                self.assertEqual(saved_image.size, (1280, 720))
+            self.assertEqual(imported["name"], asset_name)
+            compile_bundle.assert_called_once_with(force=True)
+
+    def test_custom_upload_does_not_shadow_original_game_art(self):
+        image = Image.new("RGB", (640, 360), "blue")
+        payload = io.BytesIO()
+        image.save(payload, format="PNG")
+        original = {"summer_landingpage": {"custom": False}}
+
+        with patch.object(dynamic_pages, "_get_catalog", return_value=original):
+            with self.assertRaisesRegex(
+                dynamic_pages.PageValidationError, "conflicts with original game artwork"
+            ):
+                dynamic_pages.save_custom_landing_image(
+                    "summer", payload.getvalue()
+                )
+
 
 class LandingPageManifestTests(unittest.TestCase):
     def test_manifest_publishes_prefixed_landing_texture_key(self):

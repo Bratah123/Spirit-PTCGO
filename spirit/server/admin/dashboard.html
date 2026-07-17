@@ -151,6 +151,7 @@
   .asset-selected-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .asset-controls { min-width: 0; }
   .asset-controls input { width: 100%; margin-bottom: 7px; }
+  .asset-action-row { display: flex; flex-wrap: wrap; gap: 7px; }
   .asset-status { margin-top: 5px; min-height: 18px; }
   .page-form-actions { display: flex; gap: 8px; align-items: center; padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--line); }
   .page-form-actions .save-state { flex: 1; font-size: 11px; color: var(--muted); }
@@ -215,20 +216,33 @@
 
   #pageAssetOverlay { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; padding: 3vh 3vw; background: rgba(4,8,14,.82); }
   #pageAssetOverlay.open { display: flex; }
-  .page-asset-picker { width: min(1120px,95vw); max-height: 92vh; display: flex; flex-direction: column; border: 1px solid #435778; border-radius: 12px; overflow: hidden; background: var(--panel); box-shadow: 0 20px 60px rgba(0,0,0,.55); }
+  .page-asset-picker { width: min(1120px,95vw); height: min(900px,92vh); min-height: 520px; display: flex; flex-direction: column; border: 1px solid #435778; border-radius: 12px; overflow: hidden; background: var(--panel); box-shadow: 0 20px 60px rgba(0,0,0,.55); }
   .asset-picker-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
   .asset-picker-head > div:first-child { flex: 1; }
   .asset-picker-head h3 { color: var(--accent); font-size: 15px; }
+  details.custom-artwork-panel { flex: 0 0 auto; border-bottom: 1px solid var(--line); background: rgba(61,125,202,.06); }
+  details.custom-artwork-panel > summary { cursor: pointer; padding: 10px 16px; color: #bcd9f3; font-size: 12px; font-weight: 650; }
+  .custom-artwork-body { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 13px; padding: 2px 16px 14px; }
+  .custom-artwork-preview { aspect-ratio: 16/9; border: 1px dashed #4d6788; border-radius: 7px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 10px; background: #07111e; }
+  .custom-artwork-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .custom-artwork-fields { min-width: 0; }
+  .custom-artwork-fields input[type="file"] { width: 100%; margin-bottom: 8px; }
+  .custom-upload-row { display: grid; grid-template-columns: minmax(180px,1fr) auto auto; align-items: center; gap: 8px; }
+  .custom-upload-row input[type="text"] { width: 100%; }
+  .custom-replace { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+  .custom-upload-help { margin-top: 7px; color: var(--muted); font-size: 10px; }
+  .custom-upload-status { min-height: 17px; margin-top: 5px; font-size: 10px; color: #9ec8ec; }
   .asset-picker-tools { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; padding: 12px 16px; }
   .asset-picker-tools input { width: 100%; }
-  .landing-asset-grid { overflow-y: auto; padding: 0 16px 16px; display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: 10px; }
-  .landing-asset { border: 2px solid transparent; border-radius: 9px; background: var(--panel2); overflow: hidden; cursor: pointer; color: var(--text); text-align: left; }
+  .landing-asset-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; scrollbar-gutter: stable; }
+  .landing-asset { flex: 0 0 auto; display: grid; grid-template-columns: minmax(340px,48%) minmax(0,1fr); align-items: stretch; border: 2px solid transparent; border-radius: 9px; background: var(--panel2); overflow: hidden; cursor: pointer; color: var(--text); text-align: left; padding: 0; }
   .landing-asset:hover { border-color: var(--accent2); }
   .landing-asset.sel { border-color: var(--accent); }
-  .landing-asset img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #07111e; }
-  .landing-asset-info { padding: 7px 8px; }
-  .landing-asset-name { font-size: 11px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .landing-asset-sub { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; margin-top: 2px; }
+  .landing-asset img { width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; display: block; background: #07111e; }
+  .landing-asset-info { min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; }
+  .landing-asset-name { display: block; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .landing-asset-path { display: block; color: #9ec8ec; font-size: 10px; margin: 5px 0 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .landing-asset-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
   .asset-source-summary { color: var(--muted); font-size: 10px; padding: 0 16px 10px; }
 
   @media (max-width: 980px) {
@@ -241,6 +255,10 @@
     .asset-selection { grid-template-columns: 1fr; }
     .asset-selected-thumb { max-width: 220px; }
     .template-grid { grid-template-columns: 1fr; }
+    .page-asset-picker { min-height: 0; }
+    .custom-artwork-body, .custom-upload-row { grid-template-columns: 1fr; }
+    .custom-artwork-preview { max-width: 240px; }
+    .landing-asset { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -460,7 +478,7 @@
       </div>
 
       <input type="hidden" id="pageId">
-      <input type="hidden" id="pageTemplate" value="LandingPageRight">
+      <input type="hidden" id="pageTemplate" value="LandingPageLeft">
       <div class="page-meta-grid">
         <div><label>Page type</label>
           <select id="pageType" onchange="pageTypeChanged()">
@@ -482,7 +500,10 @@
           <div class="asset-controls">
             <label>Client asset path</label>
             <input id="pageAssetPath" placeholder="LandingPage/asset_name" oninput="pageAssetPathChanged()">
-            <button class="btn ghost" onclick="openPageAssetPicker()">Browse game artwork...</button>
+            <div class="asset-action-row">
+              <button class="btn ghost" onclick="openPageAssetPicker()">Browse game artwork...</button>
+              <button class="btn ghost" onclick="openCustomPageArtwork()">+ Add custom artwork</button>
+            </div>
             <div class="asset-status" id="pageAssetStatus"></div>
           </div>
         </div>
@@ -646,9 +667,25 @@
       <button class="mini" onclick="refreshPageAssets()">Rescan bundles</button>
       <button class="mini" onclick="closePageAssetPicker()">Close</button>
     </div>
+    <details class="custom-artwork-panel" id="pageCustomArtworkPanel">
+      <summary>+ Add your own landing-page artwork</summary>
+      <div class="custom-artwork-body">
+        <div class="custom-artwork-preview" id="pageCustomPreview"><span>Choose an image</span></div>
+        <div class="custom-artwork-fields">
+          <input id="pageCustomFile" type="file" accept="image/png,image/jpeg,image/webp" onchange="customPageFileChanged()">
+          <div class="custom-upload-row">
+            <input id="pageCustomName" type="text" maxlength="96" placeholder="summer_event" aria-label="Unity asset name" oninput="this.dataset.auto='false'">
+            <label class="custom-replace"><input id="pageCustomReplace" type="checkbox"> Replace existing</label>
+            <button class="btn" id="pageCustomUploadButton" onclick="uploadCustomPageArtwork()">Build &amp; add</button>
+          </div>
+          <div class="custom-upload-help">Use a 16:9 image (1920×1080 recommended). Spirit center-crops it, packs it into the native LandingPage texture layout, and builds a Unity bundle for players.</div>
+          <div class="custom-upload-status" id="pageCustomStatus"></div>
+        </div>
+      </div>
+    </details>
     <div class="asset-picker-tools">
       <input id="pageAssetSearch" placeholder="Search artwork (set, Pokemon, ladder...)" oninput="renderPageAssetGrid()">
-      <select id="pageAssetFilter" onchange="renderPageAssetGrid()"><option value="all">All artwork</option><option value="installed">Ready for players</option><option value="source">Needs install</option></select>
+      <select id="pageAssetFilter" onchange="renderPageAssetGrid()"><option value="all">All artwork</option><option value="custom">My custom artwork</option><option value="installed">Ready for players</option><option value="source">Needs install</option></select>
     </div>
     <div class="asset-source-summary" id="pageAssetSourceSummary">Looking for LandingPage bundles...</div>
     <div class="landing-asset-grid" id="pageAssetGrid"></div>
@@ -919,10 +956,11 @@ async function deleteShopItem(id) {
 /* ---------------- Pages ---------------- */
 const PAGE_FOREVER = 4102444800000;
 const PAGE_TEMPLATES = [
-  {id:'LandingPageRight', label:'Artwork on right', sub:'Message and CTA on the left', visual:'visual-right', copy:'left', buttons:true},
-  {id:'LandingPageLeft', label:'Artwork on left', sub:'Message and CTA on the right', visual:'visual-left', copy:'right', buttons:true},
-  {id:'LandingPageRightNoButtons', label:'Artwork right, no CTA', sub:'Message on the left', visual:'visual-right no-buttons', copy:'left', buttons:false},
-  {id:'LandingPageLeftNoButtons', label:'Artwork left, no CTA', sub:'Message on the right', visual:'visual-left no-buttons', copy:'right', buttons:false}
+  // Unity names these prefabs for the TEXT side, not the artwork side.
+  {id:'LandingPageLeft', label:'Artwork on right', sub:'Message and CTA on the left', visual:'visual-right', copy:'left', buttons:true},
+  {id:'LandingPageRight', label:'Artwork on left', sub:'Message and CTA on the right', visual:'visual-left', copy:'right', buttons:true},
+  {id:'LandingPageLeftNoButtons', label:'Artwork right, no CTA', sub:'Message on the left', visual:'visual-right no-buttons', copy:'left', buttons:false},
+  {id:'LandingPageRightNoButtons', label:'Artwork left, no CTA', sub:'Message on the right', visual:'visual-left no-buttons', copy:'right', buttons:false}
 ];
 const PAGE_CTA_LABELS = {
   shop:'VISIT SHOP', redeem:'REDEEM CODE', tournament:'VIEW EVENTS', trade:'OPEN TRADE', url:'LEARN MORE'
@@ -934,6 +972,7 @@ let PAGE_ASSETS_LOADED = false;
 let PAGE_ASSET_REVISION = 0;
 let PAGE_BASE_CONTENT = {};
 let PAGE_EDITOR_INITIALIZED = false;
+let PAGE_CUSTOM_PREVIEW_URL = '';
 
 const cloneJson = value => JSON.parse(JSON.stringify(value || {}));
 const pageAssetName = path => String(path || '').trim().replaceAll('\\', '/').split('/').pop();
@@ -954,7 +993,7 @@ function defaultDynamicContent(type='landing') {
     };
   }
   return {
-    template: 'LandingPageRight', sortOrder: nextPageOrder(), startTime: 0, endTime: PAGE_FOREVER,
+    template: 'LandingPageLeft', sortOrder: nextPageOrder(), startTime: 0, endTime: PAGE_FOREVER,
     labels: {GameText: {token: 'spirit.dynamic_page.game_text', bundle: {en_US: ''}}},
     images: {}, actions: {}
   };
@@ -1007,7 +1046,7 @@ function hydratePageEditor(page) {
   $('#pageSort').value = page.sort_order ?? content.sortOrder ?? nextPageOrder();
   $('#pageEnabled').checked = page.enabled !== false;
 
-  const template = PAGE_TEMPLATES.some(t => t.id === content.template) ? content.template : 'LandingPageRight';
+  const template = PAGE_TEMPLATES.some(t => t.id === content.template) ? content.template : 'LandingPageLeft';
   $('#pageTemplate').value = template;
   $('#pageAssetPath').value = backgroundPath(content);
   $('#pageMessage').value = labelText(content, 'GameText');
@@ -1052,7 +1091,7 @@ function selectPageTemplate(template) {
 function pageTypeChanged() {
   const maintenance = $('#pageType').value === 'maintenance';
   if (!maintenance && !PAGE_TEMPLATES.some(t => t.id === $('#pageTemplate').value)) {
-    $('#pageTemplate').value = 'LandingPageRight';
+    $('#pageTemplate').value = 'LandingPageLeft';
   }
   if (maintenance && !$('#pageStart').value && !$('#pageEnd').value) {
     const start = Math.floor(Date.now() / 60000) * 60000;
@@ -1347,6 +1386,8 @@ function renderSelectedPageAsset() {
   }
   if (!meta) {
     $('#pageAssetStatus').innerHTML = `<span class="pill tag">Custom path</span> <span class="muted">${esc(name)}</span>`;
+  } else if (meta.custom) {
+    $('#pageAssetStatus').innerHTML = `<span class="pill tag">Custom · ready for players</span> <span class="muted">${esc(meta.title)}</span>`;
   } else if (meta.installed) {
     $('#pageAssetStatus').innerHTML = `<span class="pill on">Ready for players</span> <span class="muted">${esc(meta.title)}</span>`;
   } else {
@@ -1404,30 +1445,36 @@ async function loadPageAssets(force=false) {
   try {
     const d = await api(force ? 'pages/assets/refresh' : 'pages/assets', force ? {} : undefined);
     if (force) PAGE_ASSET_REVISION += 1;
-    PAGE_ASSETS = d.assets || [];
-    PAGE_ASSET_BY_NAME = Object.fromEntries(PAGE_ASSETS.map(a => [a.name.toLowerCase(), a]));
-    PAGE_ASSETS_LOADED = true;
-    const installed = PAGE_ASSETS.filter(a => a.installed).length;
-    const sourceText = (d.sources || []).map(s => `${s.textures} from ${s.source}`).join(' + ');
-    const errorText = d.errors?.length
-      ? ` ${d.errors.length} bundle${d.errors.length === 1 ? '' : 's'} could not be read.`
-      : '';
-    $('#pageAssetSourceSummary').textContent = PAGE_ASSETS.length
-      ? `${PAGE_ASSETS.length} artworks found (${installed} already server-ready). ${sourceText}.${errorText}`
-      : `No LandingPage bundles were found. Set PTCGO_CACHE_DIR or place the original cache in this repository.${errorText}`;
-    renderPageAssetGrid();
-    renderSelectedPageAsset();
-    renderPageLibrary();
-    if (PAGE_EDITOR_INITIALIZED) pageEditorChanged();
+    applyPageAssetCatalog(d);
   } catch(e) {
     $('#pageAssetSourceSummary').textContent = 'Could not scan landing-page bundles: ' + e.message;
   }
 }
 
+function applyPageAssetCatalog(d) {
+  PAGE_ASSETS = d.assets || [];
+  PAGE_ASSET_BY_NAME = Object.fromEntries(PAGE_ASSETS.map(a => [a.name.toLowerCase(), a]));
+  PAGE_ASSETS_LOADED = true;
+  const installed = PAGE_ASSETS.filter(a => a.installed).length;
+  const custom = PAGE_ASSETS.filter(a => a.custom).length;
+  const sourceText = (d.sources || []).map(s => `${s.textures} from ${s.source}`).join(' + ');
+  const errorText = d.errors?.length
+    ? ` ${d.errors.length} bundle${d.errors.length === 1 ? '' : 's'} could not be read.`
+    : '';
+  const customText = custom ? ` ${custom} custom.` : '';
+  $('#pageAssetSourceSummary').textContent = PAGE_ASSETS.length
+    ? `${PAGE_ASSETS.length} artworks found (${installed} server-ready).${customText} ${sourceText}.${errorText}`
+    : `No LandingPage bundles were found. Set PTCGO_CACHE_DIR or place the original cache in this repository.${errorText}`;
+  renderPageAssetGrid();
+  renderSelectedPageAsset();
+  renderPageLibrary();
+  if (PAGE_EDITOR_INITIALIZED) pageEditorChanged();
+}
+
 async function refreshPageAssets() {
   PAGE_ASSETS_LOADED = false;
   await loadPageAssets(true);
-  toast(`Found ${PAGE_ASSETS.length} landing-page artworks`);
+  toast(`Found ${PAGE_ASSETS.length} landing-page artworks, including ${PAGE_ASSETS.filter(a => a.custom).length} custom`);
 }
 
 function openPageAssetPicker() {
@@ -1439,6 +1486,90 @@ function openPageAssetPicker() {
 }
 function closePageAssetPicker() { $('#pageAssetOverlay').classList.remove('open'); }
 
+function openCustomPageArtwork() {
+  openPageAssetPicker();
+  $('#pageCustomArtworkPanel').open = true;
+  setTimeout(() => $('#pageCustomFile').focus(), 60);
+}
+
+function customPageAssetName(filename) {
+  let name = String(filename || '').replace(/\.[^.]+$/, '');
+  name = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  name = name.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+  if (name && !name.endsWith('_landingpage')) name += '_landingpage';
+  return name;
+}
+
+function customPageFileChanged() {
+  const file = $('#pageCustomFile').files?.[0];
+  const preview = $('#pageCustomPreview');
+  $('#pageCustomStatus').textContent = '';
+  if (PAGE_CUSTOM_PREVIEW_URL) URL.revokeObjectURL(PAGE_CUSTOM_PREVIEW_URL);
+  PAGE_CUSTOM_PREVIEW_URL = '';
+  if (!file) {
+    preview.innerHTML = '<span>Choose an image</span>';
+    return;
+  }
+  const nameInput = $('#pageCustomName');
+  if (!nameInput.value.trim() || nameInput.dataset.auto !== 'false') {
+    nameInput.value = customPageAssetName(file.name);
+    nameInput.dataset.auto = 'true';
+  }
+  PAGE_CUSTOM_PREVIEW_URL = URL.createObjectURL(file);
+  preview.innerHTML = `<img src="${PAGE_CUSTOM_PREVIEW_URL}" alt="Custom artwork preview">`;
+  $('#pageCustomStatus').textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function readPageImageDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('The browser could not read that image'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadCustomPageArtwork() {
+  const file = $('#pageCustomFile').files?.[0];
+  const name = $('#pageCustomName').value.trim();
+  const status = $('#pageCustomStatus');
+  if (!file) return toast('Choose an artwork image first', true);
+  if (!name) return toast('Give the custom artwork an asset name', true);
+  if (file.size > 12 * 1024 * 1024) return toast('Custom artwork must be 12 MB or smaller', true);
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return toast('Use a PNG, JPEG, or WebP image', true);
+
+  const button = $('#pageCustomUploadButton');
+  button.disabled = true;
+  button.textContent = 'Building Unity bundle...';
+  status.textContent = 'Uploading and packing the native 2048×2048 LandingPage texture...';
+  try {
+    const d = await api('pages/assets/custom', {
+      name,
+      image:await readPageImageDataUrl(file),
+      replace:$('#pageCustomReplace').checked
+    });
+    PAGE_ASSET_REVISION += 1;
+    applyPageAssetCatalog(d);
+    const imported = d.asset?.catalog_asset;
+    if (!imported) throw new Error('The bundle built, but the new artwork was not cataloged');
+    $('#pageCustomFile').value = '';
+    $('#pageCustomName').value = '';
+    $('#pageCustomName').dataset.auto = 'true';
+    $('#pageCustomReplace').checked = false;
+    if (PAGE_CUSTOM_PREVIEW_URL) URL.revokeObjectURL(PAGE_CUSTOM_PREVIEW_URL);
+    PAGE_CUSTOM_PREVIEW_URL = '';
+    $('#pageCustomPreview').innerHTML = '<span>Choose an image</span>';
+    selectPageAsset(imported.name);
+    toast(`${imported.title} is built, selected, and ready for players`);
+  } catch(e) {
+    status.textContent = e.message;
+    toast(e.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Build & add';
+  }
+}
+
 function renderPageAssetGrid() {
   const grid = $('#pageAssetGrid');
   if (!grid) return;
@@ -1446,15 +1577,17 @@ function renderPageAssetGrid() {
   const filter = $('#pageAssetFilter')?.value || 'all';
   const selected = pageAssetName($('#pageAssetPath')?.value || '').toLowerCase();
   const matches = PAGE_ASSETS.filter(a => {
+    if (filter === 'custom' && !a.custom) return false;
     if (filter === 'installed' && !a.installed) return false;
     if (filter === 'source' && a.installed) return false;
     return !query || `${a.title} ${a.name} ${a.bundle}`.toLowerCase().includes(query);
   });
   grid.innerHTML = matches.map(a => `
     <button class="landing-asset ${a.name.toLowerCase() === selected ? 'sel' : ''}" data-asset="${esc(a.name)}" onclick="selectPageAsset(this.dataset.asset)">
-      <img src="${pageAssetUrl(a.name, 'thumb')}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+      <img src="${pageAssetUrl(a.name, 'thumb')}" loading="lazy" decoding="async" alt="Preview of ${esc(a.title)}" onerror="this.style.visibility='hidden'">
       <span class="landing-asset-info"><span class="landing-asset-name">${esc(a.title)}</span>
-        <span class="landing-asset-sub"><span class="pill ${a.installed ? 'on' : 'tag'}">${a.installed ? 'ready' : 'installs on save'}</span><span>${esc(a.bundle)}</span></span>
+        <span class="landing-asset-path">${esc(a.request_path)}</span>
+        <span class="landing-asset-sub"><span class="pill ${a.custom ? 'tag' : (a.installed ? 'on' : 'tag')}">${a.custom ? 'custom' : (a.installed ? 'ready' : 'installs on save')}</span><span>${a.width}×${a.height}</span><span>${esc(a.bundle)}</span></span>
       </span>
     </button>`).join('') || '<div class="empty-page-library">No artwork matches this filter.</div>';
 }
