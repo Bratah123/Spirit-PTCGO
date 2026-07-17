@@ -16,10 +16,10 @@
   header h1 { font-size: 18px; letter-spacing: .5px; }
   header h1 span { color: var(--accent); }
   header .stats { margin-left: auto; color: var(--muted); font-size: 12px; }
-  nav { display: flex; gap: 4px; padding: 10px 22px 0; background: var(--panel); }
-  nav button { background: none; border: none; color: var(--muted); padding: 9px 18px; font-size: 14px; cursor: pointer; border-radius: 8px 8px 0 0; }
+  nav { display: flex; gap: 4px; padding: 10px 22px 0; background: var(--panel); overflow-x: auto; }
+  nav button { flex: none; background: none; border: none; color: var(--muted); padding: 9px 18px; font-size: 14px; cursor: pointer; border-radius: 8px 8px 0 0; }
   nav button.active { background: var(--bg); color: var(--accent); font-weight: 600; }
-  main { padding: 22px; max-width: 1200px; margin: 0 auto; }
+  main { padding: 22px; max-width: 1440px; margin: 0 auto; }
   section { display: none; }
   section.active { display: block; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
@@ -36,6 +36,7 @@
   .row > div { display: flex; flex-direction: column; }
   button.btn { background: var(--accent2); border: none; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
   button.btn:hover { filter: brightness(1.15); }
+  button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
   button.btn.warn { background: var(--bad); }
   button.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
   button.mini { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 5px; padding: 3px 9px; cursor: pointer; font-size: 12px; margin-right: 4px; }
@@ -114,6 +115,133 @@
   .prize-range { display: flex; flex-direction: column; gap: 4px; flex: none; }
   .prize-range input { width: 70px; }
   .prize-rewards { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* ---- Dynamic page visual studio ---- */
+  .page-studio { display: grid; grid-template-columns: minmax(360px, .78fr) minmax(560px, 1.35fr); gap: 18px; align-items: start; }
+  .page-studio > .card { margin-bottom: 0; }
+  .page-editor-card { min-width: 0; }
+  .page-panel-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .page-panel-head > div:first-child { flex: 1; }
+  .page-panel-head h2 { margin-bottom: 2px; }
+  .page-kicker { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
+  .page-meta-grid { display: grid; grid-template-columns: 1.5fr .7fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .page-meta-grid input, .page-meta-grid select { width: 100%; }
+  .switch-field { min-height: 34px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  .switch-field input { width: auto; }
+  .page-section-title { display: flex; align-items: center; gap: 9px; color: var(--text); font-weight: 650; margin: 17px 0 9px; }
+  .page-section-title::after { content: ''; height: 1px; background: var(--line); flex: 1; }
+  .template-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .template-choice { border: 2px solid var(--line); background: var(--bg); color: var(--muted); border-radius: 8px; padding: 9px; cursor: pointer; text-align: left; }
+  .template-choice:hover { border-color: var(--accent2); }
+  .template-choice.sel { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 2px rgba(255,203,5,.08); }
+  .template-mini { display: block; position: relative; aspect-ratio: 16/9; border-radius: 5px; background: linear-gradient(135deg,#17314f,#315d7d); overflow: hidden; margin-bottom: 6px; }
+  .template-mini::before { content: ''; position: absolute; top: 27%; width: 31%; height: 25%; border-radius: 3px; background: rgba(255,255,255,.72); }
+  .template-mini::after { content: ''; position: absolute; top: 59%; width: 24%; height: 12%; border-radius: 10px; background: #3d7dca; }
+  .template-mini.visual-left::before, .template-mini.visual-left::after { right: 18%; }
+  .template-mini.visual-right::before, .template-mini.visual-right::after { left: 18%; }
+  .template-mini.no-buttons::after { display: none; }
+  .template-choice strong { display: block; font-size: 12px; }
+  .template-choice small { display: block; color: var(--muted); font-size: 10px; margin-top: 1px; }
+  .page-field { margin-bottom: 11px; }
+  .page-field input, .page-field select, .page-field textarea { width: 100%; }
+  .page-help { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .schedule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .asset-selection { display: grid; grid-template-columns: 150px 1fr; gap: 10px; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
+  .asset-selected-thumb { aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; background: #09101b; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 10px; }
+  .asset-selected-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .asset-controls { min-width: 0; }
+  .asset-controls input { width: 100%; margin-bottom: 7px; }
+  .asset-status { margin-top: 5px; min-height: 18px; }
+  .page-form-actions { display: flex; gap: 8px; align-items: center; padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--line); }
+  .page-form-actions .save-state { flex: 1; font-size: 11px; color: var(--muted); }
+  details.page-advanced { border: 1px solid var(--line); border-radius: 8px; margin-top: 14px; overflow: hidden; }
+  details.page-advanced summary { cursor: pointer; padding: 9px 11px; color: var(--muted); font-size: 12px; background: rgba(255,255,255,.018); }
+  .advanced-body { padding: 10px; }
+  .advanced-body textarea { min-height: 190px; }
+
+  .page-preview-card { position: sticky; top: 14px; }
+  .preview-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .preview-head h2 { margin: 0; flex: 1; }
+  .resolution-badge { color: #9cc5ef; background: rgba(61,125,202,.18); border: 1px solid rgba(61,125,202,.45); border-radius: 20px; padding: 2px 9px; font-size: 10px; }
+  .game-shell { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #3f5875; background: #07111e; box-shadow: 0 14px 35px rgba(0,0,0,.35); }
+  .game-stage { position: relative; aspect-ratio: 16/9; overflow: hidden; background: radial-gradient(circle at 50% 45%, #274b6d, #07111e 72%); }
+  .game-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+  .game-art.show { display: block; }
+  .game-art-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: rgba(255,255,255,.6); background: linear-gradient(135deg,#183755,#0b1f36); }
+  .game-art-placeholder .pokeball { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,.55); border-radius: 50%; position: relative; opacity: .7; }
+  .game-art-placeholder .pokeball::before { content: ''; position: absolute; left: -4px; right: -4px; top: 18px; height: 4px; background: rgba(255,255,255,.55); }
+  .game-art-placeholder .pokeball::after { content: ''; position: absolute; left: 13px; top: 13px; width: 14px; height: 14px; border: 4px solid rgba(255,255,255,.55); border-radius: 50%; background: #183755; }
+  .game-topbar { position: absolute; z-index: 4; left: 0; right: 0; top: 0; height: 8.5%; padding: 0 2.2%; display: flex; align-items: center; gap: 2%; color: white; background: linear-gradient(to bottom,rgba(3,12,23,.88),rgba(8,22,38,.52),transparent); text-shadow: 0 1px 2px #000; }
+  .game-logo { font-weight: 900; font-size: clamp(9px,1.2vw,17px); font-style: italic; color: var(--accent); letter-spacing: -.3px; }
+  .game-logo span { color: #79b7ef; }
+  .game-profile { margin-left: auto; font-size: clamp(6px,.65vw,10px); opacity: .85; }
+  .game-bottomnav { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; height: 9%; display: flex; align-items: flex-end; justify-content: center; gap: .5%; padding-bottom: 1%; background: linear-gradient(to top,rgba(2,10,19,.94),rgba(5,17,30,.6),transparent); }
+  .game-navitem { min-width: 10%; padding: .6% 1%; border-radius: 3px 3px 0 0; text-align: center; color: #c7d8e8; background: rgba(15,45,72,.8); border-top: 1px solid rgba(126,183,231,.5); font-size: clamp(5px,.55vw,9px); text-transform: uppercase; }
+  .game-copy { position: absolute; z-index: 3; width: 28%; top: 44%; transform: translateY(-50%); color: white; text-align: center; text-shadow: 0 2px 4px #000,0 0 12px rgba(0,0,0,.8); }
+  .game-copy.side-left { left: 21.2%; }
+  .game-copy.side-right { right: 21.2%; }
+  .game-message { font-weight: 750; font-size: clamp(11px,1.42vw,22px); line-height: 1.12; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .game-message:empty::before { content: 'Your page message'; opacity: .45; }
+  .game-cta { display: inline-flex; align-items: center; justify-content: center; min-width: 42%; max-width: 90%; margin-top: 4.5%; padding: 2.2% 5.5%; border-radius: 999px; color: white; border: 1px solid #8fc8fb; background: linear-gradient(#4f9ce0,#24649f); box-shadow: 0 2px 0 #102d49, inset 0 1px rgba(255,255,255,.5), 0 0 12px rgba(59,142,216,.55); font-weight: 800; font-size: clamp(6px,.72vw,11px); text-shadow: 0 1px 2px #17456d; }
+  .game-cta.gold { color: #26364b; border-color: #fff0a4; background: linear-gradient(#ffe775,#e1aa21); box-shadow: 0 2px 0 #74560d, inset 0 1px #fff9c6, 0 0 12px rgba(255,203,5,.55); text-shadow: 0 1px rgba(255,255,255,.65); }
+  .maintenance-preview { position: absolute; z-index: 3; left: 3.2%; bottom: 12%; width: 48%; padding: 2.2%; border: 2px solid #7ba4c5; border-radius: 7px; color: white; background: linear-gradient(135deg,rgba(18,49,75,.96),rgba(7,25,43,.96)); box-shadow: 0 7px 20px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.08); }
+  .maintenance-title { color: var(--accent); font-weight: 800; font-size: clamp(8px,1vw,15px); margin-bottom: 1.5%; }
+  .maintenance-message { font-size: clamp(6px,.72vw,11px); line-height: 1.25; white-space: pre-wrap; }
+  .maintenance-time { display: flex; gap: 4%; margin-top: 3%; color: #b8d0e4; font-size: clamp(5px,.58vw,9px); }
+  .preview-caption { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: var(--muted); font-size: 11px; }
+  .preview-caption .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+  .page-validation { margin-top: 10px; display: grid; gap: 5px; }
+  .validation-row { display: flex; gap: 7px; align-items: flex-start; padding: 7px 9px; border-radius: 6px; font-size: 11px; background: rgba(76,175,125,.08); color: #90d5b0; }
+  .validation-row.warn { color: #e7c66c; background: rgba(255,203,5,.08); }
+  .validation-row.err { color: #ef9a9a; background: rgba(224,92,92,.1); }
+
+  .page-library-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+  .page-library-head h2 { margin: 0; flex: 1; }
+  .page-card-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(270px,1fr)); gap: 12px; }
+  .page-card { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel2); }
+  .page-card:hover { border-color: #486489; transform: translateY(-1px); }
+  .page-card-art { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg,#17314f,#091421); overflow: hidden; }
+  .page-card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .page-card-art::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(transparent,rgba(5,12,20,.9)); pointer-events: none; }
+  .page-card-badges { position: absolute; z-index: 2; left: 8px; top: 8px; right: 8px; display: flex; gap: 5px; align-items: center; }
+  .page-card-badges .right { margin-left: auto; }
+  .page-order { position: absolute; z-index: 2; right: 9px; bottom: 7px; color: white; font-size: 10px; }
+  .page-card-body { padding: 10px; }
+  .page-card-title { font-weight: 650; line-height: 1.3; min-height: 34px; }
+  .page-card-meta { color: var(--muted); font-size: 10px; margin: 3px 0 9px; }
+  .page-card-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+  .page-card-actions button.mini { margin: 0; }
+  .empty-page-library { grid-column: 1/-1; padding: 34px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; }
+
+  #pageAssetOverlay { position: fixed; inset: 0; z-index: 35; display: none; align-items: center; justify-content: center; padding: 3vh 3vw; background: rgba(4,8,14,.82); }
+  #pageAssetOverlay.open { display: flex; }
+  .page-asset-picker { width: min(1120px,95vw); max-height: 92vh; display: flex; flex-direction: column; border: 1px solid #435778; border-radius: 12px; overflow: hidden; background: var(--panel); box-shadow: 0 20px 60px rgba(0,0,0,.55); }
+  .asset-picker-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .asset-picker-head > div:first-child { flex: 1; }
+  .asset-picker-head h3 { color: var(--accent); font-size: 15px; }
+  .asset-picker-tools { display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; padding: 12px 16px; }
+  .asset-picker-tools input { width: 100%; }
+  .landing-asset-grid { overflow-y: auto; padding: 0 16px 16px; display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: 10px; }
+  .landing-asset { border: 2px solid transparent; border-radius: 9px; background: var(--panel2); overflow: hidden; cursor: pointer; color: var(--text); text-align: left; }
+  .landing-asset:hover { border-color: var(--accent2); }
+  .landing-asset.sel { border-color: var(--accent); }
+  .landing-asset img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #07111e; }
+  .landing-asset-info { padding: 7px 8px; }
+  .landing-asset-name { font-size: 11px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .landing-asset-sub { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; margin-top: 2px; }
+  .asset-source-summary { color: var(--muted); font-size: 10px; padding: 0 16px 10px; }
+
+  @media (max-width: 980px) {
+    .page-studio { grid-template-columns: 1fr; }
+    .page-preview-card { position: static; grid-row: 1; }
+  }
+  @media (max-width: 600px) {
+    main { padding: 12px; }
+    .page-meta-grid, .schedule-grid { grid-template-columns: 1fr; }
+    .asset-selection { grid-template-columns: 1fr; }
+    .asset-selected-thumb { max-width: 220px; }
+    .template-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -320,22 +448,147 @@
 </section>
 
 <section id="tab-pages">
-  <div class="card">
-    <h2>Add / Edit Dynamic Page</h2>
-    <div class="row">
-      <div><label>Type</label>
-        <select id="pageType" style="width:150px"><option value="landing">Landing page</option><option value="maintenance">Maintenance</option></select></div>
-      <div><label>Sort order</label><input id="pageSort" type="number" value="1" style="width:80px"></div>
-      <div><label>&nbsp;</label><label><input type="checkbox" id="pageEnabled" checked> Enabled</label></div>
-      <div><button class="btn ghost" onclick="loadPageTemplate()">Insert template</button></div>
-      <div><button class="btn" onclick="savePage()">Save Page</button></div>
+  <div class="page-studio">
+    <div class="card page-editor-card">
+      <div class="page-panel-head">
+        <div>
+          <div class="page-kicker" id="pageEditorKicker">New dynamic page</div>
+          <h2 id="pageEditorTitle">Build a landing page</h2>
+          <div class="muted">Use the real client templates and artwork without hand-writing the wire JSON.</div>
+        </div>
+        <button class="mini" onclick="newDynamicPage()">+ New</button>
+      </div>
+
       <input type="hidden" id="pageId">
+      <input type="hidden" id="pageTemplate" value="LandingPageRight">
+      <div class="page-meta-grid">
+        <div><label>Page type</label>
+          <select id="pageType" onchange="pageTypeChanged()">
+            <option value="landing">Landing carousel</option>
+            <option value="maintenance">Maintenance notice</option>
+          </select>
+        </div>
+        <div><label>Order</label><input id="pageSort" type="number" value="1" oninput="pageEditorChanged()"></div>
+        <div><label>Visibility</label><label class="switch-field"><input type="checkbox" id="pageEnabled" checked onchange="pageEditorChanged()"> Enabled</label></div>
+      </div>
+
+      <div id="pageLandingFields">
+        <div class="page-section-title">Layout</div>
+        <div id="pageTemplateChoices" class="template-grid"></div>
+
+        <div class="page-section-title">Background artwork</div>
+        <div class="asset-selection">
+          <div class="asset-selected-thumb" id="pageAssetThumb"><span>Select artwork</span></div>
+          <div class="asset-controls">
+            <label>Client asset path</label>
+            <input id="pageAssetPath" placeholder="LandingPage/asset_name" oninput="pageAssetPathChanged()">
+            <button class="btn ghost" onclick="openPageAssetPicker()">Browse game artwork...</button>
+            <div class="asset-status" id="pageAssetStatus"></div>
+          </div>
+        </div>
+
+        <div class="page-section-title">Message and action</div>
+        <div class="page-field">
+          <label>Page message <span class="muted">(English fallback)</span></label>
+          <textarea id="pageMessage" rows="4" placeholder="Tell players what is new..." oninput="pageEditorChanged()"></textarea>
+          <div class="page-help">This is the real <code>GameText</code> area from the selected client template.</div>
+        </div>
+        <div class="page-field">
+          <label>Call to action</label>
+          <select id="pageCta" onchange="pageCtaChanged()">
+            <option value="none">No button</option>
+            <option value="shop">Open the Shop</option>
+            <option value="redeem">Redeem a code</option>
+            <option value="tournament">Open Tournaments</option>
+            <option value="trade">Open Trade</option>
+            <option value="url">Open a website</option>
+          </select>
+          <div class="page-help" id="pageCtaHelp">The client has one CTA position; choosing one avoids overlapping buttons.</div>
+        </div>
+        <div class="page-field" id="pageCtaLabelField" style="display:none">
+          <label>Button label <span class="muted">(shown in game)</span></label>
+          <input id="pageCtaLabel" maxlength="60" placeholder="LEARN MORE" oninput="this.dataset.auto='false'; pageEditorChanged()">
+          <div class="page-help">The client binds this text to the active template button.</div>
+        </div>
+        <div class="page-field" id="pageUrlField" style="display:none">
+          <label>Website URL</label>
+          <input id="pageCtaUrl" type="url" placeholder="https://example.com/news" oninput="pageEditorChanged()">
+        </div>
+      </div>
+
+      <div id="pageMaintenanceFields" style="display:none">
+        <div class="page-section-title">Maintenance notice</div>
+        <div class="page-field">
+          <label>Notice text <span class="muted">(English fallback)</span></label>
+          <textarea id="pageMaintenanceMessage" rows="5" placeholder="Servers will be unavailable while maintenance is completed." oninput="pageEditorChanged()"></textarea>
+          <div class="page-help">Shown in the client's native <code>SplashMaintenanceWindow</code>.</div>
+        </div>
+      </div>
+
+      <div class="page-section-title">Schedule</div>
+      <div class="schedule-grid">
+        <div class="page-field"><label>Starts <span class="muted" id="pageStartHint">(blank = immediately)</span></label><input id="pageStart" type="datetime-local" onchange="pageEditorChanged()"></div>
+        <div class="page-field"><label>Ends <span class="muted" id="pageEndHint">(blank = no end date)</span></label><input id="pageEnd" type="datetime-local" onchange="pageEditorChanged()"></div>
+      </div>
+      <div class="page-help" id="pageScheduleHelp">Landing pages are sent to players only during this window.</div>
+
+      <details class="page-advanced">
+        <summary>Advanced: inspect or edit the client JSON</summary>
+        <div class="advanced-body">
+          <div class="muted" style="margin-bottom:7px">Unknown fields are preserved. Apply changes here to repopulate the visual editor.</div>
+          <textarea id="pageContent" rows="12" spellcheck="false"></textarea>
+          <div class="row" style="margin:8px 0 0">
+            <button class="mini" onclick="applyPageJson()">Apply JSON to editor</button>
+            <button class="mini" onclick="copyPageJson()">Copy JSON</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="page-form-actions">
+        <div class="save-state" id="pageSaveState">Ready to create</div>
+        <button class="btn ghost" onclick="newDynamicPage()">Clear</button>
+        <button class="btn" id="pageSaveButton" onclick="savePage()">Save page</button>
+      </div>
     </div>
-    <label>Page content JSON (client DynamicLandingPages page object)</label>
-    <textarea id="pageContent" rows="14" spellcheck="false"></textarea>
+
+    <div class="card page-preview-card">
+      <div class="preview-head">
+        <h2>In-game preview</h2>
+        <span class="resolution-badge">1920 x 1080 composition</span>
+      </div>
+      <div class="game-shell">
+        <div class="game-stage" id="pagePreviewStage">
+          <img class="game-art" id="pagePreviewArt" alt="">
+          <div class="game-art-placeholder" id="pagePreviewPlaceholder"><span class="pokeball"></span><span>Choose artwork to preview the page</span></div>
+          <div class="game-topbar"><div class="game-logo">SPIRIT<span>PTCGO</span></div><div class="game-profile">PLAYER &nbsp; 1,000 tokens</div></div>
+          <div class="game-copy side-left" id="pagePreviewCopy">
+            <div class="game-message" id="pagePreviewMessage"></div>
+            <div class="game-cta" id="pagePreviewCta" style="display:none"></div>
+          </div>
+          <div class="maintenance-preview" id="pageMaintenancePreview" style="display:none">
+            <div class="maintenance-title">Scheduled maintenance</div>
+            <div class="maintenance-message" id="pageMaintenancePreviewMessage"></div>
+            <div class="maintenance-time"><span id="pageMaintenanceStart"></span><span>through</span><span id="pageMaintenanceEnd"></span></div>
+          </div>
+          <div class="game-bottomnav">
+            <div class="game-navitem">Home</div><div class="game-navitem">Collection</div><div class="game-navitem">Decks</div><div class="game-navitem">Play</div><div class="game-navitem">Shop</div>
+          </div>
+        </div>
+      </div>
+      <div class="preview-caption"><span class="dot"></span><span id="pagePreviewCaption">Uses the client's crop and template placement.</span></div>
+      <div class="page-validation" id="pageValidation"></div>
+    </div>
   </div>
-  <div class="card"><h2>Pages</h2>
-    <table id="pagesTable"><thead><tr><th>ID</th><th>Type</th><th>Sort</th><th>Summary</th><th>Status</th><th></th></tr></thead><tbody></tbody></table>
+
+  <div class="card" style="margin-top:18px">
+    <div class="page-library-head">
+      <div><h2>Published pages</h2><div class="muted">Edit, duplicate, or disable a page without touching its JSON.</div></div>
+      <select id="pageLibraryFilter" onchange="renderPageLibrary()">
+        <option value="all">All page types</option><option value="landing">Landing only</option><option value="maintenance">Maintenance only</option>
+      </select>
+      <button class="mini" onclick="loadPages()">Refresh</button>
+    </div>
+    <div id="pagesGrid" class="page-card-grid"></div>
   </div>
 </section>
 
@@ -383,6 +636,22 @@
       <div style="flex:1"></div>
       <button class="btn" onclick="doLogin()">Sign in</button>
     </div>
+  </div>
+</div>
+
+<div id="pageAssetOverlay" onclick="if(event.target===this) closePageAssetPicker()">
+  <div class="page-asset-picker">
+    <div class="asset-picker-head">
+      <div><h3>Landing-page artwork</h3><div class="muted">Extracted directly from the local PTCGO Unity bundle cache.</div></div>
+      <button class="mini" onclick="refreshPageAssets()">Rescan bundles</button>
+      <button class="mini" onclick="closePageAssetPicker()">Close</button>
+    </div>
+    <div class="asset-picker-tools">
+      <input id="pageAssetSearch" placeholder="Search artwork (set, Pokemon, ladder...)" oninput="renderPageAssetGrid()">
+      <select id="pageAssetFilter" onchange="renderPageAssetGrid()"><option value="all">All artwork</option><option value="installed">Ready for players</option><option value="source">Needs install</option></select>
+    </div>
+    <div class="asset-source-summary" id="pageAssetSourceSummary">Looking for LandingPage bundles...</div>
+    <div class="landing-asset-grid" id="pageAssetGrid"></div>
   </div>
 </div>
 
@@ -440,6 +709,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   document.querySelectorAll('section').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
   $('#tab-' + b.dataset.tab).classList.add('active');
+  if (b.dataset.tab === 'pages') { loadPageAssets(); loadPages(); }
 });
 
 async function loadOverview() {
@@ -647,56 +917,643 @@ async function deleteShopItem(id) {
 }
 
 /* ---------------- Pages ---------------- */
-function loadPageTemplate() {
-  $('#pageContent').value = JSON.stringify({
-    template: "LandingPageRight",
-    startTime: 0,
-    endTime: 4102444800000,
-    labels: { GameText: { token: "promo_text", bundle: { en_US: "Welcome to SpiritPTCGO!" } } },
-    images: { GameBackground: { localeImageMap: { en_US: "swsh12_vulpix_landingpage" } } },
-    actions: {
-      UpsellButton: { name: "NavigateToScene", value: { scene: "Shop" } },
-      CodeRedeemButton: { name: "NavigateToScene", value: { scene: "ShopCodeRedemption" } }
-    }
-  }, null, 2);
+const PAGE_FOREVER = 4102444800000;
+const PAGE_TEMPLATES = [
+  {id:'LandingPageRight', label:'Artwork on right', sub:'Message and CTA on the left', visual:'visual-right', copy:'left', buttons:true},
+  {id:'LandingPageLeft', label:'Artwork on left', sub:'Message and CTA on the right', visual:'visual-left', copy:'right', buttons:true},
+  {id:'LandingPageRightNoButtons', label:'Artwork right, no CTA', sub:'Message on the left', visual:'visual-right no-buttons', copy:'left', buttons:false},
+  {id:'LandingPageLeftNoButtons', label:'Artwork left, no CTA', sub:'Message on the right', visual:'visual-left no-buttons', copy:'right', buttons:false}
+];
+const PAGE_CTA_LABELS = {
+  shop:'VISIT SHOP', redeem:'REDEEM CODE', tournament:'VIEW EVENTS', trade:'OPEN TRADE', url:'LEARN MORE'
+};
+let DYNAMIC_PAGES = [];
+let PAGE_ASSETS = [];
+let PAGE_ASSET_BY_NAME = {};
+let PAGE_ASSETS_LOADED = false;
+let PAGE_ASSET_REVISION = 0;
+let PAGE_BASE_CONTENT = {};
+let PAGE_EDITOR_INITIALIZED = false;
+
+const cloneJson = value => JSON.parse(JSON.stringify(value || {}));
+const pageAssetName = path => String(path || '').trim().replaceAll('\\', '/').split('/').pop();
+const pageAssetUrl = (name, variant='preview') => `/admin/api/pages/assets/${variant}/${encodeURIComponent(pageAssetName(name))}?v=${PAGE_ASSET_REVISION}`;
+const pageAssetMeta = path => {
+  const normalized = normalizedPageAssetPath(path);
+  if (!/^LandingPage\/[^/]+$/i.test(normalized)) return null;
+  return PAGE_ASSET_BY_NAME[pageAssetName(normalized).toLowerCase()] || null;
+};
+
+function defaultDynamicContent(type='landing') {
+  if (type === 'maintenance') {
+    const start = Math.floor(Date.now() / 60000) * 60000;
+    return {
+      template: 'SplashMaintenanceWindow', sortOrder: nextPageOrder(), startTime:start, endTime:start + 2 * 60 * 60 * 1000,
+      labels: {NotificationBody: {token: 'spirit.dynamic_page.maintenance', bundle: {en_US: ''}}},
+      images: {}, actions: {}
+    };
+  }
+  return {
+    template: 'LandingPageRight', sortOrder: nextPageOrder(), startTime: 0, endTime: PAGE_FOREVER,
+    labels: {GameText: {token: 'spirit.dynamic_page.game_text', bundle: {en_US: ''}}},
+    images: {}, actions: {}
+  };
 }
-async function savePage() {
-  let content;
-  try { content = JSON.parse($('#pageContent').value); }
-  catch(e) { return toast('Invalid JSON: ' + e.message, true); }
+
+function nextPageOrder() {
+  return DYNAMIC_PAGES.length ? Math.max(...DYNAMIC_PAGES.map(p => parseInt(p.sort_order) || 0)) + 1 : 1;
+}
+
+function labelText(content, key) {
+  const label = content?.labels?.[key];
+  const bundle = label?.bundle;
+  if (!bundle || typeof bundle !== 'object') return String(label?.token || '');
+  return String(bundle.en_US ?? Object.values(bundle)[0] ?? label?.token ?? '');
+}
+
+function backgroundPath(content) {
+  const map = content?.images?.GameBackground?.localeImageMap;
+  if (!map || typeof map !== 'object') return '';
+  return String(map.en_US ?? Object.values(map)[0] ?? '');
+}
+
+function actionEditorValue(content) {
+  const code = content?.actions?.CodeRedeemButton;
+  const action = code || content?.actions?.UpsellButton;
+  if (!action || typeof action !== 'object') return {kind:'none', url:''};
+  if (action.name === 'NavigateToUrl') return {kind:'url', url:String(action.value?.url || '')};
+  if (action.name === 'NavigateToUrls') {
+    const urls = action.value?.urls || {};
+    return {kind:'url', url:String(urls.en_US ?? Object.values(urls)[0] ?? '')};
+  }
+  const byScene = {Shop:'shop', ShopCodeRedemption:'redeem', Tournament:'tournament', Trade:'trade'};
+  return {kind:byScene[action.value?.scene] || 'none', url:''};
+}
+
+function newDynamicPage(type='landing') {
+  const content = defaultDynamicContent(type);
+  hydratePageEditor({page_type:type, sort_order:content.sortOrder, enabled:true, content_json:content});
+}
+
+// Kept as a compatibility alias for bookmarks/dev-console snippets from the old editor.
+function loadPageTemplate() { newDynamicPage($('#pageType').value || 'landing'); }
+
+function hydratePageEditor(page) {
+  const type = page.page_type === 'maintenance' ? 'maintenance' : 'landing';
+  const content = cloneJson(page.content_json || defaultDynamicContent(type));
+  PAGE_BASE_CONTENT = content;
+  $('#pageId').value = page.id ?? '';
+  $('#pageType').value = type;
+  $('#pageSort').value = page.sort_order ?? content.sortOrder ?? nextPageOrder();
+  $('#pageEnabled').checked = page.enabled !== false;
+
+  const template = PAGE_TEMPLATES.some(t => t.id === content.template) ? content.template : 'LandingPageRight';
+  $('#pageTemplate').value = template;
+  $('#pageAssetPath').value = backgroundPath(content);
+  $('#pageMessage').value = labelText(content, 'GameText');
+  $('#pageMaintenanceMessage').value = labelText(content, 'NotificationBody');
+  const action = actionEditorValue(content);
+  $('#pageCta').value = action.kind;
+  $('#pageCtaUrl').value = action.url;
+  const storedButtonLabel = labelText(content, 'ButtonText');
+  $('#pageCtaLabel').value = storedButtonLabel || PAGE_CTA_LABELS[action.kind] || '';
+  $('#pageCtaLabel').dataset.auto = String(!storedButtonLabel || storedButtonLabel === PAGE_CTA_LABELS[action.kind]);
+  $('#pageCtaLabel').dataset.kind = action.kind;
+  const start = Number(content.startTime || 0);
+  const end = Number(content.endTime ?? PAGE_FOREVER);
+  $('#pageStart').value = start > 0 ? msToLocal(start) : '';
+  $('#pageEnd').value = end > 0 && (type === 'maintenance' || end < PAGE_FOREVER) ? msToLocal(end) : '';
+
+  $('#pageEditorKicker').textContent = page.id ? `Editing page #${page.id}` : 'New dynamic page';
+  $('#pageEditorTitle').textContent = type === 'maintenance' ? 'Build a maintenance notice' : 'Build a landing page';
+  $('#pageSaveButton').textContent = page.id ? 'Save changes' : 'Create page';
+  renderTemplateChoices();
+  updatePageTypeFields();
+  pageCtaChanged(false);
+  pageEditorChanged();
+}
+
+function renderTemplateChoices() {
+  const current = $('#pageTemplate').value;
+  $('#pageTemplateChoices').innerHTML = PAGE_TEMPLATES.map(t => `
+    <button class="template-choice ${t.id === current ? 'sel' : ''}" onclick="selectPageTemplate('${t.id}')">
+      <span class="template-mini ${t.visual}"></span><strong>${esc(t.label)}</strong><small>${esc(t.sub)}</small>
+    </button>`).join('');
+}
+
+function selectPageTemplate(template) {
+  $('#pageTemplate').value = template;
+  const def = PAGE_TEMPLATES.find(t => t.id === template);
+  if (def && !def.buttons) $('#pageCta').value = 'none';
+  renderTemplateChoices();
+  pageCtaChanged();
+}
+
+function pageTypeChanged() {
+  const maintenance = $('#pageType').value === 'maintenance';
+  if (!maintenance && !PAGE_TEMPLATES.some(t => t.id === $('#pageTemplate').value)) {
+    $('#pageTemplate').value = 'LandingPageRight';
+  }
+  if (maintenance && !$('#pageStart').value && !$('#pageEnd').value) {
+    const start = Math.floor(Date.now() / 60000) * 60000;
+    $('#pageStart').value = msToLocal(start);
+    $('#pageEnd').value = msToLocal(start + 2 * 60 * 60 * 1000);
+  }
+  $('#pageEditorTitle').textContent = maintenance ? 'Build a maintenance notice' : 'Build a landing page';
+  updatePageTypeFields();
+  pageEditorChanged();
+}
+
+function updatePageTypeFields() {
+  const maintenance = $('#pageType').value === 'maintenance';
+  $('#pageLandingFields').style.display = maintenance ? 'none' : '';
+  $('#pageMaintenanceFields').style.display = maintenance ? '' : 'none';
+  $('#pageStartHint').textContent = maintenance ? '(required; printed in game)' : '(blank = immediately)';
+  $('#pageEndHint').textContent = maintenance ? '(required; printed in game)' : '(blank = no end date)';
+  $('#pageScheduleHelp').textContent = maintenance
+    ? 'These are the event dates printed in the native notice; the Enabled switch controls whether it is announced.'
+    : 'Landing pages are sent to players only during this window.';
+}
+
+function pageCtaChanged(update=true) {
+  const def = PAGE_TEMPLATES.find(t => t.id === $('#pageTemplate').value);
+  const disabled = def && !def.buttons;
+  if (disabled) $('#pageCta').value = 'none';
+  const kind = $('#pageCta').value;
+  const label = $('#pageCtaLabel');
+  const previousKind = label.dataset.kind || 'none';
+  const shouldAutofill = !label.value.trim() || label.dataset.auto === 'true'
+    || label.value === (PAGE_CTA_LABELS[previousKind] || '');
+  if (kind !== 'none' && shouldAutofill) {
+    label.value = PAGE_CTA_LABELS[kind] || 'LEARN MORE';
+    label.dataset.auto = 'true';
+  }
+  label.dataset.kind = kind;
+  $('#pageCta').disabled = !!disabled;
+  $('#pageCtaLabelField').style.display = kind === 'none' ? 'none' : '';
+  $('#pageUrlField').style.display = kind === 'url' ? '' : 'none';
+  $('#pageCtaHelp').textContent = disabled
+    ? 'This client template intentionally has no button slot.'
+    : 'The client has one CTA position; choosing one avoids overlapping buttons.';
+  if (update) pageEditorChanged();
+}
+
+function pageAssetPathChanged() {
+  renderSelectedPageAsset();
+  pageEditorChanged();
+}
+
+function normalizedPageAssetPath(path) {
+  path = String(path || '').trim().replaceAll('\\', '/');
+  if (path && !path.includes('/')) path = 'LandingPage/' + path;
+  return path;
+}
+
+function buildDynamicPageContent() {
+  const type = $('#pageType').value;
+  const content = cloneJson(PAGE_BASE_CONTENT);
+  content.sortOrder = parseInt($('#pageSort').value) || 0;
+  content.startTime = $('#pageStart').value ? localToMs($('#pageStart').value) : 0;
+  content.endTime = $('#pageEnd').value
+    ? localToMs($('#pageEnd').value)
+    : (type === 'maintenance' ? 0 : PAGE_FOREVER);
+  if (!content.labels || typeof content.labels !== 'object' || Array.isArray(content.labels)) content.labels = {};
+  if (!content.images || typeof content.images !== 'object' || Array.isArray(content.images)) content.images = {};
+  if (!content.actions || typeof content.actions !== 'object' || Array.isArray(content.actions)) content.actions = {};
+
+  if (type === 'maintenance') {
+    content.template = 'SplashMaintenanceWindow';
+    const old = content.labels.NotificationBody || {};
+    content.labels = {
+      ...content.labels,
+      NotificationBody: {
+        ...old,
+        token: old.token || 'spirit.dynamic_page.maintenance',
+        bundle: {...(old.bundle || {}), en_US:$('#pageMaintenanceMessage').value}
+      }
+    };
+    delete content.labels.GameText;
+    delete content.labels.ButtonText;
+    content.images = {};
+    content.actions = {};
+    return content;
+  }
+
+  content.template = $('#pageTemplate').value;
+  const oldText = content.labels.GameText || {};
+  content.labels.GameText = {
+    ...oldText,
+    token: oldText.token || 'spirit.dynamic_page.game_text',
+    bundle: {...(oldText.bundle || {}), en_US:$('#pageMessage').value}
+  };
+  delete content.labels.NotificationBody;
+
+  const path = normalizedPageAssetPath($('#pageAssetPath').value);
+  if (path) {
+    const oldBackground = content.images.GameBackground || {};
+    content.images.GameBackground = {
+      ...oldBackground,
+      localeImageMap: {...(oldBackground.localeImageMap || {}), en_US:path}
+    };
+  } else {
+    delete content.images.GameBackground;
+  }
+
+  delete content.actions.UpsellButton;
+  delete content.actions.CodeRedeemButton;
+  const kind = $('#pageCta').value;
+  const sceneByKind = {shop:'Shop', redeem:'ShopCodeRedemption', tournament:'Tournament', trade:'Trade'};
+  if (sceneByKind[kind]) {
+    const slot = kind === 'redeem' ? 'CodeRedeemButton' : 'UpsellButton';
+    content.actions[slot] = {name:'NavigateToScene', value:{scene:sceneByKind[kind]}};
+  } else if (kind === 'url') {
+    content.actions.UpsellButton = {name:'NavigateToUrl', value:{url:$('#pageCtaUrl').value.trim()}};
+  }
+  if (kind !== 'none') {
+    const oldButtonText = content.labels.ButtonText || {};
+    content.labels.ButtonText = {
+      ...oldButtonText,
+      token: oldButtonText.token || 'spirit.dynamic_page.button_text',
+      bundle: {...(oldButtonText.bundle || {}), en_US:$('#pageCtaLabel').value.trim()}
+    };
+  } else {
+    delete content.labels.ButtonText;
+  }
+  return content;
+}
+
+function validateDynamicPage(content) {
+  const issues = [];
+  const start = Number(content.startTime || 0), end = Number(content.endTime || 0);
+  if (end && end <= start) issues.push({type:'err', text:'The end time must be later than the start time.'});
+  if (!$('#pageEnabled').checked) issues.push({type:'info', text:'This page is disabled and will not be sent to players.'});
+
+  if ($('#pageType').value === 'maintenance') {
+    if (!labelText(content, 'NotificationBody').trim()) issues.push({type:'err', text:'Add notice text before saving.'});
+    if (!$('#pageStart').value) issues.push({type:'err', text:'Choose the maintenance start shown to players.'});
+    if (!$('#pageEnd').value) issues.push({type:'err', text:'Choose the maintenance end shown to players.'});
+    if ($('#pageEnabled').checked && end > 0 && end <= Date.now()) {
+      issues.push({type:'warn', text:'This maintenance window has ended but remains announced until you disable it.'});
+    }
+    const currentId = parseInt($('#pageId').value || 0);
+    const otherNotices = DYNAMIC_PAGES.filter(page =>
+      page.page_type === 'maintenance' && page.enabled && page.id !== currentId
+    );
+    if ($('#pageEnabled').checked && otherNotices.length) {
+      issues.push({type:'warn', text:`${otherNotices.length} other maintenance notice${otherNotices.length === 1 ? ' is' : 's are'} enabled; the client displays only the lowest-order one.`});
+    }
+    if (!issues.some(issue => issue.type === 'err')) issues.push({type:'info', text:'Uses the native SplashMaintenanceWindow and prints both dates in its native format.'});
+    return issues;
+  }
+
+  const path = backgroundPath(content);
+  const unknownActions = Object.keys(content.actions || {}).filter(
+    slot => slot !== 'UpsellButton' && slot !== 'CodeRedeemButton'
+  );
+  if (unknownActions.length) {
+    issues.push({type:'err', text:`Unknown client action slot: ${unknownActions.join(', ')}.`});
+  }
+  if (!path) {
+    issues.push({type:'err', text:'Choose background artwork for the landing page.'});
+  } else {
+    const meta = pageAssetMeta(path);
+    if (!meta) issues.push({type:'warn', text:'This custom asset is not in the local preview catalog; verify its client manifest path.'});
+    else if (!meta.installed) issues.push({type:'warn', text:`${meta.bundle} will be installed into the server cache when you save.`});
+    else issues.push({type:'info', text:'The selected artwork is ready for clients.'});
+  }
+  if (!labelText(content, 'GameText').trim()) issues.push({type:'warn', text:'No message is set; the page will rely on artwork only.'});
+  if ($('#pageEnabled').checked && start > Date.now()) {
+    issues.push({type:'info', text:'This landing page is scheduled and will be sent to players after its start time.'});
+  } else if ($('#pageEnabled').checked && end > 0 && end <= Date.now()) {
+    issues.push({type:'warn', text:'This landing page has expired and is no longer sent to players.'});
+  }
+  if ($('#pageCta').value !== 'none' && !labelText(content, 'ButtonText').trim()) {
+    issues.push({type:'err', text:'Add the text players should see on the action button.'});
+  }
+  if ($('#pageCta').value === 'url') {
+    try {
+      const url = new URL($('#pageCtaUrl').value);
+      if (!['http:','https:'].includes(url.protocol)) throw new Error('protocol');
+    } catch(e) { issues.push({type:'err', text:'Enter a complete http:// or https:// website URL.'}); }
+  }
+  return issues;
+}
+
+function pageEditorChanged() {
+  const content = buildDynamicPageContent();
+  $('#pageContent').value = JSON.stringify(content, null, 2);
+  renderPagePreview(content);
+  renderSelectedPageAsset();
+  const issues = validateDynamicPage(content);
+  $('#pageValidation').innerHTML = issues.map(i =>
+    `<div class="validation-row ${i.type === 'info' ? '' : i.type}"><span>${i.type === 'err' ? '!' : i.type === 'warn' ? '~' : 'OK'}</span><span>${esc(i.text)}</span></div>`
+  ).join('');
+  const errors = issues.filter(i => i.type === 'err');
+  $('#pageSaveButton').disabled = errors.length > 0;
+  $('#pageSaveState').textContent = errors.length
+    ? `${errors.length} item${errors.length === 1 ? '' : 's'} to fix`
+    : ($('#pageId').value ? 'Ready to save changes' : 'Ready to create');
+}
+
+function renderPagePreview(content) {
+  const maintenance = $('#pageType').value === 'maintenance';
+  const art = $('#pagePreviewArt');
+  const placeholder = $('#pagePreviewPlaceholder');
+  const copy = $('#pagePreviewCopy');
+  const maintenanceBox = $('#pageMaintenancePreview');
+
+  if (maintenance) {
+    art.classList.remove('show');
+    placeholder.style.display = 'none';
+    copy.style.display = 'none';
+    maintenanceBox.style.display = '';
+    $('#pageMaintenancePreviewMessage').textContent = labelText(content, 'NotificationBody') || 'Maintenance notice';
+    $('#pageMaintenanceStart').textContent = previewDate(content.startTime, 'Set a start');
+    $('#pageMaintenanceEnd').textContent = previewDate(content.endTime, 'Set an end');
+    $('#pagePreviewCaption').textContent = 'Native maintenance placement; the client prints these dates in the window.';
+    return;
+  }
+
+  maintenanceBox.style.display = 'none';
+  copy.style.display = '';
+  const path = backgroundPath(content);
+  const name = pageAssetName(path);
+  const meta = pageAssetMeta(path);
+  const placeholderText = placeholder.querySelector('span:last-child');
+  if (name && meta) {
+    const assetKey = `${name}:${PAGE_ASSET_REVISION}`;
+    if (art.dataset.asset !== assetKey) {
+      art.dataset.asset = assetKey;
+      art.classList.remove('show');
+      placeholder.style.display = '';
+      placeholderText.textContent = 'Loading artwork preview...';
+      art.onload = () => { art.classList.add('show'); placeholder.style.display = 'none'; };
+      art.onerror = () => {
+        art.classList.remove('show'); placeholder.style.display = '';
+        placeholderText.textContent = 'Artwork preview could not be rendered';
+      };
+      art.src = pageAssetUrl(name, 'preview');
+    } else if (art.complete && art.naturalWidth) {
+      art.classList.add('show'); placeholder.style.display = 'none';
+    }
+  } else {
+    art.dataset.asset = '';
+    art.removeAttribute('src');
+    art.classList.remove('show');
+    placeholder.style.display = '';
+    placeholderText.textContent = name
+      ? 'No local preview is available for this custom asset path'
+      : 'Choose artwork to preview the page';
+  }
+
+  const template = PAGE_TEMPLATES.find(t => t.id === content.template) || PAGE_TEMPLATES[0];
+  copy.className = `game-copy side-${template.copy}`;
+  $('#pagePreviewMessage').textContent = labelText(content, 'GameText');
+  const ctaKind = $('#pageCta').value;
+  const cta = $('#pagePreviewCta');
+  if (template.buttons && ctaKind !== 'none') {
+    cta.style.display = '';
+    cta.textContent = labelText(content, 'ButtonText') || PAGE_CTA_LABELS[ctaKind] || 'LEARN MORE';
+    cta.classList.toggle('gold', ctaKind === 'redeem');
+  } else {
+    cta.style.display = 'none';
+  }
+  $('#pagePreviewCaption').textContent = `${template.label}; exact client artwork crop and approximate NGUI styling.`;
+}
+
+function previewDate(ms, fallback) {
+  ms = Number(ms || 0);
+  if (!ms) return fallback;
+  return new Date(ms).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+}
+
+function renderSelectedPageAsset() {
+  const path = normalizedPageAssetPath($('#pageAssetPath').value);
+  const name = pageAssetName(path);
+  const meta = pageAssetMeta(path);
+  const thumb = $('#pageAssetThumb');
+  if (!name) {
+    if (thumb.dataset.asset) thumb.innerHTML = '<span>Select artwork</span>';
+    thumb.dataset.asset = '';
+    $('#pageAssetStatus').innerHTML = '<span class="muted">Browse the original game art or enter a custom manifest path.</span>';
+    return;
+  }
+  const assetKey = `${name}:${PAGE_ASSET_REVISION}:${meta ? 'catalog' : 'custom'}`;
+  if (thumb.dataset.asset !== assetKey) {
+    thumb.dataset.asset = assetKey;
+    thumb.innerHTML = meta
+      ? `<img src="${pageAssetUrl(name, 'thumb')}" alt="" onerror="this.replaceWith(document.createTextNode('Preview unavailable'))">`
+      : '<span>Preview unavailable</span>';
+  }
+  if (!meta) {
+    $('#pageAssetStatus').innerHTML = `<span class="pill tag">Custom path</span> <span class="muted">${esc(name)}</span>`;
+  } else if (meta.installed) {
+    $('#pageAssetStatus').innerHTML = `<span class="pill on">Ready for players</span> <span class="muted">${esc(meta.title)}</span>`;
+  } else {
+    $('#pageAssetStatus').innerHTML = `<span class="pill tag">Installs on save</span> <span class="muted">${esc(meta.title)}</span>`;
+  }
+}
+
+function applyPageJson() {
   try {
-    await api('pages', {
-      id: $('#pageId').value ? parseInt($('#pageId').value) : undefined,
-      page_type: $('#pageType').value,
-      sort_order: parseInt($('#pageSort').value || 0),
-      enabled: $('#pageEnabled').checked,
-      content_json: content
+    const content = JSON.parse($('#pageContent').value);
+    hydratePageEditor({
+      id:$('#pageId').value ? parseInt($('#pageId').value) : undefined,
+      page_type:$('#pageType').value,
+      sort_order:content.sortOrder ?? parseInt($('#pageSort').value || 0),
+      enabled:$('#pageEnabled').checked,
+      content_json:content
     });
-    toast('Page saved'); $('#pageId').value = ''; $('#pageContent').value = '';
+    toast('JSON applied to the visual editor');
+  } catch(e) { toast('Invalid JSON: ' + e.message, true); }
+}
+
+async function copyPageJson() {
+  try { await navigator.clipboard.writeText($('#pageContent').value); toast('Page JSON copied'); }
+  catch(e) { toast('Clipboard access was blocked by the browser', true); }
+}
+
+async function savePage() {
+  const content = buildDynamicPageContent();
+  const issues = validateDynamicPage(content);
+  const error = issues.find(i => i.type === 'err');
+  if (error) return toast(error.text, true);
+  const button = $('#pageSaveButton');
+  button.disabled = true; button.textContent = 'Saving...';
+  try {
+    const d = await api('pages', {
+      id:$('#pageId').value ? parseInt($('#pageId').value) : undefined,
+      page_type:$('#pageType').value,
+      sort_order:parseInt($('#pageSort').value || 0),
+      enabled:$('#pageEnabled').checked,
+      content_json:content
+    });
+    let message = 'Page saved';
+    if (d.installed_bundles?.length) message += `; installed ${d.installed_bundles.length} artwork bundle${d.installed_bundles.length === 1 ? '' : 's'}`;
+    if (d.unresolved_assets?.length) message += '; custom asset path was not found locally';
+    toast(message, !!d.unresolved_assets?.length);
+    if (d.installed_bundles?.length) await loadPageAssets(true);
+    hydratePageEditor(d.page);
     loadPages(); loadOverview();
   } catch(e) { toast(e.message, true); }
+  finally { button.disabled = false; button.textContent = $('#pageId').value ? 'Save changes' : 'Create page'; }
 }
+
+async function loadPageAssets(force=false) {
+  if (PAGE_ASSETS_LOADED && !force) return;
+  try {
+    const d = await api(force ? 'pages/assets/refresh' : 'pages/assets', force ? {} : undefined);
+    if (force) PAGE_ASSET_REVISION += 1;
+    PAGE_ASSETS = d.assets || [];
+    PAGE_ASSET_BY_NAME = Object.fromEntries(PAGE_ASSETS.map(a => [a.name.toLowerCase(), a]));
+    PAGE_ASSETS_LOADED = true;
+    const installed = PAGE_ASSETS.filter(a => a.installed).length;
+    const sourceText = (d.sources || []).map(s => `${s.textures} from ${s.source}`).join(' + ');
+    const errorText = d.errors?.length
+      ? ` ${d.errors.length} bundle${d.errors.length === 1 ? '' : 's'} could not be read.`
+      : '';
+    $('#pageAssetSourceSummary').textContent = PAGE_ASSETS.length
+      ? `${PAGE_ASSETS.length} artworks found (${installed} already server-ready). ${sourceText}.${errorText}`
+      : `No LandingPage bundles were found. Set PTCGO_CACHE_DIR or place the original cache in this repository.${errorText}`;
+    renderPageAssetGrid();
+    renderSelectedPageAsset();
+    renderPageLibrary();
+    if (PAGE_EDITOR_INITIALIZED) pageEditorChanged();
+  } catch(e) {
+    $('#pageAssetSourceSummary').textContent = 'Could not scan landing-page bundles: ' + e.message;
+  }
+}
+
+async function refreshPageAssets() {
+  PAGE_ASSETS_LOADED = false;
+  await loadPageAssets(true);
+  toast(`Found ${PAGE_ASSETS.length} landing-page artworks`);
+}
+
+function openPageAssetPicker() {
+  $('#pageAssetOverlay').classList.add('open');
+  loadPageAssets().then(() => {
+    renderPageAssetGrid();
+    setTimeout(() => $('#pageAssetSearch').focus(), 30);
+  });
+}
+function closePageAssetPicker() { $('#pageAssetOverlay').classList.remove('open'); }
+
+function renderPageAssetGrid() {
+  const grid = $('#pageAssetGrid');
+  if (!grid) return;
+  const query = ($('#pageAssetSearch')?.value || '').trim().toLowerCase();
+  const filter = $('#pageAssetFilter')?.value || 'all';
+  const selected = pageAssetName($('#pageAssetPath')?.value || '').toLowerCase();
+  const matches = PAGE_ASSETS.filter(a => {
+    if (filter === 'installed' && !a.installed) return false;
+    if (filter === 'source' && a.installed) return false;
+    return !query || `${a.title} ${a.name} ${a.bundle}`.toLowerCase().includes(query);
+  });
+  grid.innerHTML = matches.map(a => `
+    <button class="landing-asset ${a.name.toLowerCase() === selected ? 'sel' : ''}" data-asset="${esc(a.name)}" onclick="selectPageAsset(this.dataset.asset)">
+      <img src="${pageAssetUrl(a.name, 'thumb')}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+      <span class="landing-asset-info"><span class="landing-asset-name">${esc(a.title)}</span>
+        <span class="landing-asset-sub"><span class="pill ${a.installed ? 'on' : 'tag'}">${a.installed ? 'ready' : 'installs on save'}</span><span>${esc(a.bundle)}</span></span>
+      </span>
+    </button>`).join('') || '<div class="empty-page-library">No artwork matches this filter.</div>';
+}
+
+function selectPageAsset(name) {
+  const meta = pageAssetMeta(name);
+  $('#pageAssetPath').value = meta?.request_path || `LandingPage/${name}`;
+  closePageAssetPicker();
+  pageAssetPathChanged();
+}
+
 async function loadPages() {
   try {
     const d = await api('pages');
-    $('#pagesTable tbody').innerHTML = d.pages.map(p => {
-      const text = p.content_json?.labels?.GameText?.bundle?.en_US || p.content_json?.template || '';
-      return `<tr><td>${p.id}</td><td>${esc(p.page_type)}</td><td>${p.sort_order}</td>
-        <td>${esc(String(text).slice(0,80))}</td>
-        <td>${p.enabled ? '<span class="pill on">on</span>' : '<span class="pill off">off</span>'}</td>
-        <td><button class="mini" onclick='editPage(${JSON.stringify(p)})'>Edit</button>
-            <button class="mini" onclick="deletePage(${p.id})">Delete</button></td></tr>`;
-    }).join('') || '<tr><td colspan="6" class="muted">No dynamic pages yet.</td></tr>';
+    DYNAMIC_PAGES = d.pages || [];
+    renderPageLibrary();
+    if (!PAGE_EDITOR_INITIALIZED) {
+      PAGE_EDITOR_INITIALIZED = true;
+      newDynamicPage('landing');
+    }
   } catch(e) { toast('Pages: ' + e.message, true); }
 }
-function editPage(p) {
-  $('#pageId').value = p.id; $('#pageType').value = p.page_type; $('#pageSort').value = p.sort_order;
-  $('#pageEnabled').checked = p.enabled;
-  $('#pageContent').value = JSON.stringify(p.content_json, null, 2);
+
+function pageStatus(page) {
+  if (!page.enabled) return {label:'disabled', cls:'off'};
+  const now = Date.now(), start = Number(page.content_json?.startTime || 0), end = Number(page.content_json?.endTime || 0);
+  if (page.page_type === 'maintenance') {
+    if (end && end <= now) return {label:'needs disable', cls:'off'};
+    if (start > now) return {label:'announced', cls:'tag'};
+    return {label:'in progress', cls:'on'};
+  }
+  if (start > now) return {label:'upcoming', cls:'tag'};
+  if (end && end <= now) return {label:'expired', cls:'off'};
+  return {label:'live', cls:'on'};
 }
+
+function pageSummary(page) {
+  const key = page.page_type === 'maintenance' ? 'NotificationBody' : 'GameText';
+  return labelText(page.content_json, key).trim() || (page.page_type === 'maintenance' ? 'Maintenance notice' : 'Artwork-only landing page');
+}
+
+function renderPageLibrary() {
+  const filter = $('#pageLibraryFilter')?.value || 'all';
+  const pages = DYNAMIC_PAGES.filter(p => filter === 'all' || p.page_type === filter);
+  $('#pagesGrid').innerHTML = pages.map(p => {
+    const status = pageStatus(p);
+    const path = backgroundPath(p.content_json);
+    const name = pageAssetName(path);
+    const meta = pageAssetMeta(path);
+    const art = p.page_type === 'landing' && name && meta
+      ? `<img src="${pageAssetUrl(name, 'thumb')}" loading="lazy" alt="" onerror="this.style.display='none'">`
+      : `<div class="game-art-placeholder"><span class="pokeball"></span><span>${p.page_type === 'maintenance' ? 'Maintenance window' : 'No artwork'}</span></div>`;
+    const template = p.content_json?.template || '';
+    return `<article class="page-card">
+      <div class="page-card-art">${art}<div class="page-card-badges"><span class="pill tag">${p.page_type === 'maintenance' ? 'maintenance' : 'landing'}</span><span class="right pill ${status.cls}">${status.label}</span></div><span class="page-order">order ${p.sort_order}</span></div>
+      <div class="page-card-body"><div class="page-card-title">${esc(pageSummary(p).slice(0,110))}</div>
+        <div class="page-card-meta">#${p.id} &middot; ${esc(template)} &middot; ${esc(pageScheduleText(p.content_json))}</div>
+        <div class="page-card-actions"><button class="mini" onclick="editPageById(${p.id})">Edit</button><button class="mini" onclick="duplicatePage(${p.id})">Duplicate</button><button class="mini" onclick="togglePage(${p.id})">${p.enabled ? 'Disable' : 'Enable'}</button><button class="mini" onclick="deletePage(${p.id})">Delete</button></div>
+      </div></article>`;
+  }).join('') || '<div class="empty-page-library">No dynamic pages yet. Build one above and its in-game preview will appear here.</div>';
+}
+
+function pageScheduleText(content) {
+  const start = Number(content?.startTime || 0), end = Number(content?.endTime || 0);
+  if (!start && (!end || end >= PAGE_FOREVER)) return 'always available';
+  if (start > Date.now()) return 'starts ' + new Date(start).toLocaleDateString();
+  if (end && end < PAGE_FOREVER) return 'ends ' + new Date(end).toLocaleDateString();
+  return 'active now';
+}
+
+function editPageById(id) {
+  const page = DYNAMIC_PAGES.find(p => p.id === id);
+  if (!page) return;
+  hydratePageEditor(page);
+  document.querySelector('#tab-pages').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function editPage(page) { hydratePageEditor(page); }
+
+function duplicatePage(id) {
+  const page = DYNAMIC_PAGES.find(p => p.id === id);
+  if (!page) return;
+  hydratePageEditor({...cloneJson(page), id:undefined, enabled:false, sort_order:(parseInt(page.sort_order) || 0) + 1});
+  $('#pageEditorKicker').textContent = `Duplicate of page #${id}`;
+  toast('Duplicate prepared as a disabled draft; review it and save');
+  document.querySelector('#tab-pages').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function togglePage(id) {
+  try { await api('pages/toggle', {id}); await loadPages(); loadOverview(); }
+  catch(e) { toast(e.message, true); }
+}
+
 async function deletePage(id) {
-  if (!confirm('Delete page ' + id + '?')) return;
-  try { await api('pages/delete', {id}); loadPages(); loadOverview(); } catch(e) { toast(e.message, true); }
+  if (!confirm('Delete page ' + id + '? This cannot be undone.')) return;
+  try {
+    await api('pages/delete', {id});
+    if (String(id) === $('#pageId').value) newDynamicPage();
+    loadPages(); loadOverview(); toast('Page deleted');
+  } catch(e) { toast(e.message, true); }
 }
 
 /* ---------------- Trades ---------------- */
@@ -1275,7 +2132,7 @@ function dispatchReward(reward) { dispatchRewards([reward]); }
 
 async function bootData() {
   await loadProducts();
-  loadOverview(); loadAccounts(); loadCodes(); loadShop(); loadPages(); loadTrades(); loadVersus(); loadTournaments(); loadFormats();
+  loadOverview(); loadAccounts(); loadCodes(); loadShop(); loadTrades(); loadVersus(); loadTournaments(); loadFormats();
 }
 (async function init() {
   try {

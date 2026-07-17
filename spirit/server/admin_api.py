@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from urllib.parse import unquote
 
 from spirit.database import db_session, Account, TradeOffer
 from spirit.database import economy_data
@@ -10,6 +11,7 @@ from spirit.game.attributes import AttrID
 from spirit.game.models.versus import VersusSeason
 from spirit.game.set_utils import card_script_counts, eligible_booster_sets
 from spirit.server import admin_auth
+from spirit.server import dynamic_pages
 from spirit.server import metrics
 
 DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), 'admin', 'dashboard.html')
@@ -486,20 +488,80 @@ def _dispatch(method, endpoint, data):
         return _ok()
 
     # ------------------------------------------------ dynamic pages
+    if method == 'GET' and endpoint == 'pages/assets':
+        return _ok(dynamic_pages.asset_catalog_payload())
+
+    if method == 'POST' and endpoint == 'pages/assets/refresh':
+        dynamic_pages.invalidate_asset_catalog()
+        return _ok(dynamic_pages.asset_catalog_payload())
+
+    if method == 'GET' and endpoint.startswith('pages/assets/thumb/'):
+        asset_name = unquote(endpoint[len('pages/assets/thumb/'):])
+        payload = dynamic_pages.render_asset_jpeg(asset_name, 'thumb')
+        if payload is None:
+            return _err(404, "landing-page asset not found")
+        return 200, payload, 'image/jpeg', [('Cache-Control', 'private, max-age=3600')]
+
+    if method == 'GET' and endpoint.startswith('pages/assets/preview/'):
+        asset_name = unquote(endpoint[len('pages/assets/preview/'):])
+        payload = dynamic_pages.render_asset_jpeg(asset_name, 'preview')
+        if payload is None:
+            return _err(404, "landing-page asset not found")
+        return 200, payload, 'image/jpeg', [('Cache-Control', 'private, max-age=3600')]
+
     if endpoint == 'pages':
         if method == 'GET':
             return _ok({"pages": economy_data.list_dynamic_pages()})
         if method == 'POST':
             if not isinstance(data.get("content_json"), dict):
                 return _err(400, "content_json object required")
+            page_type = data.get("page_type", "landing")
+            try:
+                content = dynamic_pages.normalize_page(
+                    data["content_json"], page_type, data.get("sort_order", 0)
+                )
+            except dynamic_pages.PageValidationError as exc:
+                return _err(400, str(exc))
+
+            installed, unresolved = dynamic_pages.install_page_assets(content)
+            if installed:
+                # The selected source bundle is now in externalCache.  Publish
+                # its LandingPage/<texture> keys immediately so clients can
+                # load the same artwork shown by the dashboard preview.
+                from spirit.server import http_server
+                http_server.register_asset_path(dynamic_pages.EXTERNAL_CACHE_DIR)
             page = economy_data.upsert_dynamic_page(
-                content_json=data["content_json"],
+                content_json=content,
                 page_id=data.get("id"),
-                page_type=data.get("page_type", "landing"),
-                sort_order=data.get("sort_order", 0),
+                page_type=page_type,
+                sort_order=content["sortOrder"],
                 enabled=data.get("enabled", True)
             )
-            return _ok({"page": page})
+            return _ok({
+                "page": page,
+                "installed_bundles": installed,
+                "unresolved_assets": unresolved,
+            })
+
+    if method == 'POST' and endpoint == 'pages/toggle':
+        try:
+            page_id = int(data.get("id", -1))
+        except (TypeError, ValueError):
+            return _err(400, "valid page id required")
+        page = next(
+            (p for p in economy_data.list_dynamic_pages() if p["id"] == page_id),
+            None,
+        )
+        if page is None:
+            return _err(404, "page not found")
+        updated = economy_data.upsert_dynamic_page(
+            content_json=page["content_json"],
+            page_id=page_id,
+            page_type=page["page_type"],
+            sort_order=page["sort_order"],
+            enabled=not page["enabled"],
+        )
+        return _ok({"page": updated})
 
     if method == 'POST' and endpoint == 'pages/delete':
         if not economy_data.delete_dynamic_page(data.get("id", -1)):

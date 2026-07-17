@@ -34,10 +34,16 @@ ASSET_PATHS = [BUNDLE_CACHE_DIR]
 external_cache_env = os.environ.get('PTCGO_CACHE_DIR')
 local_external_cache = os.path.join(ASSET_DIR, 'externalCache')
 
-if external_cache_env and os.path.exists(external_cache_env):
+if external_cache_env:
+    external_cache_env = os.path.abspath(os.path.expanduser(external_cache_env))
+    nested_bundle_cache = os.path.join(external_cache_env, 'bundleCache')
+    if os.path.isdir(nested_bundle_cache):
+        external_cache_env = nested_bundle_cache
+
+if external_cache_env and os.path.isdir(external_cache_env):
     logging.info(f"[HTTP] Found external cache via env: {external_cache_env}")
     ASSET_PATHS.append(external_cache_env)
-elif os.path.exists(local_external_cache):
+elif os.path.isdir(local_external_cache):
     logging.info(f"[HTTP] Found local external cache: {local_external_cache}")
     ASSET_PATHS.append(local_external_cache)
 
@@ -105,6 +111,25 @@ def _asset_path_cache_put(filename, path):
         ASSET_PATH_CACHE.move_to_end(filename)
         while len(ASSET_PATH_CACHE) > ASSET_PATH_CACHE_MAX:
             ASSET_PATH_CACHE.popitem(last=False)
+
+
+def register_asset_path(path):
+    """Adds a newly-created bundle cache to serving and refreshes the manifest.
+
+    Admin-managed landing artwork can create ``externalCache`` after server
+    startup, so the one-time module initialization above cannot be relied on to
+    discover it.  ``ManifestManager`` intentionally shares the ASSET_PATHS list.
+    """
+    asset_path = os.path.abspath(os.fspath(path))
+    if not os.path.isdir(asset_path):
+        raise FileNotFoundError(f"Asset cache does not exist: {asset_path}")
+    normalized = os.path.normcase(asset_path)
+    if not any(os.path.normcase(os.path.abspath(p)) == normalized for p in ASSET_PATHS):
+        ASSET_PATHS.append(asset_path)
+    with _ASSET_PATH_LOCK:
+        ASSET_PATH_CACHE.clear()
+    manifest_manager.refresh()
+
 
 class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     # HTTP/1.1 keep-alive reuses one TCP connection for many asset bundles

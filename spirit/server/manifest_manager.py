@@ -108,7 +108,8 @@ class ManifestManager:
                 asset_names = []
                 aliases = {bundle_name_raw, logical_name}
                 lower_entry = entry.lower()
-                if "landingpage" in lower_entry: aliases.add("LandingPage")
+                if "landingpage" in lower_entry:
+                    aliases.add("LandingPage")
                 if "logos" in lower_entry: aliases.add("Logos")
                 if "login" in lower_entry: aliases.add("Login")
                 if "lobby" in lower_entry: aliases.add("lobby")
@@ -127,8 +128,16 @@ class ManifestManager:
                                self.asset_map.get(f"en_US_{map_lookup_name}") or \
                                self.asset_map.get(map_lookup_name)
 
-                # Dynamically load assets for cosmetic/product bundles if not in asset_map
-                if not exact_assets and any(pat in bundle_name_raw for pat in ["cardSleeves", "coins", "deckBoxes", "packs", "pcdBoxes", "avatar", "GXToken", "VSTARToken"]):
+                # Dynamically load assets for cosmetic/product and landing-page
+                # bundles if they are not in asset_map.  Dynamic pages request
+                # artwork as ``LandingPage/<texture>``; without that prefixed
+                # manifest key the client rejects the request before opening
+                # the selected Unity bundle.
+                dynamic_texture_patterns = [
+                    "cardsleeves", "coins", "deckboxes", "packs", "pcdboxes",
+                    "avatar", "gxtoken", "vstartoken", "landingpage"
+                ]
+                if not exact_assets and any(pat in lower_entry for pat in dynamic_texture_patterns):
                     try:
                         env = UnityPy.load(bundle_file_path)
                         exact_assets = []
@@ -151,6 +160,8 @@ class ManifestManager:
                             prefix = "gxtoken"
                         elif "VSTARToken" in bundle_name_raw:
                             prefix = "vstartoken"
+                        elif "landingpage" in lower_entry:
+                            prefix = "LandingPage"
                             
                         for obj in env.objects:
                             if obj.type.name == "Texture2D":
@@ -239,7 +250,10 @@ class ManifestManager:
 
                 # If this is a card set bundle, dynamically generate virtual type-split bundle descriptors
                 # so the client can resolve things like "SWSH12_water" to this same physical bundle file.
-                if set_code and exact_assets and not any(pat in bundle_name_raw for pat in ["cardSleeves", "coins", "deckBoxes", "packs", "pcdBoxes", "avatar"]):
+                if set_code and exact_assets and not any(
+                    pat in lower_entry
+                    for pat in ["cardsleeves", "coins", "deckboxes", "packs", "pcdboxes", "avatar", "landingpage"]
+                ):
                     card_types = [
                         "grass", "fire", "water", "lightning", "psychic", "fighting",
                         "darkness", "metal", "fairy", "dragon", "colorless", "trainer"

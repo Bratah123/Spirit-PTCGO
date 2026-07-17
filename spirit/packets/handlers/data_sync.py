@@ -61,6 +61,19 @@ _CARD_ATTRS_CACHE = {}
 _STATIC_PAYLOAD_CACHE = {}
 
 
+def _dynamic_page_is_active(content, now_ms):
+    """The Unity landing-page model does not apply start/end filtering."""
+    try:
+        start = int(content.get("startTime") or 0)
+    except (TypeError, ValueError):
+        start = 0
+    try:
+        end = int(content.get("endTime") or 0)
+    except (TypeError, ValueError):
+        end = 0
+    return start <= now_ms and (end <= 0 or now_ms < end)
+
+
 def _clear_derived_caches():
     _CARD_ATTRS_CACHE.clear()
     _STATIC_PAYLOAD_CACHE.clear()
@@ -480,12 +493,19 @@ class DataSyncHandler(BaseHandler):
         pages = []
         maintenance = []
         try:
+            now_ms = int(time.time() * 1000)
             for row in await run_db(list_dynamic_pages, enabled_only=True):
                 content = dict(row.get("content_json") or {})
-                content.setdefault("sortOrder", row.get("sort_order", 0))
+                # The database column is the admin-facing source of truth.
+                # Older raw-JSON edits could leave a stale sortOrder embedded
+                # in content_json, which otherwise silently wins on the wire.
+                content["sortOrder"] = row.get("sort_order", 0)
                 if row.get("page_type") == "maintenance":
+                    # Maintenance timestamps are event dates printed by the
+                    # native window. Enabled notices may intentionally announce
+                    # an upcoming window, so only landing pages are filtered.
                     maintenance.append(content)
-                else:
+                elif _dynamic_page_is_active(content, now_ms):
                     pages.append(content)
             pages.sort(key=lambda p: p.get("sortOrder", 0))
         except Exception as e:
