@@ -537,7 +537,6 @@ def _dispatch(method, endpoint, data):
         except (ValueError, dynamic_pages.PageValidationError) as exc:
             return _err(400, str(exc))
 
-        from spirit.server import http_server
         http_server.register_asset_path(dynamic_pages.BUNDLE_CACHE_DIR)
         catalog = dynamic_pages.asset_catalog_payload()
         imported["catalog_asset"] = next(
@@ -583,7 +582,6 @@ def _dispatch(method, endpoint, data):
                 # The selected source bundle is now in externalCache.  Publish
                 # its LandingPage/<texture> keys immediately so clients can
                 # load the same artwork shown by the dashboard preview.
-                from spirit.server import http_server
                 http_server.register_asset_path(dynamic_pages.EXTERNAL_CACHE_DIR)
             page = economy_data.upsert_dynamic_page(
                 content_json=content,
