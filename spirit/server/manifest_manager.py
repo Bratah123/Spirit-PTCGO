@@ -135,7 +135,7 @@ class ManifestManager:
                 # the selected Unity bundle.
                 dynamic_texture_patterns = [
                     "cardsleeves", "coins", "deckboxes", "packs", "pcdboxes",
-                    "avatar", "gxtoken", "vstartoken", "landingpage"
+                    "avatar", "gxtoken", "vstartoken", "landingpage", "logos"
                 ]
                 if not exact_assets and any(pat in lower_entry for pat in dynamic_texture_patterns):
                     try:
@@ -162,6 +162,8 @@ class ManifestManager:
                             prefix = "vstartoken"
                         elif "landingpage" in lower_entry:
                             prefix = "LandingPage"
+                        elif "logos" in lower_entry:
+                            prefix = "Logos"
 
                         exported_texture_ids = None
                         if "landingpage" in lower_entry:
@@ -185,14 +187,20 @@ class ManifestManager:
                                     and int(obj.path_id) not in exported_texture_ids
                                 ):
                                     continue
-                                tex_name = obj.read().m_Name.lower()
+                                tex_raw = obj.read().m_Name
+                                tex_name = tex_raw.lower()
                                 exact_assets.append(tex_name)
                                 if prefix:
                                     exact_assets.append(f"{prefix}/{tex_name}")
-                                    # Add full URL-mode manifest mapping keys to satisfy client-side LoadTextureFromAssetBundle lookups
-                                    url_route = f"{config.HTTP_BASE_URL}/products/{tex_name}.png"
-                                    exact_assets.append(url_route)
-                                    exact_assets.append(f"{prefix}/{url_route}")
+                                    if prefix == "Logos":
+                                        # NGUI nav logo loader looks up the EXACT-case key "Logos/globalNavLogo"
+                                        exact_assets.append(tex_raw)
+                                        exact_assets.append(f"{prefix}/{tex_raw}")
+                                    else:
+                                        # Add full URL-mode manifest mapping keys to satisfy client-side LoadTextureFromAssetBundle lookups
+                                        url_route = f"{config.HTTP_BASE_URL}/products/{tex_name}.png"
+                                        exact_assets.append(url_route)
+                                        exact_assets.append(f"{prefix}/{url_route}")
                         logging.info(f"[Manifest] Dynamically loaded {len(exact_assets)} cosmetic/product assets with prefix '{prefix}' for {bundle_name_raw}")
                     except Exception as e:
                         logging.error(f"[Manifest] Failed to dynamically load cosmetic/product assets for {bundle_name_raw}: {e}")
