@@ -49,10 +49,24 @@ elif os.path.isdir(local_external_cache):
 
 manifest_manager = ManifestManager(ASSET_PATHS)
 
+def _default_bundle_cache_bytes():
+    # Cap the cache at 1/4 of system RAM (a 2 GB VPS gets 512 MB, not 1.5 GB —
+    # the flat default OOM-killed small hosts); env SPIRIT_BUNDLE_CACHE_BYTES overrides.
+    ceiling = 1536 * 1024 * 1024
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    total = int(line.split()[1]) * 1024
+                    return max(128 * 1024 * 1024, min(ceiling, total // 4))
+    except OSError:
+        pass
+    return ceiling
+
 # LRU cache for customized virtual-split bundles. Bounded by TOTAL BYTES, not entry
 # count: a split bundle can be ~84 MB, so a 128-entry count cap could pin ~7.7 GB.
 VIRTUAL_BUNDLE_CACHE = OrderedDict()
-VIRTUAL_BUNDLE_CACHE_MAX_BYTES = int(os.environ.get("SPIRIT_BUNDLE_CACHE_BYTES", str(1536 * 1024 * 1024)))  # 1.5 GB
+VIRTUAL_BUNDLE_CACHE_MAX_BYTES = int(os.environ.get("SPIRIT_BUNDLE_CACHE_BYTES", str(_default_bundle_cache_bytes())))
 _VIRTUAL_BUNDLE_BYTES = 0
 _VIRTUAL_BUNDLE_LOCK = threading.Lock()
 
@@ -60,6 +74,11 @@ _VIRTUAL_BUNDLE_LOCK = threading.Lock()
 # reparse (a 60 MB bundle costs ~3s) while the rest wait and then hit the cache.
 _VIRTUAL_BUILD_LOCKS = {}
 _VIRTUAL_BUILD_LOCKS_GUARD = threading.Lock()
+
+# Global cap on concurrent UnityPy rebuilds: each one peaks at several hundred MB
+# (decompressed textures + LZ4 repack), and per-key locks alone let N sets build at once.
+_VIRTUAL_BUILD_SEMAPHORE = threading.BoundedSemaphore(
+    max(1, int(os.environ.get("SPIRIT_BUNDLE_BUILD_CONCURRENCY", "1"))))
 
 def _bundle_build_lock(key):
     with _VIRTUAL_BUILD_LOCKS_GUARD:
@@ -479,6 +498,11 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def _build_virtual_split(self, filename, asset_full_path, clean_base):
         """CAB-renames a virtual-split bundle and caches the result. Caller holds
         the per-key build lock so only one rebuild runs per key."""
+        # Cross-key builds also serialize (global semaphore) to bound peak RAM.
+        with _VIRTUAL_BUILD_SEMAPHORE:
+            return self._build_virtual_split_locked(filename, asset_full_path, clean_base)
+
+    def _build_virtual_split_locked(self, filename, asset_full_path, clean_base):
         with open(asset_full_path, 'rb') as f:
             file_bytes = f.read()
 
