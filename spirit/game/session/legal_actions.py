@@ -90,6 +90,7 @@ class TurnState:
     turn_number: int = 0
     active_player_id: Optional[str] = None
     supporter_played: bool = False
+    stadium_played: bool = False
     energy_attached: bool = False
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
@@ -170,6 +171,7 @@ class TurnState:
         self.turn_number += 1
         self.active_player_id = player_id
         self.supporter_played = False
+        self.stadium_played = False
         self.energy_attached = False
         self.retreated = False
         self.used_abilities = set()
@@ -499,7 +501,7 @@ def compute_legal_actions(
                         action_id_for(card.entity_id, "supporter"), ACTION_USE_TRAINER,
                     ))
             elif trainer_type == TrainerType.STADIUM.value:
-                if not _same_stadium_in_play(board, card):
+                if not state.stadium_played and not _same_stadium_in_play(board, card):
                     entries.append(_target_map_entry(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "stadium"), ACTION_PLAY_STADIUM,
@@ -707,10 +709,12 @@ def trainer_condition_met(condition, board: BoardState, player_id: str, card) ->
 
 
 def _same_stadium_in_play(board: BoardState, card: TrainerEntity) -> bool:
-    """A Stadium is unplayable if one with the same archetype is in play."""
+    """A Stadium cannot replace the same name, including another printing."""
     stadium_area = board.find_global_area("activeStadium")
+    name = card.get_attribute(AttrID.NAME)
     return any(
         getattr(existing, "archetype_id", None) == card.archetype_id
+        or (bool(name) and existing.get_attribute(AttrID.NAME) == name)
         for existing in (stadium_area.children if stadium_area else [])
     )
 

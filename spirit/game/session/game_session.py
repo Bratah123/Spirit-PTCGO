@@ -4794,6 +4794,7 @@ class GameSession:
             return
         # Keep the owner so the next stadium can route this one to the right discard.
         card.owning_player_id = player_id
+        self.turn_state.stadium_played = True
         self._record_trainer_played(card)
         self.stat_add(player_id, "trainersplayed")
         moves.append(self._entity_moved_msg(card.entity_id, stadium_area.entity_id, position))
