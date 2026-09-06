@@ -14,7 +14,7 @@ async def frontier_road(ctx):
     if not sources:
         return
     await ctx.move_energy_freely(
-        sources, [ctx.source], prompt="Choose an Energy to move")
+        sources, [ctx.source], prompt="Choose any number of Energy cards to move to Wyrdeer V")
 
 
 card = PokemonCardDef(

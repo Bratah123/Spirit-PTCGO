@@ -1875,12 +1875,27 @@ class EffectContext:
         max_count: Optional[int] = None,
         prompt: str = "Choose an Energy to move",
     ) -> List[Tuple[CardEntity, PokemonEntity]]:
-        """"Move any amount of Energy ... in any way you like": repeats
-        [pick an attached energy pip, minimum 0 = stop] -> [pick its
-        destination] until the player declines or the pool is exhausted.
-        Each energy moves at most once. Returns the (energy, dest) moves."""
+        """Moves Energy once each; a fixed destination uses one multi-pick."""
         moved: List[Tuple[CardEntity, PokemonEntity]] = []
         source_list = list(sources)
+        dest_candidates = list(dest_candidates)
+        if len(dest_candidates) == 1:
+            dest = dest_candidates[0]
+            pool = [e for p in source_list if p is not dest
+                    for e in self.attached_energies(p)
+                    if predicate is None or predicate(e)]
+            count = len(pool) if max_count is None else min(max_count, len(pool))
+            if count <= 0:
+                return moved
+            picked = await self.choose_cards(pool, count, minimum=0, prompt=prompt)
+            moved_ids = set()
+            for energy in picked[:count]:
+                if energy.entity_id in moved_ids:
+                    continue
+                if await self.move_energy(energy, dest):
+                    moved.append((energy, dest))
+                    moved_ids.add(energy.entity_id)
+            return moved
         while max_count is None or len(moved) < max_count:
             moved_ids = {e.entity_id for e, _ in moved}
             pool = [e for p in source_list for e in self.attached_energies(p)
