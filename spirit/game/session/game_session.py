@@ -2897,7 +2897,7 @@ class GameSession:
             profile = getattr(handler, "player", None) if handler else None
             if profile is None or getattr(profile, "wallet", None) is None:
                 continue
-            profile.wallet.refresh_wallet()
+            await run_db(profile.wallet.refresh_wallet)
             await player.send_packet(
                 OutboundMsg.CURRENT_WALLET.value, profile.get_wallet_data()
             )
@@ -2947,6 +2947,7 @@ class GameSession:
                     "index": 0,
                     "openedReward": None,
                 })
+            reward_list.extend(await self._progress_daily_challenges(pid, player, winner_id, reason))
             envelope = self._sequence_envelope(
                 EMPTY_SEQUENCE_ID,
                 self._build_msg(
@@ -2973,6 +2974,29 @@ class GameSession:
         await self._push_account_updates()
         self.declare_winner(winner_id, reason)
         raise GameOver()
+
+    async def _progress_daily_challenges(self, pid, player, winner_id, reason):
+        """Credits multiplayer results before the client's end-game quest animation."""
+        if not isinstance(player, NetworkPlayer) or self.pairing.get("is_solo"):
+            return []
+        if len({p.account_id for p in self.players.values() if isinstance(p, NetworkPlayer)}) < 2:
+            return []
+        if reason == "A game error occurred." or self.turn_state.turn_number == 0:
+            return []
+        from spirit.database.quests import credit_match
+        try:
+            result = await run_db(credit_match, player.account_id, self.game_id,
+                                  self.game_stats.get(pid, {}), pid == winner_id,
+                                  self.match_started_at)
+            if result["completedQuestsAndXPTotal"] or result["progressedQuests"]:
+                payload = {key: result[key] for key in ("completedQuestsAndXPTotal", "progressedQuests")}
+                envelope = self._sequence_envelope(EMPTY_SEQUENCE_ID, self._build_msg(
+                    OutboundMsg.QUESTS_PROGRESSED.value, payload))
+                await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, envelope)
+            return result["rewards"]
+        except Exception:
+            logging.exception("[Session %s] Daily challenge progress failed for %s", self.game_id, pid)
+            return []
 
     async def _record_legacy_tournament_result(self, winner_id: str):
         """Advances the live Events-scene bracket this game belonged to."""

@@ -1,0 +1,7 @@
+[
+  {"key": "first_win", "title": "Victory Lap", "description": "Win 1 multiplayer match.", "stat": "wins", "target": 1, "coins": 50, "xp": 1},
+  {"key": "damage", "title": "On the Offensive", "description": "Deal 500 damage in multiplayer matches.", "stat": "damagedealt", "target": 500, "coins": 50, "xp": 1},
+  {"key": "energy", "title": "Power Up", "description": "Attach 5 Energy cards from your hand during multiplayer matches.", "stat": "energyplayed", "target": 5, "coins": 40, "xp": 1},
+  {"key": "trainers", "title": "Trainer's Toolkit", "description": "Play 10 Trainer cards in multiplayer matches.", "stat": "trainersplayed", "target": 10, "coins": 40, "xp": 1},
+  {"key": "prizes", "title": "Eyes on the Prize", "description": "Take 6 Prize cards in multiplayer matches.", "stat": "prizecardstaken", "target": 6, "coins": 50, "xp": 1}
+]

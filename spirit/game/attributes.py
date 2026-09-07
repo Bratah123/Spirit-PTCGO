@@ -140,6 +140,10 @@ class AttrID(IntEnum):
     SEASON_POINTS = 201810
     ALL_TIME_SEASON_POINTS = 201840
 
+    # Native daily challenges and affinity levels
+    QUESTS_ENABLED = 201800
+    QUEST_AFFINITY_XP = 201790
+
     # Server-persisted client settings dict (Dictionary<int,int>; K.L.GetSetting(n))
     ACCOUNT_SETTINGS = 10230
 

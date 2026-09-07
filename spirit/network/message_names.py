@@ -173,6 +173,9 @@ class InboundMsg(str, Enum):
 
     # Source: GetQuests
     GET_QUESTS = "GetQuests"
+    GET_QUEST_CONFIGURATION_DATA = "GetQuestConfigurationData"
+    QUESTS_SELECTED = "QuestsSelected"
+    ABANDON_QUESTS = "AbandonQuests"
 
     # Source: GetPokemonFamilyMap
     GET_POKEMON_FAMILY_MAP = "GetPokemonFamilyMap"
@@ -537,8 +540,9 @@ class OutboundMsg(str, Enum):
     NOTIFY_JOIN = "NotifyJoin"
     NOTIFY_LEAVE = "NotifyLeave"
 
-    # Source: Quests.cs (Guessed)
-    QUESTS = "Quests"
+    # Source: pie/AllQuests.cs and pie/QuestsProgressed.cs.
+    ALL_QUESTS = "AllQuests"
+    QUESTS_PROGRESSED = "QuestsProgressed"
 
     # Social Notifications
     NOTIFICATION = "Notification"

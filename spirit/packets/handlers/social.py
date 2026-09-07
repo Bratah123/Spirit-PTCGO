@@ -135,11 +135,6 @@ class SocialHandler(BaseHandler):
         for member in self._room_member_clients(room_id):
             await member.send_packet(notify, 0)
 
-    @handle(InboundMsg.QUESTS_ENABLED)
-    async def handle_quests_enabled(self, message, request_id, flags):
-        logging.info(f"[TCP] [{self.client.addr}] Client checking if Quests are enabled.")
-        pass
-
     @handle(InboundMsg.GET_FRIEND_ROSTER)
     async def handle_get_friend_roster(self, message, request_id, flags):
         logging.info(f"[TCP] [{self.client.addr}] Client requested Friend Roster.")
@@ -308,12 +303,4 @@ class SocialHandler(BaseHandler):
         await self.client.send_packet({
             "messageName": OutboundMsg.FRIEND_ERROR.value,
             "error": message
-        }, request_id)
-
-    @handle(InboundMsg.GET_QUESTS)
-    async def handle_get_quests(self, message, request_id, flags):
-        logging.info(f"[TCP] [{self.client.addr}] Client requested Quests.")
-        await self.send({
-            "messageName": OutboundMsg.QUESTS.value,
-            "quests": []
         }, request_id)

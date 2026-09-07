@@ -6,6 +6,7 @@ from spirit.database.accounts import get_account_by_username, create_account, ve
 from spirit.game.attributes import AttrID
 from spirit.game.season_manager import VersusSeasonManager
 from spirit.game.account_attributes import build_account_attributes, anchor_versus_animation
+from spirit.database.quests import get_quests
 from .base import BaseHandler, handle
 from spirit.server.state import consume_ticket, sweep_expired_tickets
 from .social import SocialHandler
@@ -161,9 +162,10 @@ class AuthHandler(BaseHandler):
             anchor_versus_animation(account_id)
             attributes = build_account_attributes(account_id)
             daily_info = process_daily_login(account_id)
-            return player, attributes, daily_info
+            quest_snapshot = get_quests(account_id)
+            return player, attributes, daily_info, quest_snapshot
 
-        player, account_attributes, daily_info = await run_db(_load_login_state)
+        player, account_attributes, daily_info, quest_snapshot = await run_db(_load_login_state)
         self.client.player = player
         # Index the authenticated client so presence/challenge/login-guard are O(1).
         self.client.server.register_account(self.client)
@@ -269,13 +271,7 @@ class AuthHandler(BaseHandler):
         # QuestConfigurationUpdated
         await self.client.send_packet({
             "messageName": OutboundMsg.QUEST_CONFIGURATION_UPDATED.value,
-            "questConfiguration": {
-                "xpLevelMap": {"1": 100, "2": 200},
-                "levelTierMap": {"1": 1},
-                "affinityToAffinityLevelRewardsMap": {},
-                "nextQuestAvailableTime": 4102444800000,
-                "levelActiveQuestsMap": {"1": 1}
-            }
+            "questConfiguration": quest_snapshot["configuration"]
         }, 0)
 
         # DailyLogin — weeksRewards outer array = days; timestamp = next reward time in ms

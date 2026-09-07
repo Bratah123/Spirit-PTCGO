@@ -66,6 +66,8 @@ def main():
     # Prime the tournament cache off-loop (handlers only read it afterwards)
     from spirit.game.tournament_manager import TournamentManager
     TournamentManager()
+    from spirit.game.quests import load_catalog
+    load_catalog()
 
     # 1. Ensure asset_map.json exists for first-time setup
     map_path = "spirit/server/asset_map.json"

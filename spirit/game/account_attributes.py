@@ -1,5 +1,6 @@
 from spirit.game.attributes import AttrID
 from spirit.database import versus_data
+from spirit.database.quests import account_quest_attributes
 from spirit.database.player_data import get_account_settings, get_screen_name, merge_account_settings
 from spirit.game.season_manager import VersusSeasonManager
 
@@ -23,6 +24,7 @@ def build_account_attributes(account_id):
     """Full SerializableAccount attribute list (AccountUpdated ReplaceWith
     swaps the whole set, so every sender must include everything)."""
 
+    quest_state = account_quest_attributes(account_id)
     season = VersusSeasonManager().get_active_season()
     points, all_time = versus_data.get_progress(
         account_id, season.season_id if season else "")
@@ -40,4 +42,6 @@ def build_account_attributes(account_id):
         {"name": AttrID.DECK_SHARE_MODE.value, "value": "Everybody"},
         {"name": AttrID.SEASON_POINTS.value, "value": points},
         {"name": AttrID.ALL_TIME_SEASON_POINTS.value, "value": all_time},
+        {"name": AttrID.QUESTS_ENABLED.value, "value": quest_state["enabled"]},
+        {"name": AttrID.QUEST_AFFINITY_XP.value, "value": quest_state["xp"]},
     ]
