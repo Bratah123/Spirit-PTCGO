@@ -1,0 +1,56 @@
+[
+  {
+    "page_type": "landing",
+    "sort_order": 1,
+    "content_json": {
+      "template": "LandingPageLeft",
+      "sortOrder": 1,
+      "startTime": 0,
+      "endTime": 4102444800000,
+      "labels": {
+        "GameText": {
+          "token": "spirit.dynamic_page.game_text",
+          "bundle": {
+            "en_US": "Welcome to SpiritPTCGO"
+          }
+        }
+      },
+      "images": {
+        "GameBackground": {
+          "localeImageMap": {
+            "en_US": "LandingPage/swsh9_whimsicott_landingpage"
+          }
+        }
+      },
+      "actions": {}
+    },
+    "enabled": true
+  },
+  {
+    "page_type": "landing",
+    "sort_order": 2,
+    "content_json": {
+      "template": "LandingPageRight",
+      "sortOrder": 2,
+      "startTime": 0,
+      "endTime": 4102444800000,
+      "labels": {
+        "GameText": {
+          "token": "spirit.dynamic_page.game_text",
+          "bundle": {
+            "en_US": "The first PTCGO private server!"
+          }
+        }
+      },
+      "images": {
+        "GameBackground": {
+          "localeImageMap": {
+            "en_US": "LandingPage/swsh6_galarianarticuno_landingpage"
+          }
+        }
+      },
+      "actions": {}
+    },
+    "enabled": true
+  }
+]

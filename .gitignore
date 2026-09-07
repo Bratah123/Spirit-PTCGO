@@ -236,6 +236,11 @@ spirit/assets/bundleCache/foil_masks/
 # fresh clone has a working Home button without needing a local game install.
 !spirit/assets/bundleCache/en_US_Logos/
 !spirit/assets/bundleCache/en_US_Logos/**
+# Default landing carousel artwork for new installations.
+!spirit/assets/bundleCache/en_US_LandingPage_CRR80_3/
+!spirit/assets/bundleCache/en_US_LandingPage_CRR80_3/**
+!spirit/assets/bundleCache/en_US_LandingPage_CRR87_3/
+!spirit/assets/bundleCache/en_US_LandingPage_CRR87_3/**
 !spirit/assets/cards/
 # Static localization reference data must ship with the repo (server loads it at
 # startup; a git-clone deploy has no other source). Runtime account/user DBs stay ignored.

@@ -1,5 +1,13 @@
 # Custom landing-page artwork
 
+Fresh databases receive the two starter pages from
+`spirit/database/json_data/default_dynamic_pages.json` when the `dynamic_pages`
+table is first created. Their Whimsicott and Galarian Articuno artwork ships in
+the tracked `en_US_LandingPage_CRR87_3` and `en_US_LandingPage_CRR80_3` bundles.
+Existing tables are left alone, including intentionally empty ones: editing or
+deleting pages in the dashboard persists across restarts. To change defaults
+for future installations, edit the JSON seed; do not commit `ptcgo_server.db`.
+
 Add a 16:9 PNG here to make it available in **Admin Dashboard → Dynamic
 Pages → Browse game artwork**. A 1920×1080 source is recommended.
 
