@@ -6,7 +6,6 @@ from spirit.database.models import (
     VersusProgress, DailyLoginProgress,
     AsyncTournament, TournamentEntry, TournamentLeaderboardClaim
 )
-from spirit.database import seeds as _seeds
 
 __all__ = [
     "Base",
