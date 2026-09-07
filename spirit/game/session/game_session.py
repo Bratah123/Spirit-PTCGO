@@ -22,6 +22,7 @@ from .constants import (
     MAX_ACTIONS_PER_TURN,
     ACTION_COUNTDOWN_DURATION_MS,
     ACTION_TIMEOUT_MS,
+    FOLLOW_UP_TIMEOUT_MS,
     TURN_OFFER_LENGTH_MS,
     TARGET_TYPE_MAIN_TURN,
     EMPTY_SEQUENCE_ID,
@@ -632,13 +633,19 @@ class GameSession:
         if self.game_phase == GamePhase.GAME_OVER:
             raise GameOver()
         await self._wait_for_connection_resume()
+        main_offer = msg_name == OutboundMsg.SELECTION_WITH_TARGETS_AND_ACTIONS_REQUIRED.value
+        if idle_timeout_ms is None:
+            idle_timeout_ms = ACTION_TIMEOUT_MS if main_offer else FOLLOW_UP_TIMEOUT_MS
+        timed = isinstance(player, NetworkPlayer)
+        if timed:
+            value = dict(value, offerLength=idle_timeout_ms,
+                         startingTimestamp=int(time.time() * 1000))
         envelope = self._sequence_envelope(
             EMPTY_SEQUENCE_ID, self._build_msg(msg_name, value)
         )
         loop = asyncio.get_running_loop()
         player.pending_choice_future = loop.create_future()
         player._pending_offer = (OutboundMsg.SEQUENCE_MESSAGE.value, envelope, 0)
-        timed = idle_timeout_ms is not None and isinstance(player, NetworkPlayer)
         remaining = max(0.0, (idle_timeout_ms or 0) / 1000)
         timer_running = False
         async with self._wire_lock:
@@ -736,8 +743,13 @@ class GameSession:
                     await self.choreo_pause(FORCE_SELECTION_SETTLE_SECONDS)
                     logging.info(
                         f"[Session {self.game_id}] {player.screen_name}'s "
-                        "action timer expired."
+                        f"selection timer expired ({msg_name})."
                     )
+                    if not main_offer:
+                        await self.end_game(
+                            self._opponent_id(player.account_id),
+                            f"{player.screen_name} ran out of time to make a selection",
+                        )
                     return {
                         "selection": None,
                         "counter": expected_counter,
