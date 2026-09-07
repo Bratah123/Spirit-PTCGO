@@ -230,9 +230,8 @@ class ManifestManager:
                             asset_names.append({"name": f"{set_code}/{asset_key}"})
                             asset_names.append({"name": f"{set_code}_{asset_key}"})
 
-                            # "072", "foil_072", "072_energypip" also resolve
-                            # without leading zeros
-                            num_match = re.match(r'^(foil_)?(\d+)(_energypip|_toolpip)?$', asset_key)
+                            # Publish the bundle's unpadded card/icon aliases too.
+                            num_match = re.match(r'^(foil_)?(\d+)(_energypip|_energyicon|_toolpip)?$', asset_key)
                             if num_match:
                                 short_num = num_match.group(2).lstrip("0") or "0"
                                 if short_num != num_match.group(2):

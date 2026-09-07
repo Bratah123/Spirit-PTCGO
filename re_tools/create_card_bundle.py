@@ -138,8 +138,8 @@ def create_card_set_bundle(png_mapping, template_path, target_bundle_name, keep_
 
             # Set up variants for this card asset
             variants = [asset_name]
-            # "072", "foil_072", "072_energypip" also map without leading zeros
-            num_match = re.match(r'^(foil_)?(\d+)(_energypip|_toolpip)?$', asset_name)
+            # Card textures and attachment icons also map without leading zeros.
+            num_match = re.match(r'^(foil_)?(\d+)(_energypip|_energyicon|_toolpip)?$', asset_name)
             if num_match:
                 short_num = num_match.group(2).lstrip("0") or "0"
                 if short_num != num_match.group(2):

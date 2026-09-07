@@ -236,11 +236,7 @@ def _generate_pip_png(png_path, set_code, asset_name, suffix, detect,
 
 
 def generate_energy_pip_png(png_path, set_code, asset_name, out_dir=None):
-    """Square crop around the card's circular emblem for the attachment pip.
-
-    The in-match pip requests bundle asset "{set}/{num}_energypip" for special
-    energies (EnergyPipTextureRenderer); without it the type symbol shows.
-    """
+    """Crops the emblem shared by the attachment pip and right-click icon."""
     return _generate_pip_png(png_path, set_code, asset_name, "energypip",
                              detect=True, out_dir=out_dir)
 
@@ -259,22 +255,22 @@ def generate_tool_pip_png(png_path, set_code, asset_name, out_dir=None):
                              out_dir=out_dir)
 
 
-def check_and_generate_bundles() -> int:
-    """
-    Scans the loaded card scripts, groups them by set, and generates
-    one Unity AssetBundle per set if missing or incomplete. Also compiles cosmetics.
-    """
-    logging.info("[AutoBundle] Compiling cosmetic bundles...")
-    try:
-        compile_all_cosmetics()
-    except Exception as e:
-        logging.error(f"[AutoBundle] Failed to compile cosmetics: {e}")
+def check_and_generate_bundles(set_codes=None) -> int:
+    """Builds missing/stale card bundles; an optional set filter skips cosmetics."""
+    if set_codes is None:
+        logging.info("[AutoBundle] Compiling cosmetic bundles...")
+        try:
+            compile_all_cosmetics()
+        except Exception as e:
+            logging.error(f"[AutoBundle] Failed to compile cosmetics: {e}")
 
-    logging.info("[AutoBundle] Checking custom landing-page artwork...")
-    try:
-        dynamic_pages.compile_custom_landing_bundle()
-    except Exception as e:
-        logging.error(f"[AutoBundle] Failed to compile custom landing pages: {e}")
+        logging.info("[AutoBundle] Checking custom landing-page artwork...")
+        try:
+            dynamic_pages.compile_custom_landing_bundle()
+        except Exception as e:
+            logging.error(f"[AutoBundle] Failed to compile custom landing pages: {e}")
+    else:
+        set_codes = set(set_codes)
 
     logging.info("[AutoBundle] Checking for missing card AssetBundles...")
     
@@ -313,6 +309,8 @@ def check_and_generate_bundles() -> int:
                     
                     card_def = module.card
                     set_code = card_def.set_code
+                    if set_codes is not None and set_code not in set_codes:
+                        continue
                     asset_name = str(card_def.collector_number).zfill(3)
                     
                     if set_code not in sets:
@@ -351,6 +349,7 @@ def check_and_generate_bundles() -> int:
                         pip_path = generate_energy_pip_png(png_path, set_code, asset_name)
                         if pip_path:
                             card_assets[f"{asset_name}_energypip"] = pip_path
+                            card_assets[f"{asset_name}_energyicon"] = pip_path
                     elif _is_pokemon_tool(card_def) and os.path.exists(png_path):
                         pip_path = generate_tool_pip_png(png_path, set_code, asset_name)
                         if pip_path:
