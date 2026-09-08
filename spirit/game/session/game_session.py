@@ -4,10 +4,13 @@ import copy
 import random
 import time
 import uuid
-from typing import Dict, Any, List, Optional, Sequence, Tuple, Union
+from typing import Awaitable, Callable, Dict, Any, List, Optional, Sequence, Tuple, Union
 from .player_abstract import GamePlayer
+from spirit.database.tournament_data import finish_entry, record_game_result
+from spirit.database.quests import credit_match
+from spirit.game.tournaments.manager import TournamentManager, _client_reward
 from .network_player import NetworkPlayer
-from spirit.game.account_attributes import build_account_attributes
+from spirit.game.progression.account import build_account_attributes
 from .ai_player import AIPlayer
 from .constants import (
     GamePhase,
@@ -74,7 +77,7 @@ from .constants import (
     TEXT_ATTACH_TAX_DISCARD,
 )
 from spirit.network.message_names import OutboundMsg
-from spirit.game.game_sequence_packets import NestedSequence
+from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.attributes import (
     AttrID,
     CLIENT_SPECIAL_CONDITION_NAMES,
@@ -206,8 +209,12 @@ class GameSession:
     # Pacing sleeps for client choreography; headless harnesses flip this off.
     choreography_pauses: bool = True
 
-    def __init__(self, game_id: str, pairing: Dict[str, Any]):
+    def __init__(self, game_id: str, pairing: Dict[str, Any], *,
+                 on_close: Optional[Callable[[str], None]] = None,
+                 on_result: Optional[Callable[[str, str], Awaitable[None]]] = None):
         self.game_id: str = game_id
+        self._on_close = on_close
+        self._on_result = on_result
         self.pairing: Dict[str, Any] = pairing
         self.is_solo: bool = pairing.get("is_solo", False)
         
@@ -1120,8 +1127,7 @@ class GameSession:
             await self.concede(account_id)
         else:
             # No connected human to award (both gone / AI opponent): tear down.
-            from .manager import GameSessionManager
-            GameSessionManager().remove_session(self.game_id)
+            self.close()
 
     async def reconnect_player(self, client_handler, account_id: str):
         """Rebinds one socket and starts that client's native scene rebuild."""
@@ -1305,8 +1311,14 @@ class GameSession:
                 except Exception as inner:
                     logging.error(f"[Session {self.game_id}] Best-effort end_game failed: {inner}")
         finally:
-            from spirit.game.session.manager import GameSessionManager  # circular-import guard
-            GameSessionManager().remove_session(self.game_id)
+            self.close()
+
+    def close(self):
+        """Releases the session through its owner, or cleans up a standalone game."""
+        if self._on_close is not None:
+            self._on_close(self.game_id)
+        else:
+            self.cleanup()
 
     def _entity_introduced_msg(self, card) -> Dict[str, Any]:
         """Builds an EntityIntroduced game message (reveals a card's identity).
@@ -2995,7 +3007,6 @@ class GameSession:
             return []
         if reason == "A game error occurred." or self.turn_state.turn_number == 0:
             return []
-        from spirit.database.quests import credit_match
         try:
             result = await run_db(credit_match, player.account_id, self.game_id,
                                   self.game_stats.get(pid, {}), pid == winner_id,
@@ -3012,13 +3023,10 @@ class GameSession:
 
     async def _record_legacy_tournament_result(self, winner_id: str):
         """Advances the live Events-scene bracket this game belonged to."""
-        ctx = self.pairing.get("legacy_tournament")
-        if not ctx:
+        if self._on_result is None:
             return
         try:
-            from spirit.game.live_tournament import LiveTournamentManager
-            await LiveTournamentManager().record_game_result(
-                ctx["active_id"], self.game_id, winner_id)
+            await self._on_result(self.game_id, winner_id)
         except Exception as e:
             logging.error(f"[Session {self.game_id}] Live tournament result "
                           f"recording failed: {e}", exc_info=True)
@@ -3033,8 +3041,6 @@ class GameSession:
         ctx = self.pairing.get("tournament")
         if not ctx:
             return
-        from spirit.database import tournament_data
-        from spirit.game.tournament_manager import TournamentManager, _client_reward
         tournament = TournamentManager().get(ctx.get("tournament_id", ""))
         definition = tournament.definition if tournament else {}
         run_config = (definition or {}).get("run") or {}
@@ -3048,7 +3054,7 @@ class GameSession:
             opponent = self.players.get(opponent_id)
             try:
                 entry = await run_db(
-                    tournament_data.record_game_result, entry_id,
+                    record_game_result, entry_id,
                     pid == winner_id, opponent_id,
                     opponent.screen_name if opponent else "", run_config)
                 if not entry:
@@ -3066,7 +3072,7 @@ class GameSession:
                 )
                 if entry.get("run_complete"):
                     finished, granted = await run_db(
-                        tournament_data.finish_entry, entry_id, pid,
+                        finish_entry, entry_id, pid,
                         definition, False)
                     if finished:
                         await player.send_packet(

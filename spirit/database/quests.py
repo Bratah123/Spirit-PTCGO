@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from spirit.database import db_session
 from spirit.database.models import Account, Wallet, QuestAccount, DailyQuest, QuestMatchCredit
-from spirit.game.quests import AFFINITIES, MAX_ACTIVE, XP_LEVELS, coin_reward, configuration, load_catalog, quest_payload
+from spirit.game.progression.quests import AFFINITIES, MAX_ACTIVE, XP_LEVELS, coin_reward, configuration, load_catalog, quest_payload
 
 
 def utc_now():

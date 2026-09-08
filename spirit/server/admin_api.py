@@ -9,13 +9,26 @@ from urllib.parse import unquote
 from spirit.server import http_server
 from spirit.database import db_session, Account, TradeOffer
 from spirit.database import economy_data
-from spirit.game import season_manager
+from spirit.game.progression.seasons import SEASONS_PATH, VersusSeasonManager
 from spirit.game.attributes import AttrID
+from spirit.game.decks.formats import FORMATS_PATH, FormatManager, validate_formats
 from spirit.game.models.versus import VersusSeason
-from spirit.game.set_utils import card_script_counts, eligible_booster_sets
+from spirit.game.content.sets import card_script_counts, eligible_booster_sets
 from spirit.server import admin_auth
 from spirit.server import dynamic_pages
 from spirit.server import metrics
+from spirit.game.scripts.products import loader as product_loader
+from sqlalchemy import func
+from spirit.database import TournamentEntry
+from spirit.database.admin_data import verify_admin_login
+from spirit.shop import shop_manager
+from spirit.database.player_data import grant_all_cards
+from spirit.database.player_data import grant_all_products
+from spirit.database.admin_data import set_admin
+from spirit.game.scripts.cards import loader as card_loader
+from spirit.database import tournament_data
+from spirit.game.tournaments.manager import TournamentManager, validate_definition
+from spirit.packets.handlers import data_sync
 
 DASHBOARD_PATH = os.path.join(os.path.dirname(__file__), 'admin', 'dashboard.html')
 CARDS_IMG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'cards')
@@ -57,7 +70,6 @@ def _decode_image_data_url(value):
 
 
 def _products_summary():
-    from spirit.game.scripts.products import loader as product_loader
     if not product_loader.products:
         product_loader.load_all()
     out = []
@@ -141,8 +153,6 @@ def _accounts_summary():
 
 
 def _tournament_entry_counts(tournament_ids):
-    from sqlalchemy import func
-    from spirit.database import TournamentEntry
     if not tournament_ids:
         return {}
     with db_session() as session:
@@ -165,14 +175,12 @@ def _trades_summary():
 
 def _reload_shop():
     try:
-        from spirit.shop import shop_manager
         shop_manager.reload_from_db()
     except Exception as e:
         logging.error(f"[Admin] Shop reload failed: {e}")
 
 
 def _login(data):
-    from spirit.database.admin_data import verify_admin_login
     admin = verify_admin_login(data.get("username", ""), data.get("password", ""))
     if not admin:
         return _err(401, "invalid credentials or not an admin account")
@@ -261,7 +269,6 @@ def _dispatch(method, endpoint, data):
         with db_session() as session:
             if not session.query(Account).filter_by(account_id=account_id).first():
                 return _err(404, "account not found")
-        from spirit.database.player_data import grant_all_cards
         count = max(1, int(data.get("count") or 4))
         granted = grant_all_cards(account_id, count=count, is_tradable=True)
         return _ok({"granted": granted, "count": count})
@@ -273,13 +280,11 @@ def _dispatch(method, endpoint, data):
         with db_session() as session:
             if not session.query(Account).filter_by(account_id=account_id).first():
                 return _err(404, "account not found")
-        from spirit.database.player_data import grant_all_products
         count = max(1, int(data.get("count") or 1))
         granted = grant_all_products(account_id, count=count, is_tradable=True)
         return _ok({"granted": granted, "count": count})
 
     if method == 'POST' and endpoint == 'accounts/set-admin':
-        from spirit.database.admin_data import set_admin
         account_id = data.get("account_id")
         if not account_id:
             return _err(400, "account_id required")
@@ -294,7 +299,6 @@ def _dispatch(method, endpoint, data):
         return _err(400, "use POST with {query}")
 
     if method == 'POST' and endpoint == 'cards/search':
-        from spirit.game.scripts.cards import loader as card_loader
         if not card_loader.cards:
             card_loader.load_all()
         query = (data.get("query") or "").lower()
@@ -319,7 +323,6 @@ def _dispatch(method, endpoint, data):
         return _ok({"cards": results})
 
     if method == 'POST' and endpoint == 'cards/lookup':
-        from spirit.game.scripts.cards import loader as card_loader
         if not card_loader.cards:
             card_loader.load_all()
         wanted = {str(g).lower() for g in (data.get("guids") or [])}
@@ -347,7 +350,7 @@ def _dispatch(method, endpoint, data):
     if endpoint == 'versus-seasons':
         if method == 'GET':
             try:
-                with open(season_manager.SEASONS_PATH, 'r', encoding='utf-8') as f:
+                with open(SEASONS_PATH, 'r', encoding='utf-8') as f:
                     seasons = json.load(f)
             except (OSError, json.JSONDecodeError):
                 seasons = []
@@ -356,36 +359,32 @@ def _dispatch(method, endpoint, data):
             normalized, error = _validate_seasons(data.get("seasons"))
             if error:
                 return _err(400, error)
-            with open(season_manager.SEASONS_PATH, 'w', encoding='utf-8') as f:
+            with open(SEASONS_PATH, 'w', encoding='utf-8') as f:
                 json.dump(normalized, f, indent=2)
-            season_manager.VersusSeasonManager().load_seasons()
+            VersusSeasonManager().load_seasons()
             return _ok({"seasons": normalized})
 
     # ------------------------------------------------ play formats
     if endpoint == 'formats':
-        from spirit.game import format_manager
         if method == 'GET':
-            mgr = format_manager.FormatManager()
+            mgr = FormatManager()
             return _ok({
                 "formats": [fmt.to_dict() for fmt in mgr.formats],
                 "sets": sorted(card_script_counts().keys())
             })
         if method == 'POST':
-            normalized, error = format_manager.validate_formats(data.get("formats"))
+            normalized, error = validate_formats(data.get("formats"))
             if error:
                 return _err(400, error)
-            with open(format_manager.FORMATS_PATH, 'w', encoding='utf-8') as f:
+            with open(FORMATS_PATH, 'w', encoding='utf-8') as f:
                 json.dump({"formats": normalized}, f, indent=2)
-            format_manager.FormatManager().load_formats()
+            FormatManager().load_formats()
             # Re-derive set legalFormats and drop cached format-legality payloads
-            from spirit.packets.handlers import data_sync
             data_sync.reload_sets()
             return _ok({"formats": normalized})
 
     # ------------------------------------------------ async tournaments
     if endpoint == 'tournaments':
-        from spirit.database import tournament_data
-        from spirit.game.tournament_manager import TournamentManager, validate_definition
         if method == 'GET':
             tournaments = tournament_data.list_tournaments()
             counts = _tournament_entry_counts([t["tournament_id"] for t in tournaments])
@@ -404,8 +403,6 @@ def _dispatch(method, endpoint, data):
             return _ok({"tournament": saved})
 
     if method == 'POST' and endpoint == 'tournaments/toggle':
-        from spirit.database import tournament_data
-        from spirit.game.tournament_manager import TournamentManager
         rows = {t["tournament_id"]: t for t in tournament_data.list_tournaments()}
         row = rows.get(data.get("tournament_id", ""))
         if not row:
@@ -417,16 +414,12 @@ def _dispatch(method, endpoint, data):
         return _ok({"tournament": saved})
 
     if method == 'POST' and endpoint == 'tournaments/delete':
-        from spirit.database import tournament_data
-        from spirit.game.tournament_manager import TournamentManager
         if not tournament_data.delete_tournament(data.get("tournament_id", "")):
             return _err(404, "tournament not found")
         TournamentManager().reload_from_db()
         return _ok()
 
     if method == 'GET' and endpoint.startswith('tournaments/standings/'):
-        from spirit.database import tournament_data
-        from spirit.game.tournament_manager import TournamentManager
         tournament_id = endpoint.split('/', 2)[2]
         tournament = TournamentManager().get(tournament_id)
         definition = tournament.definition if tournament else {}

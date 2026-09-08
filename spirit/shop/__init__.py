@@ -4,7 +4,7 @@ from spirit import config
 from spirit.game.models.shop import Shop, FeaturedProduct
 from spirit.game.models.product import Product
 from spirit.game.attributes import AttrID, ProductType
-from spirit.game.set_utils import eligible_booster_sets
+from spirit.game.content.sets import eligible_booster_sets
 from spirit.game.scripts.products import loader as product_loader
 from spirit.database.economy_data import list_shop_items
 from spirit.game.scripts.cards import loader as card_loader
@@ -17,7 +17,11 @@ class ShopManager:
     """Manages the global state of the Shop."""
     def __init__(self):
         self.shop = Shop()
+        product_loader.on_reload(self._products_reloaded)
         self.reload_from_db()
+
+    def _products_reloaded(self):
+        self.reload_from_db(reload_products=False)
 
     def _add_tokens_product(self):
         cur_guid = "00000000-0000-0000-0000-000000000002"
@@ -39,19 +43,22 @@ class ShopManager:
         img_url = product.get_attribute_value(AttrID.IMAGE_URL, LOCAL_IMG)
         self.shop.featured_products.append(FeaturedProduct(product.guid, img_url))
 
-    def reload_from_db(self):
+    def reload_from_db(self, *, reload_products=True):
         logging.info("[Shop] Reloading shop from database...")
+
+        if not card_loader.cards:
+            card_loader.load_all()
+        if reload_products:
+            previous = product_loader.products
+            product_loader.load_all()
+            if product_loader.products is not previous:
+                return
         self.shop.clear()
 
         try:
             self._add_tokens_product()
 
-            # Ensure cards are loaded before building products so packs get preview cards (attr
-            # 201505). Guarded: never reload once loaded (that rebuilds effect registries).
-            if not getattr(card_loader, "cards", None):
-                card_loader.load_all()
-
-            products = product_loader.load_all()
+            products = product_loader.products
 
             # Admin-configured shop items override/extend the automatic listing
             try:
@@ -85,7 +92,7 @@ class ShopManager:
                     continue
                 product.prices = [{"name": item["currency"], "value": item["price"]}]
                 listed = self.shop.add_as_sku(product) \
-                    if product.product_type == ProductType.PACKS.value else product
+                    if product.product_type in (ProductType.PACKS.value, ProductType.DECKS.value) else product
                 if listed is product:
                     self.shop.add_product(product)
                 if item["featured"]:

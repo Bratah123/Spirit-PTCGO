@@ -4,6 +4,7 @@ import random
 import logging
 from typing import Dict, Any, List, Optional, Union
 from spirit.game.attributes import AttrID, CardType, PokemonStage, Rarities, PlayerAttrID
+from spirit.game.content.definitions import def_for
 from spirit.game.models.card import Card
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.network.message_names import OutboundMsg
@@ -256,7 +257,6 @@ def create_card_entity(card_obj: Card, owning_player_id: Optional[str] = None, e
     elif c_type == CardType.ENERGY.value:
         return EnergyEntity(card_obj, owning_player_id, entity_id)
     else:
-        from spirit.game.data_utils import def_for  # circular-import guard
         if getattr(def_for(card_obj.guid), "plays_as_pokemon", False):
             # Fossils: Trainer archetype, Pokemon entity on the board.
             return PokemonEntity(card_obj, owning_player_id, entity_id)
@@ -468,7 +468,6 @@ class BoardState:
         """All Basic Pokemon entities currently in the player's hand that may
         be played from it (Shedinja's unplayable_from_hand is excluded, so it
         neither satisfies the mulligan check nor offers as a placement)."""
-        from spirit.game.data_utils import def_for  # circular-import guard
         hand_area = self.find_player_area(player_id, "hand")
         if not hand_area:
             return []
@@ -491,7 +490,6 @@ class BoardState:
         """Cards playable as the opening Active: Basics first, then hand
         Pokemon whose def sets setup_as_active (Luxray CZ's Explosiveness).
         The bench offer and mid-game bench plays stay Basics-only."""
-        from spirit.game.data_utils import def_for  # circular-import guard
         candidates = self.basic_pokemon_in_hand(player_id)
         hand_area = self.find_player_area(player_id, "hand")
         for c in (hand_area.children if hand_area else []):
@@ -506,7 +504,6 @@ class BoardState:
         Guards the mulligan loop against decks that can never produce a legal
         opening hand (which would otherwise reshuffle forever).
         """
-        from spirit.game.data_utils import def_for  # circular-import guard
         for area_name in ("deck", "hand"):
             area = self.find_player_area(player_id, area_name)
             for c in (area.children if area else []):

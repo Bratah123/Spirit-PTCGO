@@ -14,6 +14,9 @@ class AttrID(IntEnum):
     NAME = 10140
     CURRENCY_TYPE = 10200
     PRODUCT_TYPE = 10540
+    IS_THEME_DECK = 201290
+    DECK_CONTENTS_ID = 201640
+    DESCRIPTION = 10060
     # Booster pack rarity odds (a.g[]): the "i" info popup builds new List<a.g>(ValueFor)
     # and NREs if this is absent. Array of {rarityIcon, rarityName, count}.
     PACK_RARITY_DATA = 202250

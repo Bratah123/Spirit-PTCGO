@@ -1,6 +1,7 @@
 import logging
 
 from spirit.database import db_session, Wallet, Collection, VersusProgress
+from spirit.game.progression.seasons import VersusSeasonManager
 
 # Ladder points awarded when a match completes (winner / loser rates)
 VERSUS_POINTS_PER_WIN = 5
@@ -66,7 +67,6 @@ def award_match_points(account_id, won, season=None):
     """Adds ladder points for a completed match and grants rewards for every
     newly crossed tier threshold. Returns {points, all_time_points, granted}."""
     if season is None:
-        from spirit.game.season_manager import VersusSeasonManager
         season = VersusSeasonManager().get_active_season()
     delta = VERSUS_POINTS_PER_WIN if won else VERSUS_POINTS_PER_LOSS
     granted = []

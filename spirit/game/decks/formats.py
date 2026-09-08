@@ -6,11 +6,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from spirit.game.attributes import AttrID, CardType, DeckFormat
 from spirit.game.models.formats import GameFormat, FORMAT_WIRE_NAMES
-from spirit.game.set_utils import card_script_counts
+from spirit.game.content.sets import card_script_counts
 from spirit.game.scripts.cards import loader as card_loader
+from spirit.game.decks.theme_decks import theme_decks
 
 FORMATS_PATH = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', 'database', 'json_data', 'formats.json'
+    os.path.dirname(__file__), '..', '..', 'database', 'json_data', 'formats.json'
 ))
 
 LEGACY_SETS = {"BW1"}
@@ -34,6 +35,7 @@ def _default_formats() -> List[GameFormat]:
         GameFormat("Expanded", DeckFormat.EXPANDED.value, "Expanded", sets=loaded),
         GameFormat("Legacy", DeckFormat.LEGACY.value, "Legacy", sets=legacy),
         GameFormat("Unlimited", DeckFormat.UNLIMITED.value, "Unlimited", all_sets=True),
+        GameFormat("Theme", DeckFormat.THEME.value, "ThemeDeck", all_sets=True),
     ]
 
 
@@ -77,12 +79,12 @@ class FormatManager:
         self.formats: List[GameFormat] = []
         self._by_guid: Dict[str, GameFormat] = {}
         self._ref_cache: Dict[str, Tuple[Set[str], Set[str]]] = {}
-        self._ref_cache_stamp = -1
+        self._ref_cache_cards = None
         self.load_formats()
 
     def load_formats(self):
         self._ref_cache.clear()
-        self._ref_cache_stamp = -1
+        self._ref_cache_cards = None
         if os.path.exists(FORMATS_PATH):
             try:
                 with open(FORMATS_PATH, 'r', encoding='utf-8') as f:
@@ -102,6 +104,8 @@ class FormatManager:
                 logging.info(f"[Formats] Wrote default formats.json to {FORMATS_PATH}")
             except OSError as e:
                 logging.error(f"[Formats] Could not write default formats.json: {e}")
+        if not any(fmt.guid == DeckFormat.THEME.value for fmt in self.formats):
+            self.formats.append(GameFormat("Theme", DeckFormat.THEME.value, "ThemeDeck", all_sets=True))
         self._by_guid = {fmt.guid: fmt for fmt in self.formats}
 
     def by_guid(self, format_guid: str) -> Optional[GameFormat]:
@@ -145,9 +149,9 @@ class FormatManager:
 
     def _resolved_refs(self, fmt: GameFormat) -> Tuple[Set[str], Set[str]]:
         # "SET/num" refs need the card scripts; re-resolve if the loader reloaded.
-        if self._ref_cache_stamp != len(card_loader.cards):
+        if self._ref_cache_cards is not card_loader.cards:
             self._ref_cache.clear()
-            self._ref_cache_stamp = len(card_loader.cards)
+            self._ref_cache_cards = card_loader.cards
         cached = self._ref_cache.get(fmt.guid)
         if cached is None:
             banned = {g for g in map(self._resolve_card_ref, fmt.banned_cards) if g}
@@ -161,6 +165,8 @@ class FormatManager:
         fmt = self.by_guid(format_guid)
         if fmt is None:
             return False
+        if fmt.guid == DeckFormat.THEME.value:
+            return card.guid.lower() in theme_decks.registry.legal_cards
         if is_basic_energy_card(card):
             return True
         banned, extra = self._resolved_refs(fmt)

@@ -37,6 +37,8 @@ from spirit.server import metrics  # noqa: E402
 from spirit.database import Base, engine  # noqa: E402
 from spirit.database.migrations import run_light_migrations  # noqa: E402
 from spirit.database.admin_data import bootstrap_admins_from_env  # noqa: E402
+from spirit.game.tournaments.manager import TournamentManager
+from spirit.game.progression.quests import load_catalog
 
 async def run_server():
     tcp_server = PTCGOServer()
@@ -64,9 +66,7 @@ def main():
     run_light_migrations()
     bootstrap_admins_from_env()
     # Prime the tournament cache off-loop (handlers only read it afterwards)
-    from spirit.game.tournament_manager import TournamentManager
     TournamentManager()
-    from spirit.game.quests import load_catalog
     load_catalog()
 
     # 1. Ensure asset_map.json exists for first-time setup

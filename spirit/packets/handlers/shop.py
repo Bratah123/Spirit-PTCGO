@@ -8,9 +8,11 @@ from .base import BaseHandler, handle
 from spirit.shop import shop_manager
 from spirit.game.scripts.products import loader as product_loader
 from spirit.game.attributes import AttrID
+from spirit.game.models.product import Deck
+from spirit.database.deck_products import open_deck_product
 from spirit.database import db_session, Collection
 from spirit.database.async_utils import run_db
-from spirit.database.player_data import add_to_collection, remove_from_collection
+from spirit.database.player_data import add_to_collection, remove_from_collection, get_decks_by_account_id
 
 def build_item(owner_id: str, archetype_id: str, is_tradable: bool = False) -> dict:
     """Builds the client's Item JSON shape (shared with the trade lots protocol)."""
@@ -30,7 +32,7 @@ class ShopHandler(BaseHandler):
     def _owner_id(self) -> str:
         return self.client.player.account_id if self.client.player else "0"
 
-    def _open_products_sync(self, product_ids, is_tradable_override):
+    def _open_products_sync(self, product_ids, is_tradable_override, purchased=False):
         """Opens products and persists collection changes; runs on a DB worker thread."""
         shop = shop_manager.get_shop()
         account_id = self.client.player.account_id if self.client.player else None
@@ -46,6 +48,18 @@ class ShopHandler(BaseHandler):
                 product_loader.products_by_guid.get(pack_guid.lower())
             if not product:
                 logging.warning(f"[Shop] Cannot open unknown product: {p_id}")
+                continue
+
+            if isinstance(product, Deck):
+                if not account_id:
+                    continue
+                try:
+                    cards, tradable = open_deck_product(account_id, product, purchased=purchased)
+                except ValueError as exc:
+                    logging.warning("[Shop] Cannot open deck %s: %s", p_id, exc)
+                    continue
+                opened_products.append(build_item(owner_id, pack_guid, tradable))
+                opened_items.extend(build_item(owner_id, guid, tradable) for guid in cards)
                 continue
 
             # 1. Determine if the opened product is tradable
@@ -80,9 +94,10 @@ class ShopHandler(BaseHandler):
 
         return opened_items, opened_products
 
-    async def _process_opening(self, request_id, flags, product_ids, is_tradable_override=None):
+    async def _process_opening(self, request_id, flags, product_ids, is_tradable_override=None,
+                               purchased=False):
         opened_items, opened_products = await run_db(
-            self._open_products_sync, product_ids, is_tradable_override)
+            self._open_products_sync, product_ids, is_tradable_override, purchased)
 
         response = {
             "messageName": OutboundMsg.PRODUCTS_OPENED.value,
@@ -96,6 +111,12 @@ class ShopHandler(BaseHandler):
         # Sync collection count after opening (unsolicited sync uses request_id=0)
         if self.client.player:
             await self.push_collection()
+            if any(isinstance(product_loader.products_by_guid.get(item["archetypeID"]), Deck)
+                   for item in opened_products):
+                self.client.player.decks = await run_db(
+                    get_decks_by_account_id, self.client.player.account_id)
+                payload = self.client.player.get_decks_data()
+                await self.send(dict(payload, messageName=OutboundMsg.DECK_LIST.value))
 
     @staticmethod
     def _price_total(products_with_qty):
@@ -122,15 +143,17 @@ class ShopHandler(BaseHandler):
     async def handle_purchase_and_open_products(self, message, request_id, flags):
         logging.info(f"[TCP] [{self.client.addr}] Client requested Purchase and Open Products.")
 
-        product_ids = message.get("products", [])
         shop = shop_manager.get_shop()
+        product_ids = [guid for guid in message.get("products", [])
+                       if guid in shop.available_products]
 
         basket = [(shop.available_products.get(p_id), 1)
                   for p_id in product_ids if p_id in shop.available_products]
         if not await self._charge_for(basket, "PurchaseAndOpen"):
             return
 
-        await self._process_opening(request_id, flags, product_ids, is_tradable_override=message.get("isTradable"))
+        await self._process_opening(request_id, flags, product_ids,
+                                    is_tradable_override=message.get("isTradable"), purchased=True)
 
         # Update wallet UI (unsolicited sync uses request_id=0)
         if self.client.player:
@@ -147,9 +170,9 @@ class ShopHandler(BaseHandler):
     async def handle_purchase_archetypes(self, message, request_id, flags):
         logging.info(f"[TCP] [{self.client.addr}] Client requested Purchase Archetypes.")
 
-        archetypes = message.get("archetypes", {})
-
         shop = shop_manager.get_shop()
+        archetypes = {guid: qty for guid, qty in message.get("archetypes", {}).items()
+                      if guid in shop.available_products and type(qty) is int and qty > 0}
         basket = [(shop.available_products.get(arch_id), qty)
                   for arch_id, qty in archetypes.items()]
         if not await self._charge_for(basket, "PurchaseArchetypes"):
@@ -283,10 +306,8 @@ class ShopHandler(BaseHandler):
     async def handle_get_theme_deck_contents(self, message, request_id, flags):
         logging.info(f"[TCP] [{self.client.addr}] Client requested Theme Deck Contents.")
 
-        shop = shop_manager.get_shop()
-
         response = {
-            "messageName": "ThemeDeckContentsMap",
-            "themeDeckContentsMap": shop.theme_deck_contents
+            "messageName": OutboundMsg.THEME_DECK_CONTENTS_MAP.value,
+            "themeDeckContentsMap": product_loader.theme_decks.contents_map()
         }
         await self.send(response, request_id)

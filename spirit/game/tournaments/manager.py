@@ -3,6 +3,7 @@ import time
 import uuid
 
 from typing import List, Optional
+from spirit.database.tournament_data import CURRENCY_FIELDS, list_tournaments
 
 FAR_FUTURE_MS = 4102444800000  # 2100-01-01
 
@@ -234,8 +235,7 @@ class TournamentManager:
 
     def reload_from_db(self):
         try:
-            from spirit.database import tournament_data
-            rows = tournament_data.list_tournaments()
+            rows = list_tournaments()
             self.tournaments = [
                 TournamentDef(r["tournament_id"], r["definition"], r["enabled"])
                 for r in rows
@@ -289,7 +289,6 @@ def validate_definition(definition: dict):
     if not any(int(run.get(k) or 0) > 0 for k in ("maxWins", "maxLosses", "maxGames")):
         return "run needs at least one of maxWins/maxLosses/maxGames > 0"
     for fee in run.get("entryFee") or []:
-        from spirit.database.tournament_data import CURRENCY_FIELDS
         if str(fee.get("currency", "")).lower() not in CURRENCY_FIELDS:
             return f"unknown entry fee currency: {fee.get('currency')}"
         if int(fee.get("amount") or 0) < 0:

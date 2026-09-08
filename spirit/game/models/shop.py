@@ -24,7 +24,6 @@ class Shop:
         self.available_products: Dict[str, Product] = {}
         self.featured_products: List[FeaturedProduct] = []
         self.top_selling_products: List[str] = [] # List of GUIDs
-        self.theme_deck_contents: Dict[str, List[str]] = {} # GUID -> List[GUID]
         self.sku_to_pack: Dict[str, str] = {}  # shop SKU GUID -> real collection product GUID
 
     def add_product(self, product: Product):
@@ -46,7 +45,6 @@ class Shop:
         self.available_products.clear()
         self.featured_products.clear()
         self.top_selling_products.clear()
-        self.theme_deck_contents.clear()
         self.sku_to_pack.clear()
 
     def get_available_guids(self) -> List[str]:

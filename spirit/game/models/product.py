@@ -215,9 +215,27 @@ class BoosterPack(Product):
         return pack_guids
 
 class Deck(Product):
-    def __init__(self, guid: str, key: str, attributes: Optional[Dict[str, Any]] = None, prices: Optional[List[Dict[str, Any]]] = None):
+    def __init__(self, guid: str, key: str, attributes: Optional[Dict[str, Any]] = None,
+                 prices: Optional[List[Dict[str, Any]]] = None, *, contents=(),
+                 is_theme_deck=False, theme_legal=False):
         super().__init__(guid, key, attributes, prices)
-        self.contents = [] # List of GUIDs
+        self.contents = tuple(contents)
+        self.is_theme_deck = is_theme_deck
+        self.theme_legal = theme_legal
 
     def open(self, account_id: str) -> list[str]:
-        return self.contents
+        return list(self.contents)
+
+    def to_deck_dict(self, deck_id=None):
+        """Builds the client's saved-deck payload from the product's card list."""
+        return {
+            "deckID": deck_id or str(uuid.uuid4()), "deckName": self.name,
+            "piles": {"deck": list(self.contents)},
+            "attributes": [
+                {"name": AttrID.IS_THEME_DECK.value,
+                 "value": self.is_theme_deck and self.theme_legal},
+                {"name": AttrID.SELECTED_COIN.value, "value": "b9a4ea96-949e-11e1-890f-efb676c7909c"},
+                {"name": AttrID.SELECTED_SLEEVE.value, "value": "e079c0d3-b934-4fbd-b021-545106c75693"},
+                {"name": AttrID.SELECTED_DECK_BOX.value, "value": "e129b0d3-b934-4fbd-b021-545106c75694"},
+            ],
+        }

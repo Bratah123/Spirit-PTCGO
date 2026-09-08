@@ -1,8 +1,8 @@
 from spirit.game.attributes import AttrID
-from spirit.database import versus_data
+from spirit.database.versus_data import get_progress
 from spirit.database.quests import account_quest_attributes
 from spirit.database.player_data import get_account_settings, get_screen_name, merge_account_settings
-from spirit.game.season_manager import VersusSeasonManager
+from spirit.game.progression.seasons import VersusSeasonManager
 
 # Client setting numbers inside the account-settings dict (attr 10230, K.L.GetSetting)
 VERSUS_LAST_SEEN_POINTS_SETTING = 109  # LastKnownSeasonPointTotal (ladder animation anchor)
@@ -14,7 +14,7 @@ def anchor_versus_animation(account_id):
     points/reward animation on relog. In-session gains still animate because the
     mid-game AccountUpdated leaves 109 stale (it never re-runs this)."""
     season = VersusSeasonManager().get_active_season()
-    points, _ = versus_data.get_progress(
+    points, _ = get_progress(
         account_id, season.season_id if season else "")
     merge_account_settings(account_id, {VERSUS_LAST_SEEN_POINTS_SETTING: points})
     return points
@@ -26,7 +26,7 @@ def build_account_attributes(account_id):
 
     quest_state = account_quest_attributes(account_id)
     season = VersusSeasonManager().get_active_season()
-    points, all_time = versus_data.get_progress(
+    points, all_time = get_progress(
         account_id, season.season_id if season else "")
     return [
         {"name": AttrID.ACCOUNT_SETTINGS.value, "value": get_account_settings(account_id)},

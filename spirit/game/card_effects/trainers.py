@@ -1029,8 +1029,6 @@ async def training_court(ctx):
 
 def _basic_pokemon_in_play(board, player_id):
     """In-play Basics; fossils count (Basic Pokemon in play, Trainer CARD_TYPE)."""
-    from spirit.game.attributes import AttrID, PokemonStage
-    from spirit.game.models.board import PokemonEntity
     return [
         p for p in board.pokemon_in_play(player_id)
         if isinstance(p, PokemonEntity)

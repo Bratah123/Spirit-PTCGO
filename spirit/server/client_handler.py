@@ -11,6 +11,7 @@ from spirit.game.session.manager import GameSessionManager
 from spirit.game.session.constants import GamePhase
 from spirit.packets.handlers.social import SocialHandler
 from spirit.server import metrics
+from spirit.game.tournaments.live import LiveTournamentManager
 
 _log = logging.getLogger(__name__)
 
@@ -167,7 +168,6 @@ class ClientHandler:
 
             # Leave legacy tournament queues (with fee refund) and the Events channel
             try:
-                from spirit.game.live_tournament import LiveTournamentManager
                 await LiveTournamentManager().handle_disconnect(self)
             except Exception as e:
                 logging.error(f"[TCP] [{self.addr}] Error cleaning tournament queues on disconnect: {e}")

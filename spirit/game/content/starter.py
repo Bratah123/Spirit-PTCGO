@@ -2,7 +2,7 @@ import logging
 import uuid
 
 from spirit.game.attributes import AttrID, ProductType
-from spirit.game.set_utils import eligible_booster_sets
+from spirit.game.content.sets import eligible_booster_sets
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.game.scripts.products import loader as product_loader
 from spirit.database.player_data import (

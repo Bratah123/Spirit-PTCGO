@@ -1,4 +1,5 @@
 import copy
+from spirit.game.decks.validation import valid_format_names
 
 from typing import Dict, Any
 from spirit.game.attributes import AttrID, CurrencyType
@@ -81,15 +82,13 @@ class Player:
 
     def _inject_validation_attributes(self, deck_dict: Dict[str, Any], is_avatar: bool = False) -> Dict[str, Any]:
         """Overwrites deck attr 10860 (VALID_FORMATS) with the freshly computed format names."""
-        from spirit.game import rules
-
         deck_copy = copy.deepcopy(deck_dict)
         attributes = deck_copy.setdefault("attributes", [])
 
         if is_avatar:
             names = ["Modified", "Expanded", "Unlimited", "Legacy"]
         else:
-            names = rules.valid_format_names(deck_copy)
+            names = valid_format_names(deck_copy)
 
         # Recompute every time — formats.json may have changed since the deck was saved
         attributes[:] = [a for a in attributes if a.get("name") != AttrID.VALID_FORMATS.value]
@@ -97,6 +96,9 @@ class Player:
             "name": AttrID.VALID_FORMATS.value,
             "value": names
         })
+        if not is_avatar:
+            attributes[:] = [a for a in attributes if a.get("name") != AttrID.IS_THEME_DECK.value]
+            attributes.append({"name": AttrID.IS_THEME_DECK.value, "value": "ThemeDeck" in names})
 
         return deck_copy
 

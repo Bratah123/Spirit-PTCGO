@@ -2,9 +2,10 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from spirit.game.attributes import AttrID, CardType, PokemonStage
-from spirit.game.format_manager import FormatManager, is_basic_energy_card
+from spirit.game.attributes import AttrID, CardType, DeckFormat, PokemonStage
+from spirit.game.decks.formats import FormatManager, is_basic_energy_card
 from spirit.game.scripts.cards import loader as card_loader
+from spirit.game.decks.theme_decks import theme_decks
 
 DECK_SIZE = 60
 MAX_COPIES = 4
@@ -42,7 +43,8 @@ def _is_basic_pokemon_card(card) -> bool:
 class DeckValidator:
     """Validates one deck against the deck-building rules and any number of formats."""
 
-    def __init__(self, deck_dict: Dict[str, Any], owned_counts: Optional[Dict[str, int]] = None):
+    def __init__(self, deck_dict: Dict[str, Any], owned_counts: Optional[Dict[str, int]] = None,
+                 card_registry=None):
         self.deck_id = deck_dict.get("deckID")
         self.deck_name = deck_dict.get("deckName", "Unknown Deck")
         piles = deck_dict.get("piles") or {}
@@ -50,12 +52,13 @@ class DeckValidator:
         self.guids: List[str] = [str(g).lower() for g in pile_cards]
         self.owned_counts = owned_counts
         self.manager = FormatManager()
-        if not card_loader.cards:
-            card_loader.load_all()
+        registry = card_registry or card_loader
+        if registry is card_loader and not registry.cards:
+            registry.load_all()
         self.cards = []
         self.unknown_guids: List[str] = []
         for guid in self.guids:
-            card = card_loader.cards_by_guid.get(guid)
+            card = registry.cards_by_guid.get(guid)
             if card is None:
                 self.unknown_guids.append(guid)
             else:
@@ -114,6 +117,10 @@ class DeckValidator:
         self._base_details = details
         return details
 
+    def base_failures(self) -> List[dict]:
+        """Deck-building errors without format or theme-catalog restrictions."""
+        return list(self._base_failures())
+
     def validate(self, format_guids: List[str]) -> List[dict]:
         """One DeckValidationResult row per requested format."""
         rows = []
@@ -135,6 +142,11 @@ class DeckValidator:
                         "DeckContainsBannedCards",
                         f"This deck contains cards that are not legal in the {fmt.format_name} format.",
                         offenders))
+                if fmt_guid == DeckFormat.THEME.value:
+                    if theme_decks.match_deck(self.guids) is None:
+                        details.append(_detail(
+                            "BoolRestriction",
+                            "Theme format requires the exact contents of an approved theme deck."))
             rows.append({
                 "deckID": self.deck_id,
                 "format": fmt_guid,

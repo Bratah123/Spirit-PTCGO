@@ -2,7 +2,7 @@
 
 from spirit.database import quests
 from spirit.database.async_utils import run_db
-from spirit.game.account_attributes import build_account_attributes
+from spirit.game.progression.account import build_account_attributes
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from .base import BaseHandler, handle
 

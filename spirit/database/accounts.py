@@ -4,7 +4,7 @@ import hashlib
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from spirit.database import db_session, Account
-from spirit.game.starter_content import grant_starter_content
+from spirit.game.content.starter import grant_starter_content
 
 def hash_password(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()

@@ -4,6 +4,9 @@ import asyncio
 
 from typing import Dict, List, Any, Optional
 from spirit.network.message_names import OutboundMsg
+from spirit.game.attributes import DeckFormat
+from spirit.game.decks.formats import FormatManager
+from spirit.game.decks.validation import DeckValidator
 from spirit.server import metrics
 from .game_session import GameSession
 
@@ -109,6 +112,15 @@ class GameSessionManager:
         if not isinstance(queue_name, str) or len(queue_name) > _MAX_QUEUE_NAME_LEN:
             logging.warning(f"[Matchmaking] Rejecting oversized/invalid queueName from {client.addr}")
             return
+        format_guid = FormatManager().resolve_format_guid(queue_name)
+        if format_guid == DeckFormat.THEME.value or queue_name.lower().endswith("themedeck"):
+            result = DeckValidator(deck_data).validate([DeckFormat.THEME.value])[0]
+            if not result["valid"]:
+                await client.send_packet({
+                    "messageName": "MatchRequestError",
+                    "errorMsg": {"id": "Choose an unmodified, approved theme deck."},
+                }, request_id)
+                return
         # Clean up any existing queue registrations and active sessions for this client first
         await self.remove_from_queue(client, send_left_packet=False)
         self.remove_session_by_player_id(client.player.account_id)
@@ -422,7 +434,8 @@ class GameSessionManager:
         logging.info(f"[Matchmaking] All players ready! Transitioning game {game_id} to active gameplay")
 
         # Instantiate GameSession
-        session = GameSession(game_id, pairing)
+        session = GameSession(game_id, pairing, on_close=self.remove_session,
+                              on_result=pairing.get("on_result"))
         self.active_sessions[game_id] = session
         metrics.inc("matches_started")
         for account_id in session.players:

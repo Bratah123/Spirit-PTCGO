@@ -5,16 +5,16 @@ from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.async_utils import run_db
 from spirit.database import tournament_data
 from spirit.database.player_data import get_owned_counts
-from spirit.game import rules
-from spirit.game.format_manager import FormatManager
-from spirit.game.tournament_manager import (
+from spirit.game.decks.validation import validate_deck
+from spirit.game.decks.formats import FormatManager
+from spirit.game.tournaments.manager import (
     TournamentManager, STATE_OPEN, STATE_ENTRY_CLOSED, STATE_RESOLVED, STATE_HIDDEN,
     now_ms,
 )
 from spirit.game.session.manager import GameSessionManager
-from spirit.game.live_tournament import LiveTournamentManager
+from spirit.game.tournaments.live import LiveTournamentManager
 from .base import BaseHandler, handle
-from spirit.game.tournament_manager import _client_reward
+from spirit.game.tournaments.manager import _client_reward
 
 
 def serializable_deck(deck_data: dict, name: str = "Tournament Deck") -> dict:
@@ -53,7 +53,7 @@ def validate_tournament_deck(deck: dict, tournament, owned_counts=None,
     format_guid = FormatManager().resolve_format_guid(format_value)
     if format_guid is None:
         return [], f"The {format_value} tournament format is not available on this server."
-    return rules.validate_deck(
+    return validate_deck(
         deck, [format_guid], owned_counts=owned_counts), None
 
 

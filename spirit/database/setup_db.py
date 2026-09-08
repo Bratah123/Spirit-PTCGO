@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 from spirit.database import Base, engine, db_session, Account
 from spirit.database.connection import DB_PATH
+from spirit.game.content.starter import grant_starter_content
 
 def hash_password(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -78,7 +79,6 @@ def setup_database():
 
     if new_account_id:
         try:
-            from spirit.game.starter_content import grant_starter_content
             grant_starter_content(new_account_id)
             print(" - Granted starter decks and booster packs to seeded account.")
         except Exception as e:

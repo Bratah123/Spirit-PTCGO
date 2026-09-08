@@ -6,7 +6,7 @@ from typing import Dict, List
 from spirit.game.models.versus import Reward
 
 REWARDS_PATH = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', 'database', 'json_data', 'daily_rewards.json'
+    os.path.dirname(__file__), '..', '..', 'database', 'json_data', 'daily_rewards.json'
 ))
 
 # Client shows the 3-slot newbie dialog while activations <= 3, the 5-slot one after.

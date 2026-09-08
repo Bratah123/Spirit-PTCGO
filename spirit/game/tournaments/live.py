@@ -8,9 +8,10 @@ from typing import Dict, List, Optional
 
 from spirit.network.message_names import OutboundMsg
 from spirit.database.async_utils import run_db
-from spirit.database import tournament_data
+from spirit.database.tournament_data import _prize_rewards_for, grant_prize_rewards, refund_fees
 from spirit.game.models.versus import Reward
-from spirit.game.tournament_manager import TournamentManager, TournamentDef
+from spirit.game.tournaments.manager import TournamentManager, TournamentDef
+from spirit.game.session.manager import GameSessionManager
 
 
 class Participant:
@@ -101,7 +102,6 @@ class LiveTournament:
             winner = live[0] if live else matchup.players[0]
             await self.record_result(matchup.game_id, winner.account_id, forfeit=True)
             return
-        from spirit.game.session.manager import GameSessionManager
         gsm = GameSessionManager()
         pairing = {
             "players": {
@@ -113,6 +113,7 @@ class LiveTournament:
             "solitaire_id": None,
             "options": {},
             "queue_name": f"Tournament_{self.definition.tournament_id}",
+            "on_result": self.record_result,
             "legacy_tournament": {
                 "active_id": self.active_id,
                 "tournament_id": self.definition.tournament_id,
@@ -189,9 +190,9 @@ class LiveTournament:
         prize_table = self.definition.run_config.get("prizeTable") or []
         base = self.progress_dict()
         for place, participant in enumerate(standings, start=1):
-            granted = tournament_data._prize_rewards_for(prize_table, place)
+            granted = _prize_rewards_for(prize_table, place)
             if granted and not participant.withdrawn:
-                await run_db(tournament_data.grant_prize_rewards,
+                await run_db(grant_prize_rewards,
                              participant.account_id, granted)
             else:
                 granted = []
@@ -348,7 +349,7 @@ class LiveTournamentManager:
         queue.remove(entry)
         tournament = TournamentManager().get(tid)
         if tournament is not None:
-            await run_db(tournament_data.refund_fees,
+            await run_db(refund_fees,
                          entry.account_id, tournament.legacy_entry_fees())
             await self.push_wallet(client)
         await self.broadcast_queue_status(tid)

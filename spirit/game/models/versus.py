@@ -1,4 +1,5 @@
 from typing import Dict, List, Any, Optional
+from spirit.game.scripts.cards import loader as card_loader
 
 ZERO_GUID = "00000000-0000-0000-0000-000000000000"
 
@@ -6,7 +7,6 @@ ZERO_GUID = "00000000-0000-0000-0000-000000000000"
 def _card_guids():
     """Lowercase GUIDs of every loaded card (cached loader)."""
     try:
-        from spirit.game.scripts.cards import loader as card_loader
         return {c.guid.lower() for c in card_loader.load_all()}
     except Exception:
         return set()

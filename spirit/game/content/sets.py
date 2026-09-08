@@ -1,6 +1,6 @@
 import os
 
-CARD_SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), 'scripts', 'cards')
+CARD_SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'cards')
 MIN_CARD_SCRIPTS_FOR_BOOSTER = 10
 
 

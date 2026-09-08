@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).resolve().parents[1] / "database/json_data/daily_challenges.json"
+CATALOG_PATH = Path(__file__).resolve().parents[2] / "database/json_data/daily_challenges.json"
 MAX_ACTIVE = 3
 XP_LEVELS = {1: 5, 2: 10, 3: 20, 4: 35, 5: 50}
 AFFINITIES = "Colorless Darkness Dragon Fairy Fighting Fire Grass Lightning Metal Psychic Water".split()

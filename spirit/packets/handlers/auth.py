@@ -4,8 +4,8 @@ from spirit.network.protocol import WargFlags
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.accounts import get_account_by_username, create_account, verify_password
 from spirit.game.attributes import AttrID
-from spirit.game.season_manager import VersusSeasonManager
-from spirit.game.account_attributes import build_account_attributes, anchor_versus_animation
+from spirit.game.progression.seasons import VersusSeasonManager
+from spirit.game.progression.account import build_account_attributes, anchor_versus_animation
 from spirit.database.quests import get_quests
 from .base import BaseHandler, handle
 from spirit.server.state import consume_ticket, sweep_expired_tickets
@@ -15,7 +15,7 @@ from spirit.game.session.manager import GameSessionManager
 from spirit.game.session.constants import GamePhase
 from spirit.database.async_utils import run_db
 from spirit.database.daily_rewards import process_daily_login
-from spirit.game.daily_rewards import DailyRewardManager
+from spirit.game.progression.daily_rewards import DailyRewardManager
 from spirit.server import metrics
 
 

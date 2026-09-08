@@ -6,7 +6,7 @@ from typing import List, Optional
 from spirit.game.models.versus import VersusSeason
 
 SEASONS_PATH = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '..', 'database', 'json_data', 'versus_seasons.json'
+    os.path.dirname(__file__), '..', '..', 'database', 'json_data', 'versus_seasons.json'
 ))
 
 class VersusSeasonManager:

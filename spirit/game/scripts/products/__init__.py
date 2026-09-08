@@ -3,11 +3,15 @@ import json
 import uuid
 import importlib.util
 import logging
+import threading
+from types import SimpleNamespace
 from typing import Dict, List
 from spirit.game.models.product import Product, BoosterPack, Deck
 from spirit.game.attributes import ProductType, AttrID, CardType, Rarities
-from spirit.game.set_utils import eligible_booster_sets
+from spirit.game.content.sets import eligible_booster_sets
 from spirit.game.scripts.cards import loader as card_loader
+from spirit.game.decks.theme_decks import CardReferenceResolver, ThemeDeckRegistry, theme_decks
+from spirit.game.data_utils import BoosterPackDef, DeckDef
 
 BOOSTER_GUID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "spiritptcgo.auto.boosters")
 
@@ -37,29 +41,61 @@ class ProductLoader:
     """Dynamically loads product definition scripts from the filesystem."""
     def __init__(self, scripts_dir: str):
         self.scripts_dir = os.path.abspath(scripts_dir)
-        self.products: List[Product] = []
-        self.products_by_guid: Dict[str, Product] = {}
-        self.products_by_key: Dict[str, Product] = {}
+        self._catalog = SimpleNamespace(
+            products=[], products_by_guid={}, products_by_key={},
+            theme_decks=ThemeDeckRegistry())
+        self._reload_lock = threading.RLock()
+        self._reload_listeners = []
+        self.last_errors = []
 
-    def load_all(self):
-        """Scans the directory and loads all .py scripts."""
-        self.products = []
-        self.products_by_guid = {}
-        self.products_by_key = {}
-        
-        logging.info(f"[Scripts] Loading product scripts from {self.scripts_dir}...")
-        
-        for root, _, files in os.walk(self.scripts_dir):
-            for file in files:
-                if file.endswith(".py") and file != "__init__.py":
-                    file_path = os.path.join(root, file)
-                    self._load_script(file_path)
+    @property
+    def products(self):
+        return self._catalog.products
 
-        self._append_auto_boosters()
-        self._attach_pack_preview_cards()
+    @property
+    def products_by_guid(self):
+        return self._catalog.products_by_guid
 
-        logging.info(f"[Scripts] Successfully loaded {len(self.products)} product scripts.")
-        return self.products
+    @property
+    def products_by_key(self):
+        return self._catalog.products_by_key
+
+    @property
+    def theme_decks(self):
+        return self._catalog.theme_decks
+
+    def on_reload(self, callback):
+        """Registers a cache invalidator called after a successful publication."""
+        if callback not in self._reload_listeners:
+            self._reload_listeners.append(callback)
+
+    def load_all(self, *, strict=False):
+        """Publishes a complete catalog; failed reloads retain the previous one."""
+        with self._reload_lock:
+            candidate = ProductLoader(self.scripts_dir)
+            if not os.path.isdir(self.scripts_dir):
+                candidate.last_errors.append(f"Product scripts directory does not exist: {self.scripts_dir}")
+            candidate._card_resolver = CardReferenceResolver(card_loader)
+            for root, dirs, files in os.walk(self.scripts_dir):
+                dirs.sort()
+                for file in sorted(files):
+                    if file.endswith(".py") and file != "__init__.py":
+                        candidate._load_script(os.path.join(root, file))
+            candidate._append_auto_boosters()
+            self.last_errors = candidate.last_errors
+            if self.last_errors:
+                if strict:
+                    raise ValueError("Product catalog rejected:\n" + "\n".join(self.last_errors))
+                logging.error("[Scripts] Keeping previous product catalog after %d errors",
+                              len(self.last_errors))
+                return self.products
+            candidate._attach_pack_preview_cards()
+            candidate._catalog.theme_decks = ThemeDeckRegistry(candidate.products)
+            self._catalog = candidate._catalog
+            for callback in self._reload_listeners:
+                callback()
+            logging.info("[Scripts] Loaded %d products", len(self.products))
+            return self.products
 
     def _attach_pack_preview_cards(self):
         """Gives each pack attr 201505 (up to 3 loaded set cards, rarest first) so the "i" popup
@@ -101,8 +137,6 @@ class ProductLoader:
 
     def _append_auto_boosters(self):
         """Registers a booster pack product for every card set with >10 scripts that lacks one."""
-        from spirit.game.data_utils import BoosterPackDef
-
         existing_pack_keys = {
             p.key.upper() for p in self.products
             if p.product_type == ProductType.PACKS.value
@@ -117,6 +151,9 @@ class ProductLoader:
                 image_url=resolve_pack_image(set_code)
             )
             archetype = pack_def.to_archetype_dict()
+            if archetype["guid"] in self.products_by_guid:
+                self.last_errors.append(f"Auto-booster {set_code}: duplicate product GUID {archetype['guid']}")
+                continue
             prod_obj = BoosterPack(archetype["guid"], archetype["key"], archetype["attributes"])
             self.products.append(prod_obj)
             self.products_by_guid[prod_obj.guid] = prod_obj
@@ -130,34 +167,54 @@ class ProductLoader:
             
             spec = importlib.util.spec_from_file_location(module_name, file_path)
             if spec is None or spec.loader is None:
-                return
+                raise ValueError("Could not create a product script loader")
 
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            with open(file_path, "rb") as source:
+                exec(compile(source.read(), file_path, "exec"), module.__dict__)
 
             if hasattr(module, 'product'):
                 prod_def = module.product
                 archetype = prod_def.to_archetype_dict()
-                guid = archetype["guid"]
+                guid = str(uuid.UUID(archetype["guid"]))
                 key = archetype["key"]
                 attrs = archetype["attributes"]
+                if guid in self.products_by_guid:
+                    raise ValueError(f"Duplicate product GUID {guid}")
                 
                 ptype = attrs.get(str(AttrID.PRODUCT_TYPE.value), {}).get("value", ProductType.UNSET.value)
                 
                 if ptype == ProductType.PACKS:
                     prod_obj = BoosterPack(guid, key, attrs)
                 elif ptype == ProductType.DECKS:
-                    prod_obj = Deck(guid, key, attrs)
+                    if not isinstance(prod_def, DeckDef):
+                        raise ValueError("Deck products must use DeckDef or ThemeDeckDef")
+                    errors = prod_def.validate_definition(self._card_resolver)
+                    if errors:
+                        raise ValueError("; ".join(errors))
+                    prod_obj = Deck(
+                        guid, key, attrs, contents=prod_def.resolve_contents(self._card_resolver),
+                        is_theme_deck=prod_def.is_theme_deck, theme_legal=prod_def.theme_legal)
                 else:
                     prod_obj = Product(guid, key, attrs)
                 
                 self.products.append(prod_obj)
                 self.products_by_guid[guid] = prod_obj
                 self.products_by_key[key] = prod_obj
+            else:
+                raise ValueError("Product script must export 'product'")
                 
         except Exception as e:
+            self.last_errors.append(f"{file_path}: {e}")
             logging.error(f"[Scripts] Failed to load product script {file_path}: {e}")
 
 # Global loader instance
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__))
 loader = ProductLoader(SCRIPTS_DIR)
+
+
+def _publish_theme_decks():
+    theme_decks.registry = loader.theme_decks
+
+
+loader.on_reload(_publish_theme_decks)

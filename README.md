@@ -274,6 +274,10 @@ Your custom cosmetics are now ready to be equipped and rendered in game!
 
 ## Custom Booster Pack & Theme Deck Creation
 
+For deck contents, automatic Theme eligibility, previews and opening into a saved
+deck, see the [theme-deck scripting guide](spirit/game/decks/THEME_DECKS.md).
+The [game package map](spirit/game/README.md) describes where the implementation lives.
+
 SpiritPTCGO supports the exact same advanced dynamic appending system for **Booster Packs** and **PCD/Theme Decks**. You can customize the look of pack foils and deck boxes in the Shop and Opening scenes by placing your PNG textures in the designated folders.
 
 ### 1. Place your Custom Textures

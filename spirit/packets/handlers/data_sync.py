@@ -9,7 +9,7 @@ import time
 
 from spirit.game.models.avatar import get_avatar_items, get_default_avatar_items_list, AvatarArchetype
 from spirit.database.player_data import merge_account_settings
-from spirit.game.account_attributes import build_account_attributes
+from spirit.game.progression.account import build_account_attributes
 from spirit.network.protocol import WargFlags
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.economy_data import list_dynamic_pages
@@ -34,8 +34,8 @@ from spirit.database.social import get_incoming_invites_by_account_id
 from spirit.database.player_data import get_merged_collection_payload, get_archetype_flags, get_owned_counts
 from spirit.database.async_utils import run_db
 from spirit.game.models.card import Card, PokemonCard, Rarities
-from spirit.game import rules
-from spirit.game.format_manager import FormatManager
+from spirit.game.decks.validation import DeckValidator, validate_deck
+from spirit.game.decks.formats import FormatManager
 
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.game.scripts.products import loader as product_loader
@@ -102,15 +102,17 @@ def reload_cards():
     _clear_derived_caches()
 
 def reload_products():
-    global PRODUCTS_DB
     try:
-        products = product_loader.load_all()
-        # Convert models back to the dict format expected by this legacy handler for now
-        # to minimize disruption, or update the handler to use models.
-        PRODUCTS_DB = [p.to_archetype_dict() for p in products]
+        product_loader.load_all()
         logging.info(f"[DB] Loaded {len(PRODUCTS_DB)} products from scripts.")
     except Exception as e:
         logging.error(f"[DB] Failed to load product scripts: {e}")
+    _clear_derived_caches()
+
+
+def _products_reloaded():
+    global PRODUCTS_DB
+    PRODUCTS_DB = [product.to_archetype_dict() for product in product_loader.products]
     _clear_derived_caches()
 
 
@@ -137,6 +139,7 @@ def reload_sets():
     _clear_derived_caches()
 
 
+product_loader.on_reload(_products_reloaded)
 reload_cards()
 reload_products()
 reload_sets()
@@ -246,6 +249,9 @@ def _write_attr(attr, vt, vd, coerce=False):
     elif vt == "bool":
         attr.value.objectType = obj_type.BOOL
         attr.value.boolValue = bool(vd)
+    elif vt == "uuid":
+        attr.value.objectType = obj_type.UUID
+        _proto_uuid_write(uuid.UUID(str(vd)), attr.value.guidValue)
 
 
 def _card_final_attrs(card_data, key):
@@ -772,13 +778,15 @@ class DataSyncHandler(BaseHandler):
             owned = None
             if self.client.player:
                 owned = await run_db(get_owned_counts, self.client.player.account_id)
-            validator = rules.DeckValidator(deck_dict, owned_counts=owned)
+            validator = DeckValidator(deck_dict, owned_counts=owned)
             validation_results = validator.validate(FormatManager().play_format_guids())
             valid_names = [r["formatName"] for r in validation_results if r["valid"]]
             attrs_dict[str(AttrID.VALID_FORMATS.value)] = {
                 "name": AttrID.VALID_FORMATS.value,
                 "value": valid_names
             }
+            attrs_dict[str(AttrID.IS_THEME_DECK.value)] = {
+                "name": AttrID.IS_THEME_DECK.value, "value": "ThemeDeck" in valid_names}
 
         # Normalize attributes back to a list of dictionaries for JSON-compatibility
         deck_dict["attributes"] = list(attrs_dict.values())
@@ -839,7 +847,7 @@ class DataSyncHandler(BaseHandler):
         for deck_dict in decks_list:
             if not isinstance(deck_dict, dict) or _is_avatar_deck(deck_dict):
                 continue
-            results.extend(rules.validate_deck(deck_dict, formats_list, owned_counts=owned))
+            results.extend(validate_deck(deck_dict, formats_list, owned_counts=owned))
 
         res = {
             "messageName": OutboundMsg.DECKS_VALIDATED.value,
@@ -860,7 +868,7 @@ class DataSyncHandler(BaseHandler):
                 deck_dict = deck.get("deck_data")
                 if not isinstance(deck_dict, dict) or _is_avatar_deck(deck_dict):
                     continue
-                results.extend(rules.validate_deck(deck_dict, formats_list, owned_counts=owned))
+                results.extend(validate_deck(deck_dict, formats_list, owned_counts=owned))
 
         res = {
             "messageName": OutboundMsg.DECKS_VALIDATED.value,

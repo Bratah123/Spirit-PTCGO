@@ -6,7 +6,10 @@ import uuid
 from spirit.database import db_session, engine
 from spirit.database.models.economy import DailyLoginProgress
 from spirit.database.economy_data import _grant_reward_in_session
-from spirit.game.daily_rewards import DailyRewardManager
+from spirit.game.progression.daily_rewards import DailyRewardManager
+from spirit.game.models.product import BoosterPack
+from spirit.game.scripts.products import loader as product_loader, BOOSTER_GUID_NAMESPACE
+from spirit.game.content.sets import eligible_booster_sets
 
 _schema_checked = False
 
@@ -26,11 +29,8 @@ def _ensure_activations_column():
 
 
 def _random_pack_guid():
-    from spirit.game.models.product import BoosterPack
-    from spirit.game.scripts.products import loader as product_loader, BOOSTER_GUID_NAMESPACE
     packs = [p.guid for p in product_loader.products if isinstance(p, BoosterPack)]
     if not packs:
-        from spirit.game.set_utils import eligible_booster_sets
         packs = [str(uuid.uuid5(BOOSTER_GUID_NAMESPACE, s.upper()))
                  for s in eligible_booster_sets()]
     return random.choice(packs) if packs else None

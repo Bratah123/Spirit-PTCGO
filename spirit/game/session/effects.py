@@ -11,6 +11,7 @@ import logging
 import random
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
 from .legal_actions import energy_provided_count
+from .ai_player import AIPlayer
 from spirit.game.attributes import (
     AbilityTypes,
     AttrID,
@@ -34,7 +35,7 @@ from spirit.game.data_utils import (
 )
 from spirit.game.models.board import BoardEntity, CardEntity, EnergyEntity, PokemonEntity
 from spirit.network.message_names import OutboundMsg
-from spirit.game.game_sequence_packets import NestedSequence
+from spirit.game.session.sequence_packets import NestedSequence
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
     TempPassive,
@@ -1322,7 +1323,6 @@ class EffectContext:
         player_id: Optional[str] = None,
     ) -> int:
         """Show a single card in the ability-select pull-out with choice buttons."""
-        from .ai_player import AIPlayer  # circular-import guard
         pid = player_id or self.player_id
         viewer = self.session.players[pid]
         if isinstance(viewer, AIPlayer):
