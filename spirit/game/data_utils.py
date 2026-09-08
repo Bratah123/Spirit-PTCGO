@@ -1,5 +1,7 @@
 """Stable scripting API; implementations live in game.content.definitions."""
 
+from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
+
 from spirit.game.content.definitions import (
     ability_id_for,
     def_for,
@@ -40,6 +42,9 @@ from spirit.game.content.definitions import (
 )
 
 __all__ = [
+    "VisualizationArrow",
+    "VisualizationType",
+    "VisualizationLifetime",
     "ability_id_for",
     "def_for",
     "subtypes_for",

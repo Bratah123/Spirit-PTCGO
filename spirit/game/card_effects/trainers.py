@@ -6,7 +6,7 @@ from spirit.game.attributes import (
 from spirit.game.models.board import PokemonEntity
 from spirit.game.data_utils import (
     Ability, Activations, Attack, def_for, has_rule_box, is_pokemon_v,
-    subtypes_for,
+    subtypes_for, VisualizationArrow, VisualizationType,
 )
 from spirit.game.session.constants import BENCH_CAPACITY
 from spirit.game.session.effects import (
@@ -636,7 +636,8 @@ async def power_tablet(ctx):
     for pokemon in ctx.my_pokemon_in_play():
         if "Fusion Strike" in subtypes_for(pokemon.archetype_id):
             await ctx.add_stat_visualization(
-                pokemon, "Positive", "DamageDealtIncreased", card_text="+30 damage"
+                pokemon, VisualizationArrow.POSITIVE,
+                VisualizationType.DAMAGE_DEALT_INCREASED, card_text="+30 damage"
             )
 
 

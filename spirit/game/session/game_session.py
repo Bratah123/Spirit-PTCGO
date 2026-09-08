@@ -78,6 +78,9 @@ from .constants import (
 )
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
+from spirit.game.content.visualizations import (
+    Visualization, VisualizationArrow, VisualizationLifetime, VisualizationType,
+)
 from spirit.game.attributes import (
     AttrID,
     CLIENT_SPECIAL_CONDITION_NAMES,
@@ -262,7 +265,7 @@ class GameSession:
         self.turn_state = TurnState()
         # entity_id -> stat-modifier PiPs (attr 200370) applied this turn, so
         # they clear when the turn ends (Power Tablet's damage boost).
-        self._turn_visualizations: Dict[str, List[Dict[str, Any]]] = {}
+        self._visualizations: Dict[str, Visualization] = {}
         # entity_id -> coins flipped at Pokemon Checkup while Asleep (waking
         # needs ALL heads; Snorlax's Thumping Snore sets 2).
         self.sleep_checkup_coins: Dict[str, int] = {}
@@ -3559,6 +3562,8 @@ class GameSession:
             await self._run_player_turn(active_id)
             await self._wait_for_connection_resume()
             await self._run_state_unit(self._fire_end_of_turn_triggers(active_id))
+            await self._run_state_unit(self._expire_visualizations(
+                "end", active_id, self.turn_state.turn_number))
             if self.extra_turn_pending:
                 # Star Chronos / Yoga Loop: same player again, no checkup.
                 self.extra_turn_pending = False
@@ -3573,8 +3578,8 @@ class GameSession:
 
     async def _begin_turn(self, active_id: str):
         """Advances the turn counter, announces the active player, and draws."""
-        # Last turn's stat-modifier PiPs (Power Tablet) expire with the turn.
-        await self._clear_turn_visualizations()
+        # Start-boundary lifetimes follow the actual next player, including extra turns.
+        await self._expire_visualizations("start", active_id, self.turn_state.turn_number + 1)
         self.turn_state.begin_turn(active_id, self.board_state)
         player = self.players[active_id]
         logging.info(
@@ -4177,13 +4182,39 @@ class GameSession:
             )
 
     async def add_turn_stat_visualization(
-        self, pokemon: PokemonEntity, arrow: str, display_type: str,
+        self, pokemon: PokemonEntity, arrow: VisualizationArrow | str,
+        display_type: VisualizationType | str,
         source_name: str, card_text: Optional[str] = None,
     ):
         """Adds a stat-modifier PiP (attr 200370) to `pokemon` for the rest of
         the turn (Power Tablet's damage boost). arrow: "Positive" (green up) /
         "Negative" (red down); display_type: a VisualizationTypes member name
         (must be non-null -- s.F derefs .Value unguarded)."""
+        await self.add_visualization(
+            pokemon, arrow, display_type, source_name,
+            VisualizationLifetime.CURRENT_TURN,
+            self.turn_state.active_player_id, card_text,
+        )
+
+    async def add_visualization(
+        self, pokemon, arrow: VisualizationArrow | str,
+        display_type: VisualizationType | str, source_name: str,
+        lifetime: VisualizationLifetime, player_id: str,
+        card_text: Optional[str] = None,
+    ) -> str:
+        """Registers one visual indicator with an explicit lifetime."""
+        if not isinstance(lifetime, VisualizationLifetime):
+            raise TypeError("lifetime must be a VisualizationLifetime")
+        arrow = VisualizationArrow(arrow).value
+        display_type = VisualizationType(display_type).value
+        if card_text is not None and not isinstance(card_text, str):
+            raise TypeError("card_text must be a string or None")
+        if player_id not in self.players:
+            raise ValueError("visualization player must belong to the match")
+        if not self._visualization_target_in_play(pokemon):
+            raise ValueError("visualization target must be a live in-play Pokemon")
+        if not display_type or not source_name:
+            raise ValueError("display_type and source_name must be nonempty")
         viz: Dict[str, Any] = {
             "displayType": display_type,
             "arrow": arrow,
@@ -4193,38 +4224,56 @@ class GameSession:
             viz["cardText"] = {"id": card_text}
         current = list(pokemon.get_attribute(AttrID.SPECIAL_VISUALIZATIONS) or [])
         current.append(viz)
-        self._turn_visualizations.setdefault(pokemon.entity_id, []).append(viz)
+        handle = str(uuid.uuid4())
+        self._visualizations[handle] = Visualization(
+            pokemon.entity_id, viz, lifetime, player_id,
+            self._opponent_id(player_id), self.turn_state.turn_number,
+        )
         await self._broadcast_entity_attribute(
             pokemon, AttrID.SPECIAL_VISUALIZATIONS, current
         )
+        return handle
 
-    async def _clear_turn_visualizations(self):
-        """Removes this turn's stat-modifier PiPs (Power Tablet expires)."""
-        for entity_id, added in list(self._turn_visualizations.items()):
-            entity = self.board_state.get_entity(entity_id)
-            if entity is None:
-                continue
-            remaining = [
-                v for v in (entity.get_attribute(AttrID.SPECIAL_VISUALIZATIONS) or [])
-                if v not in added
-            ]
-            await self._broadcast_entity_attribute(
-                entity, AttrID.SPECIAL_VISUALIZATIONS, remaining
-            )
-        self._turn_visualizations = {}
+    def _visualization_target_in_play(self, entity) -> bool:
+        if not isinstance(entity, PokemonEntity) or self.board_state.get_entity(entity.entity_id) is not entity:
+            return False
+        while isinstance(entity.parent, PokemonEntity):
+            entity = entity.parent
+        return entity.parent is not None and entity.parent.get_attribute(AttrID.NAME) in (
+            "bench", "activePokemonArea")
+
+    async def remove_visualization(self, handle: str) -> bool:
+        """Removes a tracked indicator, leaving identical indicators intact."""
+        record = getattr(self, "_visualizations", {}).pop(handle, None)
+        if record is None:
+            return False
+        entity = self.board_state.get_entity(record.entity_id)
+        if entity is not None:
+            remaining = [v for v in (entity.get_attribute(AttrID.SPECIAL_VISUALIZATIONS) or [])
+                         if v is not record.payload]
+            await self._broadcast_entity_attribute(entity, AttrID.SPECIAL_VISUALIZATIONS, remaining)
+        return True
+
+    async def _expire_visualizations(self, event: str, player_id: str, turn_number: int):
+        """Expires indicators on actual player turns, including extra turns."""
+        for handle, record in list(getattr(self, "_visualizations", {}).items()):
+            entity = self.board_state.get_entity(record.entity_id)
+            if (not self._visualization_target_in_play(entity)
+                    or record.expires(event, player_id, turn_number)
+                    or (event == "start" and record.lifetime is VisualizationLifetime.CURRENT_TURN
+                        and turn_number > record.created_turn)):
+                await self.remove_visualization(handle)
 
     def _clear_entity_visualizations_msg(self, entity) -> Optional[Dict[str, Any]]:
-        """Drops `entity`'s turn-scoped stat-modifier PiPs (it left play, e.g.
-        was knocked out -- the client keeps rendering attr 200370 on discarded
-        cards) and returns the AttributeModified to ride its leave-play bracket,
-        or None. Retreat/switch keep the PiP: the buff still applies on the
-        bench, so those callers do NOT invoke this."""
-        added = self._turn_visualizations.pop(entity.entity_id, None)
+        """Clears all managed indicators on departure; retreat keeps them."""
+        registry = getattr(self, "_visualizations", {})
+        handles = [h for h, record in registry.items() if record.entity_id == entity.entity_id]
+        added = [registry.pop(h).payload for h in handles]
         if not added:
             return None
         remaining = [
             v for v in (entity.get_attribute(AttrID.SPECIAL_VISUALIZATIONS) or [])
-            if v not in added
+            if not any(v is payload for payload in added)
         ]
         entity.set_attribute(AttrID.SPECIAL_VISUALIZATIONS, remaining)
         return self._build_msg(
@@ -4240,6 +4289,17 @@ class GameSession:
                 },
             },
         )
+
+    def _clear_departed_visualizations(self, entity) -> List[Dict[str, Any]]:
+        """Clears indicators on a departed card and any tucked descendants."""
+        messages = []
+        if not self._visualization_target_in_play(entity):
+            msg = self._clear_entity_visualizations_msg(entity)
+            if msg is not None:
+                messages.append(msg)
+        for child in entity.children:
+            messages.extend(self._clear_departed_visualizations(child))
+        return messages
 
     async def _prompt_ability_panel(
         self, player_id: str, source: BoardEntity,
@@ -4590,6 +4650,7 @@ class GameSession:
             ),
             self._hp_attribute_msg(pokemon),
         ]
+        attrs.extend(self._clear_departed_visualizations(pokemon))
         await self.send_game_sequence(
             list(self.players.values()), GameSequence.DEVOLVE,
             data_effects + moves + attrs,
@@ -4707,6 +4768,8 @@ class GameSession:
         self.reset_ability_usage(outgoing)
 
         attrs = [self._hp_attribute_msg(incoming), self._hp_attribute_msg(outgoing)]
+        for departed in [outgoing] + stack_cards:
+            attrs.extend(self._clear_departed_visualizations(departed))
         # Wrap-FX rule: the moving card's intro rides a preceding SerialSequence.
         runs = [(GameSequence.SERIAL_SEQUENCE,
                  [self._entity_introduced_msg(incoming)])]

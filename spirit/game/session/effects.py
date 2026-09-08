@@ -36,6 +36,7 @@ from spirit.game.data_utils import (
 from spirit.game.models.board import BoardEntity, CardEntity, EnergyEntity, PokemonEntity
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
+from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
     TempPassive,
@@ -771,8 +772,24 @@ class EffectContext:
             lambda r: r[2] == TrainerType.ITEM.value
         )
 
+    async def add_visualization(
+        self, pokemon: PokemonEntity, arrow: VisualizationArrow | str,
+        display_type: VisualizationType | str,
+        lifetime: VisualizationLifetime, card_text: Optional[str] = None,
+    ) -> str:
+        """Adds a visual indicator; returns a handle for optional early removal."""
+        return await self.session.add_visualization(
+            pokemon, arrow, display_type, _display_name(self.source),
+            lifetime, self.player_id, card_text,
+        )
+
+    async def remove_visualization(self, handle: str) -> bool:
+        """Removes only the indicator belonging to this handle."""
+        return await self.session.remove_visualization(handle)
+
     async def add_stat_visualization(
-        self, pokemon: PokemonEntity, arrow: str, display_type: str,
+        self, pokemon: PokemonEntity, arrow: VisualizationArrow | str,
+        display_type: VisualizationType | str,
         card_text: Optional[str] = None,
     ) -> None:
         """Shows a stat-modifier PiP on `pokemon` for the rest of the turn
@@ -1263,6 +1280,7 @@ class EffectContext:
             position = len(hand.children)
             if not self.board.move_card(card.entity_id, hand.entity_id):
                 continue
+            self._queue_departed_visualizations(card)
             if isinstance(card, PokemonEntity):
                 # Special Conditions/attack locks don't survive leaving play;
                 # no bracket needed, the move itself clears the on-board marker.
@@ -1452,6 +1470,7 @@ class EffectContext:
             position = len(pile.children)
             if not self.board.move_card(card.entity_id, pile.entity_id):
                 continue
+            self._queue_departed_visualizations(card)
             if isinstance(card, PokemonEntity):
                 self.session.clear_pokemon_effects(card)
                 self.session.reset_pokemon_damage(card)
@@ -1572,6 +1591,7 @@ class EffectContext:
             holder = self._tool_holder_before_move(card)
             position = len(deck.children)
             if self.board.move_card(card.entity_id, deck.entity_id):
+                self._queue_departed_visualizations(card)
                 if isinstance(card, PokemonEntity):
                     # A shuffled-in Pokemon must not carry stale Special
                     # Conditions or damage when it's later drawn/re-introduced
@@ -1699,6 +1719,7 @@ class EffectContext:
         position = len(deck.children)
         if not self.board.move_card(card.entity_id, deck.entity_id):
             return False
+        self._queue_departed_visualizations(card)
         if same_pile:
             self._queue_pile_reordered(deck)
             return True
@@ -1717,6 +1738,7 @@ class EffectContext:
         same_pile = card.parent_id == deck.entity_id
         if not self.board.move_card(card.entity_id, deck.entity_id, 0):
             return False
+        self._queue_departed_visualizations(card)
         if same_pile:
             self._queue_pile_reordered(deck)
             return True
@@ -2084,6 +2106,11 @@ class EffectContext:
     def _queue(self, msg: Dict[str, Any], viewer_id: Optional[str] = None,
                bracket: Optional[str] = None):
         self._messages.append((viewer_id, msg, bracket))
+
+    def _queue_departed_visualizations(self, card):
+        """Clears managed indicators before a departed card is reintroduced."""
+        for msg in self.session._clear_departed_visualizations(card):
+            self._queue(msg, bracket=GameSequence.SERIAL_SEQUENCE.value)
 
     def _queue_intro_and_move(self, card: CardEntity, dest_id: str, position: int,
                               intro_viewer_id: Optional[str] = None):
