@@ -54,6 +54,12 @@ def opponent_has_bench(board, player_id):
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
 
+def opponent_bench_play_targets(board, player_id, card):
+    """Public bench targets for a single-target gust trainer."""
+    opponent = _other_player(board, player_id)
+    return _bench_pokemon(board, opponent) if opponent else []
+
+
 def player_has_bench(board, player_id):
     return bool(_bench_pokemon(board, player_id))
 
@@ -225,7 +231,7 @@ async def marnie(ctx):
 
 async def bosss_orders(ctx):
     """Switch 1 of the opponent's Benched Pokemon with their Active."""
-    target = await ctx.choose_pokemon(
+    target = await ctx.choose_play_target(
         ctx.opponent_bench(), "Choose the opponent's new Active Pokémon"
     )
     if target is not None:

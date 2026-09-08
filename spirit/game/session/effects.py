@@ -86,7 +86,8 @@ class EffectContext:
     """
 
     def __init__(self, session, player_id: str, source: BoardEntity,
-                 ability: Optional[Ability], attached_to: Optional[PokemonEntity] = None):
+                 ability: Optional[Ability], attached_to: Optional[PokemonEntity] = None,
+                 play_target: Optional[BoardEntity] = None):
         self.session = session
         self.board = session.board_state
         self.game_id = session.game_id
@@ -97,6 +98,8 @@ class EffectContext:
         self.ability = ability
         # For energy on-attach effects: the Pokemon the card just attached to.
         self.attached_to = attached_to
+        self.play_target = play_target
+        self._play_target_consumed = False
         self.knockouts: List[PokemonEntity] = []
         # Extra prizes the attacker takes for knockouts this attack causes
         # (e.g. Stoutland V's Double Dip Fangs).
@@ -1090,6 +1093,16 @@ class EffectContext:
             elif area_name not in ("activePokemonArea", "bench", "activeStadium"):
                 return False
         return True
+
+    async def choose_play_target(
+        self, candidates: Sequence[CardEntity], prompt: str,
+    ) -> Optional[CardEntity]:
+        """Uses the declared play target once, or prompts for an untargeted play."""
+        if self.play_target is not None and not self._play_target_consumed:
+            self._play_target_consumed = True
+            return next((card for card in candidates if card is self.play_target), None)
+        picks = await self.choose_cards(candidates, 1, prompt=prompt)
+        return picks[0] if picks else None
 
     async def choose_pokemon(
         self,
@@ -2433,7 +2446,8 @@ async def _send_ability_brackets(session, ctx: EffectContext,
     await session.enforce_bench_capacity()
 
 
-async def resolve_trainer_effect(session, player_id: str, card) -> Optional[EffectContext]:
+async def resolve_trainer_effect(session, player_id: str, card,
+                                 play_target=None) -> Optional[EffectContext]:
     """Runs a trainer card's scripted effect and returns its ctx (None when
     the card has no runnable effect).
 
@@ -2461,7 +2475,7 @@ async def resolve_trainer_effect(session, player_id: str, card) -> Optional[Effe
             + "; card plays with no effect."
         )
         return None
-    ctx = EffectContext(session, player_id, card, None)
+    ctx = EffectContext(session, player_id, card, None, play_target=play_target)
     ctx.is_trainer_effect = True
     await effect(ctx)
     return ctx

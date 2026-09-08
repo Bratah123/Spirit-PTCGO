@@ -552,11 +552,15 @@ class TrainerCardDef(CardDefinition):
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
         attributes: Optional[dict] = None,
-        foil: Optional[Foil] = None
+        foil: Optional[Foil] = None,
+        play_targets: Optional[Callable] = None,
+        play_target_prompt: str = "Choose a target",
     ):
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes, foil)
         self.effect = effect
         self.condition = condition
+        self.play_targets = play_targets
+        self.play_target_prompt = play_target_prompt
         # Trainers have no PIE_ABILITIES slot; declared abilities register for
         # the session's trigger scans only (Dream Ball's ON_TAKEN_AS_PRIZE).
         self.abilities: List[Ability] = abilities or []
