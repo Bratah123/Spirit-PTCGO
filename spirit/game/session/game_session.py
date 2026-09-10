@@ -3536,12 +3536,12 @@ class GameSession:
             await self._wait_for_connection_resume()
             await self._send_close_pause_prompt(player)
 
-        await self._wait_for_connection_resume()
-        await self._run_state_unit(self._introduce_initial_pokemon())
-
         self.game_phase = GamePhase.PRIZE_DEAL
         await self._wait_for_connection_resume()
         await self._run_state_unit(self._deal_prize_cards())
+
+        await self._wait_for_connection_resume()
+        await self._run_state_unit(self._introduce_initial_pokemon())
         self.game_phase = GamePhase.SETUP_COMPLETE
         logging.info(f"[Session {self.game_id}] Setup complete; board is ready for turn 1.")
 
