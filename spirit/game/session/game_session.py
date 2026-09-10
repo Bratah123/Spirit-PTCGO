@@ -570,8 +570,8 @@ class GameSession:
         its StopSequence arrives, so a bracket must never be left open while the
         server waits on player input -- nothing renders until it is closed.
         Sequence commands like OpponentPickingHeadsOrTails (M.Q) additionally
-        no-op when the bracket contains zero inner messages, so callers must
-        always provide at least one.
+        no-op when the bracket contains zero inner messages. ActivePlayerSet
+        accepts an empty bracket to dismiss the pregame coin screen silently.
         """
         # Accept GameSequence enum members or raw strings.
         name = getattr(name, "value", name)
@@ -649,7 +649,12 @@ class GameSession:
             idle_timeout_ms = ACTION_TIMEOUT_MS if main_offer else FOLLOW_UP_TIMEOUT_MS
         timed = isinstance(player, NetworkPlayer)
         if timed:
-            value = dict(value, offerLength=idle_timeout_ms,
+            # Zero-length custom choices hide the prompt bar, not the server deadline.
+            hide_choice_timer = (
+                msg_name == OutboundMsg.CUSTOM_CHOICE_REQUIRED.value
+                and value.get("offerLength") == 0
+            )
+            value = dict(value, offerLength=0 if hide_choice_timer else idle_timeout_ms,
                          startingTimestamp=int(time.time() * 1000))
         envelope = self._sequence_envelope(
             EMPTY_SEQUENCE_ID, self._build_msg(msg_name, value)
@@ -5503,16 +5508,11 @@ class GameSession:
         self.first_player_id = first_player_id
         logging.info(f"[Session {self.game_id}] {first_player.screen_name} will go first.")
 
-        # 6. Announce the active player. The ActivePlayerSet sequence command
-        #    (l.Z) also hides and deactivates the coin flip screen on both
-        #    clients, so no explicit dismissal is needed.
+        # The empty bracket dismisses the coin screen without starting a client turn.
         await self.send_game_sequence(
             list(self.players.values()),
             GameSequence.ACTIVE_PLAYER_SET,
-            [self._build_msg(
-                OutboundMsg.ACTIVE_PLAYER_SET.value,
-                {"gameID": self.game_id, "accountID": first_player_id},
-            )],
+            [],
         )
 
         self.game_phase = GamePhase.MULLIGAN_PHASE
