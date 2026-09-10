@@ -1,6 +1,9 @@
 """Stable scripting API; implementations live in game.content.definitions."""
 
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
+from spirit.game.content.reprints import (
+    PokemonReprintCardDef, TrainerReprintCardDef, EnergyReprintCardDef,
+)
 
 from spirit.game.content.definitions import (
     ability_id_for,
@@ -42,6 +45,9 @@ from spirit.game.content.definitions import (
 )
 
 __all__ = [
+    "PokemonReprintCardDef",
+    "TrainerReprintCardDef",
+    "EnergyReprintCardDef",
     "VisualizationArrow",
     "VisualizationType",
     "VisualizationLifetime",

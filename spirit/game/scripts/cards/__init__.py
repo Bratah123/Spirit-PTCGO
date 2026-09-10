@@ -15,6 +15,8 @@ class ScriptLoader:
         self.cards_by_key: Dict[str, Card] = {}
         # script filename stem (e.g. "Watchog_79") -> archetype GUID
         self.cards_by_stem: Dict[str, str] = {}
+        self.definitions = {}
+        self.last_errors = []
 
     def load_all(self, force=False):
         """Loads all card scripts once; cached thereafter unless force=True.
@@ -28,17 +30,58 @@ class ScriptLoader:
         self.cards_by_guid = {}
         self.cards_by_key = {}
         self.cards_by_stem = {}
+        self.definitions = {}
+        self.last_errors = []
         
         logging.info(f"[Scripts] Loading card scripts from {self.scripts_dir}...")
         
-        for root, _, files in os.walk(self.scripts_dir):
-            for file in files:
+        for root, dirs, files in os.walk(self.scripts_dir):
+            dirs.sort()
+            for file in sorted(files):
                 if file.endswith(".py") and file != "__init__.py":
                     file_path = os.path.join(root, file)
                     self._load_script(file_path)
+
+        resolved = {}
+        for reference in self.definitions:
+            try:
+                card_def = self._resolve(reference, resolved, [])
+                self._add_card(reference, card_def)
+            except Exception as e:
+                error = f"{reference}: {e}"
+                self.last_errors.append(error)
+                logging.error("[Scripts] Failed to resolve card %s", error)
         
         logging.info(f"[Scripts] Successfully loaded {len(self.cards)} card scripts.")
         return self.cards
+
+    def _resolve(self, reference, resolved, chain):
+        """Resolve parent definitions independently of filesystem order."""
+        if reference in resolved:
+            return resolved[reference]
+        if reference in chain:
+            raise ValueError("Reprint inheritance cycle: " + " -> ".join(chain + [reference]))
+        if reference not in self.definitions:
+            raise ValueError(f"Missing reprint parent: {reference}")
+        definition = self.definitions[reference]
+        if getattr(definition, "inherits", None) is not None:
+            parent = self._resolve(definition.inherits, resolved, chain + [reference])
+            definition = definition.resolve(parent)
+        resolved[reference] = definition
+        return definition
+
+    def _add_card(self, reference, card_def):
+        """Publish a resolved definition as a server card model."""
+        archetype = card_def.to_archetype_dict()
+        guid, key, attrs = archetype["guid"], archetype["key"], archetype["attributes"]
+        c_type = attrs.get(str(AttrID.CARD_TYPE.value), {}).get("value", CardType.UNSET)
+        model = PokemonCard if c_type == CardType.POKEMON else Card
+        card = model(guid, key, attrs, archetype.get("display_name"),
+                     archetype.get("searchable_by", []), getattr(card_def, "subtypes", []))
+        self.cards.append(card)
+        self.cards_by_guid[guid] = card
+        self.cards_by_key[key] = card
+        self.cards_by_stem[reference.rsplit("/", 1)[-1]] = guid
 
     def _load_script(self, file_path: str):
         """Loads a single card script."""
@@ -56,33 +99,13 @@ class ScriptLoader:
             spec.loader.exec_module(module)
 
             if hasattr(module, 'card'):
-                card_def = module.card
-                # Convert the Definition object into a Server Card model
-                # This ensures compatibility with existing packet handlers
-                archetype = card_def.to_archetype_dict()
-                guid = archetype["guid"]
-                key = archetype["key"]
-                attrs = archetype["attributes"]
-                
-                c_type = attrs.get(str(AttrID.CARD_TYPE.value), {}).get("value", CardType.UNSET)
-                
-                display_name = archetype.get("display_name")
-                searchable_by = archetype.get("searchable_by", [])
-                subtypes = getattr(card_def, "subtypes", [])
-
-                if c_type == CardType.POKEMON:
-                    card_obj = PokemonCard(guid, key, attrs, display_name, searchable_by, subtypes)
-                else:
-                    card_obj = Card(guid, key, attrs, display_name, searchable_by, subtypes)
-                
-                self.cards.append(card_obj)
-                self.cards_by_guid[guid] = card_obj
-                self.cards_by_key[key] = card_obj
-                self.cards_by_stem[os.path.splitext(os.path.basename(file_path))[0]] = guid
+                reference = os.path.splitext(rel_path)[0].replace(os.path.sep, "/")
+                self.definitions[reference] = module.card
             else:
                 logging.warning(f"[Scripts] Script {file_path} does not define a 'card' object.")
                 
         except Exception as e:
+            self.last_errors.append(f"{file_path}: {e}")
             logging.error(f"[Scripts] Failed to load script {file_path}: {e}")
 
 # Global loader instance
