@@ -274,8 +274,8 @@ class BoosterPack(Product):
                 pack_guids.extend(pick_random(hits_pool, 1))
             return pack_guids
 
-        SET_KEY = str(AttrID.SET_KEY)
-        set_key_dict: dict = self.attributes[SET_KEY] if SET_KEY in self.attributes else {}
+        set_key_attribute = str(AttrID.SET_KEY)
+        set_key_dict: dict = self.attributes[set_key_attribute] if set_key_attribute in self.attributes else {}
         set_key: str = set_key_dict["value"] if "value" in self.attributes else ""
 
         # 2. Assemble the pack (10 cards ordered from common up to rare)
