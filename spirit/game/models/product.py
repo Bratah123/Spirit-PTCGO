@@ -5,6 +5,7 @@ import random
 import logging
 from typing import Any, Optional, Dict, List
 from spirit.game.attributes import AttrID, ProductType, CardType, Rarities
+from spirit.game.models.card import Card
 import spirit.server.state as state
 from spirit.game.scripts.cards import loader as card_loader
 
@@ -144,74 +145,141 @@ class BoosterPack(Product):
                 return int(val)
             except:
                 return -1
+            
+        def pick_random(card_pool: list[Card], count: int) -> list[str]:
+            """Pick random cards from a pool considering rarity"""
+            card_guids = []
+            weights = []
 
-        # 2. Build the target pools
-        commons = [
-            c.guid for c in set_cards 
-            if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
-            and get_attr_int(c, AttrID.RARITY) == Rarities.Common.value
-        ]
-        
-        uncommons = [
-            c.guid for c in set_cards 
-            if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
-            and get_attr_int(c, AttrID.RARITY) == Rarities.Uncommon.value
-        ]
-        
-        rares = [
-            c.guid for c in set_cards 
-            if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
-            and get_attr_int(c, AttrID.RARITY) >= Rarities.Rare.value
-        ]
-        
-        # Basic energies in this set
-        basic_energies = [
-            c.guid for c in set_cards 
-            if get_attr_int(c, AttrID.CARD_TYPE) == CardType.ENERGY.value 
-            and not c.get_attribute_value(AttrID.IS_SPECIAL_ENERGY)
-        ]
-        
-        # If set has no basic energies, find them in Free_Energy
-        if not basic_energies:
+            for c in card_pool:
+                rarity = get_attr_int(c, AttrID.RARITY)
+                weight = 1.0
+
+                if rarity >= Rarities.RareHoloEX.value and rarity <= Rarities.RareHoloVSTAR.value:
+                    weight = 0.45
+                elif rarity == Rarities.RareUltra.value:
+                    weight = 0.2
+                elif rarity == Rarities.RareSecret.value or rarity == Rarities.RareRainbow.value:
+                    weight = 0.1
+
+                weights.append(weight)
+                card_guids.append(c.guid)
+
+            return random.choices(card_guids, k=count, weights=weights)
+
+        def assemble_pack_contents(set_key: str):
+            commons = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
+                and get_attr_int(c, AttrID.RARITY) == Rarities.Common.value
+            ]
+            
+            uncommons = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
+                and get_attr_int(c, AttrID.RARITY) == Rarities.Uncommon.value
+            ]
+
+            rares = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
+                and (get_attr_int(c, AttrID.RARITY) == Rarities.Rare.value 
+                    or get_attr_int(c, AttrID.RARITY) == Rarities.RareHolo.value)
+            ]
+
+            hits = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value 
+                and get_attr_int(c, AttrID.RARITY) >= Rarities.Rare.value
+            ]
+
+            # Basic energies in this set
             basic_energies = [
-                c.guid for c in all_cards 
-                if c.key.lower() == "free_energy" 
-                and get_attr_int(c, AttrID.CARD_TYPE) == CardType.ENERGY.value 
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) == CardType.ENERGY.value 
                 and not c.get_attribute_value(AttrID.IS_SPECIAL_ENERGY)
             ]
             
-        # Reverse holos can be any card from this set (excluding Energy)
-        reverse_holos = [
-            c.guid for c in set_cards 
-            if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value
-        ]
+            # If set has no basic energies, find them in Free_Energy
+            if not basic_energies:
+                basic_energies = [
+                    c.guid for c in all_cards 
+                    if c.key.lower() == "free_energy" 
+                    and get_attr_int(c, AttrID.CARD_TYPE) == CardType.ENERGY.value 
+                    and not c.get_attribute_value(AttrID.IS_SPECIAL_ENERGY)
+                ]
+                
+            # Reverse holos can be any card from this set (excluding Energy)
+            reverse_holos = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value
+                    and get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value
+                    and get_attr_int(c, AttrID.RARITY) <= Rarities.Rare.value
+            ]
+
+            reverse_hit_rares = [
+                # Add SIRs and IRs for Scarlet & Violet
+                Rarities.RareRadiant.value,
+                Rarities.Ace.value,
+                Rarities.Amazing.value,
+                Rarities.BreakRare.value,
+            ]
+
+            reverse_holos_and_hits = [
+                c for c in set_cards 
+                if get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value
+                    and get_attr_int(c, AttrID.CARD_TYPE) != CardType.ENERGY.value
+                    and (get_attr_int(c, AttrID.RARITY) <= Rarities.Rare.value
+                         or get_attr_int(c, AttrID.RARITY) in reverse_hit_rares)
+            ]
+            
+            # Fallback mappings in case a specific pool is empty due to incomplete script loads
+            fallback_set_guids = set_cards
+            commons_pool = commons if commons else fallback_set_guids
+            uncommons_pool = uncommons if uncommons else fallback_set_guids
+            rares_pool = rares if rares else fallback_set_guids
+            hits_pool = hits if hits else fallback_set_guids
+            energy_pool = basic_energies if basic_energies else fallback_set_guids
+            # if the pack is from Scarlet & Violet or newer, add a card from rev_holo_slot_1_pool and remove an uncommon card
+            rev_holo_slot_1_pool = reverse_holos if reverse_holos else fallback_set_guids
+            rev_holo_slot_2_pool = reverse_holos_and_hits if reverse_holos else fallback_set_guids
+
+            pack_guids = []
         
-        # Fallback mappings in case a specific pool is empty due to incomplete script loads
-        fallback_set_guids = [c.guid for c in set_cards]
-        commons_pool = commons if commons else fallback_set_guids
-        uncommons_pool = uncommons if uncommons else fallback_set_guids
-        rares_pool = rares if rares else fallback_set_guids
-        energy_pool = basic_energies if basic_energies else fallback_set_guids
-        rev_holo_pool = reverse_holos if reverse_holos else fallback_set_guids
-        
-        # 3. Assemble the pack (10 cards ordered from common up to rare)
-        pack_guids = []
-        
-        # 4 Commons
-        pack_guids.extend(random.choices(commons_pool, k=4))
-        
-        # 3 Uncommons
-        pack_guids.extend(random.choices(uncommons_pool, k=3))
-        
-        # 1 Basic Energy
-        pack_guids.extend(random.choices(energy_pool, k=1))
-        
-        # 1 Reverse Holo
-        pack_guids.extend(random.choices(rev_holo_pool, k=1))
-        
-        # 1 Rare / Hit
-        pack_guids.extend(random.choices(rares_pool, k=1))
-        
+            if set_key == "CEL25":
+                # Celebrations only has 4 cards
+
+                # 2 Rares Holos
+                pack_guids.extend(pick_random(rares_pool, 2))
+
+                # 1 Reverse Holo - a chance it's a card from the celebrations classic collection
+                pack_guids.extend(pick_random(rev_holo_slot_2_pool, 1))
+
+                # 1 Rare Holo / Hit
+                pack_guids.extend(pick_random(hits_pool, 1))
+            else:
+                # 4 Commons
+                pack_guids.extend(pick_random(commons_pool, 4))
+                
+                # 4 Uncommons
+                pack_guids.extend(pick_random(uncommons_pool, 4))
+                
+                # # 1 Basic Energy
+                # pack_guids.extend(random.choices(energy_pool, k=1))
+
+                # 1 Reverse Holo
+                pack_guids.extend(pick_random(rev_holo_slot_2_pool, 1))
+
+                # 1 Rare / Hit
+                pack_guids.extend(pick_random(hits_pool, 1))
+            return pack_guids
+
+        SET_KEY = str(AttrID.SET_KEY)
+        set_key_dict: dict = self.attributes[SET_KEY] if SET_KEY in self.attributes else {}
+        set_key: str = set_key_dict["value"] if "value" in self.attributes else ""
+
+        # 2. Assemble the pack (10 cards ordered from common up to rare)
+        pack_guids = assemble_pack_contents(set_key)
         return pack_guids
 
 class Deck(Product):
