@@ -243,6 +243,27 @@ class EnergyEntity(CardEntity):
         return "com.direwolfdigital.cake.rules.entities.Energy"
 
 
+class LegendHalfEntity(CardEntity):
+    """One physical half, with no independent in-play Pokemon identity."""
+
+    def get_entity_name(self) -> str:
+        return "com.direwolfdigital.cake.rules.entities.HalfLegend"
+
+
+class LegendPokemonEntity(PokemonEntity):
+    """A synthetic Pokemon backed by two physical half-card entities."""
+
+    def __init__(self, card_obj, top, bottom, owning_player_id):
+        super().__init__(card_obj, owning_player_id)
+        self.top_half = top
+        self.bottom_half = bottom
+        self.set_attribute(AttrID.LEGEND_TOP_HALF, top.entity_id)
+        self.set_attribute(AttrID.LEGEND_BOTTOM_HALF, bottom.entity_id)
+
+    def get_entity_name(self) -> str:
+        return "com.direwolfdigital.cake.rules.entities.LegendPokemon"
+
+
 class TrainerEntity(CardEntity):
     """Represents a Trainer card entity on the board."""
     def get_entity_name(self) -> str:
@@ -251,9 +272,13 @@ class TrainerEntity(CardEntity):
 
 def create_card_entity(card_obj: Card, owning_player_id: Optional[str] = None, entity_id: Optional[str] = None) -> CardEntity:
     """Factory function to build the correct subclass of CardEntity based on its card type."""
+    if getattr(def_for(card_obj.guid), "runtime_only", False):
+        raise ValueError("A combined LEGEND must be created through assemble_legend")
     c_type = card_obj.get_attribute_value(AttrID.CARD_TYPE)
     if c_type == CardType.POKEMON.value:
         return PokemonEntity(card_obj, owning_player_id, entity_id)
+    elif c_type == CardType.LEGEND_HALF.value:
+        return LegendHalfEntity(card_obj, owning_player_id, entity_id)
     elif c_type == CardType.ENERGY.value:
         return EnergyEntity(card_obj, owning_player_id, entity_id)
     else:
@@ -369,6 +394,14 @@ class BoardState:
 
         if not isinstance(card, CardEntity) or not isinstance(to_area, PlayArea):
             return False
+        if isinstance(card, LegendPokemonEntity) and to_area.get_attribute(AttrID.NAME) not in (
+                "bench", "activePokemonArea", "outOfPlay"):
+            return False
+        if isinstance(card, LegendHalfEntity) and to_area.get_attribute(AttrID.NAME) in (
+                "bench", "activePokemonArea"):
+            return False
+        if isinstance(card, LegendHalfEntity) and isinstance(card.parent, LegendPokemonEntity):
+            return False
 
         if card.parent_id:
             parent = self.get_entity(card.parent_id)
@@ -394,6 +427,11 @@ class BoardState:
             return False
         if card is target:
             return False
+        if isinstance(card, LegendPokemonEntity):
+            return False
+        if isinstance(card, LegendHalfEntity):
+            if not isinstance(target, LegendPokemonEntity) or card not in (target.top_half, target.bottom_half):
+                return False
 
         if card.parent_id:
             parent = self.get_entity(card.parent_id)
@@ -671,6 +709,37 @@ class BoardState:
                 [s for s in range(slots) if s not in occupied],
             )
 
+    def client_out_of_play_children(self) -> List[BoardEntity]:
+        """Include referenced LEGEND halves without exposing them as attachments."""
+        staging = self.find_global_area("outOfPlay")
+        children = list(staging.children)
+        children.extend(entity for entity in self._entity_cache.values()
+                        if isinstance(entity, LegendHalfEntity)
+                        and isinstance(entity.parent, LegendPokemonEntity))
+        return children
+
+    def _serialize_client_playmat(self, viewer_id: Optional[str]) -> Dict[str, Any]:
+        """Project component halves outside the client's ordinary attachment tree."""
+        snapshot = self.playmat.serialize(viewer_id)
+        by_id = {}
+        pending = [snapshot]
+        while pending:
+            node = pending.pop()
+            by_id[node["entityID"]] = node
+            pending.extend(node["children"])
+
+        staging = self.find_global_area("outOfPlay")
+        for half in self.client_out_of_play_children():
+            if not isinstance(half, LegendHalfEntity) or not isinstance(half.parent, LegendPokemonEntity):
+                continue
+            node = by_id[half.entity_id]
+            by_id[half.parent_id]["children"].remove(node)
+            node["parentID"] = staging.entity_id
+            by_id[staging.entity_id]["children"].append(node)
+        # Attributes were serialized in the authoritative public zone, so both
+        # players still receive the half textures needed by LegendaryCardRenderer.
+        return snapshot
+
     def serialize(self, viewer_id: Optional[str] = None) -> Dict[str, Any]:
         """Builds the final SerializedGameState dict expected by the client network router.
 
@@ -683,5 +752,5 @@ class BoardState:
             "gameID": self.game_id,
             "playerAccounts": self.player_ids,
             "gameOptions": self.game_options,
-            "entities": self.playmat.serialize(viewer_id)
+            "entities": self._serialize_client_playmat(viewer_id)
         }

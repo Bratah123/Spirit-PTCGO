@@ -33,7 +33,10 @@ from spirit.game.data_utils import (
     has_rule_box,
     unimplemented,
 )
-from spirit.game.models.board import BoardEntity, CardEntity, EnergyEntity, PokemonEntity
+from spirit.game.session import legends
+from spirit.game.models.board import (
+    BoardEntity, CardEntity, EnergyEntity, PokemonEntity, LegendHalfEntity, LegendPokemonEntity,
+)
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
@@ -1269,12 +1272,18 @@ class EffectContext:
         ("...reveal it, and put it into your hand").
         """
         reveal_batches = {}
+        departed = set()
         for card in cards:
+            if card.entity_id in departed:
+                continue
             owner = card.owning_player_id or self.player_id
             hand = self.board.find_player_area(owner, "hand")
             if not hand:
                 continue
             if self._energy_removal_blocked(card):
+                continue
+            if isinstance(card, LegendPokemonEntity):
+                departed.update(self._queue_legend_departure(card, hand, cards))
                 continue
             self._note_visual_source(card)
             position = len(hand.children)
@@ -1442,7 +1451,10 @@ class EffectContext:
         await self._move_to_public_pile(cards, "lostZone")
 
     async def _move_to_public_pile(self, cards: List[CardEntity], area_name: str):
+        departed = set()
         for card in cards:
+            if card.entity_id in departed:
+                continue
             owner = card.owning_player_id or self.player_id
             pile = self.board.find_player_area(owner, area_name)
             if not pile:
@@ -1459,6 +1471,9 @@ class EffectContext:
                 )
                 continue
             if area_name == "discard" and self._energy_removal_blocked(card):
+                continue
+            if isinstance(card, LegendPokemonEntity):
+                departed.update(self._queue_legend_departure(card, pile, cards))
                 continue
             holder = self._tool_holder_before_move(card)
             source = getattr(card, "parent", None)
@@ -1585,8 +1600,14 @@ class EffectContext:
         deck = self.board.find_player_area(pid, "deck")
         if not deck:
             return
+        departed = set()
         for card in cards:
+            if card.entity_id in departed:
+                continue
             if self._trainer_blocked(card) or self._energy_removal_blocked(card):
+                continue
+            if isinstance(card, LegendPokemonEntity):
+                departed.update(self._queue_legend_departure(card, deck, cards))
                 continue
             holder = self._tool_holder_before_move(card)
             position = len(deck.children)
@@ -1715,6 +1736,9 @@ class EffectContext:
         deck = self.board.find_player_area(owner, "deck")
         if not deck or self._energy_removal_blocked(card):
             return False
+        if isinstance(card, LegendPokemonEntity):
+            self._queue_legend_departure(card, deck, [card])
+            return True
         same_pile = card.parent_id == deck.entity_id
         position = len(deck.children)
         if not self.board.move_card(card.entity_id, deck.entity_id):
@@ -1735,6 +1759,9 @@ class EffectContext:
         deck = self.board.find_player_area(owner, "deck")
         if not deck or self._energy_removal_blocked(card):
             return False
+        if isinstance(card, LegendPokemonEntity):
+            self._queue_legend_departure(card, deck, [card], position=0)
+            return True
         same_pile = card.parent_id == deck.entity_id
         if not self.board.move_card(card.entity_id, deck.entity_id, 0):
             return False
@@ -1754,6 +1781,8 @@ class EffectContext:
         "Put onto your Bench" is not "play from hand": on-play triggered
         abilities deliberately do NOT fire.
         """
+        if isinstance(card, (LegendHalfEntity, LegendPokemonEntity)):
+            return False
         owner = card.owning_player_id or self.player_id
         bench = self.board.find_player_area(owner, "bench")
         if not bench or len(bench.children) >= effective_bench_capacity(self.board, owner):
@@ -1768,6 +1797,24 @@ class EffectContext:
         # Entering play from any zone is public knowledge.
         self._queue_intro_and_move(card, bench.entity_id, position)
         return True
+
+    async def assemble_legend(self, first: LegendHalfEntity, second: LegendHalfEntity):
+        """Play a compatible pair from your hand, including its on-play abilities."""
+        await self.flush_choreography()
+        legend = await legends.assemble_legend(self.session, self.player_id, first, second)
+        if legend is not None:
+            ends_turn = await self.session._fire_triggered_abilities(
+                self.player_id, legend, Triggers.ON_PLAY)
+            self.ends_turn = self.ends_turn or ends_turn
+        return legend
+
+    def _queue_legend_departure(self, legend, destination, requested, *, position=None):
+        """Preserve physical halves and move only explicitly requested attachments along."""
+        messages, members = legends.depart_legend(
+            self.session, legend, destination, move_with=[card.entity_id for card in requested], position=position)
+        for message in messages:
+            self._queue(message, bracket=GameSequence.GROUPED_MOVE.value)
+        return {legend.entity_id, *(card.entity_id for card in members)}
 
     async def evolve_pokemon(self, target: PokemonEntity,
                              evolution_card: CardEntity) -> bool:
@@ -2181,7 +2228,7 @@ AttackContext = EffectContext
 # ----------------------------------------------------------------------
 
 def is_pokemon_card(card: CardEntity) -> bool:
-    return card.get_attribute(AttrID.CARD_TYPE) == CardType.POKEMON.value
+    return card.get_attribute(AttrID.CARD_TYPE) in (CardType.POKEMON.value, CardType.LEGEND_HALF.value)
 
 
 def is_basic_pokemon(card: CardEntity) -> bool:
@@ -2194,7 +2241,7 @@ def is_basic_pokemon(card: CardEntity) -> bool:
 def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
-        and card.get_attribute(AttrID.STAGE) != PokemonStage.BASIC.value
+        and card.get_attribute(AttrID.STAGE) not in (PokemonStage.BASIC.value, PokemonStage.LEGEND.value)
     )
 
 
@@ -2220,11 +2267,13 @@ def is_special_energy(card: CardEntity) -> bool:
 
 
 def full_stack(pokemon: PokemonEntity) -> List[CardEntity]:
-    """A Pokemon plus every card attached under it, depth-first."""
+    """A Pokemon and its attachments; LEGEND halves remain part of the combined Pokemon."""
     out: List[CardEntity] = [pokemon]
     queue: List[BoardEntity] = list(pokemon.children)
     while queue:
         entity = queue.pop(0)
+        if isinstance(pokemon, LegendPokemonEntity) and entity in (pokemon.top_half, pokemon.bottom_half):
+            continue
         if isinstance(entity, CardEntity):
             out.append(entity)
         queue.extend(entity.children)

@@ -19,8 +19,11 @@ from spirit.game.attributes import (
     TrainerType,
 )
 from spirit.game.data_utils import ABILITIES_BY_ID, Activations, def_for
+from spirit.game.content.legends import matching_legend_halves
 from spirit.game.models.board import (
     BoardState,
+    LegendHalfEntity,
+    LegendPokemonEntity,
     EnergyEntity,
     PokemonEntity,
     TrainerEntity,
@@ -47,6 +50,7 @@ from .passives import (
 
 # Semantic action names from the client's Actions enum / SelectableActionUtil.
 ACTION_PLAY_POKEMON = "DefaultPokemonPlayAbility"
+ACTION_PLAY_LEGEND = "DefaultLegendPokemonPlayAbility"
 ACTION_EVOLVE = "EvolvePokemonPlayAbility"
 ACTION_PLAY_ENERGY = "DefaultEnergyPlayAbility"
 ACTION_USE_TRAINER = "UseTrainerCard"
@@ -431,6 +435,18 @@ def compute_legal_actions(
     bench_has_space = len(bench_area.children) < effective_bench_capacity(board, player_id)
 
     for card in hand_area.children:
+        if isinstance(card, LegendHalfEntity):
+            partners = [other for other in hand_area.children
+                        if isinstance(other, LegendHalfEntity)
+                        and matching_legend_halves(card, other)
+                        and not state.play_locked(player_id, other)]
+            if bench_has_space and partners and not state.play_locked(player_id, card):
+                entries.append(_target_map_entry(
+                    game_id, card.entity_id,
+                    action_id_for(card.entity_id, "legend"), ACTION_PLAY_LEGEND,
+                    [entity_list_target_info([bench_area.entity_id])],
+                ))
+            continue
         if isinstance(card, PokemonEntity):
             stage = card.get_attribute(AttrID.STAGE)
             if stage == PokemonStage.BASIC.value:
@@ -456,7 +472,8 @@ def compute_legal_actions(
                 continue
             evolve_targets = [
                 p.entity_id for p in in_play
-                if p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
+                if not isinstance(p, LegendPokemonEntity)
+                and p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
                      or can_evolve_early(board, p))

@@ -45,15 +45,51 @@ class ScriptLoader:
         resolved = {}
         for reference in self.definitions:
             try:
-                card_def = self._resolve(reference, resolved, [])
-                self._add_card(reference, card_def)
+                self._resolve(reference, resolved, [])
             except Exception as e:
                 error = f"{reference}: {e}"
                 self.last_errors.append(error)
                 logging.error("[Scripts] Failed to resolve card %s", error)
+
+        invalid = self._resolve_legends(resolved)
+        for reference, card_def in resolved.items():
+            if reference not in invalid and not getattr(card_def, "runtime_only", False):
+                try:
+                    self._add_card(reference, card_def)
+                except Exception as error:
+                    self.last_errors.append(f"{reference}: {error}")
+                    logging.error("[Scripts] Failed to publish card %s: %s", reference, error)
         
         logging.info(f"[Scripts] Successfully loaded {len(self.cards)} card scripts.")
         return self.cards
+
+    def _resolve_legends(self, resolved):
+        """Validate references and complete pairs before publishing physical halves."""
+        invalid = set()
+        pairs = {}
+        for reference, definition in resolved.items():
+            if not hasattr(definition, "resolve_legend"):
+                continue
+            try:
+                if definition.legend not in resolved:
+                    raise ValueError(f"Missing LEGEND definition: {definition.legend}")
+                definition.resolve_legend(resolved[definition.legend])
+                pairs.setdefault(definition.legend, []).append((reference, definition))
+            except (ValueError, TypeError) as error:
+                invalid.add(reference)
+                self.last_errors.append(f"{reference}: {error}")
+        for reference, halves in pairs.items():
+            problem = None
+            if {half.half for _, half in halves} != {"top", "bottom"}:
+                problem = "LEGEND requires both top and bottom printings"
+            elif len({half.guid.lower() for _, half in halves}) != len(halves):
+                problem = "LEGEND printings must have distinct GUIDs"
+            if problem:
+                for path, half in halves:
+                    half.legend_definition = None
+                    invalid.add(path)
+                self.last_errors.append(f"{reference}: {problem}")
+        return invalid
 
     def _resolve(self, reference, resolved, chain):
         """Resolve parent definitions independently of filesystem order."""

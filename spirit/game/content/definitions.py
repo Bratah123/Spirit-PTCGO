@@ -60,6 +60,9 @@ def has_rule_box(archetype_id: Optional[str]) -> bool:
 
 def prize_value(archetype_id: Optional[str]) -> int:
     """Prizes taken when this Pokemon is knocked out."""
+    definition = def_for(archetype_id)
+    if getattr(definition, "prize_count", None) is not None:
+        return definition.prize_count
     return max(
         [_MULTI_PRIZE_SUBTYPES[s] for s in subtypes_for(archetype_id)
          if s in _MULTI_PRIZE_SUBTYPES],
@@ -362,6 +365,8 @@ class Foil:
 
 class CardDefinition:
     """Base class for all card definitions."""
+    runtime_only = False
+
     def __init__(
         self,
         guid: str,
@@ -455,6 +460,8 @@ class PokemonCardDef(CardDefinition):
         setup_as_active: bool = False,
         foil: Optional[Foil] = None
     ):
+        if stage == PokemonStage.LEGEND and not self.runtime_only:
+            raise ValueError("Use LegendHalfCardDef for physical halves and LegendPokemonDef for the combined Pokemon")
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes, foil)
         # Card-level continuous effect while this Pokemon is top-level in play
         # (attack-rules passives, e.g. Swanna); distinct from Ability(passive=).

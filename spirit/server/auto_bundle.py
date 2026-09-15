@@ -3,11 +3,11 @@ import sys
 import logging
 import subprocess
 import json
-import importlib.util
 import math
 from PIL import Image, ImageFilter
 
 from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.content.definitions import def_for
 from spirit.game.scripts.cards import loader
 from spirit.server.auto_bundle_cosmetics import compile_all_cosmetics
 from spirit.server import dynamic_pages
@@ -298,16 +298,12 @@ def check_and_generate_bundles(set_codes=None) -> int:
                 
                 try:
                     file_path = os.path.join(root, file)
-                    module_name = "autobundle_" + rel_dir.replace(os.path.sep, "_") + "_" + base_name
-                    spec = importlib.util.spec_from_file_location(module_name, file_path)
-                    if spec is None or spec.loader is None:
+                    reference = os.path.splitext(os.path.relpath(file_path, scripts_dir))[0].replace(os.path.sep, "/")
+                    declaration = loader.definitions.get(reference)
+                    card_def = def_for(declaration.guid) if declaration is not None else None
+                    # Re-executing scripts would replace resolved LEGEND/reprint definitions.
+                    if card_def is None or getattr(card_def, "runtime_only", False):
                         continue
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    if not hasattr(module, 'card'):
-                        continue
-                    
-                    card_def = module.card
                     set_code = card_def.set_code
                     if set_codes is not None and set_code not in set_codes:
                         continue
