@@ -1,11 +1,12 @@
 import json
 from sqlalchemy import ForeignKey, TypeDecorator, TEXT
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from spirit.database.base import Base
 
 class JSONEncodedDict(TypeDecorator):
-    """Represents an immutable structure as a JSON-encoded string in SQLite."""
-    impl = TEXT
+    """Store JSON text without changing the Python representation on either backend."""
+    impl = TEXT().with_variant(LONGTEXT(), "mysql").with_variant(LONGTEXT(), "mariadb")
     cache_ok = True
 
     def process_bind_param(self, value, dialect):

@@ -4,6 +4,7 @@ import random
 import uuid
 
 from spirit.database import db_session, engine
+from sqlalchemy import inspect
 from spirit.database.models.economy import DailyLoginProgress
 from spirit.database.economy_data import _grant_reward_in_session
 from spirit.game.progression.daily_rewards import DailyRewardManager
@@ -20,7 +21,9 @@ def _ensure_activations_column():
     if _schema_checked:
         return
     with engine.connect() as conn:
-        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(daily_login_progress)")]
+        inspector = inspect(conn)
+        cols = ([column["name"] for column in inspector.get_columns("daily_login_progress")]
+                if inspector.has_table("daily_login_progress") else [])
         if cols and "activations" not in cols:
             conn.exec_driver_sql(
                 "ALTER TABLE daily_login_progress ADD COLUMN activations INTEGER DEFAULT 0")

@@ -3,7 +3,8 @@
 # (the run.bat / run.sh launchers do all of this for you automatically)
 
 protobuf>=6.33.6      # runtime for the compiled *_pb2 Warg message classes
-SQLAlchemy>=2.0.0     # ORM over the SQLite database
+SQLAlchemy>=2.0.0     # ORM over SQLite or MariaDB/MySQL
+PyMySQL>=1.1.0        # MariaDB/MySQL driver (used when SPIRIT_DATABASE_URL is set)
 UnityPy>=1.25.0       # reads/writes Unity .unity3d asset bundles (card/cosmetic injection)
 Pillow>=10.0.0        # PNG card & cosmetic texture processing / energy-pip cropping
 cryptography>=42.0.0  # self-signed TLS cert generation (spirit/network/generate_cert.py)

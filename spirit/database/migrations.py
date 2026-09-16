@@ -1,13 +1,22 @@
 import logging
-import sqlite3
+from sqlalchemy import inspect
 
-from spirit.database.connection import DB_PATH
+from spirit.database.connection import engine
 
 # {table: {column: sqlite column def}} — columns added to pre-existing DBs
 _COLUMN_MIGRATIONS = {
+    "decks": {
+        "overall_wins": "INTEGER DEFAULT 0",
+        "overall_played": "INTEGER DEFAULT 0",
+        "wins_since_last_edit": "INTEGER DEFAULT 0",
+        "played_since_last_edit": "INTEGER DEFAULT 0",
+    },
     "accounts": {
         "is_admin": "BOOLEAN DEFAULT 0",
         "settings_json": "TEXT",
+    },
+    "daily_login_progress": {
+        "activations": "INTEGER DEFAULT 0",
     },
 }
 
@@ -15,15 +24,15 @@ _COLUMN_MIGRATIONS = {
 # NEW tables, so a DB created before these were declared keeps the un-indexed
 # tables — these statements backfill them (idempotent).
 _INDEX_MIGRATIONS = [
-    "CREATE INDEX IF NOT EXISTS ix_decks_account_id ON decks (account_id)",
-    "CREATE INDEX IF NOT EXISTS ix_friends_friend_id ON friends (friend_id)",
-    "CREATE INDEX IF NOT EXISTS ix_trade_offers_sender_id ON trade_offers (sender_id)",
-    "CREATE INDEX IF NOT EXISTS ix_trade_offers_recipient_id ON trade_offers (recipient_id)",
-    "CREATE INDEX IF NOT EXISTS ix_trade_offers_status_created ON trade_offers (status, created_at)",
-    "CREATE INDEX IF NOT EXISTS ix_trade_offers_status_recipient ON trade_offers (status, recipient_id)",
-    "CREATE INDEX IF NOT EXISTS ix_trade_offers_status_sender ON trade_offers (status, sender_id)",
-    "CREATE INDEX IF NOT EXISTS ix_tournament_entries_tournament_id ON tournament_entries (tournament_id)",
-    "CREATE INDEX IF NOT EXISTS ix_tournament_entries_account_id ON tournament_entries (account_id)",
+    ("decks", "ix_decks_account_id", "account_id"),
+    ("friends", "ix_friends_friend_id", "friend_id"),
+    ("trade_offers", "ix_trade_offers_sender_id", "sender_id"),
+    ("trade_offers", "ix_trade_offers_recipient_id", "recipient_id"),
+    ("trade_offers", "ix_trade_offers_status_created", "status, created_at"),
+    ("trade_offers", "ix_trade_offers_status_recipient", "status, recipient_id"),
+    ("trade_offers", "ix_trade_offers_status_sender", "status, sender_id"),
+    ("tournament_entries", "ix_tournament_entries_tournament_id", "tournament_id"),
+    ("tournament_entries", "ix_tournament_entries_account_id", "account_id"),
 ]
 
 
@@ -31,24 +40,20 @@ def run_light_migrations():
     """Adds missing columns and performance indexes to existing tables
     (create_all only builds brand-new tables/indexes)."""
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = {row[0] for row in cursor.fetchall()}
-        for table, columns in _COLUMN_MIGRATIONS.items():
-            cursor.execute(f"PRAGMA table_info({table});")
-            existing = [row[1] for row in cursor.fetchall()]
-            if not existing:
-                continue
-            for col, col_type in columns.items():
-                if col not in existing:
-                    logging.info(f"[DB] Adding missing column {table}.{col}")
-                    cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type};")
-        for stmt in _INDEX_MIGRATIONS:
-            table = stmt.split(" ON ")[1].split(" ")[0]
-            if table in tables:
-                cursor.execute(stmt)
-        conn.commit()
-        conn.close()
+        with engine.begin() as conn:
+            inspector = inspect(conn)
+            tables = set(inspector.get_table_names())
+            for table, columns in _COLUMN_MIGRATIONS.items():
+                if table not in tables:
+                    continue
+                existing = {col["name"] for col in inspector.get_columns(table)}
+                for col, col_type in columns.items():
+                    if col not in existing:
+                        logging.info("[DB] Adding missing column %s.%s", table, col)
+                        conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
+            for table, name, columns in _INDEX_MIGRATIONS:
+                if table in tables and name not in {index["name"] for index in inspector.get_indexes(table)}:
+                    conn.exec_driver_sql(f"CREATE INDEX {name} ON {table} ({columns})")
     except Exception as e:
         logging.error(f"[DB] Light migration failed: {e}")
+        raise

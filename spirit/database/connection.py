@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import QueuePool
+from spirit import config
 
 # Default DB path
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'ptcgo_server.db'))
@@ -26,20 +27,32 @@ def creator():
 # from every op to pool-fill time). scoped_session opens AND closes each session in
 # the same thread, so no connection is ever closed cross-thread — the reason NullPool
 # was originally chosen is preserved. reset_on_return rolls back any dangling txn.
-engine = create_engine(
-    "sqlite://",
-    creator=creator,
-    poolclass=QueuePool,
-    pool_size=_POOL_SIZE,
-    max_overflow=_POOL_OVERFLOW,
-    pool_timeout=30,
-    pool_recycle=-1,
-)
+if config.DATABASE_URL:
+    if not config.DATABASE_URL.startswith(("mysql+pymysql://", "mariadb+pymysql://")):
+        raise ValueError("SPIRIT_DATABASE_URL must use mysql+pymysql or mariadb+pymysql")
+    engine = create_engine(
+        config.DATABASE_URL,
+        pool_size=_POOL_SIZE,
+        max_overflow=_POOL_OVERFLOW,
+        pool_timeout=30,
+        pool_recycle=1800,
+        pool_pre_ping=True,
+        connect_args={"connect_timeout": 10, "read_timeout": 30, "write_timeout": 30},
+    )
+else:
+    engine = create_engine(
+        "sqlite://",
+        creator=creator,
+        poolclass=QueuePool,
+        pool_size=_POOL_SIZE,
+        max_overflow=_POOL_OVERFLOW,
+        pool_timeout=30,
+        pool_recycle=-1,
+    )
 
 # Runs once per pooled connection (at fill time, not per op). synchronous=NORMAL is
 # safe under WAL (a crash can lose only the last commit, never corrupt) and removes
 # the per-commit fsync that dominated login/match-end write latency.
-@event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     try:
@@ -52,6 +65,9 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         logging.error(f"[DB] Error setting sqlite pragmas: {e}")
     finally:
         cursor.close()
+
+if not config.DATABASE_URL:
+    event.listen(engine, "connect", set_sqlite_pragma)
 
 # Thread-safe session factory
 session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)

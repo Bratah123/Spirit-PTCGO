@@ -10,6 +10,11 @@ PUBLIC_HOST = os.environ.get("SPIRIT_PUBLIC_HOST", "127.0.0.1")
 HTTP_PORT = int(os.environ.get("SPIRIT_HTTP_PORT", "8000"))
 TCP_PORT = int(os.environ.get("SPIRIT_TCP_PORT", "39389"))
 
+# Player database. Leave unset for local SQLite, or set a mysql+pymysql:// or
+# mariadb+pymysql:// URL for MariaDB/MySQL
+# See example in README in sql/README.md
+DATABASE_URL = os.environ.get("SPIRIT_DATABASE_URL")
+
 HTTP_BASE_URL = f"http://{PUBLIC_HOST}:{HTTP_PORT}"
 PLACEHOLDER_IMG = f"{HTTP_BASE_URL}/placeholder.png"
 

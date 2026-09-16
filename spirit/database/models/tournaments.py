@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import func, ForeignKey, UniqueConstraint
+from sqlalchemy import BigInteger, func, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from spirit.database.base import Base
 from spirit.database.models.inventory import JSONEncodedDict
@@ -31,7 +31,7 @@ class TournamentEntry(Base):
     rewards_claimed: Mapped[bool] = mapped_column(default=False)
     # [{"opponentID", "opponentName", "gameResult"}] in play order
     history_json: Mapped[list] = mapped_column(JSONEncodedDict, default=list)
-    last_update: Mapped[int] = mapped_column(default=0)  # epoch ms
+    last_update: Mapped[int] = mapped_column(BigInteger, default=0)  # epoch ms
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 
