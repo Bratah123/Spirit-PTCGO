@@ -1423,7 +1423,7 @@ class EffectContext:
         """
         # Ensures preceding actions finish animating before energy discards are
         # processed or prompted.
-        self.flush_choreography()
+        await self.flush_choreography()
         energies = [
             energy for energy in self.attached_energies(pokemon)
             if predicate is None or predicate(energy)
