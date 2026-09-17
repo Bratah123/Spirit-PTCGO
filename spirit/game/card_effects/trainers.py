@@ -53,41 +53,46 @@ def opponent_has_bench(board, player_id):
     opponent = _other_player(board, player_id)
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
-### ADDED FUNCTION FOR PLAY TARGETS ON OPPONENT'S SIDE
-def opponent_play_targets(bench_only=False):
+################### --- DRAG ONTO CARD ENGINE ---
+def play_targets(opponent=False, bench_only=False):
     """
-    Factory that returns a targeting function for opponent-side trainer cards.
-    Set bench_only=True for cards like Boss's Orders, or bench_only=False for cards like Crushing Hammer.
-    """
-    def selector(board, player_id, card):
-        opponent_id = next((p for p in board.player_ids if p != player_id), None)
-        if not opponent_id:
-            return []
-        # Configuration 1: Returns ONLY opponent's Benched Pokémon entities (e.g., Boss's Orders)
-        if bench_only:
-            bench = board.find_player_area(opponent_id, "bench")
-            return [c for c in (bench.children if bench else []) if c is not None]
-        # Configuration 2: Returns all opponent's Pokémon in play (Active + Bench) (e.g., Crushing Hammer)
-        return [p for p in board.pokemon_in_play(opponent_id) if p is not None]
-    return selector
-
-
-### ADDED FUNCTION FOR PLAY TARGETS ON PLAYER'S SIDE
-def player_play_targets(bench_only=False):
-    """
-    Factory that returns a targeting function for player-side trainer cards.
-    Set bench_only=True for cards like Switch, or bench_only=False for cards like Potion.
+    Unified factory that returns a targeting function for trainer cards.
+    Handles both allied and opponent sides, as well as full play or bench-only targeting.
     """
     def selector(board, player_id, card):
         if card is None:
             return []
-        # Configuration 1: Returns ONLY Benched Pokémon entities (e.g., Switch)
+            
+        # Determine the target player ID based on the opponent flag
+        target_id = (
+            next((p for p in board.player_ids if p != player_id), None)
+            if opponent 
+            else player_id
+        )
+        if not target_id:
+            return []
+
+        # Configuration 1: Returns ONLY Benched Pokémon entities (e.g., Boss's Orders, Switch)
         if bench_only:
-            bench = board.find_player_area(player_id, "bench")
+            bench = board.find_player_area(target_id, "bench")
             return [c for c in (bench.children if bench else []) if c is not None]
-        # Configuration 2: Returns all allied Pokémon currently in play (Active + Bench) (e.g., Potion)
-        return [p for p in board.pokemon_in_play(player_id) if p is not None]    
+
+        # Configuration 2: Returns all Pokémon in play (Active + Bench) (e.g., Crushing Hammer, Potion)
+        return [p for p in board.pokemon_in_play(target_id) if p is not None]
+        
     return selector
+
+# --- BACKWARD COMPATIBILITY LAYER ---
+# These functions route old card registrations directly into the new engine.
+
+def opponent_play_targets(bench_only=False):
+    """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
+    return play_targets(opponent=True, bench_only=bench_only)
+
+def player_play_targets(bench_only=False):
+    """Deprecated: Use play_targets(opponent=False, bench_only=...) instead."""
+    return play_targets(opponent=False, bench_only=bench_only)
+#####################
 
 
 
@@ -532,9 +537,7 @@ async def pokemon_center_lady(ctx):
 
 async def switch(ctx):
     """Switch your Active Pokemon with 1 of your Benched Pokemon."""
-    target = await ctx.choose_play_target(
-	ctx.my_bench(), "Choose your new Active Pokémon"
-    )
+    target = await ctx.choose_play_target(ctx.my_bench(), "Choose your new Active Pokémon")
     if target is not None:
         await ctx.switch_active(ctx.player_id, target)
 
