@@ -84,8 +84,8 @@ The reason is that the login handshake redirects the client to a follow-up addre
    assetURL=http://your.public.ip.or.domain:8000/
    ```
 
-> **Hosting on a VPS?** See [`deploy/`](deploy/README.md) Not needed for local
-> development only for reliable remote hosting.
+> **Hosting on a VPS?** Follow the [nginx deployment guide](deploy/README.md).
+> nginx is not needed for local development.
 
 ## Custom Card Creation
 

@@ -1,13 +1,12 @@
 # Remote (VPS) deployment
 
-The game server runs fine locally but Python's built-in asset server doesn't hold up
-over WAN. This directory fixes that.
+Use nginx in front of the Python asset server for VPS hosting.
 
 ## 1. Put a real static edge in front of the asset server
 
-Python's `http.server` writes each ~84 MB set bundle in one `wfile.write()` with
-no HTTP Range / resume. Over WAN that truncates. Front it with nginx (recommended)
-or Caddy.
+nginx provides a disk cache and HTTP byte-range support for asset downloads.
+The server prepares smaller card bundles before accepting players; see
+[asset performance and cache settings](ASSET_PERFORMANCE.md).
 
 ```
 client ──HTTP :8000──> nginx (cache + range) ──> Python asset server 127.0.0.1:8001
@@ -22,7 +21,7 @@ sudo SPIRIT_HTTP_PORT=8001 SPIRIT_PUBLIC_HOST=YOUR_VPS_IP bash run.sh
 `AssetURL` is built from the client's `Host` header, so it keeps resolving to
 `:8000` (nginx) with no server code change.
 
-### nginx (recommended — built-in disk cache + byte-range)
+### nginx setup
 
 Stand up the edge on the VPS:
 
@@ -35,10 +34,6 @@ sudo nginx -t && sudo systemctl reload nginx
 
 Then start the game server on 8001 (**command above**). Firewall: open `8000` (nginx)
 and `39389` (TCP game server); keep `8001` closed — nginx reaches Python over loopback.
-
-### Caddy (simpler; streams robustly, but response caching needs the Souin plugin)
-
-See `Caddyfile`.
 
 ### Verify range/resume works
 
