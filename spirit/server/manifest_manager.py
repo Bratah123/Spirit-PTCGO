@@ -9,6 +9,7 @@ import zlib
 import UnityPy
 
 from spirit import config
+from spirit.server.bundle_variants import SPLIT_TYPES, asset_number, card_partitions, variant_version
 
 class ManifestManager:
     """
@@ -68,6 +69,9 @@ class ManifestManager:
 
         # Dictionary to store unique descriptors by their logical name
         unique_descriptors = {}
+        partitions = card_partitions()
+        self.card_partitions = partitions
+        self.variant_sources = {}
 
         # Walk through all registered asset directories
         for asset_dir in self.asset_dirs:
@@ -301,6 +305,22 @@ class ManifestManager:
                                 "timesensitive": 0,
                                 "WebPath": f"en_US/{bundle_name_raw}.unity3d"
                             }
+
+                    membership = partitions.get(set_code, {})
+                    if membership:
+                        version = variant_version(bundle_file_path, membership)
+                        routed = []
+                        for item in descriptor["assets"]:
+                            number = asset_number(item["name"], set_code)
+                            if number not in membership:
+                                routed.append(item)
+                                continue
+                            kind = sorted(membership[number])[0]
+                            unique_descriptors[f"{set_code}_{kind}"]["assets"].append(item)
+                        descriptor["assets"] = routed
+                        for kind in SPLIT_TYPES:
+                            unique_descriptors[f"{set_code}_{kind}"]["versionings"][0]["version"] = version
+                            self.variant_sources[f"{set_code}_{kind}"] = bundle_file_path
 
         bundle_descriptors = list(unique_descriptors.values())
         actual_preloads = [n for n in preload_names if any(b['name'] == n for b in bundle_descriptors)]

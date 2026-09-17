@@ -31,7 +31,7 @@ _LOG_LISTENER = _configure_logging()
 # Imports below are intentionally after logging setup so import-time logs use the
 # queue handler (E402 is expected here).
 from spirit.server.server import PTCGOServer  # noqa: E402
-from spirit.server.http_server import AssetHTTPServer, manifest_manager  # noqa: E402
+from spirit.server.http_server import AssetHTTPServer, manifest_manager, prepare_virtual_bundles  # noqa: E402
 from spirit.server.auto_bundle import check_and_generate_bundles  # noqa: E402
 from spirit.server import metrics  # noqa: E402
 from spirit.database import Base, engine  # noqa: E402
@@ -87,6 +87,7 @@ def main():
     except Exception as e:
         logging.error(f"[Main] Failed to reload asset_map.json: {e}")
     manifest_manager.refresh()
+    prepare_virtual_bundles()
 
     http_server = AssetHTTPServer()
     http_server.start()
