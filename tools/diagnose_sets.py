@@ -1,10 +1,12 @@
 import os
 import json
 import sys
+from pathlib import Path
 
 # Paths
-SETS_JSON_PATH = os.path.join("spirit", "database", "json_data", "sets.json")
-CARDS_DIR = os.path.join("spirit", "game", "scripts", "cards")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SETS_JSON_PATH = PROJECT_ROOT / "spirit" / "database" / "json_data" / "sets.json"
+CARDS_DIR = PROJECT_ROOT / "spirit" / "game" / "scripts" / "cards"
 
 def diagnose():
     if not os.path.exists(SETS_JSON_PATH):
