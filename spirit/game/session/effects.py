@@ -2328,6 +2328,8 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     ctx = AttackContext(session, player_id, attacker, ability)
     effect = ability.effect if ability else None
     title = ability.title if ability else action_id
+    ctx.action_id = action_id
+    ctx.title = title
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
