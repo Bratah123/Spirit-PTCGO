@@ -518,6 +518,9 @@ class OutboundMsg(str, Enum):
     # Source: dwd.core.commerce.messages.incoming.ProductsOpened
     PRODUCTS_OPENED = "ProductsOpened"
 
+    # Source: dwd.core.commerce.messages.incoming.ProductsOpenedFailure
+    PRODUCTS_OPENED_FAILURE = "ProductsOpenedFailure"
+
     # Source: dwd.core.commerce.messages.incoming.ProductsPurchased
     PRODUCTS_PURCHASED = "ProductsPurchased"
 
