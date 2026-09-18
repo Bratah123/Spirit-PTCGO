@@ -2090,7 +2090,7 @@ class EffectContext:
             return
         # If flushing mid-attack, fire the initial attack bracket first so 
         # animations aren't trapped behind prompts.
-        if not self.attack_bracket_sent:
+        if self.action_id and not self.attack_bracket_sent:
             await _send_attack_bracket(self.session, self, self.action_id, self.title)
             self.attack_bracket_sent = True
         else:
@@ -2330,6 +2330,7 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     title = ability.title if ability else action_id
     ctx.action_id = action_id
     ctx.title = title
+    ctx.attack_bracket_sent = False
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
