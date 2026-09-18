@@ -128,6 +128,10 @@ class EffectContext:
         self.suppress_announce: bool = False
         # Attack-flow only: the resolved attack does NOT end the turn.
         self.attack_keeps_turn: bool = False
+        # Used by mid-attack prompts that need to flush early.
+        self.action_id: Optional[str] = None
+        self.title: Optional[str] = None
+        self.attack_bracket_sent: bool = False
         # Snapshot of ctx.knockouts taken just before resolve_knockouts clears
         # it (post-attack hooks need the KO evidence).
         self.knockouts_resolved: List[PokemonEntity] = []
@@ -2086,7 +2090,7 @@ class EffectContext:
             return
         # If flushing mid-attack, fire the initial attack bracket first so 
         # animations aren't trapped behind prompts.
-        if getattr(self, "attack_bracket_sent", True) is False:
+        if not self.attack_bracket_sent:
             await _send_attack_bracket(self.session, self, self.action_id, self.title)
             self.attack_bracket_sent = True
         else:
@@ -2324,10 +2328,6 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     ctx = AttackContext(session, player_id, attacker, ability)
     effect = ability.effect if ability else None
     title = ability.title if ability else action_id
-    # Store these on context in case a mid-attack prompt needs to flush early.
-    ctx.action_id = action_id
-    ctx.title = title
-    ctx.attack_bracket_sent = False
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
