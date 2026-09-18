@@ -53,11 +53,47 @@ def opponent_has_bench(board, player_id):
     opponent = _other_player(board, player_id)
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
+################### --- DRAG ONTO CARD ENGINE ---
+def play_targets(opponent=False, bench_only=False):
+    """
+    Unified factory that returns a targeting function for trainer cards.
+    Handles both allied and opponent sides, as well as full play or bench-only targeting.
+    """
+    def selector(board, player_id, card):
+        if card is None:
+            return []
+            
+        # Determine the target player ID based on the opponent flag
+        target_id = (
+            next((p for p in board.player_ids if p != player_id), None)
+            if opponent 
+            else player_id
+        )
+        if not target_id:
+            return []
 
-def opponent_bench_play_targets(board, player_id, card):
-    """Public bench targets for a single-target gust trainer."""
-    opponent = _other_player(board, player_id)
-    return _bench_pokemon(board, opponent) if opponent else []
+        # Configuration 1: Returns ONLY Benched Pokémon entities (e.g., Boss's Orders, Switch)
+        if bench_only:
+            bench = board.find_player_area(target_id, "bench")
+            return [c for c in (bench.children if bench else []) if c is not None]
+
+        # Configuration 2: Returns all Pokémon in play (Active + Bench) (e.g., Crushing Hammer, Potion)
+        return [p for p in board.pokemon_in_play(target_id) if p is not None]
+        
+    return selector
+
+# --- BACKWARD COMPATIBILITY LAYER ---
+# These functions route old card registrations directly into the new engine.
+
+def opponent_play_targets(bench_only=False):
+    """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
+    return play_targets(opponent=True, bench_only=bench_only)
+
+def player_play_targets(bench_only=False):
+    """Deprecated: Use play_targets(opponent=False, bench_only=...) instead."""
+    return play_targets(opponent=False, bench_only=bench_only)
+#####################
+
 
 
 def player_has_bench(board, player_id):
@@ -501,7 +537,7 @@ async def pokemon_center_lady(ctx):
 
 async def switch(ctx):
     """Switch your Active Pokemon with 1 of your Benched Pokemon."""
-    target = await ctx.choose_pokemon(ctx.my_bench(), "Choose your new Active Pokémon")
+    target = await ctx.choose_play_target(ctx.my_bench(), "Choose your new Active Pokémon")
     if target is not None:
         await ctx.switch_active(ctx.player_id, target)
 
