@@ -2462,7 +2462,6 @@ async def _send_ability_brackets(session, ctx: EffectContext,
         OutboundMsg.ABILITY_PLAYED_EFFECT.value,
         {
             "gameID": session.game_id,
-            "eID": source.entity_id,
             "eID": source_eid,
             "abilityID": ability.ability_id,
             "abilityTitle": {"id": ability.title},
