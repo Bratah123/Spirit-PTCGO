@@ -4942,7 +4942,7 @@ class GameSession:
         )
         await self._send_play_sequence(
             player_id,
-            GameSequence.STADIUM_PRESENT,
+            GameSequence.PLAY_CARD,
             [self._entity_moved_msg(card.entity_id, stadium_area.entity_id, position)],
             [card]
         )
