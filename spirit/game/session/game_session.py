@@ -4928,30 +4928,32 @@ class GameSession:
         stadium_area = self.board_state.find_global_area("activeStadium")
         if not stadium_area:
             return
-        moves = []
-        for existing in list(stadium_area.children):
-            owner_id = existing.owning_player_id or player_id
-            owner_discard = self.board_state.find_player_area(owner_id, "discard")
-            if owner_discard:
-                position = len(owner_discard.children)
-                self.board_state.move_card(existing.entity_id, owner_discard.entity_id)
-                moves.append(self._entity_moved_msg(
-                    existing.entity_id, owner_discard.entity_id, position
-                ))
+        existing = stadium_area.children[0] if stadium_area.children else None
         position = len(stadium_area.children)
         if not self.board_state.move_card(card.entity_id, stadium_area.entity_id):
             return
-        # Keep the owner so the next stadium can route this one to the right discard.
         card.owning_player_id = player_id
         self.turn_state.stadium_played = True
         self._record_trainer_played(card)
         self.stat_add(player_id, "trainersplayed")
-        moves.append(self._entity_moved_msg(card.entity_id, stadium_area.entity_id, position))
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
             f"played stadium {card.entity_id} (effect pending effects API)."
         )
-        await self._send_play_sequence(player_id, GameSequence.STADIUM_PRESENT, moves, [card])
+        await self._send_play_sequence(
+            player_id,
+            GameSequence.STADIUM_PRESENT,
+            [self._entity_moved_msg(card.entity_id, stadium_area.entity_id, position)],
+            [card]
+        )
+        if existing:
+            owner_id = existing.owning_player_id or player_id
+            owner_discard = self.board_state.find_player_area(owner_id, "discard")
+            if owner_discard:
+                discard_pos = len(owner_discard.children)
+                self.board_state.move_card(existing.entity_id, owner_discard.entity_id)
+                move_msg = self._entity_moved_msg(existing.entity_id, owner_discard.entity_id, discard_pos)
+                await self._send_play_sequence(player_id, GameSequence.GROUPED_MOVE, [move_msg], [])
         # A capacity-reducing Stadium (Collapsed Stadium) shrinks benches now.
         await self.enforce_bench_capacity()
 
