@@ -2445,16 +2445,24 @@ async def resolve_activated_ability(session, player_id: str, pokemon: PokemonEnt
 
 
 async def _send_ability_brackets(session, ctx: EffectContext,
-                                 pokemon: PokemonEntity, ability: Ability,
+                                 source: CardEntity, ability: Ability,
                                  _ko_depth: int = 0):
     """Shared ability choreography: an "Attack" bracket pulls the source out
     and shoots the orb-of-light at the visual targets; the "PokeAbility"
     bracket tucks the source home and plays the effect messages."""
+    is_pokemon = isinstance(source, PokemonEntity)
+    # Fall back to the turn player's active Pokémon eID so the stadium owner
+    # sees the title popup when the opponent activates their Stadium.
+    if is_pokemon:
+        source_eid = source.entity_id
+    else:
+        active_pkmn = session.board_state.active_pokemon(session.turn_state.active_player_id)
+        source_eid = active_pkmn.entity_id if active_pkmn else source.entity_id
     head = session._build_msg(
         OutboundMsg.ABILITY_PLAYED_EFFECT.value,
         {
             "gameID": session.game_id,
-            "eID": pokemon.entity_id,
+            "eID": source_eid,
             "abilityID": ability.ability_id,
             "abilityTitle": {"id": ability.title},
             "abilityType": "PokeAbility",
@@ -2462,7 +2470,7 @@ async def _send_ability_brackets(session, ctx: EffectContext,
     )
     tail = session._build_msg(
         OutboundMsg.ABILITY_FINISHED_EFFECT.value,
-        {"gameID": session.game_id, "eID": pokemon.entity_id},
+        {"gameID": session.game_id, "eID": source.entity_id},
     )
     extra: List[Dict[str, Any]] = []
     if ability.vstar:
@@ -2483,29 +2491,33 @@ async def _send_ability_brackets(session, ctx: EffectContext,
         await session.enforce_bench_capacity()
         return
 
-    # The Attack executor dereferences the playmat's attack-source [0].
-    await session._broadcast_attack_sources([pokemon.entity_id])
     # Out-of-zone sources (usable_from hand/discard) default the orb to the
     # source's PILE rather than the card itself.
-    fallback = [pokemon.entity_id]
-    parent = getattr(pokemon, "parent", None)
-    if parent is not None \
-            and parent.get_attribute(AttrID.NAME) in ("hand", "discard"):
-        fallback = [parent.entity_id]
-    orb = session._build_msg(
-        OutboundMsg.NON_DAMAGING_TARGETS_EFFECT.value,
-        {
-            "gameID": session.game_id,
-            # Never empty: M.N only injects the r.u orb group when targets
-            # exist, and ONLY r.u clears opponentTargetSelectArea -- an empty
-            # list leaves the source floating on the opposing client.
-            "targets": ctx.visual_targets or ctx._visual_sources
-                       or fallback,
-        },
-    )
+    sequence_type = GameSequence.ATTACK if is_pokemon else GameSequence.POKE_ABILITY
+    orb: List[Dict[str, Any]] = []
+
+    if is_pokemon:
+        # The Attack executor dereferences the playmat's attack-source [0].
+        await session._broadcast_attack_sources([source.entity_id])
+        fallback = [source.entity_id]
+        parent = getattr(source, "parent", None)
+        if parent is not None \
+                and parent.get_attribute(AttrID.NAME) in ("hand", "discard"):
+            fallback = [parent.entity_id]
+        orb.append(session._build_msg(
+            OutboundMsg.NON_DAMAGING_TARGETS_EFFECT.value,
+            {
+                "gameID": session.game_id,
+                # Never empty: M.N only injects the r.u orb group when targets
+                # exist, and ONLY r.u clears opponentTargetSelectArea -- an empty
+                # list leaves the source floating on the opposing client.
+                "targets": ctx.visual_targets or ctx._visual_sources
+                          or fallback,
+            },
+        ))
     for pid, viewer in session.players.items():
         await session.send_game_sequence(
-            [viewer], GameSequence.ATTACK, [head] + extra + [orb, tail]
+            [viewer], sequence_type, [head] + extra + orb + [tail]
         )
     # Effect messages flush as their queued bracket runs (attach_energy's
     # SerialSequence intro must precede its GroupedMove so the wrap sees the
