@@ -2451,11 +2451,19 @@ async def _send_ability_brackets(session, ctx: EffectContext,
     and shoots the orb-of-light at the visual targets; the "PokeAbility"
     bracket tucks the source home and plays the effect messages."""
     is_pokemon = isinstance(source, PokemonEntity)
+    # Fall back to the turn player's active Pokémon eID so the stadium owner
+    # sees the title popup when the opponent activates their Stadium.
+    if is_pokemon:
+        source_eid = source.entity_id
+    else:
+        active_pkmn = session.board_state.active_pokemon(session.turn_state.active_player_id)
+        source_eid = active_pkmn.entity_id if active_pkmn else source.entity_id
     head = session._build_msg(
         OutboundMsg.ABILITY_PLAYED_EFFECT.value,
         {
             "gameID": session.game_id,
             "eID": source.entity_id,
+            "eID": source_eid,
             "abilityID": ability.ability_id,
             "abilityTitle": {"id": ability.title},
             "abilityType": "PokeAbility",
