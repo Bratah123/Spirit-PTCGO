@@ -550,9 +550,6 @@ async def escape_rope(ctx):
             opp_bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id
         )
         await ctx.switch_active(ctx.opponent_id, target or opp_bench[0])
-        # Flush the opponent's swap so both clients see it land before the
-        # Escape Rope player is prompted for their own switch.
-        await ctx.flush_choreography()
     my_bench = ctx.my_bench()
     if my_bench:
         target = await ctx.choose_pokemon(
@@ -648,6 +645,11 @@ async def cramomatic(ctx):
         1, predicate=is_item_card, prompt="Discard an Item card for Cram-o-matic"
     ):
         return
+    
+    # Force the engine to send the discard message to the frontend and wait
+    # for the animation to finish before we trigger the coin flip.
+    await ctx.flush_choreography()
+
     heads, = await ctx.flip_coins(1, "Cram-o-matic")
     if not heads:
         return

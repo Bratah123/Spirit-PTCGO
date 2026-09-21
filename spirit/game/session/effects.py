@@ -128,6 +128,10 @@ class EffectContext:
         self.suppress_announce: bool = False
         # Attack-flow only: the resolved attack does NOT end the turn.
         self.attack_keeps_turn: bool = False
+        # Used by mid-attack prompts that need to flush early.
+        self.action_id: Optional[str] = None
+        self.title: Optional[str] = None
+        self.attack_bracket_sent: bool = False
         # Snapshot of ctx.knockouts taken just before resolve_knockouts clears
         # it (post-attack hooks need the KO evidence).
         self.knockouts_resolved: List[PokemonEntity] = []
@@ -806,6 +810,9 @@ class EffectContext:
         """Presents (pokemon, attack) candidates as full attack rows in the
         floating panel (a FORCED pick: once the copy attack is declared it
         cannot be cancelled) and returns the chosen pair."""
+        # Flushes prior state changes before opening the copy menu, as the 
+        # selected attack may trigger more prompts.
+        await self.flush_choreography()
         idx = await self.session.prompt_attack_selection(
             self.player_id, self.source, candidates, prompt
         )
@@ -945,6 +952,8 @@ class EffectContext:
         (default: all of the opponent's in-play Pokemon) via the native
         click-to-place picker (one offer, Done gates on exactly `count`
         clicks)."""
+        # Ensures attack animations complete before placing damage counters.
+        await self.flush_choreography()
         pool = list(candidates) if candidates is not None else self.opponent_pokemon_in_play()
         in_play_ids = {p.entity_id for p in self.my_pokemon_in_play() + self.opponent_pokemon_in_play()}
         pool = [p for p in pool if p.entity_id in in_play_ids]
@@ -1076,6 +1085,9 @@ class EffectContext:
         hand."). minimum=None means exactly `count` (or every card if fewer
         exist); minimum=0 makes the pick optional ("up to count").
         """
+        # Smooths search transitions and ensures prior movement (switching cards
+        # and attacks) renders before prompting.
+        await self.flush_choreography()
         if (not cards and not display_cards) or count <= 0:
             return []
         pid = player_id or self.player_id
@@ -1347,6 +1359,8 @@ class EffectContext:
         """View-only reveal browser over a player's whole hand ("your opponent
         reveals their hand"); nothing is selectable. Returns the hand cards
         so callers can count matches. AI viewers skip the browser."""
+        # Ensures the hand is revealed to the player before an attack happens.
+        await self.flush_choreography()
         owner = of_player or self.player_id
         viewer = to_player or self.session._opponent_id(owner)
         cards = self.hand(owner)
@@ -1411,7 +1425,9 @@ class EffectContext:
         remains the physical-card-count primitive for text that says "Energy
         cards" or otherwise requires a specific number of card entities.
         """
-
+        # Ensures preceding actions finish animating before energy discards are
+        # processed or prompted.
+        await self.flush_choreography()
         energies = [
             energy for energy in self.attached_energies(pokemon)
             if predicate is None or predicate(energy)
@@ -2070,10 +2086,18 @@ class EffectContext:
         return True
 
     async def flush_choreography(self):
+        if not self._messages:
+            return
+        # If flushing mid-attack, fire the initial attack bracket first so 
+        # animations aren't trapped behind prompts.
+        if self.action_id and not self.attack_bracket_sent:
+            await _send_attack_bracket(self.session, self, self.action_id, self.title)
+            self.attack_bracket_sent = True
+        else:
+            await self.session._flush_effect_runs(self)
         """Sends and clears the currently queued choreography brackets, so a
         following dialog resolves only after both clients see them land
         (Escape Rope: the opponent's swap shows before the player decides)."""
-        await self.session._flush_effect_runs(self)
         self._messages.clear()
 
     async def take_prizes(self, count: int, player_id: Optional[str] = None,
@@ -2304,6 +2328,9 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     ctx = AttackContext(session, player_id, attacker, ability)
     effect = ability.effect if ability else None
     title = ability.title if ability else action_id
+    ctx.action_id = action_id
+    ctx.title = title
+    ctx.attack_bracket_sent = False
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
@@ -2318,8 +2345,11 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
         await ctx.deal_damage()
     else:
         await effect(ctx)
-
-    await _send_attack_bracket(session, ctx, action_id, title)
+    # Only send the attack bracket if an early flush didn't already fire it
+    if not ctx.attack_bracket_sent:
+        await _send_attack_bracket(session, ctx, action_id, title)
+    else:
+        await ctx.flush_choreography()
     # ON_DAMAGED_BY_ATTACK fires after the attack choreography but BEFORE the
     # knockout stacks move ("even if this Pokemon is Knocked Out").
     await _fire_damaged_by_attack_triggers(session, ctx)
