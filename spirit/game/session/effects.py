@@ -2649,13 +2649,6 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
                     "cleanupCurvePrefix": "Fizzled",
                 },
             )
-    # Tuck the attacker's pulled-back ability panel home first; the executor
-    # no-ops when no panel is up, so its bracket may be empty.
-    attacker_viewer = session.players.get(ctx.player_id)
-    if attacker_viewer is not None:
-        await session.send_game_sequence(
-            [attacker_viewer], GameSequence.DISMISS_ABILITY_SELECT, []
-        )
     for pid, viewer in session.players.items():
         # Only untagged messages (CakeAttackEffect, HP mods) ride inside the
         # Attack bracket; tagged runs flush as their own top-level brackets
