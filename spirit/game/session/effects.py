@@ -506,6 +506,8 @@ class EffectContext:
         target.set_attribute(AttrID.HP, current + healed)
         self.session.turn_state.healed_entities.add(target.entity_id)
         self.session.stat_add(self.player_id, "damagehealed", healed)
+        if self.attacker and self.attacker.entity_id not in self.visual_targets:
+            self.visual_targets.append(self.attacker.entity_id)
         # Heal FX + fly-text (L.y) must precede the HP update, like CakeAttackEffect.
         source_id = self.source.entity_id if self.source is not None \
             else target.entity_id
@@ -550,6 +552,8 @@ class EffectContext:
         """
         if target is None:
             return False
+        if target.entity_id not in self.visual_targets:
+            self.visual_targets.append(target.entity_id)
         if self._trainer_blocked(target):
             return False
         if self.effects_blocked(target):

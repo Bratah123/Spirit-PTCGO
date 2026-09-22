@@ -632,6 +632,8 @@ async def apply_protection(ctx, target=None, reduce=None, prevent=False,
         ctx.add_passive_through_own_next_turn(target, shield)
     else:
         ctx.add_passive_through_opponents_turn(target, shield)
+    if target.entity_id not in ctx.visual_targets:
+        ctx.visual_targets.append(target.entity_id)
     return True
 
 
