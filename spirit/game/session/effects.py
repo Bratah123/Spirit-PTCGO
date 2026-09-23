@@ -408,13 +408,15 @@ class EffectContext:
                     f"[Effects {self.game_id}] Damage to {target.entity_id} "
                     f"prevented by a passive effect."
                 )
-                self._queue_damage_prevention(target)
+                if target.entity_id not in self.visual_targets:
+                    self.visual_targets.append(target.entity_id)
                 return 0
             dealt = calc.amount
             if dealt > 0:
                 dealt = await self._run_damage_interceptors(calc, target)
                 if calc.prevented:
-                    self._queue_damage_prevention(target)
+                    if target.entity_id not in self.visual_targets:
+                        self.visual_targets.append(target.entity_id)
                     return 0
 
         current = target.get_attribute(AttrID.HP, 0)
