@@ -117,6 +117,7 @@ class EffectContext:
         # non-damaging orb in the Attack bracket (mirrors M.N's flag7).
         self._dealt_opponent_damage = False
         self._shielded_damage = False
+        self._dealt_damage = False
         # Async callables run AFTER the choreography flushes (promotions and
         # anything else that must not interleave with the pending brackets).
         self.deferred_actions: List[Callable[[], Any]] = []
@@ -418,7 +419,10 @@ class EffectContext:
                     if target.entity_id not in self.visual_targets:
                         self.visual_targets.append(target.entity_id)
                     return 0
-
+        if dealt > 0 and not as_counters:
+            # Track any dealt damage (attacks only), so self-damaging attacks 
+            # use the normal cleanup instead of Fizzled.
+            self._dealt_damage = True
         current = target.get_attribute(AttrID.HP, 0)
         remaining = max(0, current - dealt)
         target.set_attribute(AttrID.HP, remaining)
@@ -2634,7 +2638,7 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
     await session._broadcast_attack_sources([ctx.attacker.entity_id])
     cleanup = None
     # Use an orb only with a real destination; targetless attacks take the Fizzled return curve.
-    if not ctx._dealt_opponent_damage and not ctx._shielded_damage:
+    if not ctx._dealt_opponent_damage and not ctx._dealt_damage:
         targets = (ctx.visual_targets or ctx._visual_sources
                    or [k.entity_id for k in ctx.knockouts])
         if targets:
@@ -2651,6 +2655,11 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
                     "cleanupCurvePrefix": "Fizzled",
                 },
             )
+    elif ctx._dealt_damage:
+        cleanup = session._build_msg(
+            OutboundMsg.CLEANUP_ATTACK_EFFECT.value,
+            {"gameID": session.game_id, "entityID": ctx.attacker.entity_id}
+        )
     for pid, viewer in session.players.items():
         # Only untagged messages (CakeAttackEffect, HP mods) ride inside the
         # Attack bracket; tagged runs flush as their own top-level brackets
