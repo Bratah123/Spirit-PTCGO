@@ -359,7 +359,6 @@ async def energy_mix(ctx):
                 targets, "Choose a Fusion Strike Pokémon to attach the Energy to"
             )
             if target is not None:
-                ctx.visual_targets = [target.entity_id]
                 await ctx.attach_energy(picks[0], target)
     await ctx.shuffle_deck()
 
@@ -935,11 +934,9 @@ async def delayed_knockout(ctx):
     """At the end of your opponent's next turn, the Defending Pokemon will
     be Knocked Out (dropped if it leaves the Active spot or evolves)."""
     target = ctx.defender
-    # Play the orb regardless if the attack was blocked or not (shield trigger)
-    ctx.visual_targets = [target.entity_id]
     if target is None or ctx.effects_blocked(target):
-        ctx.queue_effect_blocked(target)
         return
+    ctx.visual_targets = [target.entity_id]
     owner_id = target.owning_player_id
     target_id = target.entity_id
 
