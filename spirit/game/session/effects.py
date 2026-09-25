@@ -116,8 +116,7 @@ class EffectContext:
         # Whether a CakeAttackEffect hit an opponent's Pokemon: gates the
         # non-damaging orb in the Attack bracket (mirrors M.N's flag7).
         self._dealt_opponent_damage = False
-        self._shielded_effect = False
-        self._dealt_damage = False
+        self._shielded_damage = False
         # Async callables run AFTER the choreography flushes (promotions and
         # anything else that must not interleave with the pending brackets).
         self.deferred_actions: List[Callable[[], Any]] = []
@@ -329,17 +328,17 @@ class EffectContext:
             self._in_interceptor = False
         return calc.amount
 
-    def _queue_effect_prevented(self, target: PokemonEntity):
+    def _queue_damage_prevention(self, target: PokemonEntity):
         self._queue(self.session._build_msg(
             OutboundMsg.SHIELD_TARGETS_EFFECT.value,
             {
                 "gameID": self.game_id,
                 "source": self.attacker.entity_id,
                 "targets": [target.entity_id],
-                "wasDamage": False,
+                "wasDamage": True,
             },
         ))
-        self._shielded_effect = True
+        self._shielded_damage = True
 
     # ------------------------------------------------------------------
     # Damage / HP primitives
@@ -409,20 +408,15 @@ class EffectContext:
                     f"[Effects {self.game_id}] Damage to {target.entity_id} "
                     f"prevented by a passive effect."
                 )
-                if target.entity_id not in self.visual_targets:
-                    self.visual_targets.append(target.entity_id)
+                self._queue_damage_prevention(target)
                 return 0
             dealt = calc.amount
             if dealt > 0:
                 dealt = await self._run_damage_interceptors(calc, target)
                 if calc.prevented:
-                    if target.entity_id not in self.visual_targets:
-                        self.visual_targets.append(target.entity_id)
+                    self._queue_damage_prevention(target)
                     return 0
-        if dealt > 0 and not as_counters:
-            # Track any dealt damage (attacks only), so self-damaging attacks 
-            # use the normal cleanup instead of Fizzled.
-            self._dealt_damage = True
+
         current = target.get_attribute(AttrID.HP, 0)
         remaining = max(0, current - dealt)
         target.set_attribute(AttrID.HP, remaining)
@@ -487,7 +481,6 @@ class EffectContext:
                 f"[Effects {self.game_id}] Knock Out of {target.entity_id} "
                 f"blocked by an effect shield."
             )
-            self._queue_effect_prevented(target)
             return False
         target.set_attribute(AttrID.HP, 0)
         self._queue_hp_update(target)
@@ -513,8 +506,6 @@ class EffectContext:
         target.set_attribute(AttrID.HP, current + healed)
         self.session.turn_state.healed_entities.add(target.entity_id)
         self.session.stat_add(self.player_id, "damagehealed", healed)
-        if self.attacker and self.attacker.entity_id not in self.visual_targets:
-            self.visual_targets.append(self.attacker.entity_id)
         # Heal FX + fly-text (L.y) must precede the HP update, like CakeAttackEffect.
         source_id = self.source.entity_id if self.source is not None \
             else target.entity_id
@@ -560,26 +551,19 @@ class EffectContext:
         if target is None:
             return False
         if self._trainer_blocked(target):
-            self._queue_effect_prevented(target)
             return False
         if self.effects_blocked(target):
             logging.info(
                 f"[Effects {self.game_id}] {condition.name} on {target.entity_id} "
                 f"blocked by an effect shield."
             )
-            self._queue_effect_prevented(target)
             return False
         if conditions_blocked(self.board, target, condition):
             logging.info(
                 f"[Effects {self.game_id}] {condition.name} on {target.entity_id} "
                 f"blocked by a condition-immunity passive."
             )
-            self._queue_effect_prevented(target)
             return False
-        # Successfully affected targets need a visual target to prevent the attack
-        # from playing the Fizzle animation.
-        if target.entity_id not in self.visual_targets:
-            self.visual_targets.append(target.entity_id)
         name = CLIENT_SPECIAL_CONDITION_NAMES[condition]
         conditions = list(target.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
         if condition in _MUTUALLY_EXCLUSIVE:
@@ -2644,11 +2628,7 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
     await session._broadcast_attack_sources([ctx.attacker.entity_id])
     cleanup = None
     # Use an orb only with a real destination; targetless attacks take the Fizzled return curve.
-    if not any((
-        ctx._dealt_opponent_damage,
-        ctx._dealt_damage,
-        ctx._shielded_effect,
-    )):
+    if not ctx._dealt_opponent_damage and not ctx._shielded_damage:
         targets = (ctx.visual_targets or ctx._visual_sources
                    or [k.entity_id for k in ctx.knockouts])
         if targets:
@@ -2665,10 +2645,12 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
                     "cleanupCurvePrefix": "Fizzled",
                 },
             )
-    elif ctx._dealt_damage:
-        cleanup = session._build_msg(
-            OutboundMsg.CLEANUP_ATTACK_EFFECT.value,
-            {"gameID": session.game_id, "entityID": ctx.attacker.entity_id}
+    # Tuck the attacker's pulled-back ability panel home first; the executor
+    # no-ops when no panel is up, so its bracket may be empty.
+    attacker_viewer = session.players.get(ctx.player_id)
+    if attacker_viewer is not None:
+        await session.send_game_sequence(
+            [attacker_viewer], GameSequence.DISMISS_ABILITY_SELECT, []
         )
     for pid, viewer in session.players.items():
         # Only untagged messages (CakeAttackEffect, HP mods) ride inside the
