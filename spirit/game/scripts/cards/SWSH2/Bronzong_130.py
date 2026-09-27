@@ -11,7 +11,6 @@ async def gyro_ball(ctx):
         return
     target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
     await ctx.switch_active(ctx.player_id, target or bench[0])
-    await ctx.flush_choreography()
     await opponent_switches(ctx)
 
 
