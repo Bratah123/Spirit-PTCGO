@@ -89,10 +89,12 @@ def play_targets(opponent=False, bench_only=False):
 # These functions route old card registrations directly into the new engine. Please update your coding as it will be removed in the future.
 def opponent_bench_play_targets(board, player_id, card):
     """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
-    return play_targets(opponent=True, bench_only=bench_only) 
+    return play_targets(opponent=True, bench_only=True) 
+    
 def opponent_play_targets(bench_only=False):
     """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
     return play_targets(opponent=True, bench_only=bench_only)
+    
 def player_play_targets(bench_only=False):
     """Deprecated: Use play_targets(opponent=False, bench_only=...) instead."""
     return play_targets(opponent=False, bench_only=bench_only)
