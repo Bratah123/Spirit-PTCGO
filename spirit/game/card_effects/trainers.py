@@ -53,12 +53,15 @@ def opponent_has_bench(board, player_id):
     opponent = _other_player(board, player_id)
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
-################### --- DRAG ONTO CARD ENGINE ---
+################### --- play_targets selector ---
+# The play_targets function is a factory that returns a targeting selector for Trainer cards to highlight valid targets on the UI.
+# It allows the card to be dragged directly into a Pokémon for cards that require selecting a Pokémon.
+# It dynamically evaluates configurations based on two boolean flags:
+# 1) opponent: If True, the only Pokémon you can drag the trainer to will be the ones in the opponent's side; if False, the ones on the player's own side.
+# 2) bench_only: If True, the only Pokémon you can drag the trainer to are the ones inside that player's "bench" area; if False, the Active is also included.
+
 def play_targets(opponent=False, bench_only=False):
-    """
-    Unified factory that returns a targeting function for trainer cards.
-    Handles both allied and opponent sides, as well as full play or bench-only targeting.
-    """
+
     def selector(board, player_id, card):
         if card is None:
             return []
@@ -82,13 +85,14 @@ def play_targets(opponent=False, bench_only=False):
         
     return selector
 
-# --- BACKWARD COMPATIBILITY LAYER ---
-# These functions route old card registrations directly into the new engine.
-
+# --- TEMPORARY BACKWARD COMPATIBILITY LAYER ---
+# These functions route old card registrations directly into the new engine. Please update your coding as it will be removed in the future.
+def opponent_bench_play_targets(board, player_id, card):
+    """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
+    return play_targets(opponent=True, bench_only=bench_only) 
 def opponent_play_targets(bench_only=False):
     """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
     return play_targets(opponent=True, bench_only=bench_only)
-
 def player_play_targets(bench_only=False):
     """Deprecated: Use play_targets(opponent=False, bench_only=...) instead."""
     return play_targets(opponent=False, bench_only=bench_only)
