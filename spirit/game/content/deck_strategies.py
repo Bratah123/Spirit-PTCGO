@@ -1938,11 +1938,458 @@ CORVIKNIGHT_BRONZONG = {
 }
 
 
+# ----------------------------------------------------------------------
+# Eternatus VMAX  (deck key: 'Eternatus V')
+#
+# Main plan: fill the bench with Darkness bodies (Eternal Zone opens 8
+# slots, and Dread End = 30 x darkness in play: 8 bodies = 240, 9 = 270).
+# Eternatus V pokes with Power Accelerator to feed the bench, then evolves.
+# Crobat V draws with Dark Asset (never waste the once-per-turn draw when
+# the hand is already full).  Galarian Zigzagoon's on-play counter lands on
+# the cheapest KO (counter_plan).  Boss gusts whatever current Dread End
+# finishes; Switch / Bird Keeper keep the VMAX attacking; Galar Mine makes
+# the opponent pay to retreat.  Hoopa (Assault Gate 90) and Sableye V
+# (Crazy Claws) are threshold finishers -- Hoopa only after a Bench->Active
+# move or the attack does nothing.
+
+ET_ATTACKERS = {"Eternatus VMAX", "Eternatus V", "Sableye V", "Hoopa"}
+ET_BENCH_ORDER = ["Eternatus V", "Crobat V", "Galarian Zigzagoon",
+                  "Sableye V", "Hoopa"]
+ET_EVOLVE_ORDER = ["Eternatus VMAX"]
+# Every deck Pokemon is Darkness: the dark-only bench rule holds by itself.
+ET_DARKS = {"Eternatus V", "Eternatus VMAX", "Crobat V",
+            "Galarian Zigzagoon", "Sableye V", "Hoopa"}
+ET_NEED = {"Eternatus VMAX": 2, "Eternatus V": 1, "Hoopa": 1,
+           "Sableye V": 1}
+_ET_REPEATABLE = {
+    "Professor's Research", "Marnie", "Quick Ball", "Great Ball", "Switch",
+    "Bird Keeper",
+}
+
+
+def _et_dread_end(ctx: StrategyContext) -> int:
+    """Damage Dread End deals right now: 30 per Darkness body in play
+    (Active included), matching the engine's count_in_play scaling."""
+    return 30 * sum(1 for p in ctx.in_play() if ctx.name(p) in ET_DARKS)
+
+
+def _et_output(ctx: StrategyContext, pokemon) -> int:
+    """Damage `pokemon` could deal from the Active slot right now; 0 when
+    unpowered (or off-entry Hoopa, whose Assault Gate fizzles)."""
+    if pokemon is None:
+        return 0
+    name = ctx.name(pokemon)
+    if name not in ET_ATTACKERS:
+        return 0
+    have = ctx.energy_attached(pokemon)
+    if have < ctx.min_attack_cost(pokemon):
+        return 0
+    if name == "Eternatus VMAX":
+        return _et_dread_end(ctx)
+    if name == "Eternatus V":
+        return 30                        # Power Accelerator poke
+    if name == "Sableye V":
+        if have < 2:
+            return 0                      # Lode Search: utility, no damage
+        opp = ctx.active(ctx.opp)
+        counters = (ctx.damage_on(opp) // 10) if opp is not None else 0
+        return 10 + 60 * counters         # Crazy Claws
+    if name == "Hoopa":
+        return 90 if ctx.entered_active(pokemon) else 0
+    return 0                              # Crobat / Zigzagoon: setup
+
+
+def _et_strike_damage(ctx: StrategyContext) -> int:
+    return _et_output(ctx, ctx.active())
+
+
+def _et_energy_hungry(ctx: StrategyContext) -> bool:
+    for p in ctx.in_play():
+        need = ET_NEED.get(ctx.name(p))
+        if need is not None and ctx.energy_attached(p) < need:
+            return True
+    return False
+
+
+def _et_gust_window(ctx: StrategyContext) -> List:
+    damage = _et_strike_damage(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _et_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _et_strike_damage(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _et_promote(ctx: StrategyContext, pokemon) -> float:
+    score = promotion_score(ctx, pokemon, attackers=ET_ATTACKERS)
+    if ctx.name(pokemon) == "Hoopa":
+        if score <= 0 or ctx.energy_attached(pokemon) < 1:
+            return 0.0
+        # Entry this turn enables the 90 -- but only keep Hoopa's slot
+        # when that 90 actually finishes something.
+        opp = ctx.active(ctx.opp)
+        if opp is None or not (0 < ctx.hp_left(opp) <= 90):
+            score -= 800.0
+    return score
+
+
+def _et_bench_can_attack(ctx: StrategyContext) -> bool:
+    for p in ctx.bench():
+        if _et_output(ctx, p) > 0:
+            return True
+        if ctx.name(p) == "Hoopa" and ctx.energy_attached(p) >= 1:
+            return True                   # a Switch this turn gives entry
+    return False
+
+
+def _et_switch_ok(ctx: StrategyContext) -> bool:
+    """Switch: unsticks a body that can't swing, or preserves a heavily
+    damaged VMAX when a fresh attacker is ready."""
+    active = ctx.active()
+    if active is None:
+        return False
+    if _et_strike_damage(ctx) <= 0:
+        return _et_bench_can_attack(ctx)
+    if ctx.damage_on(active) >= 150:
+        return _et_bench_can_attack(ctx)
+    return False
+
+
+def _et_retreat_ok(ctx: StrategyContext) -> bool:
+    """Last resort only: VMAX retreat is expensive (+2 under Galar Mine),
+    so Retreat only fires when nothing else moves us."""
+    active = ctx.active()
+    if active is None:
+        return False
+    active_dmg = _et_strike_damage(ctx)
+    bench_best = 0
+    for p in ctx.bench():
+        out = _et_output(ctx, p)
+        if ctx.name(p) == "Hoopa" and ctx.energy_attached(p) >= 1:
+            out = max(out, 90)
+        bench_best = max(bench_best, out)
+    if bench_best <= 0:
+        return False
+    if active_dmg <= 0:
+        return True                       # unpowered / off-entry: swap
+    if ctx.damage_on(active) >= 150:
+        return True                       # preserve the VMAX
+    return bench_best >= active_dmg + 60
+
+
+def _et_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    if name == "Professor's Research":
+        return ctx.hand_size() <= 5 and deck > 10
+    if name == "Marnie":
+        return (ctx.hand_size() <= 5 or ctx.hand_size(ctx.opp) >= 6) \
+            and deck > 5
+    if name in ("Quick Ball", "Great Ball", "Evolution Incense"):
+        return deck > 5
+    if name == "Boss's Orders":
+        if _et_strike_damage(ctx) <= 0:
+            return False                  # can't swing this turn anyway
+        if _et_gust_window(ctx):
+            return True
+        return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+    if name in ("Switch", "Bird Keeper"):
+        return _et_switch_ok(ctx)
+    if description == "DefaultStadiumPlayAbility" and name == "Galar Mine":
+        return not ctx.opponent_stadium_is("Galar Mine")
+    if description == "BaseRetreat":
+        return _et_retreat_ok(ctx)
+    if description == "UsePokemonAttack" and name == "Hoopa":
+        # entry (Bench -> Active) this turn; otherwise Assault Gate
+        # fizzles and the turn passes for nothing -- fall through to
+        # the retreat/switch buckets instead.
+        return ctx.entered_active(ctx.active())
+    return True
+
+
+def _et_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational value of a card: fills the missing setup piece first."""
+    hand = set(ctx.hand_names())
+    play = set(ctx.in_play_names())
+    seen = hand | play
+    board = ctx.in_play()
+    ev_count = sum(1 for p in board if ctx.name(p) == "Eternatus V")
+    crobat_count = sum(1 for p in board if ctx.name(p) == "Crobat V")
+    dark_in_hand = sum(1 for n in ctx.hand_names()
+                       if n == "Darkness Energy")
+
+    # -- Pokemon gap pieces (searches + hand planning) --------------------
+    if name == "Eternatus V":
+        v = 35.0 if ev_count == 0 else (25.0 if ev_count < 3 else 8.0)
+    elif name == "Eternatus VMAX":
+        if "Eternatus VMAX" in seen:
+            v = 10.0
+        elif "Eternatus V" in seen:
+            v = 35.0
+        else:
+            v = 6.0
+    elif name == "Crobat V":
+        if "Crobat V" not in seen:
+            # the draw is wasted on a full hand -- search it later
+            v = 30.0 if ctx.hand_size() < 6 else 18.0
+        elif ctx.hand_size() < 6 and crobat_count < 3:
+            v = 24.0                      # another draw while the hand is low
+        else:
+            v = 8.0                       # preserve it for post-Marnie recovery
+    elif name == "Galarian Zigzagoon":
+        v = 22.0 if "Galarian Zigzagoon" not in seen else 9.0
+    elif name == "Sableye V":
+        v = 16.0 if "Sableye V" not in seen else 7.0
+    elif name == "Hoopa":
+        v = 15.0 if "Hoopa" not in seen else 7.0
+    elif name == "Darkness Energy":
+        if dark_in_hand == 0:
+            v = 26.0
+        elif dark_in_hand == 1:
+            v = 20.0
+        else:
+            v = 12.0
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Professor's Research":
+        v = 30.0 if ctx.hand_size() <= 4 else 12.0
+    elif name == "Marnie":
+        v = 24.0 if ctx.hand_size(ctx.opp) > ctx.hand_size() else 18.0
+    elif name == "Boss's Orders":
+        if _et_gust_window(ctx):
+            v = 40.0
+        elif any(ctx.damage_on(p) for p in ctx.in_play(ctx.opp)):
+            v = 18.0
+        else:
+            v = 12.0
+    elif name == "Bird Keeper":
+        if _et_strike_damage(ctx) <= 0 and _et_bench_can_attack(ctx):
+            v = 30.0                      # rotate into the VMAX
+        elif ctx.hand_size() <= 4:
+            v = 18.0                      # supporter that draws 3
+        else:
+            v = 6.0
+    elif name == "Switch":
+        active = ctx.active()
+        if active is None:
+            v = 4.0
+        elif _et_strike_damage(ctx) <= 0:
+            v = 25.0                      # unstick the bench attacker
+        elif ctx.damage_on(active) >= 150 and _et_bench_can_attack(ctx):
+            v = 22.0                      # preserve the VMAX
+        else:
+            v = 4.0
+    elif name == "Quick Ball":
+        if ev_count == 0:
+            v = 30.0
+        elif "Crobat V" not in seen:
+            v = 24.0
+        elif "Galarian Zigzagoon" not in seen:
+            v = 18.0
+        elif ev_count < 2:
+            v = 14.0
+        else:
+            v = 8.0
+    elif name == "Great Ball":
+        if "Eternatus V" in seen and "Eternatus VMAX" not in seen:
+            v = 20.0
+        elif "Sableye V" not in seen or "Hoopa" not in seen:
+            v = 14.0
+        else:
+            v = 9.0
+    elif name == "Evolution Incense":
+        v = 32.0 if "Eternatus V" in seen and "Eternatus VMAX" not in seen \
+            else 8.0
+    elif name == "Galar Mine":
+        v = 15.0 if not ctx.opponent_stadium_is("Galar Mine") else 0.0
+    else:
+        v = 6.0
+
+    if in_hand and name in hand and name not in _ET_REPEATABLE:
+        v -= 40.0                         # a second copy adds little
+    return v
+
+
+def _et_bench_score(name: str, ctx: StrategyContext) -> float:
+    score = order_score(ET_BENCH_ORDER, name)
+    names = [ctx.name(p) for p in ctx.in_play()]
+    if name == "Eternatus V":
+        count = names.count("Eternatus V")
+        score += 25.0 if count == 0 else (15.0 if count < 3 else -15.0)
+    elif name == "Crobat V":
+        count = names.count("Crobat V")
+        if count == 0:
+            score += 30.0 if ctx.hand_size() < 6 else 12.0
+        elif count < 3 and ctx.hand_size() < 6:
+            score += 15.0                 # still draws (once per turn)
+        else:
+            score -= 20.0                 # preserve the Dark Asset recovery
+    elif name == "Galarian Zigzagoon":
+        # every dark body is +30 Dread End; the engine caps the bench
+        score += 15.0 if names.count("Galarian Zigzagoon") == 0 else 5.0
+    elif name == "Sableye V":
+        score += 8.0 if "Sableye V" not in names else -15.0
+    elif name == "Hoopa":
+        score += 6.0 if "Hoopa" not in names else -15.0
+    return score
+
+
+def _et_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "EvolvePokemonPlayAbility":
+        return order_score(ET_EVOLVE_ORDER, name)
+    if description == "DefaultEnergyPlayAbility":
+        return 50.0
+    if description == "DefaultPokemonPlayAbility":
+        return _et_bench_score(name, ctx)
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility"):
+        return _et_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _et_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0        # take the KO
+        return score
+
+    if title == "Dread End":
+        damage = _et_dread_end(ctx)
+        return _ko(700.0 + damage, damage)
+    if title == "Power Accelerator":
+        score = _ko(350.0 + 30, 30)
+        if _et_energy_hungry(ctx) and \
+                any(n == "Darkness Energy" for n in ctx.hand_names()):
+            score += 160.0                # benching energy beats raw poke
+        return score
+    if title == "Dynamax Cannon":
+        damage = 120
+        if opp_active is not None and ctx.name(opp_active).endswith("VMAX"):
+            damage = 240
+        return _ko(400.0 + damage, damage)
+    if title == "Crazy Claws":
+        counters = (ctx.damage_on(opp_active) // 10) \
+            if opp_active is not None else 0
+        damage = 10 + 60 * counters
+        return _ko(350.0 + damage, damage)
+    if title == "Assault Gate":
+        if _et_strike_damage(ctx) > 0:
+            return _ko(450.0 + 90, 90)
+        return 0.0
+    if title == "Lode Search":
+        return 30.0                       # recursion when stuck
+    if title == "Venomous Fang":
+        return _ko(300.0 + 70, 70)
+    if title == "Surprise Attack":
+        return _ko(120.0 + 30, 30)        # coin flip: last-resort poke
+    return base
+
+
+def _et_energy_target_score(ctx: StrategyContext, target) -> float:
+    """Where an energy attach lands: feed the hungriest main attacker,
+    keep the Active fed first, never waste energy on utility bodies."""
+    name = ctx.name(target)
+    need = ET_NEED.get(name)
+    if need is None:
+        return 55.0                       # Crobat / Zigzagoon: don't waste it
+    have = ctx.energy_attached(target)
+    score = 500.0 if target is ctx.active() else 380.0
+    if have >= need:
+        score -= 250.0                    # satisfied: spread to someone else
+    else:
+        score += 20.0 * (need - have)
+    return score
+
+
+def _et_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _et_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            return 200.0                  # plain dark energy: nothing to keep
+        if target.owning_player_id == ctx.me:
+            return _et_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _et_energy_target_score(ctx, target)
+    if description == "EvolvePokemonPlayAbility":
+        if name == "Eternatus VMAX":
+            if target is ctx.active():
+                return 10.0
+            return 8.0 if ctx.energy_attached(target) >= 2 else 6.0
+        return 0.0
+    return 0.0
+
+
+def _et_search_score(card, ctx: StrategyContext) -> float:
+    return _et_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _et_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote a ready attacker (Hoopa only
+      when its 90 finishes);
+    - opponent "new Active" (Boss) -> current Dread End gust value;
+    - Power Accelerator attach targets -> the energy ladder;
+    - hand discards -> dump the least valuable card.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _et_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _et_gust(ctx, card)
+    if mine and ("attach it to" in text or "attach the Energy to" in text):
+        return _et_energy_target_score(ctx, card)
+    if mine and "attach" in text:
+        return 100.0                             # pick the energy itself
+    if mine and "into your hand" in text:
+        return _et_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        return -_et_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _et_counter_plan(candidates, count: int,
+                     ctx: StrategyContext) -> Dict[str, int]:
+    """Headbutt Tantrum's on-play counter: cheapest KO first, then push a
+    target toward its threshold (ko_threshold_counters handles both)."""
+    return ko_threshold_counters(ctx, candidates, count)
+
+
+ETERNATUS_VMAX = {
+    "allow_action": _et_allow,
+    "action_score": _et_action_score,
+    "attack_score": _et_attack_score,
+    "target_score": _et_target_score,
+    "search_score": _et_search_score,
+    "pick_score": _et_pick,
+    "counter_plan": _et_counter_plan,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
     "Shadow Rider Calyrex V": SHADOW_RIDER,
     "Bronzor": CORVIKNIGHT_BRONZONG,
+    "Eternatus V": ETERNATUS_VMAX,
 }
 
 

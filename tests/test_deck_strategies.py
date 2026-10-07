@@ -14,6 +14,7 @@ from spirit.game.content import bot_decks  # noqa: E402
 from spirit.game.content.deck_strategies import (  # noqa: E402
     CORVIKNIGHT_BRONZONG,
     DRAGAPULT_INTELEON,
+    ETERNATUS_VMAX,
     RAPID_STRIKE_URSHIFU,
     RS_ATTACKERS,
     SHADOW_RIDER,
@@ -35,6 +36,22 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     _dragapult_allow,
     _dragapult_pick,
     _dragapult_value,
+    _et_allow,
+    _et_attack_score,
+    _et_bench_score,
+    _et_dread_end,
+    _et_energy_target_score,
+    _et_gust,
+    _et_gust_window,
+    _et_output,
+    _et_pick,
+    _et_promote,
+    _et_retreat_ok,
+    _et_search_score,
+    _et_strike_damage,
+    _et_switch_ok,
+    _et_target_score,
+    _et_value,
     _rs_allow,
     _rs_attack_score,
     _rs_grf_score,
@@ -234,11 +251,12 @@ class RegistryTests(unittest.TestCase):
     def test_active_pool_is_brained_decks_only(self):
         names = {name for name, _ in bot_decks.BOT_DECKS}
         self.assertEqual(names, {"Dragapult Inteleon", "Rapid Strike Urshifu V",
-                                 "Shadow Rider Calyrex V", "Bronzor"})
+                                 "Shadow Rider Calyrex V", "Bronzor",
+                                 "Eternatus V"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
-             "Shadow Rider Calyrex V", "Bronzor"},
+             "Shadow Rider Calyrex V", "Bronzor", "Eternatus V"},
         )
 
 
@@ -1189,6 +1207,284 @@ class CorviknightBrainTests(unittest.TestCase):
         prompt = "Choose a card to discard."
         self.assertLess(_cv_pick(prompt, ctx, research),
                         _cv_pick(prompt, ctx, palpad))
+
+
+class EternatusBrainTests(unittest.TestCase):
+    def test_eternatus_brain_registered(self):
+        spec = strategy_for("Eternatus V")
+        self.assertIs(spec, ETERNATUS_VMAX)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score",
+                     "counter_plan"):
+            self.assertTrue(callable(spec[hook]), hook)
+
+    # -- Dread End math --------------------------------------------------
+    def test_dread_end_scales_with_dark_bodies(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="vm")
+        self.assertEqual(
+            _et_dread_end(FakeCtx(active=vmax, play=[vmax])), 30)
+        nine = [vmax] + [FakeMon("Galarian Zigzagoon", eid=f"z{i}")
+                         for i in range(8)]
+        self.assertEqual(_et_dread_end(FakeCtx(active=vmax, play=nine)), 270)
+        # non-Darkness bodies don't count
+        mixed = [vmax, "Radiant Greninja"]
+        self.assertEqual(_et_dread_end(FakeCtx(active=vmax, play=mixed)), 30)
+
+    def test_dread_end_attack_scores_and_ko_bonus(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="vm")
+        opp = FakeMon("Body", owner="p2", hp=250, max_hp=320, eid="o")
+        nine = [vmax] + [FakeMon("Galarian Zigzagoon", eid=f"z{i}")
+                         for i in range(8)]
+        ctx = FakeCtx(active=vmax, play=nine, opp_active=opp,
+                      opp_play=[opp])
+        self.assertGreaterEqual(_et_attack_score("Dread End", 0, ctx),
+                                1700)     # 700 + 270 + KO bonus
+        five = [vmax] + [FakeMon("Galarian Zigzagoon", eid=f"z{i}")
+                         for i in range(4)]
+        ctx2 = FakeCtx(active=vmax, play=five, opp_active=opp,
+                       opp_play=[opp])
+        self.assertEqual(_et_attack_score("Dread End", 0, ctx2), 850.0)
+
+    def test_utility_bodies_have_no_output(self):
+        crobat = FakeMon("Crobat V", energy=2, cost=1, eid="c")
+        ctx = FakeCtx(active=crobat, play=[crobat])
+        self.assertEqual(_et_output(ctx, crobat), 0)
+        self.assertEqual(_et_strike_damage(ctx), 0)
+
+    def test_power_accelerator_prefers_accel_when_hungry(self):
+        v = FakeMon("Eternatus V", energy=1, cost=1, eid="v")
+        bench_v = FakeMon("Eternatus V", energy=0, cost=1, eid="bv")
+        opp = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="o")
+        hungry = FakeCtx(active=v, play=[v, bench_v], bench=[bench_v],
+                         opp_active=opp, opp_play=[opp],
+                         hand=["Darkness Energy"])
+        stocked = FakeCtx(active=v, play=[v, bench_v], bench=[bench_v],
+                          opp_active=opp, opp_play=[opp], hand=[])
+        self.assertGreater(_et_attack_score("Power Accelerator", 0, hungry),
+                           _et_attack_score("Power Accelerator", 0, stocked))
+
+    def test_dynamax_cannon_bonus_vs_vmax(self):
+        v = FakeMon("Eternatus V", energy=4, cost=4, eid="v")
+        big = FakeMon("Opp VMAX", owner="p2", hp=300, max_hp=340, eid="o1")
+        plain = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="o2")
+        vs_vmax = _et_attack_score(
+            "Dynamax Cannon", 0,
+            FakeCtx(active=v, play=[v], opp_active=big, opp_play=[big]))
+        vs_plain = _et_attack_score(
+            "Dynamax Cannon", 0,
+            FakeCtx(active=v, play=[v], opp_active=plain, opp_play=[plain]))
+        self.assertGreater(vs_vmax, vs_plain)
+
+    def test_assault_gate_only_scores_after_entry(self):
+        hoopa = FakeMon("Hoopa", energy=1, cost=1, eid="h")
+        opp = FakeMon("Body", owner="p2", hp=80, max_hp=120, eid="o")
+        on_entry = FakeCtx(active=hoopa, play=[hoopa], opp_active=opp,
+                           opp_play=[opp], entered={"h"})
+        self.assertGreaterEqual(_et_attack_score("Assault Gate", 0,
+                                                 on_entry), 1440)
+        off = FakeCtx(active=hoopa, play=[hoopa], opp_active=opp,
+                      opp_play=[opp])
+        self.assertEqual(_et_attack_score("Assault Gate", 0, off), 0.0)
+
+    # -- action gates ------------------------------------------------------
+    def test_research_gates(self):
+        self.assertTrue(_et_allow("UseTrainerCard", "Professor's Research",
+                                  FakeCtx(hand=["x"] * 5, deck=40)))
+        self.assertFalse(_et_allow("UseTrainerCard", "Professor's Research",
+                                   FakeCtx(hand=["x"] * 6, deck=40)))
+        self.assertFalse(_et_allow("UseTrainerCard", "Professor's Research",
+                                   FakeCtx(hand=["x"] * 5, deck=10)))
+
+    def test_marnie_needs_soft_hand_disruption_and_runway(self):
+        self.assertTrue(_et_allow("UseTrainerCard", "Marnie",
+                                  FakeCtx(hand=["x"] * 2, deck=40)))
+        ctx = FakeCtx(hand=["x"] * 7)
+        ctx.hand_size = lambda pid=None: 4 if pid == "p2" else 7
+        self.assertFalse(_et_allow("UseTrainerCard", "Marnie", ctx))
+        ctx.hand_size = lambda pid=None: 6 if pid == "p2" else 7
+        self.assertTrue(_et_allow("UseTrainerCard", "Marnie", ctx))
+        self.assertFalse(_et_allow("UseTrainerCard", "Marnie",
+                                   FakeCtx(hand=["x"] * 2, deck=4)))
+
+    def test_search_deck_runway_gates(self):
+        for card in ("Quick Ball", "Great Ball", "Evolution Incense"):
+            self.assertTrue(_et_allow("UseTrainerCard", card,
+                                      FakeCtx(deck=6)), card)
+            self.assertFalse(_et_allow("UseTrainerCard", card,
+                                       FakeCtx(deck=5)), card)
+
+    def test_boss_gate_needs_current_dread_end(self):
+        def boss_ctx(hp, energy=2, bodies=1):
+            body = FakeMon("Body", owner="p2", hp=hp, max_hp=320, eid="b")
+            vmax = FakeMon("Eternatus VMAX", energy=energy, cost=2,
+                           eid="a")
+            darks = [vmax] + [FakeMon("Galarian Zigzagoon", eid=f"z{i}")
+                              for i in range(bodies - 1)]
+            return FakeCtx(active=vmax, play=darks, opp_active=body,
+                           opp_play=[body])
+        # 1 body -> Dread End 30: a 30 hp body is in the window
+        self.assertTrue(_et_allow("UseTrainerCard", "Boss's Orders",
+                                  boss_ctx(30)))
+        # scratched body (outside the window) still has gusted value
+        self.assertTrue(_et_allow("UseTrainerCard", "Boss's Orders",
+                                  boss_ctx(200)))
+        # fresh body outside the window and unscratched -> nothing to gain
+        self.assertFalse(_et_allow("UseTrainerCard", "Boss's Orders",
+                                   boss_ctx(320)))
+        # can't swing this turn
+        self.assertFalse(_et_allow("UseTrainerCard", "Boss's Orders",
+                                   boss_ctx(30, energy=0)))
+
+    def test_switch_and_bird_keeper_gates(self):
+        ready = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="r")
+        dead = FakeMon("Eternatus VMAX", energy=0, cost=2, eid="d")
+        hurt = FakeMon("Eternatus VMAX", energy=2, cost=2, hp=190,
+                       max_hp=340, eid="h")
+        # healthy powered active -> save the switch
+        self.assertFalse(_et_allow("UseTrainerCard", "Switch",
+                                   FakeCtx(active=ready, play=[ready],
+                                           bench=[ready])))
+        for card in ("Switch", "Bird Keeper"):
+            self.assertTrue(_et_allow("UseTrainerCard", card,
+                                      FakeCtx(active=dead, play=[dead,
+                                              ready], bench=[ready])), card)
+            self.assertTrue(_et_allow("UseTrainerCard", card,
+                                      FakeCtx(active=hurt, play=[hurt,
+                                              ready], bench=[ready])), card)
+
+    def test_galar_mine_stadium_gate(self):
+        self.assertTrue(_et_allow("DefaultStadiumPlayAbility", "Galar Mine",
+                                  FakeCtx()))
+        self.assertFalse(_et_allow("DefaultStadiumPlayAbility", "Galar Mine",
+                                   FakeCtx(stadium="Galar Mine")))
+
+    def test_retreat_gate_is_last_resort(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="v")
+        ready = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="r")
+        dead = FakeMon("Eternatus VMAX", energy=0, cost=2, eid="d")
+        self.assertFalse(_et_retreat_ok(FakeCtx(
+            active=vmax, play=[vmax, ready], bench=[ready])))
+        self.assertTrue(_et_retreat_ok(FakeCtx(
+            active=dead, play=[dead, ready], bench=[ready])))
+        self.assertFalse(_et_retreat_ok(FakeCtx(
+            active=dead, play=[dead], bench=[])))
+
+    def test_hoopa_assault_gate_allow(self):
+        hoopa = FakeMon("Hoopa", energy=1, cost=1, eid="h")
+        self.assertTrue(_et_allow("UsePokemonAttack", "Hoopa",
+                                  FakeCtx(active=hoopa, play=[hoopa],
+                                          entered={"h"})))
+        self.assertFalse(_et_allow("UsePokemonAttack", "Hoopa",
+                                   FakeCtx(active=hoopa, play=[hoopa])))
+        # default: everything else stays allowed
+        self.assertTrue(_et_allow("UseTrainerCard", "Marnie",
+                                  FakeCtx(hand=["x"] * 2, deck=40)))
+
+    # -- value / bench / energy --------------------------------------------
+    def test_value_prefers_gap_pieces(self):
+        gap = FakeCtx(play=[])
+        self.assertGreater(_et_value("Eternatus V", gap), 30)
+        seen = FakeCtx(play=[FakeMon("Eternatus V", eid="v")])
+        self.assertGreater(_et_value("Eternatus VMAX", seen), 30)
+        full = FakeCtx(play=[FakeMon("Eternatus V", eid="v"),
+                             FakeMon("Eternatus VMAX", eid="vm")])
+        self.assertLess(_et_value("Eternatus VMAX", full), 15)
+        self.assertGreater(_et_value("Crobat V", FakeCtx(hand=["x"] * 3)),
+                           _et_value("Crobat V", FakeCtx(hand=["x"] * 7)))
+
+    def test_value_starved_darkness_energy(self):
+        self.assertEqual(_et_value("Darkness Energy", FakeCtx(hand=[])),
+                         26.0)
+        stocked = FakeCtx(hand=["Darkness Energy", "Darkness Energy",
+                                "Darkness Energy"])
+        self.assertGreater(_et_value("Darkness Energy", FakeCtx(hand=[])),
+                           _et_value("Darkness Energy", stocked))
+
+    def test_bench_score_fills_and_preserves_crobat(self):
+        self.assertGreater(_et_bench_score("Eternatus V", FakeCtx()),
+                           _et_bench_score("Galarian Zigzagoon",
+                                           FakeCtx()))
+        low = FakeCtx(hand=["x"] * 3)
+        full = FakeCtx(hand=["x"] * 7)
+        self.assertGreater(_et_bench_score("Crobat V", low),
+                           _et_bench_score("Crobat V", full))
+        # already two Crobats in play with a full hand: keep one back
+        two = FakeCtx(hand=["x"] * 7,
+                      play=[FakeMon("Crobat V", eid="c1"),
+                            FakeMon("Crobat V", eid="c2")])
+        self.assertLess(_et_bench_score("Crobat V", two),
+                        _et_bench_score("Crobat V", full))
+
+    def test_energy_target_ladder(self):
+        vmax = FakeMon("Eternatus VMAX", energy=0, cost=2, eid="vm")
+        bench_v = FakeMon("Eternatus V", energy=0, cost=1, eid="bv")
+        crobat = FakeMon("Crobat V", energy=0, cost=1, eid="c")
+        ctx = FakeCtx(active=vmax, play=[vmax, bench_v, crobat],
+                      bench=[bench_v, crobat])
+        active_score = _et_energy_target_score(ctx, vmax)
+        bench_score = _et_energy_target_score(ctx, bench_v)
+        utility = _et_energy_target_score(ctx, crobat)
+        self.assertGreater(active_score, bench_score)
+        self.assertEqual(utility, 55.0)
+        # satisfied active yields to a hungry bench body
+        fed = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="vm2")
+        ctx2 = FakeCtx(active=fed, play=[fed, bench_v], bench=[bench_v])
+        self.assertLess(_et_energy_target_score(ctx2, fed),
+                        _et_energy_target_score(ctx2, bench_v))
+
+    # -- gust / promote / pick ----------------------------------------------
+    def test_gust_window_tracks_current_dread_end(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="vm")
+        five = [vmax] + [FakeMon("Galarian Zigzagoon", eid=f"z{i}")
+                         for i in range(4)]        # 5 bodies -> 150
+        in_range = FakeMon("Body", owner="p2", hp=140, max_hp=320,
+                           eid="g1")
+        out = FakeMon("Body", owner="p2", hp=200, max_hp=320, eid="g2")
+        ctx = FakeCtx(active=vmax, play=five,
+                      opp_play=[in_range, out], opp_active=in_range)
+        self.assertEqual(_et_gust_window(ctx), [in_range])
+        self.assertGreater(_et_gust(ctx, in_range), _et_gust(ctx, out))
+
+    def test_promote_prefers_ready_vmax_and_gated_hoopa(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, eid="vm")
+        hoopa = FakeMon("Hoopa", energy=1, cost=1, eid="h")
+        opp = FakeMon("Body", owner="p2", hp=80, max_hp=120, eid="o")
+        ctx = FakeCtx(active=vmax, play=[vmax], opp_active=opp,
+                      opp_play=[opp])
+        window = _et_promote(ctx, hoopa)
+        self.assertGreater(window, 1500)          # the 90 finishes
+        self.assertGreater(_et_promote(ctx, vmax), window)
+        opp.hp = 300                              # no window -> sink
+        self.assertGreater(_et_promote(ctx, vmax), _et_promote(ctx, hoopa))
+
+    def test_pick_promotes_and_gusts(self):
+        vmax = FakeMon("Eternatus VMAX", energy=2, cost=2, owner="p1",
+                       eid="vm")
+        hoopa = FakeMon("Hoopa", energy=1, cost=1, owner="p1", eid="h")
+        ctx = FakeCtx(active=vmax, play=[vmax])
+        mine = "Choose your new Active Pok\u00e9mon"
+        self.assertGreater(_et_pick(mine, ctx, vmax), _et_pick(mine, ctx,
+                                                               hoopa))
+        in_range = FakeMon("Body", owner="p2", hp=30, max_hp=320,
+                           eid="g1")
+        fresh = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="g2")
+        opp_prompt = "Choose your opponent's new Active Pok\u00e9mon"
+        self.assertGreater(_et_pick(opp_prompt, ctx, in_range),
+                           _et_pick(opp_prompt, ctx, fresh))
+
+    def test_search_score_uses_value(self):
+        ctx = FakeCtx(play=["Eternatus V"])
+        vmax = FakeMon("Eternatus VMAX", eid="vm")
+        zig = FakeMon("Galarian Zigzagoon", eid="z")
+        self.assertGreater(_et_search_score(vmax, ctx),
+                           _et_search_score(zig, ctx))
+
+    def test_counter_plan_finishes_cheapest_ko(self):
+        ctx = FakeCtx()
+        almost = FakeMon("Body", owner="p2", hp=10, max_hp=120, eid="a")
+        fresh = FakeMon("Body", owner="p2", hp=110, max_hp=120, eid="f")
+        plan = ETERNATUS_VMAX["counter_plan"]([fresh, almost], 1, ctx)
+        self.assertEqual(plan, {"a": 1})
 
 
 class WiringTests(unittest.TestCase):
