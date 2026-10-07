@@ -140,6 +140,97 @@ class ActionTimerTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(player.pending_choice_future)
         self.assertIsNone(player._pending_offer)
 
+    async def test_response_prompt_timeout_never_ends_the_match(self):
+        """A prompt answered during the OPPONENT'S turn expires into a default
+        pick, not a forfeit: end_game must not be called."""
+        from spirit.game.session.constants import FOLLOW_UP_TIMEOUT_MS
+
+        session = self.make_session()
+        player = RecordingNetworkPlayer("player-1")
+        session.players = {player.account_id: player}
+        ended = []
+
+        async def end_game(winner_id, reason):
+            ended.append((winner_id, reason))
+
+        session.end_game = end_game
+
+        reply = await session.prompt_selection_message(
+            player,
+            OutboundMsg.SELECTION_WITH_TARGETS_REQUIRED.value,
+            {"counter": 13},
+            expected_counter=13,
+            idle_timeout_ms=10,
+        )
+
+        self.assertTrue(reply["_timed_out"])
+        self.assertIsNone(reply["selection"])
+        self.assertEqual(ended, [])
+        self.assertEqual(
+            player.packets[-1][0], OutboundMsg.FORCE_SELECTION_FINISHED.value
+        )
+        # The offer carried the full response window as its deadline.
+        self.assertEqual(player.packets[1][1]["endTurnDuration"], 10)
+
+        # Own-turn offers keep the old shape: quiet stretch + short countdown.
+        payload = GameSession._idle_timer_payload(
+            "player-1", ACTION_TIMEOUT_MS, ACTION_COUNTDOWN_DURATION_MS
+        )
+        self.assertEqual(payload["inactivityDuration"], ACTION_INACTIVITY_DURATION_MS)
+        self.assertEqual(payload["endTurnDuration"], ACTION_COUNTDOWN_DURATION_MS)
+        # ... and a response offer shows its whole remaining window.
+        response_payload = GameSession._idle_timer_payload(
+            "player-1", FOLLOW_UP_TIMEOUT_MS, FOLLOW_UP_TIMEOUT_MS
+        )
+        self.assertEqual(response_payload["inactivityDuration"], 0)
+        self.assertEqual(response_payload["endTurnDuration"], FOLLOW_UP_TIMEOUT_MS)
+
+    async def test_response_prompt_counts_the_whole_window_down(self):
+        from spirit.game.session.constants import FOLLOW_UP_TIMEOUT_MS
+
+        session = self.make_session()
+        player = RecordingNetworkPlayer("player-1")
+        session.players = {player.account_id: player}
+        prompt = asyncio.create_task(
+            session.prompt_selection_message(
+                player,
+                OutboundMsg.SELECTION_WITH_TARGETS_REQUIRED.value,
+                {"counter": 14},
+                expected_counter=14,
+            )
+        )
+        await self.wait_for_packets(player, 2)
+
+        timer = player.packets[-1][1]
+        self.assertEqual(timer["inactivityDuration"], 0)
+        self.assertEqual(timer["endTurnDuration"], FOLLOW_UP_TIMEOUT_MS)
+
+        await session.receive_player_action(
+            player.account_id, {"selection": None, "counter": 14}
+        )
+        reply = await asyncio.wait_for(prompt, timeout=1)
+        self.assertEqual(reply, {"selection": None, "counter": 14})
+
+    async def test_custom_choice_returns_the_default_button(self):
+        session = self.make_session()
+        player = RecordingNetworkPlayer("player-1")
+        session.players = {player.account_id: player}
+        session._selection_counters = {}
+
+        choice = asyncio.create_task(
+            session.prompt_player_choice(
+                player.account_id, "Choose something", ["Yes", "No"]
+            )
+        )
+        await self.wait_for_packets(player, 1)
+        counter = player.packets[0][1]["msg"]["value"]["counter"]
+        await session.receive_player_action(
+            player.account_id, {"selection": None, "counter": counter}
+        )
+
+        # No pick (or a timeout) = the first button, like the AI's answer.
+        self.assertEqual(await asyncio.wait_for(choice, timeout=1), 0)
+
     async def test_disconnect_pauses_the_authoritative_timeout(self):
         session = self.make_session()
         player = RecordingNetworkPlayer("player-1")

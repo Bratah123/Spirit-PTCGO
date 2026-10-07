@@ -16,6 +16,19 @@ ALL_TYPES_ONE_AT_A_TIME = [
     )
 ]
 
+# Single Strike Energy: Fighting and Darkness, but only one at a time.
+SINGLE_STRIKE_ENERGY = [[PokemonTypes.FIGHTING], [PokemonTypes.DARKNESS]]
+
+# Rapid Strike Energy: two at once, any mix of Water and Fighting.
+RAPID_STRIKE_ENERGY = [
+    [PokemonTypes.WATER, PokemonTypes.WATER],
+    [PokemonTypes.WATER, PokemonTypes.FIGHTING],
+    [PokemonTypes.FIGHTING, PokemonTypes.FIGHTING],
+]
+
+# Twin Energy: two Colorless.
+TWIN_ENERGY = [[PokemonTypes.COLORLESS, PokemonTypes.COLORLESS]]
+
 
 def _pokemon_has_type(pokemon, pokemon_type: PokemonTypes) -> bool:
     return pokemon_type.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])

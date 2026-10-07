@@ -1,11 +1,16 @@
 import logging
 from typing import Dict, Any
 from .player_abstract import GamePlayer
+from ..content.deck_strategies import strategy_for
 
 class AIPlayer(GamePlayer):
     def __init__(self, bot_id: str, bot_name: str, deck_data: Dict[str, Any], session: Any):
         super().__init__(account_id=bot_id, username=bot_name, deck_data=deck_data)
         self.session = session
+        self.deck_strategy = strategy_for(deck_data.get("deckName")) if deck_data else None
+
+    def strategy(self) -> Any:
+        return getattr(self, "deck_strategy", None)
 
     async def send_packet(self, name: str, value: Dict[str, Any], flags: int = 0):
         # AI ignores visual animations but updates its internal model
