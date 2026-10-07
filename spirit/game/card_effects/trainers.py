@@ -53,14 +53,14 @@ def opponent_has_bench(board, player_id):
     opponent = _other_player(board, player_id)
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
-################### --- play_targets selector ---
-# The play_targets function is a factory that returns a targeting selector for Trainer cards to highlight valid targets on the UI.
+################### --- make_target_selector ---
+# The make_target_selector function is a factory that returns a targeting selector for Trainer cards to highlight valid targets on the UI.
 # It allows the card to be dragged directly into a Pokémon for cards that require selecting a Pokémon.
 # It dynamically evaluates configurations based on two boolean flags:
 # 1) opponent: If True, the only Pokémon you can drag the trainer to will be the ones in the opponent's side; if False, the ones on the player's own side.
 # 2) bench_only: If True, the only Pokémon you can drag the trainer to are the ones inside that player's "bench" area; if False, the Active is also included.
 
-def play_targets(opponent=False, bench_only=False):
+def make_target_selector(opponent=False, bench_only=False):
 
     def selector(board, player_id, card):
         if card is None:
@@ -87,16 +87,18 @@ def play_targets(opponent=False, bench_only=False):
 
 # --- TEMPORARY BACKWARD COMPATIBILITY LAYER ---
 # These functions route old card registrations directly into the new engine. Please update your coding as it will be removed in the future. 
+def play_targets(opponent=False, bench_only=False):
+    """Deprecated: Use make_target_selector(opponent=..., bench_only=...) instead."""
+    return make_target_selector(opponent=opponent, bench_only=bench_only)
+
 def opponent_play_targets(bench_only=False):
-    """Deprecated: Use play_targets(opponent=True, bench_only=...) instead."""
-    return play_targets(opponent=True, bench_only=bench_only)
+    """Deprecated: Use make_target_selector(opponent=True, bench_only=...) instead."""
+    return make_target_selector(opponent=True, bench_only=bench_only)
     
 def player_play_targets(bench_only=False):
-    """Deprecated: Use play_targets(opponent=False, bench_only=...) instead."""
-    return play_targets(opponent=False, bench_only=bench_only)
+    """Deprecated: Use make_target_selector(opponent=False, bench_only=...) instead."""
+    return make_target_selector(opponent=False, bench_only=bench_only)
 #####################
-
-
 
 def player_has_bench(board, player_id):
     return bool(_bench_pokemon(board, player_id))
