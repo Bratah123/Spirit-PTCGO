@@ -78,7 +78,7 @@ from .constants import (
 )
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
-from spirit.game.session import legends
+from spirit.game.session import legends, vunion
 from spirit.game.content.visualizations import (
     Visualization, VisualizationArrow, VisualizationLifetime, VisualizationType,
 )
@@ -104,7 +104,8 @@ def _persist_match_result(account_id: str, coins: int, is_winner: bool):
     grant_coins(account_id, coins)
     award_match_points(account_id, is_winner)
 from spirit.game.models.board import (
-    BoardEntity, BoardState, EnergyEntity, PokemonEntity, LegendHalfEntity, LegendPokemonEntity,
+    BoardEntity, BoardState, EnergyEntity, PokemonEntity,
+    ComponentCardEntity, CompositePokemonEntity,
 )
 from .effects import (
     EffectContext,
@@ -128,6 +129,7 @@ from .legal_actions import (
     ACTION_PLAY_ENERGY,
     ACTION_PLAY_POKEMON,
     ACTION_PLAY_LEGEND,
+    ACTION_PLAY_VUNION,
     ACTION_PLAY_STADIUM,
     ACTION_RETREAT,
     ACTION_USE_ABILITY,
@@ -1365,9 +1367,9 @@ class GameSession:
         """
         entity = self.board_state.get_entity(entity_id)
         destination = self.board_state.get_entity(destination_id)
-        if isinstance(destination, LegendPokemonEntity):
-            # Component halves occupy server child slots, but not client attachment slots.
-            position -= sum(isinstance(child, LegendHalfEntity)
+        if isinstance(destination, CompositePokemonEntity):
+            # Components occupy server child slots, but not client attachment slots.
+            position -= sum(isinstance(child, ComponentCardEntity)
                             for child in destination.children[:position])
         if entity is not None and stamp_slot:
             # Mirror the client: every EntityMoved stamps A.m = positionInParent.
@@ -2250,9 +2252,10 @@ class GameSession:
             dest_area = self.board_state.find_player_area(owner_id, dest_name) or discard
             stack = [pokemon] + _stack_descendants(pokemon)
             moves = []
-            if isinstance(pokemon, LegendPokemonEntity):
-                moves, _ = legends.depart_legend(self, pokemon, dest_area)
-            for entity in ([] if isinstance(pokemon, LegendPokemonEntity) else stack):
+            trailing = []
+            if isinstance(pokemon, CompositePokemonEntity):
+                moves, trailing, _ = vunion.depart_composite(self, pokemon, dest_area, knockout=True)
+            for entity in ([] if isinstance(pokemon, CompositePokemonEntity) else stack):
                 area = dest_area if isinstance(entity, PokemonEntity) else discard
                 position = len(area.children)
                 if self.board_state.move_card(entity.entity_id, area.entity_id):
@@ -2264,7 +2267,7 @@ class GameSession:
             # turn-scoped stat-modifier PiPs (Power Tablet) -- it has left play.
             viz_msgs = []
             for member in stack:
-                if isinstance(member, LegendPokemonEntity):
+                if isinstance(member, CompositePokemonEntity):
                     continue
                 if isinstance(member, PokemonEntity):
                     self.clear_pokemon_effects(member)
@@ -2278,7 +2281,7 @@ class GameSession:
             # still renders, so every stack Pokemon resets, not just the top.
             hp_resets = []
             for member in stack:
-                if not isinstance(member, PokemonEntity) or isinstance(member, LegendPokemonEntity):
+                if not isinstance(member, PokemonEntity) or isinstance(member, CompositePokemonEntity):
                     continue
                 printed_max = member.attribute_originals.get(
                     AttrID.HP.value, member.get_attribute(AttrID.HP, 0)
@@ -2306,6 +2309,8 @@ class GameSession:
                 await self.send_game_sequence(
                     list(self.players.values()), GameSequence.KNOCKOUT, moves
                 )
+            for name, run in trailing:
+                await self.send_game_sequence(list(self.players.values()), name, run)
             if _damage_ko(pokemon) and ctx.attacker.owning_player_id != owner_id:
                 self.turn_state.kos_by_attack.setdefault(owner_id, []).append({
                     "archetype_id": pokemon.archetype_id,
@@ -2541,16 +2546,17 @@ class GameSession:
             return
         stack = [pokemon] + _stack_descendants(pokemon)
         moves = []
-        if isinstance(pokemon, LegendPokemonEntity):
-            moves, _ = legends.depart_legend(self, pokemon, discard)
-        for entity in ([] if isinstance(pokemon, LegendPokemonEntity) else stack):
+        trailing = []
+        if isinstance(pokemon, CompositePokemonEntity):
+            moves, trailing, _ = vunion.depart_composite(self, pokemon, discard)
+        for entity in ([] if isinstance(pokemon, CompositePokemonEntity) else stack):
             position = len(discard.children)
             if self.board_state.move_card(entity.entity_id, discard.entity_id):
                 moves.append(self._entity_moved_msg(
                     entity.entity_id, discard.entity_id, position
                 ))
         for member in stack:
-            if isinstance(member, LegendPokemonEntity):
+            if isinstance(member, CompositePokemonEntity):
                 continue
             if isinstance(member, PokemonEntity):
                 self.clear_pokemon_effects(member)
@@ -2559,16 +2565,19 @@ class GameSession:
             viz_msg = self._clear_entity_visualizations_msg(member)
             if viz_msg is not None:
                 moves.append(viz_msg)
-        if not moves:
+        if not moves and not trailing:
             return
         # The client keeps rendering attr 200490 on discarded cards -- reset
         # every stack Pokemon (tucked pre-evolutions included), not just the top.
         for member in stack:
-            if isinstance(member, PokemonEntity) and not isinstance(member, LegendPokemonEntity):
+            if isinstance(member, PokemonEntity) and not isinstance(member, CompositePokemonEntity):
                 moves.append(self._hp_attribute_msg(member))
-        await self.send_game_sequence(
-            list(self.players.values()), GameSequence.GROUPED_MOVE, moves
-        )
+        if moves:
+            await self.send_game_sequence(
+                list(self.players.values()), GameSequence.GROUPED_MOVE, moves
+            )
+        for name, run in trailing:
+            await self.send_game_sequence(list(self.players.values()), name, run)
         logging.info(
             f"[Session {self.game_id}] {pokemon.entity_id} "
             f"({self.players[player_id].screen_name}) discarded to the bench "
@@ -2881,8 +2890,9 @@ class GameSession:
     def credit_card_damage(self, player_id: str, entity, amount: int):
         """Accumulates damage per attacking card for the EOG MVP pick."""
         guid = getattr(entity, "archetype_id", None)
-        if isinstance(entity, LegendPokemonEntity):
-            guid = entity.top_half.archetype_id
+        if isinstance(entity, CompositePokemonEntity):
+            # The runtime-only combined archetype isn't client-cached; credit a printing.
+            guid = entity.components[0].archetype_id
         if not guid or amount <= 0:
             return
         name = entity.get_attribute(AttrID.NAME)
@@ -3793,6 +3803,8 @@ class GameSession:
             return bool(await self._execute_play_basic(player_id, card))
         elif description == ACTION_PLAY_LEGEND:
             return await legends.execute_play(self, player_id, card, entry, target_ids)
+        elif description == ACTION_PLAY_VUNION:
+            return await vunion.execute_play(self, player_id, card)
         elif description == ACTION_PLAY_ENERGY:
             await self._execute_attach_energy(player_id, card, entry, target_ids)
         elif description == ACTION_ATTACH_TOOL:
@@ -4502,7 +4514,7 @@ class GameSession:
         area = target.parent if target is not None else None
         if not target or not area:
             return False
-        if isinstance(card, (LegendHalfEntity, LegendPokemonEntity)) or isinstance(target, LegendPokemonEntity):
+        if isinstance(card, (ComponentCardEntity, CompositePokemonEntity))                 or isinstance(target, CompositePokemonEntity):
             return False
 
         slot = self.board_state.bench_slot_of(target)
@@ -4745,7 +4757,7 @@ class GameSession:
         if area is None or owner_id is None or incoming is None \
                 or incoming is outgoing:
             return None
-        if isinstance(outgoing, LegendPokemonEntity) or isinstance(incoming, (LegendHalfEntity, LegendPokemonEntity)):
+        if isinstance(outgoing, CompositePokemonEntity)                 or isinstance(incoming, (ComponentCardEntity, CompositePokemonEntity)):
             return None
         source_area = incoming._containing_area_name()
         dest = self.board_state.find_player_area(owner_id, destination_name)

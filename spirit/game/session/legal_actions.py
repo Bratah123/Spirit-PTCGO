@@ -22,8 +22,8 @@ from spirit.game.data_utils import ABILITIES_BY_ID, Activations, def_for
 from spirit.game.content.legends import matching_legend_halves
 from spirit.game.models.board import (
     BoardState,
+    CompositePokemonEntity,
     LegendHalfEntity,
-    LegendPokemonEntity,
     EnergyEntity,
     PokemonEntity,
     TrainerEntity,
@@ -33,6 +33,7 @@ from .constants import (
     PROMPT_RETREAT_NEW_ACTIVE,
     SelectionKind,
 )
+from .vunion import summon_pieces
 from .passives import (
     ability_locked,
     can_attack_despite_conditions,
@@ -51,6 +52,8 @@ from .passives import (
 # Semantic action names from the client's Actions enum / SelectableActionUtil.
 ACTION_PLAY_POKEMON = "DefaultPokemonPlayAbility"
 ACTION_PLAY_LEGEND = "DefaultLegendPokemonPlayAbility"
+# Free-form like the tool action: K.O only reads the actionID's PIE_ABILITIES text.
+ACTION_PLAY_VUNION = "DefaultVUnionPokemonPlayAbility"
 ACTION_EVOLVE = "EvolvePokemonPlayAbility"
 ACTION_PLAY_ENERGY = "DefaultEnergyPlayAbility"
 ACTION_USE_TRAINER = "UseTrainerCard"
@@ -107,6 +110,8 @@ class TurnState:
     used_named_abilities: Set[str] = field(default_factory=set)
     # Players who already used their once-per-game VSTAR Power.
     vstar_used: Set[str] = field(default_factory=set)
+    # (player_id, combined guid) per V-UNION already combined this game.
+    vunions_assembled: Set[Tuple[str, str]] = field(default_factory=set)
     # (entity_id, ability_id) -> last turn number the attack stays locked
     # ("during your next turn, this Pokemon can't use ...").
     attack_locks: Dict[Tuple[str, str], int] = field(default_factory=dict)
@@ -472,7 +477,7 @@ def compute_legal_actions(
                 continue
             evolve_targets = [
                 p.entity_id for p in in_play
-                if not isinstance(p, LegendPokemonEntity)
+                if not isinstance(p, CompositePokemonEntity)
                 and p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
@@ -561,6 +566,7 @@ def compute_legal_actions(
 
     entries.extend(_ability_entries(board, state, player_id, game_id, in_play))
     entries.extend(_out_of_zone_ability_entries(board, state, player_id, game_id))
+    entries.extend(_vunion_entries(board, state, player_id, game_id))
     entries.extend(_stadium_ability_entries(board, state, player_id, game_id))
     # Asleep/Paralyzed gates attacks per-attack (Attack(usable_despite_conditions)).
     immobilized = _active_immobilized(board, player_id)
@@ -658,6 +664,23 @@ def _out_of_zone_ability_entries(
                     selection_type=(SELECTION_TYPE_PANEL if zone == "discard"
                                     else SelectionKind.OUT_OF_PLAY.value),
                 ))
+    return entries
+
+
+def _vunion_entries(
+    board: BoardState, state: TurnState, player_id: str, game_id: str
+) -> List[Dict[str, Any]]:
+    """Each discard piece that can complete a V-UNION; clicking it opens the ability panel."""
+    discard = board.find_player_area(player_id, "discard")
+    entries = []
+    for card in (discard.children if discard else []):
+        if summon_pieces(board, state, player_id, card) is None:
+            continue
+        # actionID = the piece's PIE_ABILITIES abilityID so the panel button gets its text.
+        entries.append(_target_map_entry(
+            game_id, card.entity_id, def_for(card.archetype_id).assemble_ability.ability_id,
+            ACTION_PLAY_VUNION, selection_type=SELECTION_TYPE_PANEL,
+        ))
     return entries
 
 

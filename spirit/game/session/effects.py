@@ -33,9 +33,10 @@ from spirit.game.data_utils import (
     has_rule_box,
     unimplemented,
 )
-from spirit.game.session import legends
+from spirit.game.session import legends, vunion
 from spirit.game.models.board import (
-    BoardEntity, CardEntity, EnergyEntity, PokemonEntity, LegendHalfEntity, LegendPokemonEntity,
+    BoardEntity, CardEntity, EnergyEntity, PokemonEntity, LegendHalfEntity,
+    ComponentCardEntity, CompositePokemonEntity,
 )
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
@@ -1298,8 +1299,8 @@ class EffectContext:
                 continue
             if self._energy_removal_blocked(card):
                 continue
-            if isinstance(card, LegendPokemonEntity):
-                departed.update(self._queue_legend_departure(card, hand, cards))
+            if isinstance(card, CompositePokemonEntity):
+                departed.update(self._queue_composite_departure(card, hand, cards))
                 continue
             self._note_visual_source(card)
             position = len(hand.children)
@@ -1488,8 +1489,8 @@ class EffectContext:
                 continue
             if area_name == "discard" and self._energy_removal_blocked(card):
                 continue
-            if isinstance(card, LegendPokemonEntity):
-                departed.update(self._queue_legend_departure(card, pile, cards))
+            if isinstance(card, CompositePokemonEntity):
+                departed.update(self._queue_composite_departure(card, pile, cards))
                 continue
             holder = self._tool_holder_before_move(card)
             source = getattr(card, "parent", None)
@@ -1622,8 +1623,8 @@ class EffectContext:
                 continue
             if self._trainer_blocked(card) or self._energy_removal_blocked(card):
                 continue
-            if isinstance(card, LegendPokemonEntity):
-                departed.update(self._queue_legend_departure(card, deck, cards))
+            if isinstance(card, CompositePokemonEntity):
+                departed.update(self._queue_composite_departure(card, deck, cards))
                 continue
             holder = self._tool_holder_before_move(card)
             position = len(deck.children)
@@ -1752,8 +1753,8 @@ class EffectContext:
         deck = self.board.find_player_area(owner, "deck")
         if not deck or self._energy_removal_blocked(card):
             return False
-        if isinstance(card, LegendPokemonEntity):
-            self._queue_legend_departure(card, deck, [card])
+        if isinstance(card, CompositePokemonEntity):
+            self._queue_composite_departure(card, deck, [card])
             return True
         same_pile = card.parent_id == deck.entity_id
         position = len(deck.children)
@@ -1775,8 +1776,8 @@ class EffectContext:
         deck = self.board.find_player_area(owner, "deck")
         if not deck or self._energy_removal_blocked(card):
             return False
-        if isinstance(card, LegendPokemonEntity):
-            self._queue_legend_departure(card, deck, [card], position=0)
+        if isinstance(card, CompositePokemonEntity):
+            self._queue_composite_departure(card, deck, [card], position=0)
             return True
         same_pile = card.parent_id == deck.entity_id
         if not self.board.move_card(card.entity_id, deck.entity_id, 0):
@@ -1797,7 +1798,7 @@ class EffectContext:
         "Put onto your Bench" is not "play from hand": on-play triggered
         abilities deliberately do NOT fire.
         """
-        if isinstance(card, (LegendHalfEntity, LegendPokemonEntity)):
+        if isinstance(card, (ComponentCardEntity, CompositePokemonEntity)):
             return False
         owner = card.owning_player_id or self.player_id
         bench = self.board.find_player_area(owner, "bench")
@@ -1824,13 +1825,17 @@ class EffectContext:
             self.ends_turn = self.ends_turn or ends_turn
         return legend
 
-    def _queue_legend_departure(self, legend, destination, requested, *, position=None):
-        """Preserve physical halves and move only explicitly requested attachments along."""
-        messages, members = legends.depart_legend(
-            self.session, legend, destination, move_with=[card.entity_id for card in requested], position=position)
-        for message in messages:
+    def _queue_composite_departure(self, pokemon, destination, requested, *, position=None):
+        """Send a LEGEND/V-UNION's physical cards out; only requested attachments travel along."""
+        lead, trailing, members = vunion.depart_composite(
+            self.session, pokemon, destination,
+            move_with=[card.entity_id for card in requested], position=position)
+        for message in lead:
             self._queue(message, bracket=GameSequence.GROUPED_MOVE.value)
-        return {legend.entity_id, *(card.entity_id for card in members)}
+        for bracket, run in trailing:
+            for message in run:
+                self._queue(message, bracket=bracket)
+        return {pokemon.entity_id, *(card.entity_id for card in members)}
 
     async def evolve_pokemon(self, target: PokemonEntity,
                              evolution_card: CardEntity) -> bool:
@@ -2257,7 +2262,8 @@ def is_basic_pokemon(card: CardEntity) -> bool:
 def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
-        and card.get_attribute(AttrID.STAGE) not in (PokemonStage.BASIC.value, PokemonStage.LEGEND.value)
+        and card.get_attribute(AttrID.STAGE) not in (
+            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value)
     )
 
 
@@ -2283,12 +2289,12 @@ def is_special_energy(card: CardEntity) -> bool:
 
 
 def full_stack(pokemon: PokemonEntity) -> List[CardEntity]:
-    """A Pokemon and its attachments; LEGEND halves remain part of the combined Pokemon."""
+    """A Pokemon and its attachments; LEGEND/V-UNION components remain part of the combined Pokemon."""
     out: List[CardEntity] = [pokemon]
     queue: List[BoardEntity] = list(pokemon.children)
     while queue:
         entity = queue.pop(0)
-        if isinstance(pokemon, LegendPokemonEntity) and entity in (pokemon.top_half, pokemon.bottom_half):
+        if isinstance(pokemon, CompositePokemonEntity) and entity in pokemon.components:
             continue
         if isinstance(entity, CardEntity):
             out.append(entity)

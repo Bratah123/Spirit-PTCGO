@@ -2,11 +2,12 @@
 
 from enum import Enum
 import json
-from pathlib import PurePosixPath
 from typing import List, Optional
 
 from spirit.game.attributes import AttrID, CardType, PokemonStage, PokemonTypes
-from spirit.game.content.definitions import CardDefinition, PokemonCardDef, def_for
+from spirit.game.content.definitions import (
+    CardDefinition, PokemonCardDef, def_for, validate_script_reference,
+)
 
 
 class LegendHalf(str, Enum):
@@ -44,10 +45,7 @@ class LegendHalfCardDef(CardDefinition):
     def __init__(self, *, legend: str, half: LegendHalf,
                  hp: Optional[int] = None, elements: Optional[List[PokemonTypes]] = None, **kwargs):
         _validate_static_attributes(kwargs.get("attributes"))
-        path = PurePosixPath(legend)
-        if (not legend or "\\" in legend or path.is_absolute() or ".." in path.parts
-                or path.suffix or ":" in legend or str(path) != legend):
-            raise ValueError("legend must be a scripts-relative path without .py")
+        validate_script_reference(legend, "legend")
         self.half = LegendHalf(half)
         self.legend = legend
         self.legend_definition = None

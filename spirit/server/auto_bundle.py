@@ -302,10 +302,15 @@ def check_and_generate_bundles(set_codes=None) -> int:
                     declaration = loader.definitions.get(reference)
                     card_def = def_for(declaration.guid) if declaration is not None else None
                     # Re-executing scripts would replace resolved LEGEND/reprint definitions.
-                    if card_def is None or getattr(card_def, "runtime_only", False):
+                    if card_def is None:
                         continue
                     set_code = card_def.set_code
                     if set_codes is not None and set_code not in set_codes:
+                        continue
+                    if getattr(card_def, "runtime_only", False):
+                        image_name = getattr(card_def, "image_name", None)
+                        if image_name and os.path.exists(png_path):
+                            sets.setdefault(set_code, {})[image_name] = {image_name: png_path}
                         continue
                     asset_name = str(card_def.collector_number).zfill(3)
                     
