@@ -54,9 +54,9 @@ AI_MATCH_TIMEOUT = float(os.environ.get("SPIRIT_AI_MATCH_TIMEOUT", "8"))
 # Your own turn: quiet seconds before the visible countdown starts, then the
 # countdown itself. When both run out the server ends YOUR TURN (never the match).
 TURN_INACTIVITY_SECONDS = float(os.environ.get("SPIRIT_TURN_INACTIVITY_SECONDS", "15"))
-TURN_COUNTDOWN_SECONDS = float(os.environ.get("SPIRIT_TURN_COUNTDOWN_SECONDS", "15"))
+TURN_COUNTDOWN_SECONDS = float(os.environ.get("SPIRIT_TURN_COUNTDOWN_SECONDS", "60"))
 # Prompts answered while it is the OPPONENT'S turn (choosing a new Active after
 # a KO, prize picks, forced effect responses). The client shows this whole
 # window as a countdown, and when it runs out the server auto-picks a legal
 # default and play continues -- no forfeit, no skipped turn of yours.
-RESPONSE_TIMEOUT_SECONDS = float(os.environ.get("SPIRIT_RESPONSE_TIMEOUT_SECONDS", "90"))
+RESPONSE_TIMEOUT_SECONDS = float(os.environ.get("SPIRIT_RESPONSE_TIMEOUT_SECONDS", "180"))
