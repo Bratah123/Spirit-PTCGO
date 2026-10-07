@@ -17,6 +17,7 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     ETERNATUS_VMAX,
     RAPID_STRIKE_URSHIFU,
     RS_ATTACKERS,
+    RAYQUAZA_VMAX_FLAFFY,
     SHADOW_RIDER,
     SR_ATTACKERS,
     StrategyContext,
@@ -58,6 +59,26 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     _rs_pick,
     _rs_search_score,
     _rs_switch_ok,
+    _ry_action_score,
+    _ry_allow,
+    _ry_attack_score,
+    _ry_bench_can_attack,
+    _ry_bench_score,
+    _ry_energy_target_score,
+    _ry_energy_value,
+    _ry_gust,
+    _ry_gust_window,
+    _ry_output,
+    _ry_pick,
+    _ry_promote,
+    _ry_ready,
+    _ry_retreat_ok,
+    _ry_search_score,
+    _ry_stormy_ok,
+    _ry_strike_damage,
+    _ry_switch_ok,
+    _ry_target_score,
+    _ry_value,
     _sr_allow,
     _sr_attack_score,
     _sr_energy_target_score,
@@ -76,7 +97,7 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
 
 class FakeMon:
     def __init__(self, name, owner="p1", hp=0, max_hp=None, energy=0,
-                 cost=0, eid=None, prize=1):
+                 cost=0, eid=None, prize=1, fire=0, lightning=0):
         self.name_ = name
         self.owning_player_id = owner
         self.hp = hp
@@ -85,6 +106,8 @@ class FakeMon:
         self.cost = cost
         self.entity_id = eid or name
         self.prize = prize
+        self.fire = fire
+        self.lightning = lightning
         self.children = []
 
 
@@ -197,6 +220,11 @@ class FakeCtx:
     def energy_attached(self, pokemon):
         return pokemon.energy
 
+    def energy_of_type(self, pokemon, type_name):
+        if pokemon is None:
+            return 0
+        return getattr(pokemon, type_name.lower(), 0)
+
     def min_attack_cost(self, pokemon):
         return pokemon.cost
 
@@ -252,11 +280,12 @@ class RegistryTests(unittest.TestCase):
         names = {name for name, _ in bot_decks.BOT_DECKS}
         self.assertEqual(names, {"Dragapult Inteleon", "Rapid Strike Urshifu V",
                                  "Shadow Rider Calyrex V", "Bronzor",
-                                 "Eternatus V"})
+                                 "Eternatus V", "Rayquaza V"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
-             "Shadow Rider Calyrex V", "Bronzor", "Eternatus V"},
+             "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
+             "Rayquaza V"},
         )
 
 
@@ -1487,11 +1516,496 @@ class EternatusBrainTests(unittest.TestCase):
         self.assertEqual(plan, {"a": 1})
 
 
+class RayquazaBrainTests(unittest.TestCase):
+    def test_rayquaza_brain_registered(self):
+        spec = strategy_for("Rayquaza V")
+        self.assertIs(spec, RAYQUAZA_VMAX_FLAFFY)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score"):
+            self.assertTrue(callable(spec[hook]), hook)
+        self.assertNotIn("counter_plan", spec)
+
+    # -- typed readiness / output -----------------------------------------
+    @staticmethod
+    def _vmax(fire=0, lightning=0, eid="vm", owner="p1", hp=320):
+        return FakeMon("Rayquaza VMAX", owner=owner, hp=hp, max_hp=320,
+                       energy=fire + lightning, cost=2, fire=fire,
+                       lightning=lightning, eid=eid)
+
+    @staticmethod
+    def _v(fire=0, lightning=0, eid="v", owner="p1", hp=210):
+        return FakeMon("Rayquaza V", owner=owner, hp=hp, max_hp=210,
+                       energy=fire + lightning, cost=1, fire=fire,
+                       lightning=lightning, eid=eid)
+
+    def test_ready_needs_one_fire_and_one_lightning(self):
+        both = self._vmax(fire=1, lightning=1)
+        stacked = self._vmax(lightning=2)
+        ctx = FakeCtx(active=both, play=[both, stacked])
+        self.assertTrue(_ry_ready(ctx, both))
+        self.assertFalse(_ry_ready(ctx, stacked))
+        # the V only needs Lightning (Dragon Pulse path)
+        self.assertTrue(_ry_ready(ctx, self._v(lightning=1)))
+        self.assertFalse(_ry_ready(ctx, self._v(fire=1)))
+        # engine bodies are never ready
+        self.assertFalse(_ry_ready(ctx, FakeMon("Flaaffy", lightning=2)))
+
+    def test_max_burst_dumps_every_attached_pool(self):
+        small = self._vmax(fire=1, lightning=1)
+        loaded = self._vmax(fire=2, lightning=2)
+        self.assertEqual(
+            _ry_output(FakeCtx(active=small, play=[small]), small), 180)
+        self.assertEqual(
+            _ry_strike_damage(FakeCtx(active=loaded, play=[loaded])), 340)
+        # Lightning stacked without Fire cannot Max Burst at all
+        stuck = self._vmax(lightning=3)
+        self.assertEqual(
+            _ry_output(FakeCtx(active=stuck, play=[stuck]), stuck), 0)
+
+    def test_spiral_burst_prefers_fire_then_dragon_pulse(self):
+        # fire attached -> the choice button picks the Fire pool
+        dual = self._v(fire=1, lightning=1)
+        stacked_fire = self._v(fire=2, lightning=1)
+        lightning_only = self._v(lightning=2)
+        self.assertEqual(
+            _ry_output(FakeCtx(active=dual, play=[dual]), dual), 100)
+        self.assertEqual(
+            _ry_output(FakeCtx(active=stacked_fire, play=[stacked_fire]),
+                       stacked_fire), 180)
+        self.assertEqual(
+            _ry_output(FakeCtx(active=lightning_only, play=[lightning_only]),
+                       lightning_only), 40)
+
+    def test_engine_bodies_never_strike(self):
+        for title in ("Mareep", "Flaaffy", "Kricketune V"):
+            body = FakeMon(title, energy=2, lightning=2, eid=title)
+            ctx = FakeCtx(active=body, play=[body], deck=40)
+            self.assertEqual(_ry_output(ctx, body), 0.0, title)
+            self.assertFalse(
+                _ry_allow("UsePokemonAttack", title, ctx), title)
+
+    # -- allow gates --------------------------------------------------------
+    def test_research_gates(self):
+        self.assertTrue(_ry_allow("UseTrainerCard", "Professor's Research",
+                                  FakeCtx(hand=["x"] * 5, deck=40)))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Professor's Research",
+                                   FakeCtx(hand=["x"] * 6, deck=40)))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Professor's Research",
+                                   FakeCtx(hand=["x"] * 5, deck=10)))
+
+    def test_marnie_gates(self):
+        self.assertTrue(_ry_allow("UseTrainerCard", "Marnie",
+                                  FakeCtx(hand=["x"] * 2, deck=40)))
+        ctx = FakeCtx(hand=["x"] * 7)
+        ctx.hand_size = lambda pid=None: 4 if pid == "p2" else 7
+        self.assertFalse(_ry_allow("UseTrainerCard", "Marnie", ctx))
+        ctx.hand_size = lambda pid=None: 6 if pid == "p2" else 7
+        self.assertTrue(_ry_allow("UseTrainerCard", "Marnie", ctx))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Marnie",
+                                   FakeCtx(hand=["x"] * 2, deck=5)))
+
+    def test_search_runway_gates(self):
+        for card in ("Quick Ball", "Level Ball", "Evolution Incense"):
+            self.assertTrue(_ry_allow("UseTrainerCard", card,
+                                      FakeCtx(deck=6)), card)
+            self.assertFalse(_ry_allow("UseTrainerCard", card,
+                                       FakeCtx(deck=5)), card)
+
+    def test_boss_gate_needs_a_swing_and_a_window(self):
+        ready = self._vmax(fire=1, lightning=1)
+        window = FakeMon("Body", owner="p2", hp=170, max_hp=320, eid="w1")
+        fresh = FakeMon("Body", owner="p2", hp=500, max_hp=500, eid="w2")
+        base = dict(active=ready, play=[ready])
+        ctx = FakeCtx(opp_active=window, opp_play=[window], **base)
+        self.assertTrue(_ry_allow("UseTrainerCard", "Boss's Orders", ctx))
+        ctx2 = FakeCtx(opp_active=fresh, opp_play=[fresh], **base)
+        self.assertFalse(_ry_allow("UseTrainerCard", "Boss's Orders", ctx2))
+        fresh.hp = 480                      # scratched: still worth dragging
+        self.assertTrue(_ry_allow("UseTrainerCard", "Boss's Orders", ctx2))
+        # cannot swing this turn -> hold the Boss
+        stuck = self._vmax(lightning=2)
+        ctx3 = FakeCtx(active=stuck, play=[stuck], opp_active=window,
+                       opp_play=[window])
+        self.assertFalse(_ry_allow("UseTrainerCard", "Boss's Orders", ctx3))
+
+    def test_rose_needs_small_hand_and_reservoir(self):
+        discard = ["Lightning Energy", "Fire Energy"]
+        self.assertTrue(_ry_allow("UseTrainerCard", "Rose",
+                                  FakeCtx(hand=["x"] * 3, discard=discard)))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Rose",
+                                   FakeCtx(hand=["x"] * 4, discard=discard)))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Rose",
+                                   FakeCtx(hand=["x"] * 3, discard=[])))
+
+    def test_switch_and_retreat_gate_rotation(self):
+        empty = self._vmax()                # dumped its whole pool
+        loaded = self._v(fire=1, lightning=1)
+        ctx = FakeCtx(active=empty, play=[empty, loaded], bench=[loaded])
+        self.assertTrue(_ry_switch_ok(ctx))
+        self.assertTrue(_ry_retreat_ok(ctx))
+        # healthy active with an unpowered backup: stay put
+        ctx2 = FakeCtx(active=loaded, play=[loaded, empty], bench=[empty])
+        self.assertFalse(_ry_switch_ok(ctx2))
+        self.assertFalse(_ry_retreat_ok(ctx2))
+        # heavily damaged active: bail even if the backup swings less
+        hurt = self._vmax(fire=1, lightning=1, hp=170)
+        ctx3 = FakeCtx(active=hurt, play=[hurt, loaded], bench=[loaded])
+        self.assertTrue(_ry_switch_ok(ctx3))
+        self.assertTrue(_ry_retreat_ok(ctx3))
+
+    def test_azure_pulse_gate(self):
+        self.assertFalse(_ry_allow("UsePokemonAbility", "Azure Pulse",
+                                   FakeCtx(hand=["x"] * 4)))
+        self.assertFalse(_ry_allow(
+            "UsePokemonAbility", "Azure Pulse",
+            FakeCtx(hand=["Boss's Orders", "x", "x"])))
+        self.assertTrue(_ry_allow("UsePokemonAbility", "Azure Pulse",
+                                  FakeCtx(hand=["x"] * 3)))
+
+    def test_dynamotor_offered_stormy_gated(self):
+        self.assertTrue(_ry_allow("UsePokemonAbility", "Dynamotor",
+                                  FakeCtx()))
+        ready = self._vmax(fire=1, lightning=1)
+        line = [FakeMon("Mareep", eid="m1"), FakeMon("Flaaffy", eid="f1"),
+                FakeMon("Mareep", eid="m2")]
+        capped = FakeCtx(active=ready, play=[ready] + line)
+        self.assertFalse(_ry_allow("UsePokemonAbility", "Stormy Mountains",
+                                   capped))
+        empty = FakeCtx(play=[FakeMon("Mareep", eid="m1")])
+        self.assertTrue(_ry_allow("UsePokemonAbility", "Stormy Mountains",
+                                  empty))
+        self.assertTrue(_ry_allow("UsePokemonAbility", "Exciting Stage",
+                                  FakeCtx()))
+
+    def test_stadium_gate_only_blocks_opponent_stormy(self):
+        self.assertTrue(_ry_allow("DefaultStadiumPlayAbility",
+                                  "Stormy Mountains", FakeCtx()))
+        self.assertFalse(_ry_allow(
+            "DefaultStadiumPlayAbility", "Stormy Mountains",
+            FakeCtx(stadium="Stormy Mountains")))
+
+    def test_dragon_pulse_runway_and_utility_attack_block(self):
+        self.assertTrue(_ry_allow("UsePokemonAttack", "Rayquaza V",
+                                  FakeCtx(deck=15)))
+        self.assertFalse(_ry_allow("UsePokemonAttack", "Rayquaza V",
+                                   FakeCtx(deck=14)))
+        self.assertTrue(_ry_allow("UsePokemonAttack", "Rayquaza VMAX",
+                                  FakeCtx(deck=40)))
+
+    def test_pal_pad_and_rod_gates(self):
+        self.assertTrue(_ry_allow("UseTrainerCard", "Pal Pad",
+                                  FakeCtx(discard=["Boss's Orders"])))
+        self.assertFalse(_ry_allow("UseTrainerCard", "Pal Pad",
+                                   FakeCtx(discard=["Switch"])))
+        lost = FakeCtx(play=[], discard=["Rayquaza V", "Mareep"], deck=40)
+        self.assertTrue(_ry_allow("UseTrainerCard", "Ordinary Rod", lost))
+        vmax = self._vmax(fire=1, lightning=1)
+        healthy = FakeCtx(
+            active=vmax,
+            play=[vmax, FakeMon("Mareep", eid="m"),
+                  FakeMon("Flaaffy", eid="f")],
+            discard=["Lightning Energy"], deck=40)
+        self.assertFalse(_ry_allow("UseTrainerCard", "Ordinary Rod", healthy))
+
+    # -- value / energy ------------------------------------------------------
+    def test_value_prefers_gap_pieces(self):
+        empty = FakeCtx(play=[])
+        seen = FakeCtx(play=[FakeMon("Rayquaza V", eid="v")])
+        self.assertGreater(_ry_value("Rayquaza V", empty), 30)
+        self.assertGreater(_ry_value("Rayquaza VMAX", seen), 30)
+        self.assertLess(_ry_value("Rayquaza VMAX", empty), 15)
+        full = FakeCtx(play=[self._vmax(eid="a"), self._v(eid="b"),
+                             self._v(eid="c")])
+        self.assertLess(_ry_value("Rayquaza V", full), 15)
+        no_mareep = FakeCtx(play=[])
+        stocked = FakeCtx(play=[FakeMon("Mareep", eid="m1"),
+                                FakeMon("Mareep", eid="m2"),
+                                FakeMon("Flaaffy", eid="f1"),
+                                FakeMon("Flaaffy", eid="f2")])
+        self.assertGreater(_ry_value("Mareep", no_mareep),
+                           _ry_value("Mareep", stocked))
+        self.assertGreater(_ry_value("Flaaffy",
+                                     FakeCtx(play=[FakeMon("Mareep",
+                                                           eid="m")])), 30)
+        self.assertLess(_ry_value("Flaaffy", stocked), 10)
+
+    def test_fire_energy_is_protected_lightning_is_dump_fuel(self):
+        self.assertEqual(_ry_value("Fire Energy", FakeCtx(hand=[])), 30.0)
+        self.assertEqual(_ry_value("Lightning Energy", FakeCtx(hand=[])),
+                         6.0)
+        fire_card = FakeMon("Fire Energy", eid="fe")
+        bolt_card = FakeMon("Lightning Energy", eid="le")
+        ctx = FakeCtx(play=[])
+        self.assertGreater(_ry_search_score(fire_card, ctx),
+                           _ry_search_score(bolt_card, ctx))
+
+    def test_energy_action_value(self):
+        hungry = self._vmax(lightning=2)    # fire slot still open
+        fed = self._vmax(fire=1, lightning=1)
+        self.assertEqual(
+            _ry_energy_value("Fire Energy",
+                             FakeCtx(active=hungry, play=[hungry])), 42.0)
+        self.assertEqual(
+            _ry_energy_value("Fire Energy",
+                             FakeCtx(active=fed, play=[fed])), 6.0)
+        held1 = FakeCtx(hand=["Lightning Energy"])
+        held3 = FakeCtx(hand=["Lightning Energy"] * 3)
+        self.assertEqual(_ry_energy_value("Lightning Energy", held1), 30.0)
+        self.assertEqual(_ry_energy_value("Lightning Energy", held3), 20.0)
+
+    def test_supporter_values_and_dup_penalty(self):
+        starved = FakeCtx(hand=["x"] * 3)
+        stocked = FakeCtx(hand=["x"] * 7)
+        self.assertGreater(
+            _ry_value("Professor's Research", starved),
+            _ry_value("Professor's Research", stocked))
+        # a second Boss is a dead card this turn...
+        dup = FakeCtx(hand=["Boss's Orders"])
+        self.assertLess(
+            _ry_value("Boss's Orders", dup, in_hand=True),
+            _ry_value("Boss's Orders", starved, in_hand=True))
+        # ...a second Research still plays next turn (repeatable)
+        self.assertEqual(
+            _ry_value("Professor's Research",
+                      FakeCtx(hand=["Professor's Research"]),
+                      in_hand=True), 30.0)
+
+    def test_energy_target_ladder(self):
+        active = self._vmax(lightning=2)    # fire slot open
+        bench_ray = self._v(lightning=1, eid="br")
+        body = FakeMon("Mareep", eid="m")
+        ctx = FakeCtx(active=active, play=[active, bench_ray, body],
+                      bench=[bench_ray, body])
+        # Fire into the open slot: active over bench, engine never
+        self.assertGreater(
+            _ry_energy_target_score(ctx, active, "Fire Energy"),
+            _ry_energy_target_score(ctx, bench_ray, "Fire Energy"))
+        self.assertEqual(
+            _ry_energy_target_score(ctx, body, "Fire Energy"), 55.0)
+        fed = self._vmax(fire=1, lightning=1)
+        ctxf = FakeCtx(active=fed, play=[fed])
+        self.assertEqual(
+            _ry_energy_target_score(ctxf, fed, "Fire Energy"), 60.0)
+        # Lightning ladder: active first, engine bodies never
+        self.assertGreater(
+            _ry_energy_target_score(ctx, active, "Lightning Energy"),
+            _ry_energy_target_score(ctx, bench_ray, "Lightning Energy"))
+        self.assertEqual(
+            _ry_energy_target_score(ctx, body, "Lightning Energy"), 55.0)
+        # overcommit cap: four energy already -> feed the next attacker
+        stuffed = self._vmax(fire=1, lightning=3)
+        ctx2 = FakeCtx(active=stuffed, play=[stuffed, bench_ray],
+                       bench=[bench_ray])
+        self.assertLess(
+            _ry_energy_target_score(ctx2, stuffed, "Lightning Energy"),
+            _ry_energy_target_score(ctx, active, "Lightning Energy"))
+
+    def test_bench_score_growth(self):
+        empty = FakeCtx(play=[])
+        self.assertGreater(_ry_bench_score("Rayquaza V", empty),
+                           _ry_bench_score("Mareep", empty))
+        self.assertGreater(_ry_bench_score("Mareep", empty),
+                           _ry_bench_score("Kricketune V", empty))
+        line_up = FakeCtx(play=[FakeMon("Mareep", eid="m1"),
+                                FakeMon("Flaaffy", eid="f1"),
+                                FakeMon("Mareep", eid="m2"),
+                                FakeMon("Flaaffy", eid="f2")])
+        self.assertGreater(_ry_bench_score("Mareep", empty),
+                           _ry_bench_score("Mareep", line_up))
+        # Kricketune only earns a slot while we are digging
+        self.assertGreater(
+            _ry_bench_score("Kricketune V", FakeCtx(hand=["x"] * 2)),
+            _ry_bench_score("Kricketune V", FakeCtx(hand=["x"] * 7)))
+
+    def test_action_score_priorities(self):
+        ctx = FakeCtx(hand=["x"] * 2)
+        self.assertGreater(
+            _ry_action_score("EvolvePokemonPlayAbility", "Rayquaza VMAX",
+                             ctx),
+            _ry_action_score("EvolvePokemonPlayAbility", "Flaaffy", ctx))
+        self.assertEqual(
+            _ry_action_score("EvolvePokemonPlayAbility", "Unrelated", ctx),
+            -50.0)
+        empty_ray = self._vmax()
+        hungry = FakeCtx(active=empty_ray, play=[empty_ray])
+        fed_ray = self._vmax(fire=1, lightning=2)   # 3 energy: not starving
+        fed = FakeCtx(active=fed_ray, play=[fed_ray])
+        self.assertGreater(
+            _ry_action_score("UsePokemonAbility", "Dynamotor", hungry),
+            _ry_action_score("UsePokemonAbility", "Dynamotor", fed))
+        self.assertEqual(
+            _ry_action_score("UsePokemonAbility", "Azure Pulse", ctx), 55.0)
+        capped = FakeCtx(play=[self._vmax(eid="a"),
+                               FakeMon("Mareep", eid="m1"),
+                               FakeMon("Flaaffy", eid="f1"),
+                               FakeMon("Mareep", eid="m2")])
+        self.assertEqual(
+            _ry_action_score("UsePokemonAbility", "Stormy Mountains",
+                             capped), 0.0)
+        self.assertEqual(
+            _ry_action_score("UseTrainerCard", "Professor's Research",
+                             FakeCtx(hand=["x"] * 3)), 30.0)
+        hungry_ray = self._vmax()
+        self.assertEqual(
+            _ry_action_score("DefaultEnergyPlayAbility", "Fire Energy",
+                             FakeCtx(active=hungry_ray, play=[hungry_ray])),
+            42.0)
+
+    # -- attack / gust / promote ---------------------------------------------
+    def test_max_burst_scores_kos(self):
+        ready = self._vmax(fire=1, lightning=1)     # 180
+        ko = FakeMon("Body", owner="p2", hp=170, max_hp=320, eid="o")
+        tough = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="t")
+        ctx_win = FakeCtx(active=ready, play=[ready], opp_active=ko,
+                          opp_play=[ko])
+        ctx_no = FakeCtx(active=ready, play=[ready], opp_active=tough,
+                         opp_play=[tough])
+        self.assertGreaterEqual(
+            _ry_attack_score("Max Burst", 0, ctx_win), 1880)
+        self.assertEqual(_ry_attack_score("Max Burst", 0, ctx_no), 880.0)
+        loaded = self._vmax(fire=2, lightning=1)    # 260
+        ctx_load = FakeCtx(active=loaded, play=[loaded], opp_active=tough,
+                           opp_play=[tough])
+        self.assertGreater(_ry_attack_score("Max Burst", 0, ctx_load), 880.0)
+
+    def test_spiral_and_pulse_attack_scores(self):
+        dual = self._v(fire=1, lightning=1)         # 100
+        ctx = FakeCtx(active=dual, play=[dual])
+        self.assertEqual(_ry_attack_score("Spiral Burst", 0, ctx), 550.0)
+        bolt = self._v(lightning=2)
+        ctx2 = FakeCtx(active=bolt, play=[bolt])
+        self.assertEqual(_ry_attack_score("Dragon Pulse", 0, ctx2), 360.0)
+        ko = FakeMon("Body", owner="p2", hp=40, max_hp=120, eid="o")
+        ctx3 = FakeCtx(active=bolt, play=[bolt], opp_active=ko,
+                       opp_play=[ko])
+        self.assertGreaterEqual(
+            _ry_attack_score("Dragon Pulse", 0, ctx3), 1360)
+
+    def test_gust_window_follows_typed_output(self):
+        ready = self._vmax(fire=1, lightning=1)      # 180
+        in_range = FakeMon("Body", owner="p2", hp=170, max_hp=320, eid="g1")
+        out = FakeMon("Body", owner="p2", hp=250, max_hp=320, eid="g2")
+        ctx = FakeCtx(active=ready, play=[ready], opp_active=in_range,
+                      opp_play=[in_range, out])
+        self.assertEqual(_ry_gust_window(ctx), [in_range])
+        self.assertGreater(_ry_gust(ctx, in_range), _ry_gust(ctx, out))
+        stuck = self._vmax(lightning=2)
+        ctx2 = FakeCtx(active=stuck, play=[stuck], opp_active=in_range,
+                       opp_play=[in_range])
+        self.assertEqual(_ry_gust_window(ctx2), [])
+
+    def test_promote_prefers_typed_ready(self):
+        ready = self._vmax(fire=1, lightning=1)
+        stacked = self._vmax(lightning=3)
+        self.assertGreater(
+            _ry_promote(FakeCtx(active=ready, play=[ready]), ready),
+            _ry_promote(FakeCtx(active=stacked, play=[stacked]), stacked))
+        body = FakeMon("Flaaffy", energy=2)
+        self.assertEqual(_ry_promote(FakeCtx(active=body), body), 0.0)
+
+    def test_bench_can_attack(self):
+        self.assertTrue(_ry_bench_can_attack(
+            FakeCtx(bench=[self._v(lightning=1)])))
+        self.assertFalse(_ry_bench_can_attack(FakeCtx(bench=[self._v()])))
+
+    # -- target / pick ---------------------------------------------------------
+    def test_target_score_boss_evolve_and_tool(self):
+        ready = self._vmax(fire=1, lightning=1, owner="p1")
+        ko = FakeMon("Body", owner="p2", hp=170, max_hp=320, eid="g1")
+        fresh = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="g2")
+        ctx = FakeCtx(active=ready, play=[ready, ko, fresh],
+                      opp_active=ko, opp_play=[ko, fresh])
+        self.assertGreater(
+            _ry_target_score("UseTrainerCard", "Boss's Orders", ctx, "g1"),
+            _ry_target_score("UseTrainerCard", "Boss's Orders", ctx, "g2"))
+        active_v = self._v(lightning=1, owner="p1", eid="av")
+        bench_v = self._v(owner="p1", eid="bv")
+        ctx2 = FakeCtx(active=active_v, play=[active_v, bench_v],
+                       bench=[bench_v])
+        self.assertGreater(
+            _ry_target_score("EvolvePokemonPlayAbility", "Rayquaza VMAX",
+                             ctx2, "av"),
+            _ry_target_score("EvolvePokemonPlayAbility", "Rayquaza VMAX",
+                             ctx2, "bv"))
+        body = FakeMon("Mareep", owner="p1", eid="m")
+        ctx3 = FakeCtx(active=ready, play=[ready, body], bench=[body])
+        self.assertGreater(
+            _ry_target_score("DefaultToolPlayAbility", "Air Balloon", ctx3,
+                             "vm"),
+            _ry_target_score("DefaultToolPlayAbility", "Air Balloon", ctx3,
+                             "m"))
+
+    def test_target_score_energy_and_retreat(self):
+        active = self._vmax(lightning=2, owner="p1")
+        bench_ray = self._v(lightning=1, owner="p1", eid="br")
+        opp = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="ob")
+        ctx = FakeCtx(active=active, play=[active, bench_ray, opp],
+                      bench=[bench_ray], opp_active=opp, opp_play=[opp])
+        self.assertGreater(
+            _ry_target_score("DefaultEnergyPlayAbility", "Fire Energy",
+                             ctx, "vm"),
+            _ry_target_score("DefaultEnergyPlayAbility", "Fire Energy",
+                             ctx, "br"))
+        self.assertGreater(_ry_target_score("BaseRetreat", "", ctx, "br"), 0)
+        self.assertEqual(_ry_target_score("BaseRetreat", "", ctx, "ob"), 0)
+
+    def test_pick_promotes_and_gusts(self):
+        ready = self._vmax(fire=1, lightning=1, owner="p1")
+        body = FakeMon("Flaaffy", owner="p1", eid="f")
+        ctx = FakeCtx(active=ready, play=[ready, body], bench=[body])
+        mine = "Choose your new Active Pok\u00e9mon"
+        self.assertGreater(_ry_pick(mine, ctx, ready),
+                           _ry_pick(mine, ctx, body))
+        ko = FakeMon("Body", owner="p2", hp=170, max_hp=320, eid="g1")
+        fresh = FakeMon("Body", owner="p2", hp=300, max_hp=320, eid="g2")
+        opp_prompt = "Choose your opponent's new Active Pok\u00e9mon"
+        self.assertGreater(_ry_pick(opp_prompt, ctx, ko),
+                           _ry_pick(opp_prompt, ctx, fresh))
+
+    def test_pick_rose_target_and_max_burst_dump(self):
+        loaded = self._vmax(fire=1, lightning=1, owner="p1")
+        spare = self._vmax(lightning=1, owner="p1", eid="spare")
+        ctx = FakeCtx(active=loaded, play=[loaded, spare], bench=[spare])
+        rose_prompt = "Choose your Pok\u00e9mon VMAX"
+        self.assertGreater(_ry_pick(rose_prompt, ctx, loaded),
+                           _ry_pick(rose_prompt, ctx, spare))
+        stuffed = self._vmax(fire=2, lightning=2, owner="p1", eid="stuffed")
+        ctx2 = FakeCtx(active=stuffed, play=[stuffed, spare], bench=[spare])
+        self.assertLess(_ry_pick(rose_prompt, ctx2, stuffed),
+                        _ry_pick(rose_prompt, ctx2, spare))
+        dump = ("Discard any amount of basic Fire or Lightning Energy "
+                "from this Pok\u00e9mon.")
+        self.assertEqual(_ry_pick(dump, ctx, loaded), 100.0)
+
+    def test_pick_attach_and_discard(self):
+        active = self._vmax(lightning=2, owner="p1")
+        bench_ray = self._v(lightning=1, owner="p1", eid="br")
+        body = FakeMon("Mareep", owner="p1", eid="m")
+        ctx = FakeCtx(active=active, play=[active, bench_ray, body],
+                      bench=[bench_ray, body])
+        attach_prompt = "Choose a Pok\u00e9mon to attach the Energy to"
+        self.assertGreater(_ry_pick(attach_prompt, ctx, active),
+                           _ry_pick(attach_prompt, ctx, bench_ray))
+        self.assertGreater(_ry_pick(attach_prompt, ctx, bench_ray),
+                           _ry_pick(attach_prompt, ctx, body))
+        discard_prompt = "Choose a card to discard"
+        bolt = FakeMon("Lightning Energy", owner="p1", eid="le")
+        fire = FakeMon("Fire Energy", owner="p1", eid="fe")
+        hand_ctx = FakeCtx(hand=["Lightning Energy", "Fire Energy", "x"])
+        self.assertGreater(_ry_pick(discard_prompt, hand_ctx, bolt),
+                           _ry_pick(discard_prompt, hand_ctx, fire))
+        self.assertGreater(
+            _ry_search_score(self._v(eid="sv"), FakeCtx(play=[])),
+            _ry_search_score(bolt, FakeCtx(play=[])))
+
+
 class WiringTests(unittest.TestCase):
     def test_ai_player_attaches_brain_from_deck_name(self):
         from spirit.game.session.ai_player import AIPlayer
         player = AIPlayer("bot-1", "Bot", {"deckName": "Dragapult Inteleon"}, None)
         self.assertIs(player.deck_strategy, DRAGAPULT_INTELEON)
+        ray = AIPlayer("bot-4", "Bot", {"deckName": "Rayquaza V"}, None)
+        self.assertIs(ray.deck_strategy, RAYQUAZA_VMAX_FLAFFY)
         generic = AIPlayer("bot-2", "Bot", {"deckName": "Nope"}, None)
         self.assertIsNone(generic.deck_strategy)
         empty = AIPlayer("bot-3", "Bot", {}, None)

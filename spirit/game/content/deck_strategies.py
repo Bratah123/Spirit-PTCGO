@@ -107,6 +107,23 @@ class StrategyContext:
     def energy_attached(self, pokemon) -> int:
         return sum(1 for child in pokemon.children if isinstance(child, EnergyEntity))
 
+    def energy_of_type(self, pokemon, type_name: str) -> int:
+        """Attached energies providing `type_name` ("Fire"/"Lightning"...):
+        typed costs like Rayquaza's F+L need this, a bare count lies."""
+        if pokemon is None:
+            return 0
+        wanted = getattr(PokemonTypes, type_name.upper(), None)
+        if wanted is None:
+            return 0
+        value = wanted.value if hasattr(wanted, "value") else wanted
+        total = 0
+        for child in pokemon.children:
+            if not isinstance(child, EnergyEntity):
+                continue
+            if value in (child.get_attribute(AttrID.POKEMON_TYPES) or []):
+                total += 1
+        return total
+
     def min_attack_cost(self, pokemon) -> int:
         definition = def_for(getattr(pokemon, "archetype_id", None))
         best = None
@@ -2384,12 +2401,540 @@ ETERNATUS_VMAX = {
 }
 
 
+# ----------------------------------------------------------------------
+# Rayquaza VMAX / Flaaffy  (deck key: 'Rayquaza V')
+#
+# Main plan: Rayquaza V -> VMAX is the puncher; Max Burst costs Fire +
+# Lightning and dumps EVERY attached F/L for +80 each (the engine's picker
+# always takes them all), so a loaded Rayquaza swings for 180-340.  The
+# discard pile is the reservoir: Flaaffy's Dynamotor re-attaches Lightning
+# to the bench (once per Flaaffy per turn), Rose reloads 2 from discard on
+# a small hand, and Quick Ball/Research dumping Lightning is *good*.  Fire
+# is the scarce type: never feed it to the engine bodies, only to a
+# Rayquaza that still needs its Fire slot.  Stormy Mountains benches the
+# missing piece (Rayquaza V first, then Mareep); Ordinary Rod / Pal Pad
+# recover a lost line.  Keep a benched attacker developing: the active
+# dumps its energy every swing, so Switch/retreat rotate to the Flaaffy-fed
+# backup instead of rebuilding from zero.
+
+RY_ATTACKERS = {"Rayquaza VMAX", "Rayquaza V"}
+RY_BENCH_ORDER = ["Rayquaza V", "Mareep", "Kricketune V"]
+RY_EVOLVE_ORDER = ["Rayquaza VMAX", "Flaaffy"]
+RY_UTILITY = {"Mareep", "Flaaffy", "Kricketune V"}
+_RY_KEY_SUPPORTERS = {"Boss's Orders", "Rose", "Professor's Research"}
+_RY_ENERGY = {"Lightning Energy", "Fire Energy"}
+_RY_LINE = {"Rayquaza V", "Rayquaza VMAX", "Mareep", "Flaaffy"}
+_RY_REPEATABLE = {
+    "Professor's Research", "Marnie", "Quick Ball", "Level Ball", "Switch",
+    "Evolution Incense",
+}
+
+
+def _ry_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Attack-ready means the TYPED cost is met; two Lightning is not a
+    Max Burst (needs one of each)."""
+    if pokemon is None:
+        return False
+    name = ctx.name(pokemon)
+    if name == "Rayquaza VMAX":
+        return (ctx.energy_of_type(pokemon, "Fire") >= 1
+                and ctx.energy_of_type(pokemon, "Lightning") >= 1)
+    if name == "Rayquaza V":
+        return ctx.energy_of_type(pokemon, "Lightning") >= 1
+    return False
+
+
+def _ry_output(ctx: StrategyContext, pokemon) -> int:
+    """Damage `pokemon` deals from the Active slot right now.  Max Burst
+    always dumps all attached F/L (engine picks the full count); the V
+    prefers Spiral Burst (choice button picks the Fire pool) over Dragon
+    Pulse's self-mill."""
+    if pokemon is None:
+        return 0
+    name = ctx.name(pokemon)
+    if name == "Rayquaza VMAX":
+        if not _ry_ready(ctx, pokemon):
+            return 0
+        pools = (ctx.energy_of_type(pokemon, "Fire")
+                 + ctx.energy_of_type(pokemon, "Lightning"))
+        return 20 + 80 * pools
+    if name == "Rayquaza V":
+        lightning = ctx.energy_of_type(pokemon, "Lightning")
+        if lightning < 1:
+            return 0
+        fire = ctx.energy_of_type(pokemon, "Fire")
+        if fire >= 1:
+            return 20 + 80 * min(2, fire)   # Spiral Burst dumps Fire first
+        return 40                            # Dragon Pulse
+    return 0                                 # engine bodies never attack
+
+
+def _ry_strike_damage(ctx: StrategyContext) -> int:
+    return _ry_output(ctx, ctx.active())
+
+
+def _ry_energy_hungry(ctx: StrategyContext) -> bool:
+    return any(ctx.name(p) in RY_ATTACKERS and ctx.energy_attached(p) < 3
+               for p in ctx.in_play())
+
+
+def _ry_gust_window(ctx: StrategyContext) -> List:
+    damage = _ry_strike_damage(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _ry_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _ry_strike_damage(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _ry_promote(ctx: StrategyContext, pokemon) -> float:
+    """Rank bodies for the Active slot by TYPED readiness, not energy
+    count: a VMAX holding two Lightning still can't Max Burst."""
+    if ctx.name(pokemon) not in RY_ATTACKERS:
+        return 0.0
+    score = 2000.0 if _ry_ready(ctx, pokemon) else 1000.0
+    score += ctx.energy_attached(pokemon) * 10.0
+    if ctx.name(pokemon).endswith("VMAX"):
+        score += 2.0
+    return score
+
+
+def _ry_bench_can_attack(ctx: StrategyContext) -> bool:
+    return any(_ry_output(ctx, p) > 0 for p in ctx.bench())
+
+
+def _ry_switch_ok(ctx: StrategyContext) -> bool:
+    """Switch: unsticks a body that can't swing, or rotates away from a
+    heavily damaged VMAX the moment a backup is loaded."""
+    active = ctx.active()
+    if active is None:
+        return False
+    if _ry_strike_damage(ctx) <= 0:
+        return _ry_bench_can_attack(ctx)
+    if ctx.damage_on(active) >= 150:
+        return _ry_bench_can_attack(ctx)
+    return False
+
+
+def _ry_retreat_ok(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None:
+        return False
+    active_dmg = _ry_strike_damage(ctx)
+    bench_best = max((_ry_output(ctx, p) for p in ctx.bench()), default=0)
+    if bench_best <= 0:
+        return False
+    if active_dmg <= 0:
+        return True                        # empty after a dump: rotate
+    if ctx.damage_on(active) >= 150:
+        return True                        # preserve the VMAX
+    return bench_best >= active_dmg + 60
+
+
+def _ry_stormy_ok(ctx: StrategyContext) -> bool:
+    """Stormy Mountains benches the missing piece: attacker first, else
+    another body for the Flaaffy engine (cap the Mareep glut)."""
+    names = ctx.in_play_names()
+    if "Rayquaza V" not in names and "Rayquaza VMAX" not in names:
+        return True
+    return (names.count("Mareep") + names.count("Flaaffy")) < 3
+
+
+def _ry_rod_ok(ctx: StrategyContext) -> bool:
+    """Ordinary Rod only when a line piece is gone or the deck runs dry."""
+    play = ctx.in_play_names()
+    discard = ctx.discard_names()
+    rays = sum(1 for n in play if n in ("Rayquaza V", "Rayquaza VMAX"))
+    line = sum(1 for n in play if n in ("Mareep", "Flaaffy"))
+    if rays == 0 and any(n in ("Rayquaza V", "Rayquaza VMAX")
+                         for n in discard):
+        return True
+    if line < 2 and any(n in ("Mareep", "Flaaffy") for n in discard):
+        return True
+    if ctx.deck_size() <= 15 and any(n in _RY_ENERGY for n in discard):
+        return True
+    return False
+
+
+def _ry_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    hand = set(ctx.hand_names())
+    if name == "Professor's Research":
+        return ctx.hand_size() <= 5 and deck > 10
+    if name == "Marnie":
+        return (ctx.hand_size() <= 5 or ctx.hand_size(ctx.opp) >= 6) \
+            and deck > 5
+    if name in ("Quick Ball", "Level Ball", "Evolution Incense"):
+        return deck > 5
+    if name == "Boss's Orders":
+        if _ry_strike_damage(ctx) <= 0:
+            return False                   # can't swing this turn anyway
+        if _ry_gust_window(ctx):
+            return True
+        return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+    if name == "Rose":
+        # Rose discards the whole hand afterward: only a small hand plus
+        # energy in the reservoir make the reload worth it.
+        if ctx.hand_size() > 3:
+            return False
+        return any(n in _RY_ENERGY for n in ctx.discard_names())
+    if name == "Switch":
+        return _ry_switch_ok(ctx)
+    if name == "Pal Pad":
+        discard = ctx.discard_names()
+        return any(s in discard for s in _RY_KEY_SUPPORTERS)
+    if name == "Ordinary Rod":
+        return _ry_rod_ok(ctx)
+    if description == "DefaultStadiumPlayAbility" and name == "Stormy Mountains":
+        return not ctx.opponent_stadium_is("Stormy Mountains")
+    if description == "UsePokemonAbility":
+        if name == "Stormy Mountains":
+            return _ry_stormy_ok(ctx)
+        if name == "Azure Pulse":
+            # discard-hand-draw-3 (auto-yes): only with a small hand and
+            # no live Supporter -- abilities fire before trainers.
+            if ctx.hand_size() > 3:
+                return False
+            return not any(s in hand for s in _RY_KEY_SUPPORTERS)
+        return True                        # Dynamotor / Exciting Stage
+    if description == "UsePokemonAttack":
+        if name == "Rayquaza V":
+            return deck > 14               # Dragon Pulse mills our own deck
+        if name in RY_UTILITY:
+            return False                   # engine bodies never swing
+        return True
+    if description == "BaseRetreat":
+        return _ry_retreat_ok(ctx)
+    return True
+
+
+def _ry_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational value of a card: attacker gap first, then the engine."""
+    hand = set(ctx.hand_names())
+    play = set(ctx.in_play_names())
+    seen = hand | play
+    board = ctx.in_play()
+    rays = sum(1 for p in board if ctx.name(p) in
+               ("Rayquaza V", "Rayquaza VMAX"))
+    mareep = sum(1 for p in board if ctx.name(p) == "Mareep")
+    flaaffy = sum(1 for p in board if ctx.name(p) == "Flaaffy")
+    discard = set(ctx.discard_names())
+
+    # -- Pokemon gap pieces (searches + hand planning) --------------------
+    if name == "Rayquaza V":
+        v = 35.0 if rays == 0 else (25.0 if rays < 3 else 8.0)
+    elif name == "Rayquaza VMAX":
+        if "Rayquaza VMAX" in seen:
+            v = 10.0
+        elif "Rayquaza V" in seen:
+            v = 35.0
+        else:
+            v = 6.0
+    elif name == "Mareep":
+        if mareep == 0:
+            v = 32.0
+        elif mareep + flaaffy < 4:
+            v = 20.0                       # room for another Flaaffy
+        else:
+            v = 7.0
+    elif name == "Flaaffy":
+        if mareep > 0 and flaaffy == 0:
+            v = 34.0                       # first engine evolution
+        elif mareep > flaaffy:
+            v = 24.0
+        else:
+            v = 7.0
+    elif name == "Kricketune V":
+        if "Kricketune V" in seen:
+            v = 5.0
+        else:
+            v = 18.0 if ctx.hand_size() < 4 else 8.0
+    elif name == "Lightning Energy":
+        v = 6.0                            # dump-first: Flaaffy reservoir
+    elif name == "Fire Energy":
+        v = 30.0                           # scarce: never a free discard
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Professor's Research":
+        v = 30.0 if ctx.hand_size() <= 4 else 12.0
+    elif name == "Marnie":
+        v = 24.0 if ctx.hand_size(ctx.opp) > ctx.hand_size() else 18.0
+    elif name == "Boss's Orders":
+        if _ry_gust_window(ctx):
+            v = 40.0
+        elif any(ctx.damage_on(p) for p in ctx.in_play(ctx.opp)):
+            v = 18.0
+        else:
+            v = 12.0
+    elif name == "Rose":
+        active = ctx.active()
+        if active is not None \
+                and ctx.name(active) == "Rayquaza VMAX" \
+                and _ry_strike_damage(ctx) <= 0:
+            v = 38.0                       # immediate reload into a swing
+        elif discard & _RY_ENERGY:
+            v = 20.0
+        else:
+            v = 8.0
+    elif name == "Quick Ball":
+        if rays == 0:
+            v = 30.0
+        elif mareep == 0:
+            v = 26.0
+        elif mareep + flaaffy < 4:
+            v = 18.0
+        elif rays < 2:
+            v = 14.0
+        else:
+            v = 8.0
+    elif name == "Level Ball":
+        if mareep == 0:
+            v = 30.0
+        elif mareep > flaaffy:
+            v = 26.0                       # evolve what is already out
+        elif mareep + flaaffy < 4:
+            v = 16.0
+        else:
+            v = 8.0
+    elif name == "Evolution Incense":
+        if "Rayquaza V" in seen and "Rayquaza VMAX" not in seen:
+            v = 34.0
+        elif mareep > flaaffy:
+            v = 30.0
+        else:
+            v = 8.0
+    elif name == "Switch":
+        active = ctx.active()
+        if active is None:
+            v = 4.0
+        elif _ry_strike_damage(ctx) <= 0:
+            v = 25.0                       # rotate into the loaded backup
+        elif ctx.damage_on(active) >= 150 and _ry_bench_can_attack(ctx):
+            v = 22.0                       # preserve the VMAX
+        else:
+            v = 4.0
+    elif name == "Stormy Mountains":
+        v = 15.0 if _ry_stormy_ok(ctx) else 3.0
+    elif name == "Air Balloon":
+        v = 16.0
+    elif name == "Ordinary Rod":
+        v = 14.0 if _ry_rod_ok(ctx) else 4.0
+    elif name == "Pal Pad":
+        v = 12.0 if discard & _RY_KEY_SUPPORTERS else 4.0
+    else:
+        v = 6.0
+
+    if in_hand and name in hand and name not in _RY_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _ry_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Fire Energy":
+        # reserved for the Rayquaza line: attach only when a ray still
+        # lacks its Fire slot; otherwise hold it in hand.
+        needs_fire = any(ctx.name(p) in RY_ATTACKERS
+                         and ctx.energy_of_type(p, "Fire") == 0
+                         for p in ctx.in_play())
+        return 42.0 if needs_fire else 6.0
+    if name == "Lightning Energy":
+        held = ctx.hand_names().count("Lightning Energy")
+        return 30.0 if held <= 1 else (26.0 if held == 2 else 20.0)
+    return 6.0
+
+
+def _ry_bench_score(name: str, ctx: StrategyContext) -> float:
+    score = order_score(RY_BENCH_ORDER, name)
+    names = [ctx.name(p) for p in ctx.in_play()]
+    if name == "Rayquaza V":
+        count = names.count("Rayquaza V") + names.count("Rayquaza VMAX")
+        score += 25.0 if count == 0 else (10.0 if count < 3 else -15.0)
+    elif name == "Mareep":
+        count = names.count("Mareep")
+        line = count + names.count("Flaaffy")
+        if count == 0:
+            score += 30.0                  # the engine is missing entirely
+        elif line < 4:
+            score += 15.0                  # another Flaaffy in waiting
+        else:
+            score -= 15.0
+    elif name == "Kricketune V":
+        if "Kricketune V" in names:
+            score -= 15.0
+        elif ctx.hand_size() < 4:
+            score += 10.0                  # worth a slot when digging
+        else:
+            score -= 10.0
+    return score
+
+
+def _ry_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "EvolvePokemonPlayAbility":
+        return order_score(RY_EVOLVE_ORDER, name)
+    if description == "DefaultEnergyPlayAbility":
+        return _ry_energy_value(name, ctx)
+    if description == "DefaultPokemonPlayAbility":
+        return _ry_bench_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Dynamotor":
+            return 100.0 if _ry_energy_hungry(ctx) else 70.0
+        if name == "Stormy Mountains":
+            return 85.0 if _ry_stormy_ok(ctx) else 0.0
+        if name == "Exciting Stage":
+            return 70.0
+        if name == "Azure Pulse":
+            return 55.0
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _ry_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _ry_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    active = ctx.active()
+    if title == "Max Burst":
+        damage = _ry_strike_damage(ctx)
+        return _ko(700.0 + damage, damage)
+    if title == "Spiral Burst":
+        fire = ctx.energy_of_type(active, "Fire") if active else 0
+        lightning = ctx.energy_of_type(active, "Lightning") if active else 0
+        if fire >= 1:
+            damage = 20 + 80 * min(2, fire)   # the choice button picks Fire
+        else:
+            damage = 20 + 80 * min(2, lightning)
+        return _ko(450.0 + damage, damage)
+    if title == "Dragon Pulse":
+        return _ko(320.0 + 40, 40)
+    return base
+
+
+def _ry_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach lands: typed slot on the Rayquaza line only, with an
+    overcommit cap so the next attacker keeps room to grow into."""
+    if ctx.name(target) not in RY_ATTACKERS:
+        return 55.0                        # never feed the engine bodies
+    is_active = target is ctx.active()
+    if energy_name == "Fire Energy":
+        if ctx.energy_of_type(target, "Fire") >= 1:
+            return 60.0                    # slot filled: hold the spare
+        return 460.0 if is_active else 360.0
+    score = 500.0 if is_active else 380.0
+    if ctx.energy_attached(target) >= 3:
+        score -= 200.0                     # overcommit cap: feed the next
+    return score
+
+
+def _ry_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _ry_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            return 200.0                   # dump it all: Flaaffy refills
+        if target.owning_player_id == ctx.me:
+            return _ry_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _ry_energy_target_score(ctx, target, name)
+    if description == "EvolvePokemonPlayAbility":
+        if name == "Rayquaza VMAX":
+            if target is ctx.active():
+                return 10.0
+            return 8.0 if ctx.energy_attached(target) >= 2 else 6.0
+        if name == "Flaaffy":
+            return 8.0
+        return 0.0
+    if description == "DefaultToolPlayAbility":        # Air Balloon
+        target_name = ctx.name(target)
+        score = 4.0
+        if target is ctx.active():
+            score += 10.0                  # free pivot up front
+        if target_name in RY_ATTACKERS:
+            score += 8.0
+        return score
+    return 0.0
+
+
+def _ry_search_score(card, ctx: StrategyContext) -> float:
+    return _ry_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _ry_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote by TYPED readiness;
+    - Rose's "Pok\u00e9mon VMAX" target -> reload the active puncher
+      (unless it is already loaded);
+    - Flaaffy Dynamotor targets -> the Lightning ladder;
+    - Max Burst discard -> positive (the engine takes them all anyway);
+    - hand discards -> dump Lightning Energy first (the reservoir).
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _ry_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _ry_gust(ctx, card)
+    if mine and "VMAX" in text:
+        # Rose: "Choose your Pok\u00e9mon VMAX"
+        score = 1000.0 if card is ctx.active() else 800.0
+        if ctx.energy_attached(card) >= 4:
+            score -= 400.0                 # already loaded: feed the other
+        return score
+    if mine and ("Discard any amount" in text):
+        return 100.0                       # Max Burst: all of them go
+    if mine and ("attach it to" in text or "attach the Energy to" in text):
+        return _ry_energy_target_score(ctx, card, "Lightning Energy")
+    if mine and "attach" in text:
+        return 100.0                       # pick the energy itself
+    if mine and "into your hand" in text:
+        return _ry_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        return -_ry_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+RAYQUAZA_VMAX_FLAFFY = {
+    "allow_action": _ry_allow,
+    "action_score": _ry_action_score,
+    "attack_score": _ry_attack_score,
+    "target_score": _ry_target_score,
+    "search_score": _ry_search_score,
+    "pick_score": _ry_pick,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
     "Shadow Rider Calyrex V": SHADOW_RIDER,
     "Bronzor": CORVIKNIGHT_BRONZONG,
     "Eternatus V": ETERNATUS_VMAX,
+    "Rayquaza V": RAYQUAZA_VMAX_FLAFFY,
 }
 
 
