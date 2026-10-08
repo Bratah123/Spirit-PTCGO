@@ -239,7 +239,11 @@ class TournamentDef:
                 for f in self.legacy_entry_fees()
             ],
             "prizes": _legacy_prizes(self.run_config.get("prizeTable")),
-            "active": bool(self.enabled) and self.state() == STATE_OPEN,
+            # active must stay true through PREVIEW/OPEN/ENTRY_CLOSED/RESOLVED:
+            # the client's TournamentView flips to the Maintenance panel (and
+            # clobbers Complete/results state) the moment zero active entries
+            # remain. Only hidden/disabled (already filtered) read as false.
+            "active": bool(self.enabled),
         }
 
 

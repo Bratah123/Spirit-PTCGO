@@ -313,7 +313,9 @@ class HumanVsBotStartTests(LiveCase):
         t.matchups.append(matchup)
         with patch.object(GameSessionManager, "_dispatch_ready_check") as dc, \
              patch("spirit.game.tournaments.live.run_db", new=AsyncMock()):
-            await asyncio.wait_for(t._start_or_forfeit(matchup), 5)
+            # completion retries TournamentCompleted delivery ~8s for the
+            # offline human before giving up
+            await asyncio.wait_for(t._start_or_forfeit(matchup), 20)
         self.assertIs(matchup.winner, bot)
         self.assertNotIn(matchup.game_id, self.gsm.pending_pairings)
         dc.assert_not_called()

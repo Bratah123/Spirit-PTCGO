@@ -240,7 +240,7 @@ class LiveTournament:
                 "tournamentData": base,
                 "finalStandings": [p.identity() for p in standings],
                 "prizes": prizes,
-            })
+            }, retries=4)
             client = self.manager.resolve_client(participant)
             if client is not None and granted:
                 await self.manager.push_wallet(client)
@@ -268,12 +268,26 @@ class LiveTournament:
 
     # ------------------------------------------------------------- sends
 
-    async def _send_to(self, participant: Participant, packet: dict):
+    async def _send_to(self, participant: Participant, packet: dict,
+                       retries: int = 0, retry_delay: float = 2.0):
+        attempt = 0
         client = self.manager.resolve_client(participant)
+        while client is None and not participant.bot and attempt < retries:
+            await asyncio.sleep(retry_delay)
+            attempt += 1
+            client = self.manager.resolve_client(participant)
         if client is None:
+            if not participant.bot:
+                logging.warning("[LiveTournament %s] no live client for %s "
+                                "while sending %s (attempts=%d)",
+                                self.active_id[:8], participant.username,
+                                packet.get("messageName"), attempt + 1)
             return
         try:
             await client.send_packet(packet, 0)
+            logging.info("[LiveTournament %s] sent %s to %s",
+                         self.active_id[:8], packet.get("messageName"),
+                         participant.username)
         except Exception as e:
             logging.error(f"[LiveTournament] send to {participant.username} failed: {e}")
 
