@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from pathlib import PurePosixPath
 from typing import Any, Callable, Optional, List, Dict
 from spirit.game.decks.theme_decks import CardReferenceResolver, DeckEntry
 from spirit.game.decks.validation import DeckValidator
@@ -363,6 +364,14 @@ class Foil:
         return attrs
 
 
+def validate_script_reference(reference: str, label: str) -> None:
+    """Reject anything but a scripts-relative path without .py (e.g. "HGSS1/HoOhLEGEND_Combined")."""
+    path = PurePosixPath(reference or "")
+    if (not reference or "\\" in reference or path.is_absolute() or ".." in path.parts
+            or path.suffix or ":" in reference or str(path) != reference):
+        raise ValueError(f"{label} must be a scripts-relative path without .py")
+
+
 class CardDefinition:
     """Base class for all card definitions."""
     runtime_only = False
@@ -462,6 +471,8 @@ class PokemonCardDef(CardDefinition):
     ):
         if stage == PokemonStage.LEGEND and not self.runtime_only:
             raise ValueError("Use LegendHalfCardDef for physical halves and LegendPokemonDef for the combined Pokemon")
+        if stage == PokemonStage.VUNION and not self.runtime_only:
+            raise ValueError("Use VUnionPieceCardDef for physical pieces and VUnionPokemonDef for the combined Pokemon")
         super().__init__(guid, key, name, collector_number, set_code, rarity, display_name, searchable_by, subtypes, attributes, foil)
         # Card-level continuous effect while this Pokemon is top-level in play
         # (attack-rules passives, e.g. Swanna); distinct from Ability(passive=).

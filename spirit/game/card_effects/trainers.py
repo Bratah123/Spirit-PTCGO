@@ -141,6 +141,11 @@ def is_grass_energy_card(card) -> bool:
     return is_energy_card(card) and PokemonTypes.GRASS.value in types
 
 
+def is_psychic_energy_card(card) -> bool:
+    types = card.get_attribute(AttrID.POKEMON_TYPES) or []
+    return is_energy_card(card) and PokemonTypes.PSYCHIC.value in types
+
+
 def is_darkness_pokemon(card) -> bool:
     types = card.get_attribute(AttrID.POKEMON_TYPES) or []
     return is_pokemon_card(card) and PokemonTypes.DARKNESS.value in types

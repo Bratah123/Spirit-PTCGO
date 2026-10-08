@@ -243,14 +243,26 @@ class EnergyEntity(CardEntity):
         return "com.direwolfdigital.cake.rules.entities.Energy"
 
 
-class LegendHalfEntity(CardEntity):
-    """One physical half, with no independent in-play Pokemon identity."""
+class ComponentCardEntity(CardEntity):
+    """A physical card that only enters play as part of a composite Pokemon."""
 
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.HalfLegend"
 
 
-class LegendPokemonEntity(PokemonEntity):
+class CompositePokemonEntity(PokemonEntity):
+    """A runtime-only Pokemon backed by physical component cards (LEGEND, V-UNION)."""
+
+    @property
+    def components(self) -> tuple:
+        return ()
+
+
+class LegendHalfEntity(ComponentCardEntity):
+    """One physical half, with no independent in-play Pokemon identity."""
+
+
+class LegendPokemonEntity(CompositePokemonEntity):
     """A synthetic Pokemon backed by two physical half-card entities."""
 
     def __init__(self, card_obj, top, bottom, owning_player_id):
@@ -260,8 +272,28 @@ class LegendPokemonEntity(PokemonEntity):
         self.set_attribute(AttrID.LEGEND_TOP_HALF, top.entity_id)
         self.set_attribute(AttrID.LEGEND_BOTTOM_HALF, bottom.entity_id)
 
+    @property
+    def components(self) -> tuple:
+        return (self.top_half, self.bottom_half)
+
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.LegendPokemon"
+
+
+class VUnionPieceEntity(ComponentCardEntity):
+    """One physical V-UNION piece; in play it is a real child of the combined card."""
+
+
+class VUnionPokemonEntity(CompositePokemonEntity):
+    """A synthetic Pokemon backed by four piece entities, ordered by VUnionPiece."""
+
+    def __init__(self, card_obj, pieces, owning_player_id):
+        super().__init__(card_obj, owning_player_id)
+        self.pieces = tuple(pieces)
+
+    @property
+    def components(self) -> tuple:
+        return self.pieces
 
 
 class TrainerEntity(CardEntity):
@@ -273,11 +305,13 @@ class TrainerEntity(CardEntity):
 def create_card_entity(card_obj: Card, owning_player_id: Optional[str] = None, entity_id: Optional[str] = None) -> CardEntity:
     """Factory function to build the correct subclass of CardEntity based on its card type."""
     if getattr(def_for(card_obj.guid), "runtime_only", False):
-        raise ValueError("A combined LEGEND must be created through assemble_legend")
+        raise ValueError("A combined LEGEND/V-UNION must be created through its assembly helper")
     c_type = card_obj.get_attribute_value(AttrID.CARD_TYPE)
     if c_type == CardType.POKEMON.value:
         return PokemonEntity(card_obj, owning_player_id, entity_id)
     elif c_type == CardType.LEGEND_HALF.value:
+        if card_obj.get_attribute_value(AttrID.STAGE) == PokemonStage.VUNION.value:
+            return VUnionPieceEntity(card_obj, owning_player_id, entity_id)
         return LegendHalfEntity(card_obj, owning_player_id, entity_id)
     elif c_type == CardType.ENERGY.value:
         return EnergyEntity(card_obj, owning_player_id, entity_id)
@@ -394,13 +428,14 @@ class BoardState:
 
         if not isinstance(card, CardEntity) or not isinstance(to_area, PlayArea):
             return False
-        if isinstance(card, LegendPokemonEntity) and to_area.get_attribute(AttrID.NAME) not in (
+        if isinstance(card, CompositePokemonEntity) and to_area.get_attribute(AttrID.NAME) not in (
                 "bench", "activePokemonArea", "outOfPlay"):
             return False
-        if isinstance(card, LegendHalfEntity) and to_area.get_attribute(AttrID.NAME) in (
+        if isinstance(card, ComponentCardEntity) and to_area.get_attribute(AttrID.NAME) in (
                 "bench", "activePokemonArea"):
             return False
-        if isinstance(card, LegendHalfEntity) and isinstance(card.parent, LegendPokemonEntity):
+        # Components leave a composite only through its departure helper.
+        if isinstance(card, ComponentCardEntity) and isinstance(card.parent, CompositePokemonEntity):
             return False
 
         if card.parent_id:
@@ -427,10 +462,10 @@ class BoardState:
             return False
         if card is target:
             return False
-        if isinstance(card, LegendPokemonEntity):
+        if isinstance(card, CompositePokemonEntity):
             return False
-        if isinstance(card, LegendHalfEntity):
-            if not isinstance(target, LegendPokemonEntity) or card not in (target.top_half, target.bottom_half):
+        if isinstance(card, ComponentCardEntity):
+            if not isinstance(target, CompositePokemonEntity) or card not in target.components:
                 return False
 
         if card.parent_id:
@@ -710,12 +745,12 @@ class BoardState:
             )
 
     def client_out_of_play_children(self) -> List[BoardEntity]:
-        """Include referenced LEGEND halves without exposing them as attachments."""
+        """Include LEGEND/V-UNION components without exposing them as attachments (N.V zooms every child)."""
         staging = self.find_global_area("outOfPlay")
         children = list(staging.children)
         children.extend(entity for entity in self._entity_cache.values()
-                        if isinstance(entity, LegendHalfEntity)
-                        and isinstance(entity.parent, LegendPokemonEntity))
+                        if isinstance(entity, ComponentCardEntity)
+                        and isinstance(entity.parent, CompositePokemonEntity))
         return children
 
     def _serialize_client_playmat(self, viewer_id: Optional[str]) -> Dict[str, Any]:
@@ -730,7 +765,7 @@ class BoardState:
 
         staging = self.find_global_area("outOfPlay")
         for half in self.client_out_of_play_children():
-            if not isinstance(half, LegendHalfEntity) or not isinstance(half.parent, LegendPokemonEntity):
+            if not isinstance(half, ComponentCardEntity) or not isinstance(half.parent, CompositePokemonEntity):
                 continue
             node = by_id[half.entity_id]
             by_id[half.parent_id]["children"].remove(node)

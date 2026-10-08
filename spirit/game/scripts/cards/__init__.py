@@ -51,7 +51,7 @@ class ScriptLoader:
                 self.last_errors.append(error)
                 logging.error("[Scripts] Failed to resolve card %s", error)
 
-        invalid = self._resolve_legends(resolved)
+        invalid = self._resolve_legends(resolved) | self._resolve_vunions(resolved)
         for reference, card_def in resolved.items():
             if reference not in invalid and not getattr(card_def, "runtime_only", False):
                 try:
@@ -89,6 +89,37 @@ class ScriptLoader:
                     half.legend_definition = None
                     invalid.add(path)
                 self.last_errors.append(f"{reference}: {problem}")
+        return invalid
+
+    def _resolve_vunions(self, resolved):
+        """Bind pieces to their combined Pokemon; a set missing any position publishes none of it."""
+        invalid = set()
+        groups = {}
+        for reference, definition in resolved.items():
+            if not hasattr(definition, "resolve_vunion"):
+                continue
+            try:
+                if definition.vunion not in resolved:
+                    raise ValueError(f"Missing V-UNION definition: {definition.vunion}")
+                definition.resolve_vunion(resolved[definition.vunion])
+                groups.setdefault(definition.vunion, []).append((reference, definition))
+            except (ValueError, TypeError) as error:
+                invalid.add(reference)
+                self.last_errors.append(f"{reference}: {error}")
+        for reference, pieces in groups.items():
+            problem = None
+            slots = [piece.piece for _, piece in pieces]
+            if sorted(slots) != list(range(4)):
+                problem = "V-UNION requires exactly one printing of each of the 4 pieces"
+            elif len({piece.guid.lower() for _, piece in pieces}) != len(pieces):
+                problem = "V-UNION printings must have distinct GUIDs"
+            if problem:
+                for path, piece in pieces:
+                    piece.vunion_definition = None
+                    invalid.add(path)
+                self.last_errors.append(f"{reference}: {problem}")
+                continue
+            resolved[reference].bind_pieces([piece for _, piece in pieces])
         return invalid
 
     def _resolve(self, reference, resolved, chain):

@@ -33,6 +33,14 @@ def card_display_name(card) -> str:
     return str(name_val) if name_val else card.guid
 
 
+def _copy_limit_key(card) -> str:
+    """Cards sharing a name share the 4-copy limit, except V-UNION pieces, which count per piece."""
+    name = card_display_name(card)
+    if card.get_attribute_value(AttrID.CARD_TYPE) == CardType.LEGEND_HALF.value             and card.get_attribute_value(AttrID.STAGE) == PokemonStage.VUNION.value:
+        return f"{name} #{card.get_attribute_value(AttrID.COLLECTOR_NUMBER)}"
+    return name
+
+
 def _is_basic_pokemon_card(card) -> bool:
     return (
         card.get_attribute_value(AttrID.CARD_TYPE) == CardType.POKEMON.value
@@ -86,7 +94,7 @@ class DeckValidator:
         for card in self.cards:
             if is_basic_energy_card(card):
                 continue
-            by_name.setdefault(card_display_name(card), []).append(card.guid.lower())
+            by_name.setdefault(_copy_limit_key(card), []).append(card.guid.lower())
         over_limit = {name: guids for name, guids in by_name.items() if len(guids) > MAX_COPIES}
         if over_limit:
             names = ", ".join(sorted(over_limit))
