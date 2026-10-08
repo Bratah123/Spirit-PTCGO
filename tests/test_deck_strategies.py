@@ -5,6 +5,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -21,6 +22,7 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     SHADOW_RIDER,
     SR_ATTACKERS,
     StrategyContext,
+    SUICUNE_LUDICOLO,
     _cv_allow,
     _cv_action_score,
     _cv_attack_score,
@@ -86,6 +88,35 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     _sr_retreat_ok,
     _sr_search_score,
     _sr_value,
+    _su_action_score,
+    _su_allow,
+    _su_attack_score,
+    _su_bench_score,
+    _su_candy_pairs,
+    _su_dance_bonus,
+    _su_dance_unlocks,
+    _su_dance_window,
+    _su_energy_target_score,
+    _su_energy_value,
+    _su_evolve_score,
+    _su_gust,
+    _su_gust_window,
+    _su_lotad_ok,
+    _su_output,
+    _su_pick,
+    _su_promote,
+    _su_ready,
+    _su_retreat_ok,
+    _su_rope_ok,
+    _su_rondo_base,
+    _su_scoop,
+    _su_scoop_ok,
+    _su_search_score,
+    _su_snipe,
+    _su_strike_damage,
+    _su_target_score,
+    _su_value,
+    _su_water_left,
     gust_score,
     ko_threshold_counters,
     order_score,
@@ -97,7 +128,7 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
 
 class FakeMon:
     def __init__(self, name, owner="p1", hp=0, max_hp=None, energy=0,
-                 cost=0, eid=None, prize=1, fire=0, lightning=0):
+                 cost=0, eid=None, prize=1, fire=0, lightning=0, water=0):
         self.name_ = name
         self.owning_player_id = owner
         self.hp = hp
@@ -108,6 +139,7 @@ class FakeMon:
         self.prize = prize
         self.fire = fire
         self.lightning = lightning
+        self.water = water
         self.children = []
 
 
@@ -280,12 +312,13 @@ class RegistryTests(unittest.TestCase):
         names = {name for name, _ in bot_decks.BOT_DECKS}
         self.assertEqual(names, {"Dragapult Inteleon", "Rapid Strike Urshifu V",
                                  "Shadow Rider Calyrex V", "Bronzor",
-                                 "Eternatus V", "Rayquaza V"})
+                                 "Eternatus V", "Rayquaza V",
+                                 "Sobble (suicune-ludicolo)"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
              "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
-             "Rayquaza V"},
+             "Rayquaza V", "Sobble (suicune-ludicolo)"},
         )
 
 
@@ -1997,6 +2030,548 @@ class RayquazaBrainTests(unittest.TestCase):
         self.assertGreater(
             _ry_search_score(self._v(eid="sv"), FakeCtx(play=[])),
             _ry_search_score(bolt, FakeCtx(play=[])))
+
+
+class SuicuneBrainTests(unittest.TestCase):
+    def test_suicune_brain_registered(self):
+        spec = strategy_for("Sobble (suicune-ludicolo)")
+        self.assertIs(spec, SUICUNE_LUDICOLO)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score"):
+            self.assertTrue(callable(spec[hook]), hook)
+        self.assertNotIn("counter_plan", spec)
+
+    # -- readiness / output ----------------------------------------------
+    @staticmethod
+    def _su(water=0, extra=0, eid="su", owner="p1", hp=210):
+        return FakeMon("Suicune V", owner=owner, hp=hp, max_hp=210,
+                       energy=water + extra, cost=2, water=water, eid=eid)
+
+    @staticmethod
+    def _dance_ctx(active, amount=100, player="p1", expires=None,
+                   turn=1, **kw):
+        ctx = FakeCtx(active=active, **kw)
+        ctx.session = SimpleNamespace(
+            turn_state=SimpleNamespace(
+                damage_modifiers=[SimpleNamespace(
+                    player_id=player, amount=amount,
+                    expires_after_turn=expires, requires_subtype=None,
+                    source_entity_id=None, attack_title=None,
+                    source_predicate=None)],
+                turn_number=turn))
+        return ctx
+
+    def test_ready_needs_typed_water_plus_second_unit(self):
+        ready = self._su(water=1, extra=1)
+        stacked = self._su(water=2)
+        colorless = self._su(water=0, extra=2)
+        short = self._su(water=1)
+        ctx = FakeCtx(active=ready, play=[ready, stacked, colorless, short])
+        self.assertTrue(_su_ready(ctx, ready))
+        self.assertTrue(_su_ready(ctx, stacked))
+        self.assertFalse(_su_ready(ctx, colorless))   # no Water slot filled
+        self.assertFalse(_su_ready(ctx, short))       # only one unit
+        self.assertFalse(_su_ready(ctx, FakeMon("Sobble", water=2)))
+
+    def test_rondo_scales_with_both_benches(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Drizzile", owner="p2", eid=f"o{i}")
+                  for i in range(4)]
+        ctx = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                      opp_bench=theirs)
+        self.assertEqual(_su_rondo_base(ctx), 20 + 20 * 8)
+        self.assertEqual(_su_output(ctx, su), 180)
+        small = FakeCtx(active=su, play=[su], bench=[], opp_bench=theirs[:1])
+        self.assertEqual(_su_rondo_base(small), 20 + 20)
+        unready = self._su(water=0, extra=1)
+        ctx2 = FakeCtx(active=unready, play=[unready], bench=mine,
+                       opp_bench=theirs)
+        self.assertEqual(_su_rondo_base(ctx2), 0)
+        self.assertEqual(_su_output(ctx2, unready), 0)
+
+    def test_dance_bonus_reads_turn_state(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Drizzile", owner="p2", eid=f"o{i}")
+                  for i in range(4)]
+        ctx = self._dance_ctx(su, play=[su] + mine, bench=mine,
+                              opp_bench=theirs)
+        self.assertEqual(_su_dance_bonus(ctx, su), 100)
+        self.assertEqual(_su_output(ctx, su), 280)      # 180 base + 100
+        # only my modifiers count, and expired ones are pruned
+        other = self._dance_ctx(su, player="p2", play=[su] + mine,
+                                bench=mine, opp_bench=theirs)
+        self.assertEqual(_su_dance_bonus(other, su), 0)
+        stale = self._dance_ctx(su, expires=0, turn=1, play=[su] + mine,
+                                bench=mine, opp_bench=theirs)
+        self.assertEqual(_su_dance_bonus(stale, su), 0)
+        # a FakeCtx without a session reads zero instead of raising
+        bare = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                       opp_bench=theirs)
+        self.assertEqual(_su_dance_bonus(bare, su), 0)
+
+    # -- gust / promote ----------------------------------------------------
+    def test_gust_window_uses_rondo_output(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Drizzile", owner="p2", hp=170, eid=f"o{i}")
+                  for i in range(4)]
+        ctx = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                      opp_play=theirs, opp_bench=theirs)
+        window = _su_gust_window(ctx)
+        self.assertEqual(len(window), 4)               # all 170 <= 180
+        self.assertGreater(_su_gust(ctx, theirs[0]), 900.0)
+        full_hp = FakeMon("Suicune V", owner="p2", hp=300, max_hp=300,
+                          eid="tank")
+        self.assertEqual(_su_gust(ctx, full_hp), 0.0)
+        scratched = FakeMon("Suicune V", owner="p2", hp=300, max_hp=350,
+                            eid="scratch")
+        self.assertEqual(_su_gust(ctx, scratched), 550.0)
+        unready = self._su(water=0, extra=1)
+        ctx2 = FakeCtx(active=unready, play=[unready] + mine, bench=mine,
+                       opp_bench=theirs)
+        self.assertEqual(_su_gust_window(ctx2), [])
+
+    def test_promote_prefers_the_ready_puncher(self):
+        ready = self._su(water=1, extra=1, eid="r")
+        bare = self._su(water=0, extra=0, eid="b")
+        ctx = FakeCtx(active=ready, play=[ready, bare])
+        ladder = [
+            _su_promote(ctx, ready),
+            _su_promote(ctx, bare),
+            _su_promote(ctx, FakeMon("Ludicolo", eid="l")),
+            _su_promote(ctx, FakeMon("Inteleon", eid="i")),
+            _su_promote(ctx, FakeMon("Drizzile", eid="d")),
+            _su_promote(ctx, FakeMon("Sobble", eid="s")),
+            _su_promote(ctx, FakeMon("Lotad", eid="lo")),
+        ]
+        self.assertEqual(ladder, sorted(ladder, reverse=True))
+        self.assertGreater(ladder[0], 2000.0)
+
+    # -- energy ------------------------------------------------------------
+    def test_energy_value_prefers_water_into_the_gap(self):
+        hungry = self._su(water=0)
+        hctx = FakeCtx(active=hungry, play=[hungry])
+        self.assertEqual(_su_energy_value("Water Energy", hctx), 120.0)
+        ready = self._su(water=1, extra=1)
+        rctx = FakeCtx(active=ready, play=[ready])
+        self.assertEqual(_su_energy_value("Water Energy", rctx), 60.0)
+        # Capture only leads when no Water Energy is held at all
+        self.assertEqual(_su_energy_value("Capture Energy", hctx), 90.0)
+        held = FakeCtx(active=hungry, play=[hungry],
+                       hand=["Water Energy", "x"])
+        self.assertEqual(_su_energy_value("Capture Energy", held), 40.0)
+
+    def test_energy_target_ladder_puncher_first(self):
+        active_su = self._su(water=0, eid="a")
+        bench_su = self._su(water=0, eid="b")
+        engine = FakeMon("Sobble", eid="s")
+        ctx = FakeCtx(active=active_su, play=[active_su, bench_su, engine],
+                      bench=[bench_su, engine])
+        score = lambda t, n="Water Energy": _su_energy_target_score(ctx, t, n)
+        self.assertEqual(score(active_su), 750.0)      # 500 + typed slot
+        self.assertEqual(score(bench_su), 600.0)
+        self.assertEqual(score(engine), 50.0)          # engine never fed
+        ready = self._su(water=1, extra=1, eid="a")
+        rctx = FakeCtx(active=ready, play=[ready])
+        self.assertEqual(_su_energy_target_score(rctx, ready, "Water Energy"),
+                         240.0)                        # loaded: hold back
+        mid = self._su(water=1, extra=0, eid="a")
+        mctx = FakeCtx(active=mid, play=[mid])
+        self.assertEqual(_su_energy_target_score(mctx, mid, "Water Energy"),
+                         620.0)
+        # no puncher out yet: the active body develops
+        body = FakeMon("Sobble", eid="s")
+        bctx = FakeCtx(active=body, play=[body])
+        self.assertEqual(_su_energy_target_score(bctx, body, "Water Energy"),
+                         300.0)
+
+    # -- bench discipline ----------------------------------------------------
+    def test_bench_attacker_first_then_engine(self):
+        empty = FakeCtx(play=[], bench=[])
+        self.assertEqual(_su_bench_score("Suicune V", empty), 700.0)
+        self.assertEqual(_su_bench_score("Sobble", empty), 600.0)
+        su = self._su(eid="a")
+        one = FakeCtx(play=[su], bench=[su])
+        self.assertEqual(_su_bench_score("Suicune V", one), 450.0)
+
+    def test_bench_lotad_needs_line_pieces_and_slot(self):
+        su = self._su(eid="s1")
+        so1 = FakeMon("Sobble", eid="b1")
+        so2 = FakeMon("Sobble", eid="b2")
+        board = [su, so1, so2]
+        # pieces in hand: Lotad outranks the next Sobble for the slot
+        held = FakeCtx(hand=["Lombre"], play=board, bench=board)
+        self.assertEqual(_su_bench_score("Lotad", held), 280.0)
+        self.assertEqual(_su_bench_score("Sobble", held), 200.0)
+        # no pieces: Lotad stays down
+        bare = FakeCtx(hand=[], play=board, bench=board)
+        self.assertEqual(_su_bench_score("Lotad", bare), 0.0)
+        # one slot left and no backup puncher: both yield
+        so3 = FakeMon("Sobble", eid="b3")
+        full = FakeCtx(hand=["Lombre"], play=board + [so3],
+                       bench=board + [so3])
+        self.assertEqual(_su_bench_score("Sobble", full), 120.0)
+        self.assertEqual(_su_bench_score("Lotad", full), 0.0)
+
+    def test_lotad_ok_gates_pieces_and_slots(self):
+        self.assertFalse(_su_lotad_ok(FakeCtx(hand=[], bench=[])))
+        self.assertTrue(_su_lotad_ok(FakeCtx(hand=["Lombre"], bench=[])))
+        su = self._su(eid="s")
+        busy = FakeCtx(hand=["Ludicolo"], bench=[su] * 4)
+        self.assertFalse(_su_lotad_ok(busy))            # no slot for backup
+        out = FakeCtx(hand=["Lombre"], play=[FakeMon("Lotad")], bench=[])
+        self.assertFalse(_su_lotad_ok(out))             # one line is enough
+        two = FakeCtx(hand=["Lombre"], play=[self._su(eid="a"),
+                                             self._su(eid="b")], bench=[])
+        self.assertTrue(_su_lotad_ok(two))              # punchers secured
+
+    # -- evolve / dance windows ---------------------------------------------
+    def test_ludicolo_evolve_needs_the_window(self):
+        ready = self._su(water=1, extra=1)
+        ctx = FakeCtx(active=ready, play=[ready])
+        self.assertTrue(
+            _su_allow("EvolvePokemonPlayAbility", "Ludicolo", ctx))
+        unready = self._su(water=0, extra=0)
+        uctx = FakeCtx(active=unready, play=[unready])
+        self.assertFalse(
+            _su_allow("EvolvePokemonPlayAbility", "Ludicolo", uctx))
+        lombre = FakeMon("Lombre", eid="l")
+        lctx = FakeCtx(active=lombre, play=[lombre])
+        self.assertTrue(
+            _su_allow("EvolvePokemonPlayAbility", "Ludicolo", lctx))
+        self.assertTrue(
+            _su_allow("EvolvePokemonPlayAbility", "Drizzile", uctx))
+
+    def test_dance_unlocks_only_in_the_100_window(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        opp_bench = [FakeMon("Drizzile", owner="p2", eid=f"o{i}")
+                     for i in range(4)]
+
+        def _with(hp):
+            oa = FakeMon("Suicune V", owner="p2", hp=hp, max_hp=320,
+                         eid="oa")
+            return FakeCtx(active=su, play=[su] + mine, bench=mine,
+                           opp_active=oa, opp_play=[oa] + opp_bench,
+                           opp_bench=opp_bench)
+
+        ctx = _with(250)
+        self.assertTrue(_su_dance_window(ctx))
+        self.assertEqual(_su_rondo_base(ctx), 180)       # 4 + 4 benched
+        self.assertTrue(_su_dance_unlocks(ctx))         # 180 < 250 <= 280
+        self.assertEqual(_su_evolve_score("Ludicolo", ctx), 950.0)
+        low = _with(150)
+        self.assertFalse(_su_dance_unlocks(low))        # already in range
+        self.assertEqual(_su_evolve_score("Ludicolo", low), 700.0)
+        high = _with(300)
+        self.assertFalse(_su_dance_unlocks(high))       # 280 < 300
+
+    def test_candy_pairs(self):
+        self.assertEqual(
+            _su_candy_pairs(FakeCtx(play=[FakeMon("Sobble")],
+                                    hand=["Inteleon"])),
+            [("Sobble", "Inteleon")])
+        self.assertEqual(
+            _su_candy_pairs(FakeCtx(play=[FakeMon("Lotad")],
+                                    hand=["Ludicolo"])),
+            [("Lotad", "Ludicolo")])
+        self.assertEqual(_su_candy_pairs(FakeCtx(play=[], hand=[])), [])
+        self.assertFalse(
+            _su_allow("UseTrainerCard", "Rare Candy",
+                      FakeCtx(play=[FakeMon("Sobble")], hand=[])))
+
+    # -- values / searches ---------------------------------------------------
+    def test_value_reflects_real_gaps(self):
+        hungry = self._su(water=0)
+        hctx = FakeCtx(active=hungry, play=[hungry])
+        self.assertEqual(_su_value("Melony", hctx), 90.0)
+        ready = self._su(water=1, extra=1)
+        stocked = FakeCtx(active=ready, play=[ready], hand=["x"] * 7)
+        self.assertEqual(_su_value("Melony", stocked), 45.0)
+        self.assertEqual(_su_value("Water Energy", hctx), 85.0)
+        self.assertEqual(_su_value("Water Energy", stocked), 40.0)
+        self.assertEqual(
+            _su_value("Professor's Research", FakeCtx(hand=["a"] * 4)), 80.0)
+        self.assertEqual(
+            _su_value("Professor's Research", FakeCtx(hand=["a"] * 7)), 20.0)
+        marnie = FakeCtx(hand=["a"] * 3)
+        marnie.hand_size = lambda pid=None: 6 if pid == marnie.opp else 3
+        self.assertEqual(_su_value("Marnie", marnie), 70.0)
+
+    def test_value_boss_tracks_the_gust_window(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Drizzile", owner="p2", hp=170, eid=f"o{i}")
+                  for i in range(4)]
+        window = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                         opp_play=theirs, opp_bench=theirs)
+        self.assertEqual(_su_value("Boss's Orders", window), 95.0)
+        tank = FakeMon("Suicune V", owner="p2", hp=320, max_hp=320,
+                       eid="tank")
+        scratched = FakeMon("Sobble", owner="p2", hp=30, max_hp=60,
+                           eid="scr")
+        clean = FakeCtx(active=su, play=[su], opp_play=[tank])
+        self.assertEqual(_su_value("Boss's Orders", clean), 15.0)
+        dirty = FakeCtx(active=su, play=[su], opp_play=[tank, scratched])
+        self.assertEqual(_su_value("Boss's Orders", dirty), 45.0)
+
+    def test_value_searchers_solve_gaps(self):
+        # Drizzile fetch only matters when an un-evolved Sobble is out
+        self.assertEqual(
+            _su_value("Drizzile", FakeCtx(play=[FakeMon("Sobble")])), 80.0)
+        self.assertEqual(_su_value("Drizzile", FakeCtx(play=[])), 6.0)
+        # speculative Lotad stays cheap
+        self.assertEqual(_su_value("Lotad", FakeCtx(hand=[])), 8.0)
+        self.assertEqual(
+            _su_value("Lotad", FakeCtx(hand=["Lombre"])), 40.0)
+        # Level Ball first target: the missing Drizzile
+        ball = FakeCtx(play=[FakeMon("Sobble")], hand=[])
+        self.assertEqual(_su_value("Level Ball", ball), 80.0)
+        self.assertEqual(_su_value("Level Ball", FakeCtx(play=[])), 65.0)
+        full = FakeCtx(play=[FakeMon("Sobble"), FakeMon("Drizzile"),
+                             FakeMon("Drizzile"), FakeMon("Drizzile")],
+                       hand=[])
+        self.assertEqual(_su_value("Level Ball", full), 10.0)
+        # Quick Ball fetches the puncher when we have none
+        self.assertEqual(_su_value("Quick Ball", FakeCtx(play=[])), 85.0)
+        # Capacious Bucket stops digging once the puncher is loaded
+        ready = self._su(water=1, extra=1)
+        self.assertEqual(
+            _su_value("Capacious Bucket", FakeCtx(active=ready,
+                                                  play=[ready])), 20.0)
+
+    def test_search_score_ranks_engine_over_dead_pieces(self):
+        ctx = FakeCtx(play=[FakeMon("Sobble")])
+        self.assertGreater(_su_search_score(FakeMon("Drizzile"), ctx),
+                           _su_search_score(FakeMon("Lotad"), ctx))
+        self.assertGreater(_su_search_score(FakeMon("Suicune V"),
+                                            FakeCtx(play=[])),
+                           _su_search_score(FakeMon("Lotad"),
+                                            FakeCtx(play=[])))
+
+    # -- actions -------------------------------------------------------------
+    def test_action_score_routes_by_description(self):
+        su = self._su(water=0)
+        ctx = FakeCtx(active=su, play=[su])
+        self.assertEqual(
+            _su_action_score("DefaultPokemonPlayAbility", "Suicune V",
+                             FakeCtx(play=[], bench=[])), 700.0)
+        self.assertEqual(
+            _su_action_score("UsePokemonAbility", "Fleet-Footed", ctx), 75.0)
+        self.assertEqual(
+            _su_action_score("UseTrainerCard", "Boss's Orders",
+                             FakeCtx(active=su, play=[su])), 15.0)
+        self.assertEqual(
+            _su_action_score("DefaultEnergyPlayAbility", "Water Energy", ctx),
+            120.0)
+        self.assertEqual(_su_evolve_score("Drizzile", ctx), 800.0)
+        self.assertEqual(_su_evolve_score("Inteleon", ctx), 650.0)
+
+    def test_attack_scores_take_the_rondo_ko(self):
+        su = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Sobble", owner="p2", eid=f"o{i}")
+                  for i in range(4)]
+        dying = FakeMon("Suicune V", owner="p2", hp=170, max_hp=210,
+                        eid="die")
+        tank = FakeMon("Suicune V", owner="p2", hp=300, max_hp=320,
+                       eid="tank")
+        ctx = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                      opp_active=dying, opp_play=[dying] + theirs,
+                      opp_bench=theirs)
+        self.assertEqual(_su_strike_damage(ctx), 180)
+        self.assertEqual(_su_attack_score("Blizzard Rondo", 20, ctx),
+                         800.0 + 180 + 1000.0)
+        ctx_tank = FakeCtx(active=su, play=[su] + mine, bench=mine,
+                           opp_active=tank, opp_play=[tank] + theirs,
+                           opp_bench=theirs)
+        self.assertEqual(_su_attack_score("Blizzard Rondo", 20, ctx_tank),
+                         800.0 + 180)
+        unready = self._su(water=0, extra=1)
+        ctx_u = FakeCtx(active=unready, play=[unready])
+        self.assertEqual(_su_attack_score("Blizzard Rondo", 20, ctx_u), 0.0)
+        # ramp attacks only while the bench has room
+        self.assertEqual(
+            _su_attack_score("Keep Calling", 0, FakeCtx(bench=[])), 350.0)
+        self.assertEqual(
+            _su_attack_score("Keep Calling", 0, FakeCtx(bench=[mine] * 5)),
+            0.0)
+        self.assertEqual(
+            _su_attack_score("Call for Family", 0, FakeCtx(bench=[])), 400.0)
+
+    def test_allow_gates_boss_research_and_cape(self):
+        su = self._su(water=0)
+        uctx = FakeCtx(active=su, play=[su], hand=["a"] * 6)
+        self.assertFalse(_su_allow("UseTrainerCard", "Boss's Orders", uctx))
+        self.assertFalse(_su_allow("UseTrainerCard", "Professor's Research",
+                                   uctx))
+        self.assertTrue(_su_allow("UseTrainerCard", "Professor's Research",
+                                  FakeCtx(hand=["a"] * 4)))
+        # window: gust opens
+        ready = self._su(water=1, extra=1)
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        targets = [FakeMon("Drizzile", owner="p2", hp=170, eid=f"o{i}")
+                   for i in range(4)]
+        wctx = FakeCtx(active=ready, play=[ready] + mine, bench=mine,
+                       opp_play=targets, opp_bench=targets)
+        self.assertTrue(_su_allow("UseTrainerCard", "Boss's Orders", wctx))
+        # Cape only when the puncher has a free tool slot
+        self.assertTrue(_su_allow("UseTrainerCard", "Cape of Toughness",
+                                  FakeCtx(play=[self._su()])))
+        self.assertFalse(_su_allow("UseTrainerCard", "Cape of Toughness",
+                                   FakeCtx(play=[FakeMon("Sobble")])))
+
+    def test_allow_bucket_never_mines_a_dry_deck(self):
+        hungry = self._su(water=0)
+        dry = FakeCtx(active=hungry, play=[hungry],
+                      hand=["Water Energy"] * 6, discard=["Water Energy"] * 6)
+        self.assertEqual(_su_water_left(dry), 0)
+        self.assertFalse(_su_allow("UseTrainerCard", "Capacious Bucket", dry))
+        wet = FakeCtx(active=hungry, play=[hungry])
+        self.assertTrue(_su_allow("UseTrainerCard", "Capacious Bucket", wet))
+        self.assertFalse(
+            _su_allow("UseTrainerCard", "Capacious Bucket",
+                      FakeCtx(active=self._su(water=1, extra=1),
+                              play=[self._su(water=1, extra=1)])))
+
+    def test_allow_attacks_rotate_into_the_puncher(self):
+        su = self._su(water=1, extra=1)
+        sobble = FakeMon("Sobble", energy=1, eid="s")
+        rctx = FakeCtx(active=sobble, play=[sobble, su], bench=[su])
+        self.assertFalse(_su_allow("UsePokemonAttack", "Sobble", rctx))
+        broke = FakeMon("Sobble", energy=0, eid="s")
+        bctx = FakeCtx(active=broke, play=[broke, su], bench=[su])
+        self.assertTrue(_su_allow("UsePokemonAttack", "Sobble", bctx))
+        full = FakeCtx(active=sobble,
+                       play=[sobble] + [FakeMon("Sobble", eid=f"b{i}")
+                                        for i in range(5)],
+                       bench=[FakeMon("Sobble", eid=f"b{i}")
+                              for i in range(5)])
+        self.assertFalse(_su_allow("UsePokemonAttack", "Sobble", full))
+        sctx = FakeCtx(active=su, play=[su], bench=[])
+        self.assertTrue(_su_allow("UsePokemonAttack", "Suicune V", sctx))
+
+    def test_retreat_and_rope_windows(self):
+        ready = self._su(water=1, extra=1, eid="r")
+        stuck = self._su(water=0, extra=0, eid="s")
+        # stuck active, loaded bench: rotate
+        self.assertTrue(_su_retreat_ok(
+            FakeCtx(active=stuck, play=[stuck, ready], bench=[ready])))
+        # loaded active, no damage: keep swinging
+        self.assertFalse(_su_retreat_ok(
+            FakeCtx(active=ready, play=[ready], bench=[stuck])))
+        # loaded active, nearly dead: preserve it
+        hurt = self._su(water=1, extra=1, eid="h", hp=210)
+        hurt.hp = 80
+        self.assertTrue(_su_retreat_ok(
+            FakeCtx(active=hurt, play=[hurt, ready], bench=[ready])))
+        # rope: rotate when the active can't swing ...
+        self.assertTrue(_su_rope_ok(
+            FakeCtx(active=stuck, play=[stuck, ready], bench=[ready])))
+        # ... or when a bench body walks into Rondo's KO
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        target = FakeMon("Drizzile", owner="p2", hp=170, eid="o")
+        opp_b = [target] + [FakeMon("Drizzile", owner="p2", hp=170,
+                                    eid=f"w{i}") for i in range(3)]
+        gctx = FakeCtx(active=ready, play=[ready] + mine, bench=mine,
+                       opp_active=target, opp_play=[target],
+                       opp_bench=opp_b)
+        self.assertFalse(_su_rope_ok(gctx))   # active itself KOs it already
+        tank = FakeMon("Suicune V", owner="p2", hp=300, max_hp=320,
+                       eid="tank")
+        hctx = FakeCtx(active=ready, play=[ready] + mine, bench=mine,
+                       opp_active=tank, opp_play=[tank], opp_bench=opp_b)
+        self.assertTrue(_su_rope_ok(hctx))
+
+    # -- scooping / sniping ---------------------------------------------------
+    def test_scoop_heals_wounded_bodies_only_with_a_bench(self):
+        so = FakeMon("Sobble", hp=0, max_hp=60, eid="s")
+        dry = FakeMon("Sobble", hp=60, max_hp=60, eid="d")
+        active = FakeMon("Drizzile", hp=90, max_hp=90, eid="a")
+        ctx = FakeCtx(active=active, play=[active, so, dry],
+                      bench=[so, dry])
+        self.assertEqual(_su_scoop(ctx, so), 1200.0)
+        self.assertGreater(_su_scoop(ctx, active), _su_scoop(ctx, dry))
+        self.assertEqual(_su_scoop(ctx, self._su()), 0.0)
+        empty = FakeCtx(active=active, play=[active])
+        self.assertLess(_su_scoop(empty, active), -900.0)
+        self.assertFalse(_su_scoop_ok(empty))
+        self.assertTrue(_su_scoop_ok(ctx))
+        self.assertFalse(_su_scoop_ok(
+            FakeCtx(active=dry, play=[dry], bench=[dry])))
+        full = FakeCtx(play=[dry], bench=[dry] * 5, hand=["Drizzile"])
+        self.assertTrue(_su_scoop_ok(full))
+
+    def test_snipe_prefers_counter_kos(self):
+        ctx = FakeCtx()
+        dying = FakeMon("Sobble", owner="p2", hp=10, max_hp=60, eid="d")
+        scratched = FakeMon("Suicune V", owner="p2", hp=260, max_hp=320,
+                            eid="s")
+        fresh = FakeMon("Sobble", owner="p2", hp=60, max_hp=60, eid="f")
+        self.assertEqual(_su_snipe(ctx, dying), 1000.0)
+        self.assertGreater(_su_snipe(ctx, scratched), _su_snipe(ctx, fresh))
+
+    # -- pick branches ---------------------------------------------------------
+    def test_pick_ranks_prompts(self):
+        ready = self._su(water=1, extra=1, eid="r")
+        stuck = self._su(water=0, extra=0, eid="s")
+        ctx = FakeCtx(active=ready, play=[ready, stuck], bench=[stuck],
+                      hand=["Ludicolo", "Inteleon"])
+        promote = "Choose your new Active Pok\u00e9mon"
+        self.assertGreater(_su_pick(promote, ctx, ready),
+                           _su_pick(promote, ctx, stuck))
+        snipe = "Choose 1 of your opponent's Pok\u00e9mon"
+        dying = FakeMon("Sobble", owner="p2", hp=10, max_hp=60, eid="d")
+        tank = FakeMon("Suicune V", owner="p2", hp=300, max_hp=320,
+                       eid="t")
+        self.assertGreater(_su_pick(snipe, ctx, dying),
+                           _su_pick(snipe, ctx, tank))
+        attach = "Choose a Pok\u00e9mon to attach the Energy to"
+        self.assertEqual(_su_pick(attach, ctx, ready), 240.0)
+        self.assertEqual(_su_pick(attach, ctx, stuck), 600.0)
+        candy2 = "Choose a Stage 2 Pok\u00e9mon to evolve into"
+        self.assertEqual(_su_pick(candy2, ctx, FakeMon("Inteleon")), 800.0)
+        candy1 = "Choose a Basic Pok\u00e9mon in play"
+        lotad = FakeMon("Lotad", eid="lo")
+        lctx = FakeCtx(play=[lotad], hand=["Ludicolo"])
+        self.assertEqual(_su_pick(candy1, lctx, lotad), 900.0)
+        scooped = "Choose 1 of your Pok\u00e9mon to put into your hand"
+        wounded = FakeMon("Sobble", hp=20, max_hp=60, eid="w")
+        sctx = FakeCtx(active=wounded, play=[wounded], bench=[wounded])
+        self.assertEqual(_su_pick(scooped, sctx, wounded), 600.0)
+        discard = "Choose a card to discard"
+        hctx = FakeCtx(hand=["Water Energy", "Capture Energy",
+                             "Suicune V", "x"])
+        self.assertGreater(_su_pick(discard, hctx,
+                                    FakeMon("Capture Energy")),
+                           _su_pick(discard, hctx, self._su()))
+
+    def test_target_score_energy_boss_and_tool(self):
+        su = self._su(water=0, eid="a")
+        bench_su = self._su(water=1, extra=1, eid="b")
+        ctx = FakeCtx(active=su, play=[su, bench_su], bench=[bench_su])
+        self.assertEqual(
+            _su_target_score("DefaultEnergyPlayAbility", "Water Energy",
+                             ctx, "a"), 750.0)
+        self.assertEqual(
+            _su_target_score("DefaultToolPlayAbility", "Cape of Toughness",
+                             ctx, "a"), 700.0)
+        target = FakeMon("Drizzile", owner="p2", hp=170, eid="o")
+        gctx = FakeCtx(active=su, play=[su], opp_play=[target])
+        self.assertEqual(
+            _su_target_score("UseTrainerCard", "Boss's Orders",
+                             gctx, "o"), 0.0)   # unready: no gust value
+        ready = self._su(water=1, extra=1, eid="r")
+        mine = [FakeMon("Sobble", eid=f"m{i}") for i in range(4)]
+        theirs = [FakeMon("Drizzile", owner="p2", hp=170, eid=f"t{i}")
+                  for i in range(4)]
+        wctx = FakeCtx(active=ready, play=[ready] + mine, bench=mine,
+                       opp_play=theirs, opp_bench=theirs)
+        self.assertGreater(
+            _su_target_score("UseTrainerCard", "Boss's Orders",
+                             wctx, "t0"), 900.0)
 
 
 class WiringTests(unittest.TestCase):

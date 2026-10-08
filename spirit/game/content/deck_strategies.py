@@ -2928,6 +2928,704 @@ RAYQUAZA_VMAX_FLAFFY = {
 }
 
 
+# ----------------------------------------------------------------------
+# Suicune V / Ludicolo  (deck key: 'Sobble (suicune-ludicolo)')
+#
+# Main plan: Suicune V is the puncher and the first meaningful Water Energy
+# investment; Blizzard Rondo costs Water + Colorless and hits 20 + 20 for
+# every Benched Pokemon on BOTH sides, so filling our own bench is offense.
+# The Sobble -> Drizzile -> Inteleon line is the consistency engine (Shady
+# Dealings searches); searches are spent on real gaps, never wasted.
+# Ludicolo's on-evolve Enthusiastic Dance adds +100 to a Basic attacker
+# THIS turn only, so the Lombre -> Ludicolo evolve is gated on a window:
+# the active Suicune is ready to swing and (ideally) the boost unlocks a
+# KO.  Lotad is NOT auto-benched: bench space is kept for the backup
+# attacker and, when the line pieces are held, for the single Ludicolo.
+# Melony/Raihan reload a dead attacker after losses; Boss/Escape Rope
+# move KO-range bodies into Rondo's reach; Scoop Up Net reuses search
+# bodies (Pokemon V can't be netted).  Cape of Toughness hardens the
+# active attacker.
+
+SU_ATTACKERS = {"Suicune V"}
+_SU_ENERGY = {"Water Energy", "Capture Energy"}
+_SU_ATTACKER = "Suicune V"
+_SU_ATTACK = "Blizzard Rondo"
+_SU_LINE = {"Suicune V", "Sobble", "Drizzile", "Inteleon",
+            "Lotad", "Lombre", "Ludicolo"}
+_SU_REPEATABLE = {
+    "Professor's Research", "Marnie", "Quick Ball", "Level Ball",
+    "Evolution Incense", "Boss's Orders", "Melony", "Raihan",
+    "Capacious Bucket", "Scoop Up Net", "Rare Candy", "Escape Rope",
+    "Cape of Toughness", "Water Energy", "Capture Energy",
+}
+
+
+def _su_attackers(ctx: StrategyContext) -> List:
+    return [p for p in ctx.in_play() if ctx.name(p) == "Suicune V"]
+
+
+def _su_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Blizzard Rondo typed cost: one Water plus a second unit."""
+    if pokemon is None or ctx.name(pokemon) != "Suicune V":
+        return False
+    return (ctx.energy_of_type(pokemon, "Water") >= 1
+            and ctx.energy_attached(pokemon) >= 2)
+
+
+def _su_dance_bonus(ctx: StrategyContext, pokemon) -> int:
+    """Enthusiastic Dance rider: +100 this turn for a Basic attacker vs the
+    opponent's Active (read from turn_state; expires at begin_turn)."""
+    try:
+        state = ctx.session.turn_state
+        mods = state.damage_modifiers
+        turn = state.turn_number
+    except Exception:
+        return 0
+    total = 0
+    for mod in mods:
+        if getattr(mod, "player_id", None) != ctx.me:
+            continue
+        expires = getattr(mod, "expires_after_turn", None)
+        if expires is not None and expires < turn:
+            continue
+        if getattr(mod, "source_entity_id", None) is not None:
+            if mod.source_entity_id != getattr(pokemon, "entity_id", None):
+                continue
+        if getattr(mod, "attack_title", None):
+            continue                      # title-gated: not ours to count
+        if getattr(mod, "source_predicate", None) is not None:
+            continue                      # opaque gate: don't assume it
+        subtype = getattr(mod, "requires_subtype", None)
+        if subtype and pokemon is not None:
+            from spirit.game.data_utils import subtypes_for
+            arch = getattr(pokemon, "archetype_id", None)
+            if arch is not None and subtype not in subtypes_for(arch):
+                continue
+        total += int(getattr(mod, "amount", 0) or 0)
+    return total
+
+
+def _su_rondo_base(ctx: StrategyContext) -> int:
+    """20 + 20 per Benched Pokemon on both sides, ready attacker only."""
+    active = ctx.active()
+    if not _su_ready(ctx, active):
+        return 0
+    return 20 + 20 * (len(ctx.bench()) + len(ctx.bench(ctx.opp)))
+
+
+def _su_output(ctx: StrategyContext, pokemon) -> int:
+    """Damage `pokemon`'s Blizzard Rondo deals from the Active right now."""
+    if not _su_ready(ctx, pokemon):
+        return 0
+    return (20 + 20 * (len(ctx.bench()) + len(ctx.bench(ctx.opp)))
+            + _su_dance_bonus(ctx, pokemon))
+
+
+def _su_strike_damage(ctx: StrategyContext) -> int:
+    return _su_output(ctx, ctx.active())
+
+
+def _su_energy_hungry(ctx: StrategyContext) -> bool:
+    attackers = _su_attackers(ctx)
+    if not attackers:
+        return True
+    return any(ctx.energy_attached(p) < 2 or ctx.energy_of_type(p, "Water") < 1
+               for p in attackers)
+
+
+def _su_water_left(ctx: StrategyContext) -> int:
+    """6 Water Energy minus the copies we can already see (hand, discard,
+    attached): what a Capacious Bucket can still dig out of the deck."""
+    used = (ctx.hand_names().count("Water Energy")
+            + ctx.discard_names().count("Water Energy")
+            + sum(ctx.energy_of_type(p, "Water") for p in ctx.in_play()))
+    return max(0, 6 - used)
+
+
+def _su_water_in_discard(ctx: StrategyContext) -> bool:
+    return "Water Energy" in ctx.discard_names()
+
+
+def _su_tool_free(ctx: StrategyContext, pokemon) -> bool:
+    if pokemon is None:
+        return False
+    return not any(
+        c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value
+        for c in (getattr(pokemon, "children", None) or [])
+    )
+
+
+def _su_dance_window(ctx: StrategyContext) -> bool:
+    """A Basic puncher is attack-ready in the Active right now: evolving
+    Ludicolo this turn actually spends the on-evolve boost."""
+    return _su_ready(ctx, ctx.active())
+
+
+def _su_dance_unlocks(ctx: StrategyContext) -> bool:
+    """+100 turns a surviving active into a KO (base < hp <= base + 100)."""
+    if not _su_dance_window(ctx):
+        return False
+    opp = ctx.active(ctx.opp)
+    if opp is None:
+        return False
+    base = _su_rondo_base(ctx)
+    left = ctx.hp_left(opp)
+    return 0 < base < left <= base + 100
+
+
+def _su_gust_window(ctx: StrategyContext) -> List:
+    damage = _su_strike_damage(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _su_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _su_strike_damage(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _su_snipe(ctx: StrategyContext, pokemon) -> float:
+    """Quick Shooting counters / Aqua Bullet bench pick: finish first."""
+    left = ctx.hp_left(pokemon)
+    if 0 < left <= 20:
+        return 1000.0                      # 2 counters close the KO
+    dealt = ctx.damage_on(pokemon)
+    if dealt > 0:
+        return 600.0 + dealt
+    return 300.0 + ctx.prize_value(pokemon) * 50.0
+
+
+def _su_promote(ctx: StrategyContext, pokemon) -> float:
+    """New-Active ranking: the ready puncher first, then the developing one."""
+    name = ctx.name(pokemon)
+    if name == "Suicune V":
+        score = 2000.0 if _su_ready(ctx, pokemon) else 1200.0
+        return score + ctx.energy_attached(pokemon) * 10.0
+    if name == "Ludicolo":
+        return 900.0
+    if name == "Inteleon":
+        return 700.0
+    if name == "Drizzile":
+        return 500.0
+    if name == "Sobble":
+        return 300.0
+    if name in ("Lotad", "Lombre"):
+        return 200.0
+    return 0.0
+
+
+def _su_scoop(ctx: StrategyContext, pokemon) -> float:
+    """Scoop Up Net target: heal the wounded, reuse a used search body."""
+    if pokemon is None:
+        return 0.0
+    if ctx.name(pokemon) == "Suicune V":
+        return 0.0                         # engine excludes Pokemon V anyway
+    dealt = ctx.damage_on(pokemon)
+    if pokemon is ctx.active():
+        return 600.0 if ctx.bench() else -999.0  # empty bench = we lose
+    if dealt >= 60:
+        return 1200.0                      # nearly dead: bounce and replay
+    if ctx.name(pokemon) in ("Drizzile", "Inteleon"):
+        return 500.0 if dealt == 0 else 700.0    # fire Shady Dealings again
+    if dealt > 0:
+        return 400.0 + dealt
+    return 100.0
+
+
+def _su_scoop_ok(ctx: StrategyContext) -> bool:
+    if not ctx.bench():
+        return False                       # netting the active would lose
+    hand = set(ctx.hand_names())
+    for p in ctx.in_play():
+        if ctx.name(p) == "Suicune V":
+            continue
+        if ctx.damage_on(p) >= 40:
+            return True
+    if len(ctx.bench()) >= 5 and hand & {"Drizzile", "Inteleon"}:
+        return True                        # free a slot to replay a search
+    return False
+
+
+def _su_rope_ok(ctx: StrategyContext) -> bool:
+    """Escape Rope: rotate into a ready puncher, or gust a KO the active
+    itself denies."""
+    active = ctx.active()
+    if active is None:
+        return False
+    damage = _su_strike_damage(ctx)
+    if damage <= 0:
+        return any(_su_ready(ctx, p) for p in ctx.bench())
+    if 0 < ctx.hp_left(active) <= damage:
+        return False                       # current target already dies
+    opp_left = ctx.hp_left(ctx.active(ctx.opp)) \
+        if ctx.active(ctx.opp) is not None else 0
+    if 0 < opp_left <= damage:
+        return False                       # no reason to trade it away
+    return any(0 < ctx.hp_left(p) <= damage for p in ctx.bench(ctx.opp))
+
+
+def _su_retreat_ok(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None:
+        return False
+    bench_ready = any(_su_ready(ctx, p) for p in ctx.bench())
+    if not bench_ready:
+        return False
+    if _su_strike_damage(ctx) <= 0:
+        return True                        # the active can't swing: rotate
+    if ctx.damage_on(active) >= 120:
+        return True                        # preserve the wounded puncher
+    return False
+
+
+def _su_lotad_ok(ctx: StrategyContext) -> bool:
+    """Bench Lotad only when the line can actually be walked, and never
+    out of slots for the backup attacker."""
+    hand = set(ctx.hand_names())
+    if not (hand & {"Lombre", "Ludicolo", "Evolution Incense"}):
+        return False
+    names = ctx.in_play_names()
+    if names.count("Lotad") + names.count("Lombre") + names.count("Ludicolo"):
+        return False                       # one Ludicolo line is enough
+    free = 5 - len(ctx.bench())
+    if names.count("Suicune V") < 2:
+        return free >= 2                   # keep a slot for the backup
+    return free >= 1
+
+
+def _su_candy_pairs(ctx: StrategyContext) -> List:
+    """(basic in play, Stage 2 in hand) couples Rare Candy can join."""
+    hand = set(ctx.hand_names())
+    names = set(ctx.in_play_names())
+    pairs = []
+    if "Sobble" in names and "Inteleon" in hand:
+        pairs.append(("Sobble", "Inteleon"))
+    if "Lotad" in names and "Ludicolo" in hand:
+        pairs.append(("Lotad", "Ludicolo"))
+    return pairs
+
+
+def _su_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    if description == "DefaultPokemonPlayAbility":
+        if name == "Lotad":
+            return _su_lotad_ok(ctx)
+        return True
+    if description == "EvolvePokemonPlayAbility":
+        if name == "Ludicolo":
+            # never spend the on-evolve boost while the puncher can't swing
+            if _su_dance_window(ctx):
+                return True
+            active = ctx.active()
+            return active is not None and ctx.name(active) == "Lombre"
+        return True
+    if description == "UsePokemonAbility":
+        return name in ("Fleet-Footed", "Quick Shooting")
+    if description == "UseTrainerCard":
+        if name == "Professor's Research":
+            return ctx.hand_size() <= 5 and deck > 10
+        if name == "Marnie":
+            return (ctx.hand_size() <= 5
+                    or ctx.hand_size(ctx.opp) >= 6) and deck > 5
+        if name in ("Quick Ball", "Level Ball", "Evolution Incense"):
+            return deck > 5
+        if name == "Capacious Bucket":
+            return _su_energy_hungry(ctx) and _su_water_left(ctx) > 0
+        if name == "Boss's Orders":
+            if _su_strike_damage(ctx) <= 0:
+                return False               # no swing this turn, no gust
+            if _su_gust_window(ctx):
+                return True
+            return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+        if name == "Melony":
+            if not _su_water_in_discard(ctx):
+                return False
+            return _su_energy_hungry(ctx) or ctx.hand_size() <= 4
+        if name == "Rare Candy":
+            return bool(_su_candy_pairs(ctx))
+        if name == "Scoop Up Net":
+            return _su_scoop_ok(ctx)
+        if name == "Escape Rope":
+            return _su_rope_ok(ctx)
+        if name == "Cape of Toughness":
+            return any(ctx.name(p) == "Suicune V" and _su_tool_free(ctx, p)
+                       for p in ctx.in_play())
+        return True
+    if description == "UsePokemonAttack":
+        active = ctx.active()
+        # rotating into a ready puncher beats weak chip; retreat can pay
+        # because the body sits on exactly one energy (its retreat cost)
+        can_rotate = (active is not None
+                      and ctx.energy_attached(active) >= 1
+                      and _su_retreat_ok(ctx))
+        if name in ("Sobble", "Lotad"):
+            if len(ctx.bench()) >= 5:
+                return False               # bench full: nothing to fill
+            if can_rotate:
+                return False               # rotate into the ready puncher
+            return True
+        if name in ("Drizzile", "Lombre"):
+            return not can_rotate          # weak chip only when stuck
+        return True                        # Suicune V / Inteleon / Ludicolo
+    if description == "BaseRetreat":
+        return _su_retreat_ok(ctx)
+    return True
+
+
+def _su_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational worth: attacker first, then the engine, then the plays
+    that solve a real problem (mirrors the strategy priority chain)."""
+    hand = ctx.hand_names()
+    handset = set(hand)
+    play = ctx.in_play_names()
+    attackers = len(_su_attackers(ctx))
+    unevolved = play.count("Sobble")
+
+    # -- Pokemon gap pieces ------------------------------------------------
+    if name == "Suicune V":
+        v = 95.0 if attackers == 0 else (55.0 if attackers < 3 else 10.0)
+    elif name == "Sobble":
+        depth = unevolved + play.count("Drizzile") + play.count("Inteleon")
+        v = 45.0 if depth < 2 else (25.0 if depth < 4 else 6.0)
+    elif name == "Drizzile":
+        if unevolved == 0:
+            v = 6.0
+        elif "Drizzile" in handset:
+            v = 12.0                       # already holding the search
+        else:
+            v = 80.0 if unevolved > play.count("Drizzile") else 40.0
+    elif name == "Inteleon":
+        v = 60.0 if play.count("Drizzile") > play.count("Inteleon") else 6.0
+    elif name == "Lotad":
+        v = 40.0 if handset & {"Lombre", "Ludicolo"} else 8.0
+    elif name == "Lombre":
+        v = 55.0 if "Lotad" in play else 6.0
+    elif name == "Ludicolo":
+        v = 60.0 if ("Lotad" in play or "Lombre" in play) else 6.0
+
+    # -- Energy ------------------------------------------------------------
+    elif name == "Water Energy":
+        v = 85.0 if _su_energy_hungry(ctx) else 40.0
+    elif name == "Capture Energy":
+        v = 35.0                           # setup filler, never a plan
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Melony":
+        if _su_energy_hungry(ctx):
+            v = 90.0                       # attach + draw 3 into the gap
+        elif ctx.hand_size() <= 4:
+            v = 60.0                       # the draw alone
+        else:
+            v = 45.0                       # save the Supporter slot
+    elif name == "Raihan":
+        v = 75.0                           # attach + search, post-KO only
+    elif name == "Boss's Orders":
+        if _su_gust_window(ctx):
+            v = 95.0                       # a KO walks into Rondo's range
+        elif any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp)):
+            v = 45.0
+        else:
+            v = 15.0
+    elif name == "Professor's Research":
+        v = 80.0 if ctx.hand_size() <= 4 else (
+            55.0 if ctx.hand_size() <= 6 else 20.0)
+    elif name == "Marnie":
+        v = 70.0 if ctx.hand_size(ctx.opp) >= 6 else (
+            50.0 if ctx.hand_size() <= 4 else 30.0)
+    elif name == "Evolution Incense":
+        if unevolved > play.count("Drizzile") and "Drizzile" not in handset:
+            v = 75.0
+        elif play.count("Drizzile") > play.count("Inteleon") \
+                and "Inteleon" not in handset:
+            v = 70.0
+        elif "Lotad" in play and "Ludicolo" not in handset:
+            v = 65.0
+        elif "Lotad" in play and "Lombre" not in handset:
+            v = 60.0
+        else:
+            v = 12.0
+    elif name == "Level Ball":
+        if unevolved > play.count("Drizzile") and "Drizzile" not in handset:
+            v = 80.0                       # the engine's first search
+        elif (unevolved + play.count("Drizzile")) < 4 \
+                and "Sobble" not in handset:
+            v = 65.0
+        elif "Lotad" in play and "Lombre" not in handset:
+            v = 55.0
+        else:
+            v = 10.0
+    elif name == "Quick Ball":
+        if attackers == 0 and "Suicune V" not in handset:
+            v = 85.0                       # fetch the puncher
+        elif unevolved == 0 and "Sobble" not in handset:
+            v = 60.0
+        else:
+            v = 15.0
+    elif name == "Capacious Bucket":
+        v = 85.0 if (_su_energy_hungry(ctx) and _su_water_left(ctx) > 0) \
+            else 20.0
+    elif name == "Rare Candy":
+        v = 70.0 if _su_candy_pairs(ctx) else 8.0
+    elif name == "Scoop Up Net":
+        v = 68.0 if _su_scoop_ok(ctx) else 15.0
+    elif name == "Escape Rope":
+        v = 68.0 if _su_rope_ok(ctx) else 18.0
+    elif name == "Cape of Toughness":
+        active = ctx.active()
+        v = 60.0 if (active is not None and ctx.name(active) == "Suicune V"
+                     and _su_tool_free(ctx, active)) else 15.0
+    else:
+        v = 6.0
+
+    if in_hand and name in handset and name not in _SU_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _su_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Water Energy":
+        return 120.0 if _su_energy_hungry(ctx) else 60.0
+    if name == "Capture Energy":
+        if "Water Energy" in ctx.hand_names():
+            return 40.0                    # the real slot waits for Water
+        if _su_energy_hungry(ctx):
+            return 90.0                    # it is the only unit we have
+        return 40.0
+    return 6.0
+
+
+def _su_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach lands: the puncher's slots first, engine never."""
+    if ctx.name(target) not in SU_ATTACKERS:
+        if not _su_attackers(ctx):
+            return 300.0 if target is ctx.active() else 150.0
+        return 50.0                        # never feed the engine bodies
+    score = 500.0 if target is ctx.active() else 350.0
+    water = ctx.energy_of_type(target, "Water")
+    have = ctx.energy_attached(target)
+    if water < 1:
+        score += 250.0                     # the typed slot comes first
+    elif have < 2:
+        score += 120.0                     # second unit completes the cost
+    else:
+        score -= 260.0                     # loaded: the backup grows instead
+    return score
+
+
+def _su_bench_score(name: str, ctx: StrategyContext) -> float:
+    names = ctx.in_play_names()
+    free = 5 - len(ctx.bench())
+    attackers = names.count("Suicune V")
+    lotad_line = names.count("Lotad") + names.count("Lombre") \
+        + names.count("Ludicolo")
+    hand = set(ctx.hand_names())
+    want_lotad = lotad_line == 0 and bool(
+        hand & {"Lombre", "Ludicolo", "Evolution Incense"})
+    if name == "Suicune V":
+        if attackers == 0:
+            return 700.0                   # the puncher takes the bench
+        if attackers < 3:
+            return 450.0
+        return 40.0
+    if name == "Sobble":
+        depth = names.count("Sobble") + names.count("Drizzile") \
+            + names.count("Inteleon")
+        if depth == 0:
+            score = 600.0
+        elif depth < 3:
+            score = 420.0
+        elif depth < 4:
+            score = 300.0
+        else:
+            score = 60.0
+        # slot discipline: keep room for the backup attacker / the line
+        if attackers < 2 and free <= 1:
+            score = min(score, 120.0)
+        elif want_lotad and free <= 2:
+            score = min(score, 200.0)
+        return score
+    if name == "Lotad":
+        if lotad_line > 0 or not want_lotad:
+            return 0.0
+        if attackers < 2 and free <= 1:
+            return 0.0
+        return 280.0
+    return 0.0
+
+
+def _su_evolve_score(name: str, ctx: StrategyContext) -> float:
+    if name == "Drizzile":
+        return 800.0                       # Shady Dealings consistency
+    if name == "Inteleon":
+        return 650.0                       # search-2 or Quick Shooting
+    if name == "Lombre":
+        return 500.0                       # prep step, no same-turn payoff
+    if name == "Ludicolo":
+        return 950.0 if _su_dance_unlocks(ctx) else 700.0
+    return 0.0
+
+
+def _su_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "DefaultPokemonPlayAbility":
+        return _su_bench_score(name, ctx)
+    if description == "DefaultEnergyPlayAbility":
+        return _su_energy_value(name, ctx)
+    if description == "EvolvePokemonPlayAbility":
+        return _su_evolve_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Fleet-Footed":
+            return 75.0                    # free draw, always live
+        if name == "Quick Shooting":
+            opp = ctx.in_play(ctx.opp)
+            if any(0 < ctx.hp_left(p) <= 20 for p in opp):
+                return 90.0                # a counter closes a KO
+            if any(ctx.damage_on(p) > 0 for p in opp):
+                return 65.0
+            return 45.0
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _su_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _su_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    if title == "Blizzard Rondo":
+        damage = _su_strike_damage(ctx)
+        if damage <= 0:
+            return 0.0
+        return _ko(800.0 + damage, damage)
+    if title == "Wave Splash":
+        return _ko(450.0 + 120, 120)
+    if title == "Aqua Bullet":
+        return _ko(420.0 + 120, 120)
+    if title == "Keep Calling":
+        return 350.0 if len(ctx.bench()) < 5 else 0.0
+    if title == "Call for Family":
+        return 400.0 if len(ctx.bench()) < 5 else 0.0
+    if title == "Waterfall":
+        return _ko(350.0 + 70, 70)
+    if title == "Water Drip":
+        return 150.0
+    if title == "Rain Splash":
+        return 120.0
+    if title == "Double Spin":
+        return 100.0
+    return base
+
+
+def _su_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _su_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            # dump the redundant unit first: setup filler dies before the
+            # Water Energy that feeds the puncher
+            return 200.0 if ctx.name(target) == "Capture Energy" else 150.0
+        if target.owning_player_id == ctx.me:
+            return _su_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _su_energy_target_score(ctx, target, name)
+    if description == "DefaultToolPlayAbility":     # Cape of Toughness
+        if ctx.name(target) != "Suicune V":
+            return 0.0
+        score = 500.0
+        if target is ctx.active():
+            score += 150.0
+        if _su_tool_free(ctx, target):
+            score += 50.0
+        return score
+    if description == "EvolvePokemonPlayAbility":
+        if name == "Ludicolo":
+            return 10.0 if target is ctx.active() else 6.0
+        return 4.0 if target is ctx.active() else 2.0
+    return 0.0
+
+
+def _su_search_score(card, ctx: StrategyContext) -> float:
+    return _su_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _su_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote the ready puncher;
+    - opponent switch/snipe picks -> KO window, then scratch value;
+    - Melony/Raihan attach targets -> the Suicune energy ladder;
+    - Rare Candy's Basic/Stage 2 picks -> the candy pair worth taking;
+    - Scoop Up Net -> wound first, used search bodies next;
+    - hand discards -> dump the least valuable card.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _su_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _su_gust(ctx, card)
+    if not mine and ("opponent's" in text or "take" in text):
+        return _su_snipe(ctx, card)        # Quick Shooting / Aqua Bullet
+    if mine and ("attach it to" in text or "attach the Energy to" in text):
+        return _su_energy_target_score(ctx, card, "")
+    if mine and "attach" in text:
+        return 100.0                       # pick the energy itself
+    if mine and "evolve into" in text:
+        # Rare Candy: "Choose a Stage 2 Pokemon to evolve into"
+        if name == "Inteleon":
+            return 800.0
+        if name == "Ludicolo":
+            if _su_dance_unlocks(ctx):
+                return 950.0
+            return 700.0 if _su_dance_window(ctx) else 400.0
+        return 100.0
+    if mine and "in play" in text:
+        # Rare Candy: "Choose a Basic Pokemon in play"
+        if name == "Lotad" and "Ludicolo" in ctx.hand_names():
+            return 900.0                   # Lotad -> Ludicolo skips Lombre
+        if name == "Sobble" and "Inteleon" in ctx.hand_names():
+            return 700.0
+        return 100.0
+    if mine and "put into your hand" in text:
+        return _su_scoop(ctx, card)        # Scoop Up Net
+    if mine and "into your hand" in text:
+        return _su_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        return -_su_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+SUICUNE_LUDICOLO = {
+    "allow_action": _su_allow,
+    "action_score": _su_action_score,
+    "attack_score": _su_attack_score,
+    "target_score": _su_target_score,
+    "search_score": _su_search_score,
+    "pick_score": _su_pick,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
@@ -2935,6 +3633,7 @@ DECK_STRATEGIES = {
     "Bronzor": CORVIKNIGHT_BRONZONG,
     "Eternatus V": ETERNATUS_VMAX,
     "Rayquaza V": RAYQUAZA_VMAX_FLAFFY,
+    "Sobble (suicune-ludicolo)": SUICUNE_LUDICOLO,
 }
 
 

@@ -377,7 +377,7 @@ BOT_DECK_LISTS = {**SCRAPED_DECK_LISTS, **HAND_CURATED}
 # While this list is being grown, STARTER_DECKS stay out of the AI pool too.
 ACTIVE_BOT_DECKS = ["Dragapult Inteleon", "Rapid Strike Urshifu V",
                     "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
-                    "Rayquaza V"]
+                    "Rayquaza V", "Sobble (suicune-ludicolo)"]
 
 BOT_DECKS = [(name, decklist) for name, decklist in BOT_DECK_LISTS.items()
              if name in ACTIVE_BOT_DECKS]
