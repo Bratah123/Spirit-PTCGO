@@ -2080,6 +2080,38 @@ SCRAPED_DECK_LISTS = {
         (10, 'CRE', 231),   # Water Energy
     ],
 
+    'Origin Forme Palkia VSTAR': [
+        (3, 'ASR', 40),   # Origin Forme Palkia VSTAR
+        (3, 'ASR', 39),   # Origin Forme Palkia V
+        (1, 'SSH', 58),   # Inteleon
+        (1, 'CRE', 43),   # Inteleon
+        (3, 'SSH', 56),   # Drizzile
+        (4, 'CRE', 41),   # Sobble
+        (1, 'BRS', 40),   # Lumineon V
+        (1, 'BRS', 41),   # Manaphy
+        (1, 'ASR', 46),   # Radiant Greninja
+        (1, 'ASR', 30),   # Starmie V
+        (4, 'ASR', 147),   # Irida
+        (2, 'BRS', 132),   # Boss's Orders
+        (1, 'CRE', 146),   # Melony
+        (1, 'VIV', 157),   # Nessa
+        (1, 'EVS', 152),   # Raihan
+        (1, 'ASR', 150),   # Roxanne
+        (1, 'ASR', 155),   # Temple of Sinnoh
+        (4, 'BST', 129),   # Level Ball
+        (4, 'FST', 237),   # Quick Ball
+        (3, 'RCL', 156),   # Capacious Bucket
+        (3, 'RCL', 165),   # Scoop Up Net
+        (2, 'SSH', 163),   # Evolution Incense
+        (1, 'FST', 225),   # Battle VIP Pass
+        (1, 'BRS', 135),   # Choice Belt
+        (1, 'ASR', 146),   # Hisuian Heavy Ball
+        (1, 'SSH', 172),   # Pal Pad
+        (1, 'BST', 136),   # Tool Jammer
+        (1, 'BRS', 150),   # Ultra Ball
+        (8, 'CRE', 231),   # Water Energy
+    ],
+
     'Phanpy': [
         (4, 'VIV', 86),   # Phanpy
         (4, 'VIV', 87),   # Donphan

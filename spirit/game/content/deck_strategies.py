@@ -4274,6 +4274,823 @@ CHARIZARD_VSTAR = {
 }
 
 
+# ----------------------------------------------------------------------
+# Origin Forme Palkia VSTAR  (deck key: 'Origin Forme Palkia VSTAR')
+#
+# Fill the board -> throw Energy into discard -> Star Portal -> Palkia
+# SMASH.  Palkia VSTAR is the main attacker: Subspace Swell costs two
+# Water for 60 + 20 per Benched Pokemon on BOTH sides, so a developed
+# board (ours AND theirs) is the attack's fuel -- don't clear our own
+# bench.  Star Portal is the one-per-game VSTAR Power: up to 3 Water
+# Energy from the discard onto Water Pokemon, used the moment it powers
+# an attacker (the Active's gap first, the backup body next).  Radiant
+# Greninja's Concealed Cards discards Water Energy on purpose -- the
+# discard is fuel, not loss -- and Moonlight Shuriken picks off two
+# valuable targets.  The Inteleon engine (Sobble -> Drizzile/Inteleon)
+# is the toolbox: Shady Dealings finds the exact Trainer, Quick Shooting
+# finishes 20-hp leftovers; Irida is the top setup Supporter (Water
+# Pokemon + Item in one).  Keep a second Palkia V developing, bench
+# support bodies for their effect only (Lumineon V for a missing
+# Supporter, Manaphy when their bench spreads), and when the Active is
+# about to fall, energy and the promote slot go to the NEXT Palkia.
+
+PK_ATTACKER = "Origin Forme Palkia VSTAR"
+PK_V = "Origin Forme Palkia V"
+PK_LINE = {PK_V, PK_ATTACKER}
+PK_WATER = {"Water Energy"}
+PK_SUPPORTERS = {"Irida", "Boss's Orders", "Melony", "Nessa", "Raihan",
+                 "Roxanne"}
+PK_REPEATABLE = {
+    "Irida", "Boss's Orders", "Melony", "Nessa", "Raihan", "Roxanne",
+    "Quick Ball", "Level Ball", "Ultra Ball", "Evolution Incense",
+    "Capacious Bucket", "Scoop Up Net", "Water Energy",
+}
+_PK_BASICS = {f"{e} Energy" for e in (
+    "Grass", "Fire", "Water", "Lightning", "Psychic", "Fighting",
+    "Darkness", "Metal", "Fairy")}
+
+
+def _pk_palkias(ctx: StrategyContext) -> int:
+    names = ctx.in_play_names()
+    return names.count(PK_V) + names.count(PK_ATTACKER)
+
+
+def _pk_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Subspace Swell typed cost: two Water."""
+    if pokemon is None or ctx.name(pokemon) != PK_ATTACKER:
+        return False
+    return ctx.energy_of_type(pokemon, "Water") >= 2
+
+
+def _pk_tool_named(pokemon, tool: str) -> bool:
+    if pokemon is None:
+        return False
+    for c in (getattr(pokemon, "children", None) or []):
+        if c.get_attribute(AttrID.TRAINER_TYPE) != TrainerType.POKEMON_TOOL.value:
+            continue
+        if getattr(c, "display_name", None) == tool:
+            return True
+        definition = def_for(getattr(c, "archetype_id", None))
+        if getattr(definition, "display_name", None) == tool:
+            return True
+    return False
+
+
+def _pk_output(ctx: StrategyContext, pokemon) -> int:
+    """Subspace Swell: 60 + 20 per Benched Pokemon (both sides), with the
+    Choice Belt rider when the opponent's Active is a V."""
+    if not _pk_ready(ctx, pokemon):
+        return 0
+    damage = 60 + 20 * (len(ctx.bench()) + len(ctx.bench(ctx.opp)))
+    if _pk_tool_named(pokemon, "Choice Belt"):
+        opp = ctx.active(ctx.opp)
+        if opp is not None:
+            try:
+                if has_rule_box(getattr(opp, "archetype_id", None)):
+                    damage += 30
+            except Exception:
+                pass
+    return damage
+
+
+def _pk_strike_damage(ctx: StrategyContext) -> int:
+    return _pk_output(ctx, ctx.active())
+
+
+def _pk_v_hydro(ctx: StrategyContext, pokemon) -> bool:
+    """Palkia V's Hydro Break cost: two Water plus one more unit."""
+    if pokemon is None or ctx.name(pokemon) != PK_V:
+        return False
+    return (ctx.energy_of_type(pokemon, "Water") >= 2
+            and ctx.energy_attached(pokemon) >= 3)
+
+
+def _pk_energy_hungry(ctx: StrategyContext) -> bool:
+    bodies = [p for p in ctx.in_play() if ctx.name(p) in PK_LINE]
+    if not bodies:
+        return True
+    return any(ctx.energy_of_type(p, "Water") < 2 for p in bodies)
+
+
+def _pk_water_in_discard(ctx: StrategyContext) -> bool:
+    return "Water Energy" in ctx.discard_names()
+
+
+def _pk_water_left(ctx: StrategyContext) -> int:
+    """8 Water Energy minus the copies already visible: what a Capacious
+    Bucket can still dig out of the deck."""
+    used = (ctx.hand_names().count("Water Energy")
+            + ctx.discard_names().count("Water Energy")
+            + sum(ctx.energy_of_type(p, "Water") for p in ctx.in_play()))
+    return max(0, 8 - used)
+
+
+def _pk_opp_energy(ctx: StrategyContext) -> int:
+    return sum(ctx.energy_attached(p) for p in ctx.in_play(ctx.opp))
+
+
+def _pk_threatened(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None or ctx.name(active) not in PK_LINE:
+        return False
+    return ctx.damage_on(active) >= 120
+
+
+def _pk_portal_ok(ctx: StrategyContext) -> bool:
+    """Star Portal only when it powers an attacker: the Active's gap, or
+    the backup Palkia growing while the Active is about to fall."""
+    if not _pk_water_in_discard(ctx):
+        return False
+    if not any(ctx.name(p) != "" for p in ctx.in_play()):
+        return False
+    active = ctx.active()
+    if active is not None and ctx.name(active) in PK_LINE \
+            and ctx.energy_of_type(active, "Water") < 2:
+        return True
+    return any(ctx.name(p) in PK_LINE and ctx.energy_of_type(p, "Water") < 2
+               for p in ctx.bench())
+
+
+def _pk_concealed_ok(ctx: StrategyContext) -> bool:
+    if "Water Energy" not in ctx.hand_names():
+        return False                       # engine condition: energy in hand
+    play = ctx.in_play_names()
+    return ctx.hand_size() <= 6 or PK_ATTACKER in play
+
+
+def _pk_gust_window(ctx: StrategyContext) -> List:
+    damage = _pk_strike_damage(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _pk_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _pk_strike_damage(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _pk_snipe(ctx: StrategyContext, pokemon, hit: int = 90) -> float:
+    """Moonlight Shuriken (90) / Quick Shooting (2) target value."""
+    left = ctx.hp_left(pokemon)
+    if 0 < left <= hit:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    if dealt > 0:
+        return 600.0 + dealt
+    return 300.0 + ctx.prize_value(pokemon) * 50.0
+
+
+def _pk_shuriken_ok(ctx: StrategyContext) -> bool:
+    """Moonlight Shuriken only when at least one target falls to 90."""
+    active = ctx.active()
+    if active is None or ctx.name(active) != "Radiant Greninja":
+        return False
+    return any(0 < ctx.hp_left(p) <= 90 for p in ctx.in_play(ctx.opp))
+
+
+def _pk_manaphy_ok(ctx: StrategyContext) -> bool:
+    """Bench protection only against a developed (spread-damage) bench."""
+    return len(ctx.bench(ctx.opp)) >= 3
+
+
+def _pk_temple_ok(ctx: StrategyContext) -> bool:
+    """Temple of Sinnoh: answers Path (it blocks Star Portal) or a board
+    leaning on Special Energy."""
+    if ctx.opponent_stadium_is("Path to the Peak"):
+        return True
+    for p in ctx.in_play(ctx.opp):
+        for c in (getattr(p, "children", None) or []):
+            if not isinstance(c, EnergyEntity):
+                continue
+            if ctx.name(c) and ctx.name(c) not in _PK_BASICS:
+                return True
+    return False
+
+
+def _pk_nessa_ok(ctx: StrategyContext) -> bool:
+    disc = set(ctx.discard_names())
+    names = ctx.in_play_names()
+    depth = (names.count("Sobble") + names.count("Drizzile")
+             + names.count("Inteleon"))
+    if (PK_LINE & disc) and _pk_palkias(ctx) < 2:
+        return True
+    if "Sobble" in disc and depth < 3:
+        return True
+    return False
+
+
+def _pk_promote(ctx: StrategyContext, pokemon) -> float:
+    """New-Active ranking: the ready Palkia first, the developing one
+    next, the emergency punchers, then the toolbox bodies."""
+    name = ctx.name(pokemon)
+    if name == PK_ATTACKER:
+        if _pk_ready(ctx, pokemon):
+            return 2000.0 + ctx.energy_attached(pokemon) * 10.0
+        return 1100.0
+    if name == PK_V:
+        if _pk_v_hydro(ctx, pokemon):
+            return 1200.0
+        return 700.0
+    if name == "Starmie V":
+        if ctx.energy_of_type(pokemon, "Water") >= 2:
+            return 850.0
+        return 350.0
+    if name == "Radiant Greninja":
+        if ctx.energy_attached(pokemon) >= 3 and _pk_shuriken_ok(ctx):
+            return 800.0
+        return 350.0
+    if name == "Inteleon":
+        return 600.0
+    if name == "Drizzile":
+        return 500.0
+    if name == "Sobble":
+        return 300.0
+    if name == "Lumineon V":
+        return 100.0
+    if name == "Manaphy":
+        return 50.0
+    return 0.0
+
+
+def _pk_scoop(ctx: StrategyContext, pokemon) -> float:
+    """Scoop Up Net target: heal the wounded, reuse a used search body."""
+    if pokemon is None:
+        return 0.0
+    if ctx.name(pokemon) in PK_LINE or ctx.name(pokemon) == "Starmie V":
+        return 0.0                         # engine excludes Pokemon V anyway
+    dealt = ctx.damage_on(pokemon)
+    if pokemon is ctx.active():
+        return 600.0 if ctx.bench() else -999.0  # empty bench = we lose
+    if dealt >= 60:
+        return 1200.0                      # nearly dead: bounce and replay
+    if ctx.name(pokemon) in ("Drizzile", "Inteleon"):
+        return 500.0 if dealt == 0 else 700.0    # fire Shady Dealings again
+    if dealt > 0:
+        return 400.0 + dealt
+    return 100.0
+
+
+def _pk_scoop_ok(ctx: StrategyContext) -> bool:
+    if not ctx.bench():
+        return False                       # netting the active would lose
+    hand = set(ctx.hand_names())
+    for p in ctx.in_play():
+        if ctx.name(p) in PK_LINE or ctx.name(p) == "Starmie V":
+            continue
+        if ctx.damage_on(p) >= 40:
+            return True
+    if len(ctx.bench()) >= 5 and hand & {"Drizzile", "Inteleon"}:
+        return True                        # free a slot to replay a search
+    return False
+
+
+def _pk_retreat_ok(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None:
+        return False
+    can_rotate = any(
+        _pk_ready(ctx, p) or _pk_v_hydro(ctx, p)
+        or (ctx.name(p) == "Starmie V"
+            and ctx.energy_of_type(p, "Water") >= 2)
+        for p in ctx.bench()
+    )
+    if not can_rotate:
+        return False
+    if _pk_strike_damage(ctx) <= 0:
+        return True                        # the active can't swing: rotate
+    if ctx.damage_on(active) >= 120:
+        return True                        # doomed Palkia: keep the body
+    return False
+
+
+def _pk_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    if description == "DefaultPokemonPlayAbility":
+        if name == "Lumineon V":
+            hand = set(ctx.hand_names())
+            if not (hand & PK_SUPPORTERS):
+                return True
+            return _pk_gust_window(ctx) and "Boss's Orders" not in hand
+        if name == "Manaphy":
+            return _pk_manaphy_ok(ctx)
+        return True                        # Palkia V / Greninja / Starmie / Sobble
+    if description == "EvolvePokemonPlayAbility":
+        return True                        # the engine line always advances
+    if description == "UseTrainerCard":
+        if name == "Irida":
+            return deck > 5
+        if name == "Melony":
+            if not _pk_water_in_discard(ctx):
+                return False
+            return _pk_energy_hungry(ctx) or ctx.hand_size() <= 4
+        if name == "Nessa":
+            return _pk_nessa_ok(ctx)
+        if name == "Raihan":
+            return ctx.prizes_lost() >= 1  # come back after a KO fell
+        if name == "Roxanne":
+            return ctx.prizes_lost() >= 3  # behind: reshuffle to 6 vs 2
+        if name == "Boss's Orders":
+            if _pk_strike_damage(ctx) <= 0:
+                return False
+            if _pk_gust_window(ctx):
+                return True
+            return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+        if name in ("Quick Ball", "Level Ball", "Ultra Ball",
+                    "Evolution Incense"):
+            return deck > 5
+        if name == "Capacious Bucket":
+            return _pk_energy_hungry(ctx) and _pk_water_left(ctx) > 0
+        if name == "Scoop Up Net":
+            return _pk_scoop_ok(ctx)
+        if name == "Choice Belt":
+            return ctx.opponent_rule_box()
+        if name == "Tool Jammer":
+            return ctx.opponent_tools()
+        if name == "Temple of Sinnoh":
+            return _pk_temple_ok(ctx)
+        if name == "Pal Pad":
+            return any(s in ctx.discard_names() for s in PK_SUPPORTERS)
+        return True                        # VIP Pass / Heavy Ball / ...
+    if description == "DefaultStadiumPlayAbility" and name == "Temple of Sinnoh":
+        return _pk_temple_ok(ctx)
+    if description == "DefaultToolPlayAbility":
+        if name == "Choice Belt":
+            return ctx.opponent_rule_box()
+        if name == "Tool Jammer":
+            return ctx.opponent_tools()
+        return True
+    if description == "UsePokemonAbility":
+        if name == "Star Portal":
+            return _pk_portal_ok(ctx)
+        if name == "Concealed Cards":
+            return _pk_concealed_ok(ctx)
+        if name == "Luminous Sign":
+            hand = set(ctx.hand_names())
+            if not (hand & PK_SUPPORTERS):
+                return True
+            return _pk_gust_window(ctx) and "Boss's Orders" not in hand
+        if name == "Quick Shooting":
+            return True                    # engine gate: Inteleon in play
+        return True                        # Wave Veil is a passive
+    if description == "UsePokemonAttack":
+        if name == "Moonlight Shuriken":
+            return _pk_shuriken_ok(ctx)
+        if name == "Rule the Region":
+            # rotate into a ready swinger instead when one exists
+            return not _pk_retreat_ok(ctx)
+        return True                        # Subspace Swell / Hydro Break / ...
+    if description == "BaseRetreat":
+        return _pk_retreat_ok(ctx)
+    return True
+
+
+def _pk_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational worth: the Palkia line first, then the engine, then the
+    plays that solve a real problem (mirrors the strategy priority chain)."""
+    hand = ctx.hand_names()
+    handset = set(hand)
+    play = ctx.in_play_names()
+    palkias = play.count(PK_V) + play.count(PK_ATTACKER)
+    v_waiting = play.count(PK_V) > play.count(PK_ATTACKER)
+    unevolved = play.count("Sobble")
+    drizziles = play.count("Drizzile")
+    inteles = play.count("Inteleon")
+    depth = unevolved + drizziles + inteles
+    hs = ctx.hand_size()
+
+    # -- Pokemon gap pieces ------------------------------------------------
+    if name == PK_ATTACKER:
+        if v_waiting:
+            v = 90.0                       # a V body is waiting to evolve
+        elif palkias == 0 and PK_V in handset:
+            v = 55.0                       # the line arrives together
+        elif palkias == 0:
+            v = 15.0                       # nothing to evolve into it
+        else:
+            v = 40.0                       # the second line's end state
+    elif name == PK_V:
+        v = 95.0 if palkias == 0 else (55.0 if palkias == 1 else 12.0)
+    elif name == "Sobble":
+        v = 45.0 if depth < 2 else (25.0 if depth < 4 else 6.0)
+    elif name == "Drizzile":
+        if unevolved == 0:
+            v = 6.0
+        elif "Drizzile" in handset:
+            v = 12.0                       # already holding the search
+        else:
+            v = 80.0 if unevolved > drizziles else 40.0
+    elif name == "Inteleon":
+        v = 60.0 if drizziles > inteles else 6.0
+    elif name == "Radiant Greninja":
+        v = 55.0 if "Radiant Greninja" not in play else 8.0
+    elif name == "Starmie V":
+        v = 55.0 if ("Starmie V" not in play
+                     and _pk_opp_energy(ctx) >= 4) else 10.0
+    elif name == "Manaphy":
+        v = 55.0 if ("Manaphy" not in play and _pk_manaphy_ok(ctx)) else 8.0
+    elif name == "Lumineon V":
+        if not (handset & PK_SUPPORTERS):
+            v = 70.0
+        elif _pk_gust_window(ctx) and "Boss's Orders" not in handset:
+            v = 85.0                       # fetch the missing gust
+        else:
+            v = 8.0
+
+    # -- Energy ------------------------------------------------------------
+    elif name == "Water Energy":
+        v = 85.0 if _pk_energy_hungry(ctx) else 45.0
+
+    # -- Supporters --------------------------------------------------------
+    elif name == "Irida":
+        if depth < 4 or palkias < 2 or _pk_energy_hungry(ctx):
+            v = 85.0                       # setup gaps: she solves them
+        else:
+            v = 60.0
+    elif name == "Boss's Orders":
+        if _pk_gust_window(ctx):
+            v = 95.0                       # a KO walks into Swell's range
+        elif any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp)):
+            v = 45.0
+        else:
+            v = 15.0
+    elif name == "Melony":
+        if _pk_energy_hungry(ctx) and _pk_water_in_discard(ctx):
+            v = 90.0                       # attach + draw 3 into the gap
+        elif hs <= 4:
+            v = 60.0
+        else:
+            v = 45.0
+    elif name == "Nessa":
+        disc = set(ctx.discard_names())
+        if (PK_LINE & disc) and palkias < 2:
+            v = 85.0                       # the lost Palkia comes back
+        elif "Sobble" in disc and depth < 3:
+            v = 60.0
+        else:
+            v = 15.0
+    elif name == "Raihan":
+        v = 85.0                           # attach + search, post-KO only
+    elif name == "Roxanne":
+        v = 80.0 if ctx.prizes_lost() >= 3 else 10.0
+
+    # -- Items -------------------------------------------------------------
+    elif name == "Quick Ball":
+        if palkias == 0 and PK_V not in handset:
+            v = 85.0                       # fetch the line
+        elif unevolved == 0 and "Sobble" not in handset:
+            v = 60.0
+        else:
+            v = 15.0
+    elif name == "Ultra Ball":
+        if palkias == 0 and PK_V not in handset:
+            v = 80.0
+        elif v_waiting and PK_ATTACKER not in handset:
+            v = 75.0
+        else:
+            v = 20.0
+    elif name == "Level Ball":
+        if unevolved > drizziles and "Drizzile" not in handset:
+            v = 80.0                       # the engine's first search
+        elif depth < 4 and "Sobble" not in handset:
+            v = 65.0
+        else:
+            v = 10.0
+    elif name == "Evolution Incense":
+        if v_waiting and PK_ATTACKER not in handset:
+            v = 85.0                       # evolve the waiting V
+        elif unevolved > drizziles and "Drizzile" not in handset:
+            v = 75.0
+        elif drizziles > inteles and "Inteleon" not in handset:
+            v = 70.0
+        else:
+            v = 12.0
+    elif name == "Capacious Bucket":
+        v = 85.0 if (_pk_energy_hungry(ctx) and _pk_water_left(ctx) > 0) \
+            else 20.0
+    elif name == "Scoop Up Net":
+        v = 68.0 if _pk_scoop_ok(ctx) else 15.0
+    elif name == "Choice Belt":
+        v = 65.0 if ctx.opponent_rule_box() else 15.0
+    elif name == "Tool Jammer":
+        v = 65.0 if ctx.opponent_tools() else 15.0
+    elif name == "Temple of Sinnoh":
+        v = 70.0 if _pk_temple_ok(ctx) else 12.0
+    elif name == "Pal Pad":
+        v = 35.0 if any(s in ctx.discard_names()
+                        for s in PK_SUPPORTERS) else 10.0
+    elif name == "Battle VIP Pass":
+        v = 70.0                           # engine: turn 1 only
+    elif name == "Hisuian Heavy Ball":
+        v = 35.0 if (palkias < 2 or depth < 2) else 10.0
+    else:
+        v = 6.0
+
+    if in_hand and name in handset and name not in PK_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _pk_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Water Energy":
+        return 120.0 if _pk_energy_hungry(ctx) else 60.0
+    return 6.0
+
+
+def _pk_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach (manual or Star Portal) lands: the Palkia gap
+    first, the developing V next, the emergency punchers, engine never."""
+    name = ctx.name(target)
+    if name == PK_ATTACKER:
+        score = 520.0 if target is ctx.active() else 400.0
+        if _pk_threatened(ctx) and target is not ctx.active():
+            score += 200.0                 # next attacker grows first
+        water = ctx.energy_of_type(target, "Water")
+        if water < 2:
+            score += 250.0                 # the typed slots come first
+        else:
+            score -= 260.0                 # loaded: the backup grows instead
+        return score
+    if name == PK_V:
+        score = 430.0
+        if _pk_threatened(ctx):
+            score += 150.0
+        water = ctx.energy_of_type(target, "Water")
+        have = ctx.energy_attached(target)
+        if water < 2:
+            score += 200.0
+        elif have < 3:
+            score += 110.0                 # Hydro Break's third unit
+        else:
+            score -= 140.0
+        return score
+    if name == "Radiant Greninja":
+        water = ctx.energy_of_type(target, "Water")
+        if water < 2:
+            return 320.0
+        if water < 3:
+            return 240.0                   # Moonlight's colorless unit
+        return -100.0                      # loaded: leave it alone
+    if name == "Starmie V":
+        water = ctx.energy_of_type(target, "Water")
+        return 300.0 if water < 2 else -100.0
+    return 40.0                            # engine / support never get fed
+
+
+def _pk_bench_score(name: str, ctx: StrategyContext) -> float:
+    names = ctx.in_play_names()
+    free = 5 - len(ctx.bench())
+    palkias = names.count(PK_V) + names.count(PK_ATTACKER)
+    depth = (names.count("Sobble") + names.count("Drizzile")
+             + names.count("Inteleon"))
+    hand = set(ctx.hand_names())
+    if name == PK_V:
+        if palkias == 0:
+            return 700.0                   # the line takes the bench
+        if palkias == 1:
+            return 450.0                   # one backup body is enough
+        return 40.0
+    if name == "Sobble":
+        if depth == 0:
+            score = 600.0
+        elif depth < 3:
+            score = 420.0
+        elif depth < 4:
+            score = 300.0
+        else:
+            score = 60.0
+        # slot discipline: keep room for the backup Palkia
+        if palkias < 2 and free <= 1:
+            score = min(score, 120.0)
+        return score
+    if name == "Radiant Greninja":
+        if "Radiant Greninja" in names:
+            return 0.0
+        if free <= 0:
+            return 0.0
+        if "Water Energy" in hand:
+            return 400.0                   # the fuel is ready to dump
+        return 340.0
+    if name == "Lumineon V":
+        if not (hand & PK_SUPPORTERS):
+            return 450.0 if free >= 2 else 380.0
+        if _pk_gust_window(ctx) and "Boss's Orders" not in hand:
+            return 480.0
+        return 0.0                         # 2-prize body with no job
+    if name == "Manaphy":
+        if "Manaphy" in names or not _pk_manaphy_ok(ctx):
+            return 0.0
+        return 320.0 if free >= 2 else 240.0
+    if name == "Starmie V":
+        if "Starmie V" in names or free <= 0:
+            return 0.0
+        if _pk_opp_energy(ctx) >= 4:
+            return 280.0                   # Energy Spiral's window
+        return 120.0                       # 0-retreat starter
+    return 0.0
+
+
+def _pk_evolve_score(name: str, ctx: StrategyContext) -> float:
+    if name == PK_ATTACKER:
+        return 900.0                       # strictly the better attacker
+    if name == "Drizzile":
+        return 800.0                       # Shady Dealings consistency
+    if name == "Inteleon":
+        return 650.0                       # search-2 or Quick Shooting
+    return 0.0
+
+
+def _pk_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "DefaultPokemonPlayAbility":
+        return _pk_bench_score(name, ctx)
+    if description == "DefaultEnergyPlayAbility":
+        return _pk_energy_value(name, ctx)
+    if description == "EvolvePokemonPlayAbility":
+        return _pk_evolve_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Star Portal":
+            if not _pk_portal_ok(ctx):
+                return 0.0
+            active = ctx.active()
+            if active is not None and ctx.name(active) in PK_LINE \
+                    and ctx.energy_of_type(active, "Water") < 2:
+                return 95.0                # swings THIS turn
+            return 75.0                    # powers the backup body
+        if name == "Concealed Cards":
+            hs = ctx.hand_size()
+            return 75.0 if hs <= 4 else (60.0 if hs <= 6 else 40.0)
+        if name == "Luminous Sign":
+            return 80.0                    # fetch the missing Supporter
+        if name == "Quick Shooting":
+            opp = ctx.in_play(ctx.opp)
+            if any(0 < ctx.hp_left(p) <= 20 for p in opp):
+                return 90.0                # a counter closes a KO
+            if any(ctx.damage_on(p) > 0 for p in opp):
+                return 65.0
+            return 45.0
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _pk_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _pk_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+    active = ctx.active()
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    if title == "Subspace Swell":
+        damage = _pk_output(ctx, active)
+        if damage <= 0:
+            return 0.0
+        return _ko(800.0 + damage, damage)
+    if title == "Hydro Break":
+        if not _pk_v_hydro(ctx, active):
+            return 0.0
+        return _ko(700.0 + 200, 200)
+    if title == "Rule the Region":
+        if active is None or ctx.name(active) != PK_V:
+            return 0.0
+        if ctx.energy_of_type(active, "Water") < 1:
+            return 0.0
+        return 250.0                       # utility: search the Stadium
+    if title == "Moonlight Shuriken":
+        if not _pk_shuriken_ok(ctx):
+            return 0.0
+        targets = [p for p in ctx.in_play(ctx.opp)
+                   if 0 < ctx.hp_left(p) <= 90][:2]
+        score = 400.0 + 500.0 * len(targets)
+        for t in targets:
+            score += ctx.prize_value(t) * 100.0
+        if opp_left is not None and 0 < opp_left <= 90:
+            score += 1000.0
+        return score
+    if title == "Energy Spiral":
+        if active is None or ctx.name(active) != "Starmie V":
+            return 0.0
+        if ctx.energy_of_type(active, "Water") < 2:
+            return 0.0
+        damage = 50 * _pk_opp_energy(ctx)
+        if damage <= 0:
+            return 0.0
+        return _ko(400.0 + damage, damage)
+    if title == "Swift":
+        if active is None or ctx.name(active) != "Starmie V":
+            return 0.0
+        if ctx.energy_attached(active) < 2:
+            return 0.0
+        return _ko(200.0 + 50, 50)
+    return base
+
+
+def _pk_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _pk_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            # we run basic Water only: expendable over anything else
+            return 160.0
+        if target.owning_player_id == ctx.me:
+            return _pk_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _pk_energy_target_score(ctx, target, name)
+    if description in ("DefaultToolPlayAbility",):     # Choice Belt / Jammer
+        if ctx.name(target) not in PK_LINE:
+            return 0.0
+        score = 500.0
+        if target is ctx.active():
+            score += 150.0                 # the tool hangs on the Active
+        return score
+    if description == "EvolvePokemonPlayAbility":
+        if name == PK_ATTACKER:
+            score = 8.0 + ctx.energy_attached(target) * 2.0
+            if target is ctx.active():
+                score += 6.0               # evolve where the energy is
+            return score
+        return 4.0 if target is ctx.active() else 2.0
+    return 0.0
+
+
+def _pk_search_score(card, ctx: StrategyContext) -> float:
+    return _pk_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _pk_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote the ready Palkia;
+    - opponent switch/snipe picks -> KO window (90 for Shuriken, 20 for
+      Quick Shooting), then scratch value;
+    - Star Portal / Melony attach targets -> the Palkia energy ladder;
+    - Star Portal / Melony energy cards -> any fuel card is fine;
+    - Scoop Up Net -> wounded first, used search bodies next;
+    - Concealed Cards discard -> dump the recoverable Water Energy.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _pk_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _pk_gust(ctx, card)
+    if not mine and ("opponent's" in text or "take" in text):
+        hit = 90 if "90" in text else 20   # Moonlight vs Quick Shooting
+        return _pk_snipe(ctx, card, hit)
+    if mine and "put into your hand" in text:
+        return _pk_scoop(ctx, card)        # Scoop Up Net
+    if mine and "attach" in text:
+        if "mon to attach" in text or "attach the Energy to" in text \
+                or "attach it to" in text:
+            return _pk_energy_target_score(ctx, card, name)
+        return 100.0                       # the energy card itself
+    if mine and "evolve into" in text:
+        if name == PK_ATTACKER:
+            return 900.0
+        if name == "Inteleon":
+            return 750.0
+        if name == "Drizzile":
+            return 700.0
+        return 100.0
+    if mine and "in play" in text:
+        return 100.0
+    if mine and "into your hand" in text:
+        return _pk_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        if isinstance(card, EnergyEntity):  # Concealed Cards fuel
+            return 50.0
+        return -_pk_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+PALKIA_VSTAR = {
+    "allow_action": _pk_allow,
+    "action_score": _pk_action_score,
+    "attack_score": _pk_attack_score,
+    "target_score": _pk_target_score,
+    "search_score": _pk_search_score,
+    "pick_score": _pk_pick,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
@@ -4283,6 +5100,7 @@ DECK_STRATEGIES = {
     "Rayquaza V": RAYQUAZA_VMAX_FLAFFY,
     "Sobble (suicune-ludicolo)": SUICUNE_LUDICOLO,
     "Charizard (charizard-vmax)": CHARIZARD_VSTAR,
+    "Origin Forme Palkia VSTAR": PALKIA_VSTAR,
 }
 
 
