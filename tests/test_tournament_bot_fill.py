@@ -9,7 +9,9 @@ from spirit.game.session.manager import GameSessionManager
 from spirit.game.tournaments.live import (
     LiveTournament, LiveTournamentManager, Matchup, Participant,
 )
-from spirit.game.tournaments.manager import TournamentDef, validate_definition
+from spirit.game.tournaments.manager import (
+    TournamentDef, _legacy_prizes, validate_definition,
+)
 
 
 def base_definition(**overrides):
@@ -359,6 +361,41 @@ class PrizeTests(LiveCase):
         self.assertEqual(len(completed), 1)
         # champion prize actually granted
         self.assertEqual(len(completed[0]["prizes"]), 1)
+
+    async def test_grant_failure_still_sends_completed(self):
+        tdef = make_tdef()
+        client = FakeClient()
+        human = Participant(client, {"piles": {"deck": []}})
+        t = LiveTournament(self.m, tdef, [human])
+        with patch("spirit.game.tournaments.live.run_db",
+                   new=AsyncMock(side_effect=RuntimeError("db down"))):
+            await asyncio.wait_for(t._complete(human), 5)
+
+        completed = [p for p in client.sent
+                     if p.get("messageName") == "TournamentCompleted"]
+        self.assertEqual(len(completed), 1,
+                         "results packet must survive a grant failure")
+        self.assertEqual(completed[0]["prizes"], [],
+                         "ungranted prizes must not be advertised")
+
+    def test_legacy_prize_types_match_client(self):
+        table = [
+            {"start": 1, "end": 1,
+             "rewards": [
+                 {"rewardType": "Archetype", "rewardProductID": "card-1",
+                  "rewardAmount": 1},
+                 {"rewardType": "Tokens", "rewardAmount": 5000,
+                  "rewardCurrency": "prizeTrainerCoin"},
+                 {"rewardType": "Tokens", "rewardAmount": 1,
+                  "rewardCurrency": "prizeTournamentTicket"},
+             ]},
+        ]
+        prizes = _legacy_prizes(table)
+        self.assertEqual([p["prizeType"]["type"] for p in prizes],
+                         ["Archetype", "Token", "TournamentTicket"],
+                         "client only accepts Token/TournamentTicket (not Tokens)")
+        self.assertEqual(prizes[0]["prizeType"]["archetypeID"], "card-1")
+        self.assertIsNone(prizes[1]["prizeType"]["archetypeID"])
 
 
 if __name__ == "__main__":

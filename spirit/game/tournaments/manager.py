@@ -59,15 +59,27 @@ LEGACY_FORMATS = ("Unlimited", "ThemeDeck", "Modified", "Expanded", "Legacy")
 
 
 def _legacy_prizes(prize_table: list) -> list:
-    """run.prizeTable rows -> legacy G.I[] (start/end are 1-based PLACES here)."""
+    """run.prizeTable rows -> legacy G.I[] (start/end are 1-based PLACES here).
+
+    prizeType.type must be one of the client's accepted values:
+    Archetype / Token / Ticket / TournamentTicket / ... (NOT "Tokens" — the
+    client's PrizeRenderer logs "Got unknown prize type" for it).
+    """
     out = []
     for row in prize_table or []:
         for reward in row.get("rewards") or []:
-            is_card = reward.get("rewardType") == "Archetype"
+            rtype = str(reward.get("rewardType") or "")
+            currency = str(reward.get("rewardCurrency") or "").lower()
+            if rtype == "Archetype":
+                legacy_type = "Archetype"
+            elif "ticket" in currency:
+                legacy_type = "TournamentTicket"
+            else:
+                legacy_type = "Token"
             out.append({
                 "prizeType": {
-                    "type": "Archetype" if is_card else "Tokens",
-                    "archetypeID": str(reward.get("rewardProductID")) if is_card else None,
+                    "type": legacy_type,
+                    "archetypeID": str(reward.get("rewardProductID")) if rtype == "Archetype" else None,
                 },
                 "amount": int(reward.get("rewardAmount") or 0),
                 "startPlace": int(row.get("start") or 0),

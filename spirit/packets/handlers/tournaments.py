@@ -196,7 +196,12 @@ class TournamentHandler(BaseHandler):
             return await self._join_invalid_deck(validation, request_id)
 
         fees = tournament.legacy_entry_fees()
-        error = await run_db(tournament_data.charge_fees, account_id, fees)
+        try:
+            error = await run_db(tournament_data.charge_fees, account_id, fees)
+        except Exception as e:
+            logging.error(f"[Tournaments] charge_fees threw for "
+                          f"{self.client.player.username}: {e}", exc_info=e)
+            error = "error"
         if error:
             # WalletFailed makes the client undo its optimistic local deduction;
             # follow with a wallet push so the HUD resyncs regardless.

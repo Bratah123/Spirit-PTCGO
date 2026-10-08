@@ -215,17 +215,31 @@ class LiveTournament:
                 # Bots have no wallet/account row; they never win prizes.
                 granted = []
             elif granted and not participant.withdrawn:
-                await run_db(grant_prize_rewards,
-                             participant.account_id, granted)
+                try:
+                    await run_db(grant_prize_rewards,
+                                 participant.account_id, granted)
+                except Exception as e:
+                    # Never let a grant failure swallow the results packet.
+                    logging.error(f"[LiveTournament {self.active_id[:8]}] "
+                                  f"prize grant failed for {participant.username}: {e}",
+                                  exc_info=e)
+                    granted = []
             else:
                 granted = []
             # prizes must be a non-null array: the final-standings view foreachs it
+            try:
+                prizes = [Reward.from_dict(r).to_dict(i)
+                          for i, r in enumerate(granted)]
+            except Exception as e:
+                logging.error(f"[LiveTournament {self.active_id[:8]}] "
+                              f"prize wire encode failed for {participant.username}: {e}",
+                              exc_info=e)
+                prizes = []
             await self._send_to(participant, {
                 "messageName": OutboundMsg.TOURNAMENT_COMPLETED.value,
                 "tournamentData": base,
                 "finalStandings": [p.identity() for p in standings],
-                "prizes": [Reward.from_dict(r).to_dict(i)
-                           for i, r in enumerate(granted)],
+                "prizes": prizes,
             })
             client = self.manager.resolve_client(participant)
             if client is not None and granted:
@@ -297,8 +311,17 @@ class LiveTournamentManager:
     def _spawn(self, coro) -> asyncio.Task:
         task = asyncio.create_task(coro)
         self._background_tasks.add(task)
-        task.add_done_callback(self._background_tasks.discard)
+        task.add_done_callback(self._task_done)
         return task
+
+    def _task_done(self, task: asyncio.Task) -> None:
+        self._background_tasks.discard(task)
+        try:
+            exc = task.exception()
+        except asyncio.CancelledError:
+            return
+        if exc is not None:
+            logging.error("[LiveTournament] background task failed: %r", exc, exc_info=exc)
 
     # ------------------------------------------------------------- helpers
 
