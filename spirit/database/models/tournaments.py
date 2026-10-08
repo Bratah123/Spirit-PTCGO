@@ -44,3 +44,18 @@ class TournamentLeaderboardClaim(Base):
     account_id: Mapped[str] = mapped_column(nullable=False)
     rank: Mapped[int] = mapped_column(default=0)
     claimed_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+
+
+class TournamentHistory(Base):
+    """One concluded Events-bracket run, served to GetTournamentHistoryForUser."""
+    __tablename__ = 'tournament_history'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tournament_id: Mapped[str] = mapped_column(nullable=False, index=True)
+    # One bracket run id; repeats of the same definition are separate rows.
+    active_id: Mapped[str] = mapped_column(nullable=False, unique=True)
+    # Participant account IDs for per-account filtering (JSON array).
+    account_ids: Mapped[list] = mapped_column(JSONEncodedDict, default=list)
+    ended_ms: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    # Full J.G.L wire dict (players/prizeList/matchups/tournamentData).
+    payload: Mapped[dict] = mapped_column(JSONEncodedDict, default=dict)

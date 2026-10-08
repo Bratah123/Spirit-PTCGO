@@ -253,6 +253,17 @@ class TournamentHandler(BaseHandler):
             "tournamentData": data,
         }, request_id)
 
+    @handle(InboundMsg.GET_TOURNAMENT_HISTORY_FOR_USER)
+    async def handle_get_tournament_history_for_user(self, message, request_id, flags):
+        # History tab: concluded brackets this account played in (J.G.L[],
+        # newest first). ViewResults builds the final-standings popup from a row.
+        rows = await run_db(tournament_data.get_tournament_history,
+                            self._account_id())
+        await self.send({
+            "messageName": OutboundMsg.TOURNAMENT_HISTORY_LIST.value,
+            "tournamentHistoryList": rows,
+        }, request_id)
+
     @handle(InboundMsg.LEAVE_ACTIVE_TOURNAMENT)
     async def handle_leave_active_tournament(self, message, request_id, flags):
         active_id = str(message.get("activeTournamentID", "")).lower()

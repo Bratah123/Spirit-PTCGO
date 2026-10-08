@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from spirit.database import (
     db_session, Account, Wallet, AsyncTournament, TournamentEntry,
-    TournamentLeaderboardClaim,
+    TournamentLeaderboardClaim, TournamentHistory,
 )
 from spirit.database.versus_data import _grant_rewards_in_session
 
@@ -335,3 +335,26 @@ def grant_prize_rewards(account_id: str, rewards: list):
         return
     with db_session() as session:
         _grant_rewards_in_session(session, account_id, rewards)
+
+
+def save_tournament_history(tournament_id: str, active_id: str,
+                            account_ids: list, ended_ms: int, payload: dict):
+    """Persists one concluded bracket (upsert by run id) for the History tab."""
+    with db_session() as session:
+        row = session.query(TournamentHistory).filter_by(active_id=active_id).first()
+        if row is None:
+            row = TournamentHistory(tournament_id=tournament_id, active_id=active_id)
+            session.add(row)
+        row.tournament_id = tournament_id
+        row.account_ids = list(account_ids or [])
+        row.ended_ms = int(ended_ms or 0)
+        row.payload = payload or {}
+
+
+def get_tournament_history(account_id: str, limit: int = 50) -> list:
+    """J.G.L payloads for concluded brackets this account played in, newest first."""
+    with db_session() as session:
+        rows = session.query(TournamentHistory).order_by(
+            TournamentHistory.ended_ms.desc()).all()
+        return [r.payload for r in rows
+                if r.payload and account_id in (r.account_ids or [])][:limit]

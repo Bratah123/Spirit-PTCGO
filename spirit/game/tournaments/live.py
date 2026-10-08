@@ -8,9 +8,11 @@ from typing import Dict, List, Optional
 
 from spirit.network.message_names import OutboundMsg
 from spirit.database.async_utils import run_db
-from spirit.database.tournament_data import _prize_rewards_for, grant_prize_rewards, refund_fees
+from spirit.database.tournament_data import (
+    _prize_rewards_for, grant_prize_rewards, refund_fees, save_tournament_history,
+)
 from spirit.game.models.versus import Reward
-from spirit.game.tournaments.manager import TournamentManager, TournamentDef
+from spirit.game.tournaments.manager import TournamentManager, TournamentDef, now_ms
 from spirit.game.session.manager import GameSessionManager
 
 
@@ -69,6 +71,7 @@ class LiveTournament:
         self.matchups: List[Matchup] = []
         self.current_round = 0
         self.completed = False
+        self.started_ms = now_ms()
 
     # ------------------------------------------------------------- wire shapes
 
@@ -209,6 +212,7 @@ class LiveTournament:
         standings = self.final_standings()
         prize_table = self.definition.run_config.get("prizeTable") or []
         base = self.progress_dict()
+        prizes_by_account: Dict[str, list] = {}
         for place, participant in enumerate(standings, start=1):
             granted = _prize_rewards_for(prize_table, place)
             if participant.bot:
@@ -235,6 +239,7 @@ class LiveTournament:
                               f"prize wire encode failed for {participant.username}: {e}",
                               exc_info=e)
                 prizes = []
+            prizes_by_account[participant.account_id] = prizes
             await self._send_to(participant, {
                 "messageName": OutboundMsg.TOURNAMENT_COMPLETED.value,
                 "tournamentData": base,
@@ -244,6 +249,39 @@ class LiveTournament:
             client = self.manager.resolve_client(participant)
             if client is not None and granted:
                 await self.manager.push_wallet(client)
+        # Persist the J.G.L history row BEFORE the run is dropped: the client's
+        # History tab (GetTournamentHistoryForUser) is the only post-conclusion
+        # path to the final-standings popup with this player's prizes.
+        try:
+            ended_ms = now_ms()
+            await run_db(
+                save_tournament_history,
+                self.definition.tournament_id,
+                self.active_id,
+                [p.account_id for p in self.participants],
+                ended_ms,
+                {
+                    "activeTournamentID": self.active_id,
+                    "tournamentData": self.definition.to_legacy_dict(),
+                    "rounds": self.current_round,
+                    # Final-standings order (champion first): the client shows
+                    # players in array order and picks the requester's prizes
+                    # from prizeList by accountID.
+                    "players": [p.identity() for p in standings],
+                    "matchups": [m.to_dict() for m in self.matchups],
+                    "tournamentStarted": self.started_ms,
+                    "tournamentEnded": ended_ms,
+                    "roundLength": int(self.definition.definition.get("roundLength") or 30),
+                    "prizeList": [
+                        {"accountIDUsername": p.identity(),
+                         "prizes": prizes_by_account.get(p.account_id, [])}
+                        for p in standings
+                    ],
+                },
+            )
+        except Exception as e:
+            logging.error(f"[LiveTournament {self.active_id[:8]}] "
+                          f"history persist failed: {e}", exc_info=e)
         logging.info(f"[LiveTournament {self.active_id[:8]}] Completed — "
                      f"champion {champion.username}")
         self.manager.finish_tournament(self)

@@ -355,9 +355,9 @@ class PrizeTests(LiveCase):
                    new=AsyncMock()) as db:
             await asyncio.wait_for(t._complete(human), 5)
 
-        self.assertEqual(db.await_count, 1,
-                         "only the human may receive a prize grant")
-        self.assertEqual(db.await_args.args[1], human.account_id)
+        self.assertEqual(db.await_count, 2,
+                         "prize grant + history persist are the only DB calls")
+        self.assertEqual(db.await_args_list[0].args[1], human.account_id)
         completed = [p for p in client.sent
                      if p.get("messageName") == "TournamentCompleted"]
         self.assertEqual(len(completed), 1)
@@ -398,6 +398,166 @@ class PrizeTests(LiveCase):
                          "client only accepts Token/TournamentTicket (not Tokens)")
         self.assertEqual(prizes[0]["prizeType"]["archetypeID"], "card-1")
         self.assertIsNone(prizes[1]["prizeType"]["archetypeID"])
+
+
+class HistoryPersistTests(LiveCase):
+    async def test_completion_persists_history_row(self):
+        tdef = make_tdef()
+        client = FakeClient()
+        human = Participant(client, {"piles": {"deck": []}})
+        bot = Participant(None, {"piles": {"deck": ["g"]}}, bot=True)
+        t = LiveTournament(self.m, tdef, [human, bot])
+        with patch("spirit.game.tournaments.live.run_db",
+                   new=AsyncMock()) as db:
+            await asyncio.wait_for(t._complete(human), 5)
+
+        calls = [c for c in db.await_args_list
+                 if getattr(c.args[0], "__name__", "") == "save_tournament_history"]
+        self.assertEqual(len(calls), 1, "completion must persist one history row")
+        _, tid, active_id, account_ids, ended_ms, payload = calls[0].args
+        self.assertEqual(tid, tdef.tournament_id)
+        self.assertEqual(active_id, t.active_id)
+        self.assertCountEqual(account_ids, [human.account_id, bot.account_id])
+        self.assertIsInstance(ended_ms, int)
+        self.assertGreaterEqual(ended_ms, t.started_ms)
+
+        self.assertEqual(payload["activeTournamentID"], t.active_id)
+        self.assertEqual(payload["tournamentData"]["tournamentID"],
+                         tdef.tournament_id)
+        self.assertIsInstance(payload["rounds"], int)
+        self.assertEqual(payload["roundLength"], 30)
+        # J.G.L sorts by tournamentEnded (ms); renderer formats it as a date.
+        self.assertEqual(payload["tournamentStarted"], t.started_ms)
+        self.assertEqual(payload["tournamentEnded"], ended_ms)
+        # players = final-standings order (champion first) as J.G+k identities.
+        self.assertEqual(payload["players"][0]["accountID"], human.account_id)
+        self.assertTrue(all(set(p) == {"accountID", "username"}
+                            for p in payload["players"]))
+        # prizeList must cover every participant: the client picks the
+        # requester's entry by accountID and NREs on a missing Prizes.
+        self.assertCountEqual(
+            [e["accountIDUsername"]["accountID"] for e in payload["prizeList"]],
+            [human.account_id, bot.account_id])
+        human_entry = next(e for e in payload["prizeList"]
+                           if e["accountIDUsername"]["accountID"] == human.account_id)
+        self.assertEqual(len(human_entry["prizes"]), 1)
+        self.assertEqual(human_entry["prizes"][0]["rewardType"], "Tokens")
+        bot_entry = next(e for e in payload["prizeList"]
+                         if e["accountIDUsername"]["accountID"] == bot.account_id)
+        self.assertEqual(bot_entry["prizes"], [], "bots never win prizes")
+        # Bracket rows stay J.G.j shaped (winner/round/table/players[2]).
+        for m in payload["matchups"]:
+            self.assertIn("gameID", m)
+            self.assertEqual(len(m["players"]), 2)
+            self.assertIsNotNone(m["winner"])
+
+    async def test_history_persist_failure_does_not_break_completion(self):
+        tdef = make_tdef()
+        client = FakeClient()
+        human = Participant(client, {"piles": {"deck": []}})
+        t = LiveTournament(self.m, tdef, [human])
+        calls = {"n": 0}
+
+        async def failing_run_db(fn, *args):
+            calls["n"] += 1
+            raise RuntimeError("db down")
+
+        with patch("spirit.game.tournaments.live.run_db",
+                   new=failing_run_db):
+            await asyncio.wait_for(t._complete(human), 5)
+
+        completed = [p for p in client.sent
+                     if p.get("messageName") == "TournamentCompleted"]
+        self.assertEqual(len(completed), 1,
+                         "a history failure must not swallow the results packet")
+
+
+class HistoryDbTests(unittest.TestCase):
+    def setUp(self):
+        from spirit.database import Base, engine, db_session, TournamentHistory
+        Base.metadata.create_all(engine)
+        self.db_session = db_session
+        self.TournamentHistory = TournamentHistory
+        self.active_id = str(uuid.uuid4())
+        self.account = str(uuid.uuid4())
+        self.other = str(uuid.uuid4())
+
+    def tearDown(self):
+        with self.db_session() as session:
+            session.query(self.TournamentHistory).filter_by(
+                active_id=self.active_id).delete()
+
+    def test_save_and_filter_by_account(self):
+        from spirit.database.tournament_data import (
+            save_tournament_history, get_tournament_history,
+        )
+        payload = {"activeTournamentID": self.active_id, "players": [],
+                   "tournamentEnded": 123}
+        save_tournament_history("tid-hist", self.active_id,
+                                [self.account], 123, payload)
+        # Same-shape row for someone else's bracket must never surface.
+        other_active = str(uuid.uuid4())
+        try:
+            save_tournament_history("tid-hist", other_active,
+                                    [self.other], 456,
+                                    {"activeTournamentID": other_active})
+            mine = get_tournament_history(self.account)
+            self.assertEqual([p["activeTournamentID"] for p in mine],
+                             [self.active_id])
+            self.assertEqual(get_tournament_history(str(uuid.uuid4())), [])
+        finally:
+            with self.db_session() as session:
+                session.query(self.TournamentHistory).filter_by(
+                    active_id=other_active).delete()
+
+    def test_upsert_by_run_id(self):
+        from spirit.database.tournament_data import (
+            save_tournament_history, get_tournament_history,
+        )
+        save_tournament_history("tid-hist", self.active_id,
+                                [self.account], 1,
+                                {"activeTournamentID": self.active_id, "v": 1})
+        save_tournament_history("tid-hist", self.active_id,
+                                [self.account, self.other], 2,
+                                {"activeTournamentID": self.active_id, "v": 2})
+        rows = get_tournament_history(self.account)
+        matching = [p for p in rows
+                    if p.get("activeTournamentID") == self.active_id]
+        self.assertEqual(len(matching), 1, "same run id must upsert, not duplicate")
+        with self.db_session() as session:
+            count = (session.query(self.TournamentHistory).filter_by(
+                active_id=self.active_id).count())
+        self.assertEqual(count, 1)
+
+
+class HistoryHandlerTests(unittest.TestCase):
+    def test_sends_tournament_history_list(self):
+        import asyncio
+        from unittest.mock import patch
+        from spirit.packets.handlers.tournaments import TournamentHandler
+
+        class _Client:
+            def __init__(self):
+                self.player = type("P", (), {
+                    "account_id": "acc-1", "username": "u",
+                    "screen_name": "u", "wallet": None})()
+                self.sent = []
+
+            async def send_packet(self, packet, request_id=0, flags=None):
+                self.sent.append(packet)
+
+        client = _Client()
+        handler = TournamentHandler(client)
+        rows = [{"activeTournamentID": "x"}]
+        with patch("spirit.packets.handlers.tournaments.run_db",
+                   new=AsyncMock(return_value=rows)):
+            asyncio.get_event_loop_policy().new_event_loop().run_until_complete(
+                handler.handle_get_tournament_history_for_user(None, 7, None))
+
+        self.assertEqual(len(client.sent), 1)
+        packet = client.sent[0]
+        self.assertEqual(packet["messageName"], "TournamentHistoryList")
+        self.assertEqual(packet["tournamentHistoryList"], rows)
 
 
 if __name__ == "__main__":

@@ -75,6 +75,10 @@ class InboundMsg(str, Enum):
     GET_PLAYERS_IN_QUEUE = "GetPlayersInQueue"
     GET_TOURNAMENT_IN_PROGRESS = "GetTournamentInProgress"
 
+    # History tab (pie TournamentMyHistoryView): asks for concluded brackets
+    # where this account played; server replies with TournamentHistoryList.
+    GET_TOURNAMENT_HISTORY_FOR_USER = "GetTournamentHistoryForUser"
+
     # Source: dwd.core.asynctournament.commands.* (async tournament system)
     JOIN_ASYNC_TOURNAMENT = "JoinAsyncTournament"
     START_ASYNC_TOURNAMENT_GAME = "StartAsyncTournamentGame"
@@ -345,6 +349,8 @@ class OutboundMsg(str, Enum):
     TOURNAMENT_LEFT = "TournamentLeft"
     TOURNAMENTS_IN_PROGRESS_DATA = "TournamentsInProgressData"
     TOURNAMENT_COMPLETED = "TournamentCompleted"
+    # History tab response: {tournamentHistoryList: J.G.L[]}, newest first.
+    TOURNAMENT_HISTORY_LIST = "TournamentHistoryList"
 
     # Source: dwd.core.asynctournament.messages.* + coredll root (async tournaments)
     ASYNC_TOURNAMENT_JOINED = "AsyncTournamentJoined"
