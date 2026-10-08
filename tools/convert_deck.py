@@ -1,5 +1,28 @@
 ﻿#!/usr/bin/env python3
-"""Convert a modern deck export into the old PTCGO import format.
+"""Convert any deck export into the Pokemon.com-style deck list format.
+
+The output is exactly what the client's deck import accepts (and what
+pokemon.com generates)::
+
+    ****** Pokémon Trading Card Game Deck List ******
+
+    Pokémon - 15
+
+    4 Charizard VSTAR BRS 18
+    4 Charizard V BRS 17
+
+    Trainer Cards - 31
+
+    4 Boss's Orders (Giovanni) RCL 154
+
+    Energy Cards - 14
+
+    11 Fire Energy Energy 2
+    3 Heat Fire Energy DAA 174
+
+    Total Cards - 60
+
+    ****** Deck list generated on Pokemon.com ******
 
 Three input layouts are accepted:
 
@@ -32,13 +55,14 @@ Three input layouts are accepted:
    Trainers and energies without a set/number are filled from the local
    card catalog (spirit/game/scripts/cards), so the result is importable
    in the client.  Every filled line gets a warning; lines the catalog
-   cannot resolve are left alone (and warned about).  Basic energies use
-   the client's 'Energy' collector numbers (Grass 36 .. Fairy 44).
+   cannot resolve are left alone (and warned about).  Basic energies are
+   rendered the pokemon.com way: `11 Fire Energy Energy 2`, using the
+   client's Free_Energy collector numbers (Grass 1 .. Fairy 9).
 
    Tip: Limitless' Copy to Clipboard button already gives layout 1, which
    needs no filling.
 
-3. Old (the format the client still imports) -- also accepted, normalised
+3. The older PTCGO import format -- also accepted, normalised
    idempotently::
 
     ****** Pokemon Trading Card Game Deck List ******
@@ -67,7 +91,8 @@ Usage:
     python tools/convert_deck.py - < deck.txt        # read stdin
     cat deck.txt | python tools/convert_deck.py -o out.txt
 
-Already-old input is normalised (idempotent), so re-running on an old file is safe.
+Already-converted input is normalised idempotently, so re-running on a
+file in the target format is a no-op.
 """
 import argparse
 import html
@@ -79,15 +104,13 @@ ROOT = Path(__file__).resolve().parents[1]
 DECKS_DIR = ROOT / "spirit" / "tools" / "DECKS"
 
 HEADER_RE = re.compile(
-    r"^\s*#{0,6}\s*(Pok.?mon|Trainer(?:\s+Cards?)?|Energy)"
+    r"^\s*#{0,6}\s*(Pok.?mon|Trainer(?:\s+Cards?)?|Energy(?:\s+Cards?)?)"
     r"\s*(?:[:\-]\s*(\d+)?|\(\s*(\d+)\s*\))\s*$",
     re.IGNORECASE,
 )
 CARD_RE = re.compile(r"^\s*\*?\s*(\d+)\s+(\S.*\S)\s*$")
 # Trailing '(SET-NUM)' from rendered Limitless lists -> 'SET NUM'.
 PAREN_SET_RE = re.compile(r"^(.*\S)\s+\(([A-Za-z0-9]+)-([A-Za-z0-9]+)\)\s*$")
-# 'Metal Energy Energy 43' -> name already ends in Energy, drop the extra word.
-ENERGY_DUP_RE = re.compile(r"^(.*\S)\s+Energy\s+(\d+)$", re.IGNORECASE)
 SET_CODE_RE = re.compile(r"^[A-Za-z][A-Za-z0-9\-]{1,10}$")
 IGNORED_RE = re.compile(
     r"^\s*(?:\*{4,}.*|#{2,}\s*.*#\s*$|Total\s+Cards\s*[:\-].*|Pok.?mon\s+Trading\s+Card\s+Game.*)$",
@@ -95,7 +118,11 @@ IGNORED_RE = re.compile(
 )
 
 SECTION_ORDER = ["pokemon", "trainer", "energy"]
-SECTION_TITLE = {"pokemon": "Pokémon", "trainer": "Trainer Cards", "energy": "Energy"}
+SECTION_TITLE = {"pokemon": "Pokémon", "trainer": "Trainer Cards",
+                 "energy": "Energy Cards"}
+
+OUT_BANNER = "****** Pokémon Trading Card Game Deck List ******"
+OUT_FOOTER = "****** Deck list generated on Pokemon.com ******"
 
 
 def section_key(header_name: str) -> str:
@@ -115,12 +142,13 @@ def strip_paren_set(line: str) -> str:
     return PAREN_SET_RE.sub(r"\1 \2 \3", line)
 
 
-# Client 'Energy' set collector numbers for the nine basic energies, as used
-# by Limitless' clipboard text and the decks already in spirit/tools/DECKS.
+# pokemon.com basic-energy numbers -- the client's Free_Energy set
+# collector numbers (GrassEnergy_1.py .. FairyEnergy_9.py), so
+# '11 Fire Energy Energy 2' resolves straight from the card catalog.
 BASIC_ENERGY_NUMBERS = {
-    "grass energy": 36, "fire energy": 37, "water energy": 38,
-    "lightning energy": 39, "psychic energy": 40, "fighting energy": 41,
-    "darkness energy": 42, "metal energy": 43, "fairy energy": 44,
+    "grass energy": 1, "fire energy": 2, "water energy": 3,
+    "lightning energy": 4, "psychic energy": 5, "fighting energy": 6,
+    "darkness energy": 7, "metal energy": 8, "fairy energy": 9,
 }
 
 _CATALOG = None
@@ -217,9 +245,9 @@ def _fill_missing_energy(rest: str, count: int, warnings: list, line: str):
     number = BASIC_ENERGY_NUMBERS.get(
         re.sub(r"\s+", " ", name).strip().lower())
     if number is not None:
-        ref = f"{count} {name} {number}"
+        ref = f"{count} {name} Energy {number}"
         warnings.append(f"filled basic energy number: {line!r} -> {ref!r}")
-        return f"{name} {number}"
+        return f"{name} Energy {number}"
     return None
 
 
@@ -234,11 +262,26 @@ def normalise_card_line(section: str, line: str, warnings: list) -> str:
         return "" if _load_catalog() is not None else " (card catalog unavailable)"
 
     if section == "energy":
-        dup = ENERGY_DUP_RE.match(rest)
-        if dup and dup.group(1).lower().endswith("energy"):
-            rest = f"{dup.group(1)} {dup.group(2)}"
-        elif not rest.split()[-1].isdigit():
-            filled = _fill_missing_energy(rest, count, warnings, line)
+        tokens = rest.split()
+        number = tokens[-1] if tokens and tokens[-1].isdigit() else None
+        body = tokens[:-1] if number else tokens
+        set_code = None
+        if body and len(body) > 1 and SET_CODE_RE.match(body[-1]) \
+                and body[-1].lower() != "energy":
+            set_code, body = body[-1], body[:-1]
+        name = " ".join(body)
+        if name.lower().endswith(" energy energy"):
+            name = name[: -len(" energy")]
+        basic = BASIC_ENERGY_NUMBERS.get(name.lower())
+        if basic is not None:
+            if number is None:
+                ref = f"{count} {name} Energy {basic}"
+                warnings.append(f"filled basic energy number: {line!r} -> {ref!r}")
+            rest = f"{name} Energy {basic}"
+        elif set_code and number:
+            rest = f"{name} {set_code} {number}"
+        else:
+            filled = _fill_missing_energy(name, count, warnings, line)
             if filled:
                 rest = filled
             else:
@@ -253,7 +296,7 @@ def normalise_card_line(section: str, line: str, warnings: list) -> str:
             else:
                 warnings.append(
                     f"line looks like it is missing a set code:{_note()} {line!r}")
-    return f"* {count} {rest}"
+    return f"{count} {rest}"
 
 
 def convert(text: str, ascii_only: bool = False, decode_entities: bool = False) -> tuple:
@@ -297,17 +340,17 @@ def convert(text: str, ascii_only: bool = False, decode_entities: bool = False) 
     if total != 60:
         warnings.append(f"Total Cards - {total} (expected 60)")
 
-    out = ["****** Pokémon Trading Card Game Deck List ******"]
+    out = [OUT_BANNER, ""]
     for i, key in enumerate(SECTION_ORDER):
         if i:
             out.append("")
-        out.append(f"##{SECTION_TITLE[key]} - {counts[key]}")
+        out.append(f"{SECTION_TITLE[key]} - {counts[key]}")
         out.append("")
         out.extend(sections[key])
     out.append("")
     out.append(f"Total Cards - {total}")
     out.append("")
-    out.append("****** Deck List Generated by the Pokémon TCG Online www.pokemon.com/TCGO ******")
+    out.append(OUT_FOOTER)
     body = "\n".join(out) + "\n"
     if ascii_only:
         body = body.replace("é", "e")
