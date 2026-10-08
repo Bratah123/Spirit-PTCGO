@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 
 from spirit.game.content import bot_decks  # noqa: E402
 from spirit.game.content.deck_strategies import (  # noqa: E402
+    CHARIZARD_VSTAR,
     CORVIKNIGHT_BRONZONG,
     DRAGAPULT_INTELEON,
     ETERNATUS_VMAX,
@@ -36,6 +37,25 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     _cv_target_score,
     _cv_transfer_ok,
     _cv_value,
+    _cz_allow,
+    _cz_attack_score,
+    _cz_basin_ok,
+    _cz_basin_target_score,
+    _cz_bench_score,
+    _cz_energy_target_score,
+    _cz_energy_value,
+    _cz_gust,
+    _cz_gust_window,
+    _cz_output,
+    _cz_pick,
+    _cz_promote,
+    _cz_ready,
+    _cz_retreat_ok,
+    _cz_search_score,
+    _cz_star_blaze_window,
+    _cz_strike_damage,
+    _cz_target_score,
+    _cz_value,
     _dragapult_allow,
     _dragapult_pick,
     _dragapult_value,
@@ -313,12 +333,14 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(names, {"Dragapult Inteleon", "Rapid Strike Urshifu V",
                                  "Shadow Rider Calyrex V", "Bronzor",
                                  "Eternatus V", "Rayquaza V",
-                                 "Sobble (suicune-ludicolo)"})
+                                 "Sobble (suicune-ludicolo)",
+                                 "Charizard (charizard-vmax)"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
              "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
-             "Rayquaza V", "Sobble (suicune-ludicolo)"},
+             "Rayquaza V", "Sobble (suicune-ludicolo)",
+             "Charizard (charizard-vmax)"},
         )
 
 
@@ -2574,6 +2596,317 @@ class SuicuneBrainTests(unittest.TestCase):
                              wctx, "t0"), 900.0)
 
 
+class CharizardBrainTests(unittest.TestCase):
+    def test_registered_with_six_hooks(self):
+        spec = strategy_for("Charizard (charizard-vmax)")
+        self.assertIs(spec, CHARIZARD_VSTAR)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score"):
+            self.assertTrue(callable(spec[hook]), hook)
+
+    # -- Explosive Fire / readiness --------------------------------------
+    def test_ready_requires_two_fire_and_three_total(self):
+        z = FakeMon("Charizard VSTAR", fire=2, energy=3, hp=280, max_hp=280)
+        self.assertTrue(_cz_ready(FakeCtx(active=z, play=[z]), z))
+        thin = FakeMon("Charizard VSTAR", fire=1, energy=3, hp=280, max_hp=280)
+        self.assertFalse(_cz_ready(FakeCtx(active=thin, play=[thin]), thin))
+        self.assertFalse(
+            _cz_ready(FakeCtx(), FakeMon("Charizard V", fire=3, energy=3)))
+
+    def test_output_130_clean_230_damaged(self):
+        clean = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                        hp=280, max_hp=280)
+        self.assertEqual(_cz_output(FakeCtx(active=clean, play=[clean]), clean),
+                         130)
+        hurt = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                       hp=250, max_hp=280)
+        self.assertEqual(_cz_output(FakeCtx(active=hurt, play=[hurt]), hurt),
+                         230)
+
+    # -- Star Blaze (VSTAR Power) ----------------------------------------
+    def test_star_blaze_only_where_230_cannot_answer(self):
+        big = FakeCtx(opp_active=FakeMon("Big VMAX", hp=300, max_hp=320,
+                                         prize=3))
+        self.assertTrue(_cz_star_blaze_window(big))
+        small = FakeCtx(opp_active=FakeMon("Moltres", hp=200, max_hp=280,
+                                           prize=1))
+        self.assertFalse(_cz_star_blaze_window(small))
+        exact = FakeCtx(opp_active=FakeMon("Zard", hp=230, max_hp=280))
+        self.assertFalse(_cz_star_blaze_window(exact))
+        too_big = FakeCtx(opp_active=FakeMon("Zard", hp=350, max_hp=380))
+        self.assertFalse(_cz_star_blaze_window(too_big))
+        self.assertFalse(_cz_star_blaze_window(FakeCtx()))
+
+    def test_star_blaze_blocked_once_vstar_spent(self):
+        ctx = FakeCtx(opp_active=FakeMon("Mew VMAX", hp=300, max_hp=320,
+                                         prize=3))
+        self.assertTrue(_cz_star_blaze_window(ctx))
+        ctx.session = SimpleNamespace(
+            turn_state=SimpleNamespace(vstar_used={"p1"}))
+        self.assertFalse(_cz_star_blaze_window(ctx))
+
+    # -- attack scores ----------------------------------------------------
+    def test_explosive_fire_prefers_the_ko(self):
+        z = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                    hp=250, max_hp=280)          # damaged -> 230
+        victim = FakeMon("VMAX", hp=200, max_hp=320, prize=3, owner="p2")
+        ctx = FakeCtx(active=z, opp_active=victim, play=[z])
+        self.assertEqual(_cz_attack_score("Explosive Fire", 0, ctx), 2030.0)
+        clean = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                        hp=280, max_hp=280)      # clean -> 130, still KOs 120
+        victim2 = FakeMon("Moltres", hp=120, max_hp=120, owner="p2")
+        ctx2 = FakeCtx(active=clean, opp_active=victim2, play=[clean])
+        self.assertEqual(_cz_attack_score("Explosive Fire", 0, ctx2), 1930.0)
+        unready = FakeCtx(
+            active=FakeMon("Charizard VSTAR", hp=280, max_hp=280),
+            opp_active=FakeMon("VMAX", hp=200, max_hp=320, owner="p2"))
+        self.assertEqual(_cz_attack_score("Explosive Fire", 0, unready), 0.0)
+
+    def test_star_blaze_score_gated_on_window(self):
+        z = FakeMon("Charizard VSTAR", fire=3, energy=4,
+                    hp=250, max_hp=280)
+        window = FakeCtx(active=z, opp_active=FakeMon("VMAX", hp=300,
+                                                      max_hp=320, prize=3,
+                                                      owner="p2"),
+                         play=[z])
+        self.assertEqual(_cz_attack_score("Star Blaze", 0, window), 3000.0)
+        no = FakeCtx(active=z, opp_active=FakeMon("VMAX", hp=200,
+                                                  max_hp=320, owner="p2"),
+                     play=[z])
+        self.assertEqual(_cz_attack_score("Star Blaze", 0, no), 0.0)
+
+    def test_charizard_v_and_moltres_attacks(self):
+        v = FakeMon("Charizard V", fire=2, energy=3, hp=220, max_hp=220)
+        ctx = FakeCtx(active=v, opp_active=FakeMon("Mew", hp=60, max_hp=60,
+                                                   owner="p2"), play=[v])
+        self.assertEqual(_cz_attack_score("Incinerate", 0, ctx), 1650.0)
+        self.assertEqual(
+            _cz_attack_score("Heat Blast", 0,
+                             FakeCtx(active=v, play=[v],
+                                     opp_active=FakeMon("x", hp=200,
+                                                        max_hp=200,
+                                                        owner="p2"))),
+            0.0)                                     # 4-unit cost unpaid
+        m = FakeMon("Moltres", fire=1, energy=1, hp=100, max_hp=120)
+        mctx = FakeCtx(active=m, opp_active=FakeMon("x", hp=70, max_hp=70,
+                                                    owner="p2"), play=[m])
+        self.assertEqual(_cz_attack_score("Inferno Wings", 0, mctx), 1520.0)
+
+    # -- bench / value / energy ------------------------------------------
+    def test_bench_score_line_first_support_by_need(self):
+        self.assertEqual(_cz_bench_score("Charizard V", FakeCtx()), 700.0)
+        one = FakeCtx(play=[FakeMon("Charizard V", hp=220, max_hp=220)])
+        self.assertEqual(_cz_bench_score("Charizard V", one), 450.0)
+        three = FakeCtx(play=[FakeMon("Charizard V", hp=220, max_hp=220)] * 3)
+        self.assertEqual(_cz_bench_score("Charizard V", three), 40.0)
+        self.assertEqual(_cz_bench_score("Moltres", FakeCtx()), 420.0)
+        loaded_hand = FakeCtx(hand=["Boss's Orders", "Research", "Marnie",
+                                    "Switch", "Switch", "Quick Ball",
+                                    "Ultra Ball"])
+        self.assertEqual(_cz_bench_score("Crobat V", loaded_hand), 0.0)
+        small_hand = FakeCtx(hand=["Quick Ball"] * 3)
+        self.assertEqual(_cz_bench_score("Crobat V", small_hand), 500.0)
+        with_sup = FakeCtx(hand=["Boss's Orders", "Marnie", "Switch",
+                                 "Switch", "Air Balloon", "Quick Ball",
+                                 "Ultra Ball"])
+        self.assertEqual(_cz_bench_score("Lumineon V", with_sup), 0.0)
+        no_sup = FakeCtx(hand=["Switch", "Switch", "Fire Energy",
+                               "Fire Energy"])
+        self.assertEqual(_cz_bench_score("Lumineon V", no_sup), 450.0)
+        self.assertEqual(_cz_bench_score("Mew", FakeCtx(hand=["Fire Energy"])),
+                         300.0)
+
+    def test_value_ladder(self):
+        z = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                    hp=250, max_hp=280)
+        window = FakeCtx(active=z, play=[z],
+                         opp_play=[FakeMon("Crobat V", hp=100, max_hp=180,
+                                           prize=2, owner="p2")])
+        self.assertEqual(_cz_value("Boss's Orders", window, in_hand=True),
+                         95.0)
+        no_window = FakeCtx(active=z, play=[z],
+                            opp_play=[FakeMon("Big", hp=300, max_hp=300,
+                                              owner="p2")])
+        self.assertEqual(_cz_value("Boss's Orders", no_window, in_hand=True),
+                         15.0)
+        self.assertEqual(
+            _cz_value("Professor's Research",
+                      FakeCtx(hand=["a", "b", "c"]), in_hand=True), 80.0)
+        self.assertEqual(
+            _cz_value("Professor's Research",
+                      FakeCtx(hand=list("abcdefg")), in_hand=True), 20.0)
+        basin = FakeCtx(discard=("Fire Energy",),
+                        bench=(FakeMon("Charizard V", hp=220, max_hp=220),))
+        self.assertEqual(_cz_value("Magma Basin", basin, in_hand=True), 75.0)
+        self.assertEqual(_cz_value("Magma Basin", FakeCtx(), in_hand=True),
+                         10.0)
+
+    def test_zinnia_needs_hand_and_opponent_board(self):
+        ready = FakeCtx(hand=list("abcdef"),
+                        opp_play=[FakeMon("a", owner="p2"),
+                                  FakeMon("b", owner="p2"),
+                                  FakeMon("c", owner="p2"),
+                                  FakeMon("d", owner="p2")])
+        self.assertEqual(_cz_value("Zinnia's Resolve", ready, in_hand=True),
+                         65.0)
+        thin = FakeCtx(hand=list("abc"),
+                       opp_play=[FakeMon("a", owner="p2")])
+        self.assertEqual(_cz_value("Zinnia's Resolve", thin, in_hand=True),
+                         25.0)
+
+    def test_energy_target_prefers_open_slots(self):
+        active = FakeMon("Charizard VSTAR", fire=1, energy=2,
+                         hp=280, max_hp=280)
+        ctx = FakeCtx(active=active, play=[active])
+        self.assertEqual(
+            _cz_energy_target_score(ctx, active, "Fire Energy"), 770.0)
+        self.assertEqual(
+            _cz_energy_target_score(ctx, active, "Heat Fire Energy"), 830.0)
+        loaded = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                         hp=250, max_hp=280)
+        ctx2 = FakeCtx(active=loaded, play=[loaded])
+        self.assertEqual(
+            _cz_energy_target_score(ctx2, loaded, "Fire Energy"), 260.0)
+        # threatened Active: the benched Charizard grows first
+        doomed = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                         hp=160, max_hp=280)
+        bench_z = FakeMon("Charizard V", hp=220, max_hp=220)
+        ctx3 = FakeCtx(active=doomed, bench=(bench_z,), play=[doomed, bench_z])
+        self.assertEqual(
+            _cz_energy_target_score(ctx3, bench_z, "Fire Energy"), 780.0)
+
+    def test_energy_value_heat_fire_on_the_active(self):
+        active = FakeMon("Charizard VSTAR", fire=2, energy=2,
+                         hp=280, max_hp=280)
+        ctx = FakeCtx(active=active, play=[active])
+        self.assertEqual(_cz_energy_value("Heat Fire Energy", ctx), 140.0)
+        self.assertEqual(_cz_energy_value("Fire Energy", ctx), 125.0)
+
+    # -- promote / gust / retreat ----------------------------------------
+    def test_promote_ready_first(self):
+        ready = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                        hp=280, max_hp=280)
+        dev = FakeMon("Charizard VSTAR", hp=280, max_hp=280)
+        mew = FakeMon("Mew", hp=60, max_hp=60)
+        ctx = FakeCtx(active=ready, play=[ready, dev, mew])
+        self.assertEqual(_cz_promote(ctx, ready), 2030.0)
+        self.assertEqual(_cz_promote(ctx, dev), 900.0)
+        self.assertEqual(_cz_promote(ctx, mew), 350.0)
+
+    def test_gust_scores_ko_window(self):
+        z = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                    hp=250, max_hp=280)
+        ctx = FakeCtx(active=z, play=[z])
+        target = FakeMon("V", hp=200, max_hp=280, prize=2, owner="p2")
+        self.assertEqual(_cz_gust(ctx, target), 1000.0)
+        self.assertEqual(len(_cz_gust_window(ctx)), 0)   # only opp Active dies
+        ctx2 = FakeCtx(active=z, play=[z],
+                       opp_play=[FakeMon("V", hp=100, max_hp=280, owner="p2")])
+        self.assertEqual(len(_cz_gust_window(ctx2)), 1)
+
+    def test_retreat_gate(self):
+        ready = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                        hp=280, max_hp=280)
+        stuck = FakeMon("Charizard VSTAR", fire=1, energy=1,
+                        hp=280, max_hp=280)
+        self.assertTrue(
+            _cz_retreat_ok(FakeCtx(active=stuck, bench=(ready,),
+                                   play=[stuck, ready])))
+        self.assertFalse(_cz_retreat_ok(FakeCtx(active=ready, play=[ready])))
+        doom = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                       hp=160, max_hp=280)
+        self.assertTrue(
+            _cz_retreat_ok(FakeCtx(active=doom, bench=(ready,),
+                                   play=[doom, ready])))
+
+    # -- allow gates -------------------------------------------------------
+    def test_allow_gates(self):
+        z = FakeMon("Charizard VSTAR", fire=2, energy=3, hp=280, max_hp=280)
+        win = FakeCtx(active=z, play=[z],
+                      opp_active=FakeMon("M", hp=300, max_hp=320, prize=3,
+                                         owner="p2"),
+                      opp_play=[FakeMon("V", hp=100, max_hp=280, owner="p2")])
+        self.assertTrue(_cz_allow("UsePokemonAttack", "Star Blaze", win))
+        lose = FakeCtx(active=z, play=[z],
+                       opp_active=FakeMon("M", hp=200, max_hp=280, owner="p2"))
+        self.assertFalse(_cz_allow("UsePokemonAttack", "Star Blaze", lose))
+        self.assertTrue(_cz_allow("UsePokemonAttack", "Explosive Fire", lose))
+
+        self.assertFalse(_cz_allow(
+            "UseTrainerCard", "Professor's Research",
+            FakeCtx(hand=list("abcdef"), deck=12)))
+        self.assertTrue(_cz_allow(
+            "UseTrainerCard", "Professor's Research",
+            FakeCtx(hand=list("abcd"), deck=12)))
+        self.assertFalse(_cz_allow(
+            "UseTrainerCard", "Professor's Research",
+            FakeCtx(hand=list("abcd"), deck=6)))
+        self.assertFalse(_cz_allow("UseTrainerCard", "Boss's Orders",
+                                   FakeCtx()))
+
+        basin_ready = FakeCtx(
+            discard=("Heat Fire Energy",),
+            bench=(FakeMon("Moltres", hp=120, max_hp=120),))
+        self.assertTrue(_cz_allow("DefaultStadiumPlayAbility", "Magma Basin",
+                                  basin_ready))
+        self.assertTrue(_cz_allow("UseTrainerCard", "Magma Basin",
+                                  basin_ready))
+        self.assertFalse(_cz_allow("DefaultStadiumPlayAbility", "Magma Basin",
+                                   FakeCtx()))
+        stadium_up = FakeCtx(stadium="Magma Basin",
+                             discard=("Fire Energy",),
+                             bench=(FakeMon("Moltres", hp=120, max_hp=120),))
+        self.assertFalse(_cz_allow("DefaultStadiumPlayAbility", "Magma Basin",
+                                   stadium_up))
+
+        self.assertFalse(_cz_allow("DefaultPokemonPlayAbility", "Crobat V",
+                                   FakeCtx(hand=list("abcdefg"))))
+        self.assertTrue(_cz_allow("DefaultPokemonPlayAbility", "Crobat V",
+                                  FakeCtx(hand=list("abc"))))
+        self.assertFalse(_cz_allow(
+            "DefaultPokemonPlayAbility", "Lumineon V",
+            FakeCtx(hand=["Boss's Orders", "Switch", "Switch", "Marnie",
+                          "Quick Ball", "Ultra Ball", "Magma Basin"])))
+        self.assertTrue(_cz_allow("DefaultPokemonPlayAbility", "Lumineon V",
+                                  FakeCtx(hand=["Switch", "Switch",
+                                                "Fire Energy"])))
+
+    # -- picker routing ----------------------------------------------------
+    def test_pick_routing(self):
+        ready = FakeMon("Charizard VSTAR", fire=2, energy=3,
+                        hp=250, max_hp=280)
+        ctx = FakeCtx(active=ready, play=[ready])
+        dev_v = FakeMon("Charizard V", hp=220, max_hp=220, owner="p1")
+        self.assertEqual(
+            _cz_pick("Choose your new Active Pokemon", ctx, dev_v), 600.0)
+        # Magma Basin bench target: open Fire gaps first
+        self.assertEqual(
+            _cz_pick("Choose 1 of your Benched Fire Pokemon", ctx, dev_v),
+            580.0)
+        # opponent switch: KO window first
+        weak = FakeMon("Mew", hp=30, max_hp=60, owner="p2")
+        self.assertEqual(
+            _cz_pick("Choose your opponent's new Active", ctx, weak), 1070.0)
+        # energy card itself
+        self.assertEqual(
+            _cz_pick("Choose a Fire Energy card to attach.", ctx,
+                     FakeMon("Fire Energy", owner="p1")), 100.0)
+        # hand discard: dump the least valuable card
+        disc_ctx = FakeCtx(hand=["Marnie", "Marnie"])
+        self.assertEqual(
+            _cz_pick("Discard 2 cards", disc_ctx, FakeMon("Marnie")),
+            -50.0)
+
+    def test_search_score_is_the_value_ladder(self):
+        zards_out = FakeCtx(play=[FakeMon("Charizard V", hp=220,
+                                          max_hp=220)])
+        self.assertEqual(
+            _cz_search_score(FakeMon("Charizard VSTAR"), zards_out), 90.0)
+        empty = FakeCtx()
+        self.assertEqual(
+            _cz_search_score(FakeMon("Quick Ball"), empty), 85.0)
+
+
 class WiringTests(unittest.TestCase):
     def test_ai_player_attaches_brain_from_deck_name(self):
         from spirit.game.session.ai_player import AIPlayer
@@ -2581,6 +2914,9 @@ class WiringTests(unittest.TestCase):
         self.assertIs(player.deck_strategy, DRAGAPULT_INTELEON)
         ray = AIPlayer("bot-4", "Bot", {"deckName": "Rayquaza V"}, None)
         self.assertIs(ray.deck_strategy, RAYQUAZA_VMAX_FLAFFY)
+        zard = AIPlayer("bot-5", "Bot",
+                        {"deckName": "Charizard (charizard-vmax)"}, None)
+        self.assertIs(zard.deck_strategy, CHARIZARD_VSTAR)
         generic = AIPlayer("bot-2", "Bot", {"deckName": "Nope"}, None)
         self.assertIsNone(generic.deck_strategy)
         empty = AIPlayer("bot-3", "Bot", {}, None)

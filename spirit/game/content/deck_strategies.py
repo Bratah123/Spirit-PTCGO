@@ -3626,6 +3626,654 @@ SUICUNE_LUDICOLO = {
 }
 
 
+# Charizard VSTAR / Magma Basin  (deck key: 'Charizard (charizard-vmax)')
+#
+# Charizard VSTAR is the boss attacker: Explosive Fire costs Fire + Fire +
+# Colorless for 130, or 230 once any damage counter sits on Charizard --
+# Magma Basin's self-inflicted counters and ordinary wear both feed it.
+# Star Blaze is the one-per-game VSTAR Power (320): spent ONLY where the
+# 230 line cannot answer (231..320 hp bodies -- VSTAR/VMAX prizes), never
+# on a target Explosive Fire already handles.  Magma Basin accelerates a
+# Fire Energy from the discard onto a Benched Fire Pokemon every turn
+# (2 damage counters as the price, which later powers Explosive Fire);
+# Raihan reloads after a loss.  One Charizard V is benched as the backup
+# body; support Pokemon are benched only for their effect -- Crobat V to
+# fill a small hand, Mew to dig Items, Lumineon V to fetch a missing
+# Supporter -- because extra 2-prize bodies are liabilities.  Moltres is
+# the emergency 1-prize attacker while the line develops.  When the
+# Active Charizard is about to fall, energy and the promote slot go to
+# the NEXT Charizard instead of the doomed one.
+
+CZ_FIRE = {"Fire Energy", "Heat Fire Energy"}
+CZ_SUPPORTERS = {"Professor's Research", "Marnie", "Boss's Orders",
+                 "Zinnia's Resolve", "Raihan"}
+CZ_LINE = {"Charizard V", "Charizard VSTAR"}
+CZ_REPEATABLE = {
+    "Professor's Research", "Marnie", "Boss's Orders", "Raihan",
+    "Zinnia's Resolve", "Quick Ball", "Ultra Ball", "Switch",
+    "Air Balloon", "Magma Basin", "Fire Energy", "Heat Fire Energy",
+}
+
+
+def _cz_zards(ctx: StrategyContext) -> int:
+    names = ctx.in_play_names()
+    return names.count("Charizard V") + names.count("Charizard VSTAR")
+
+
+def _cz_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Explosive Fire typed cost: two Fire plus one more unit."""
+    if pokemon is None or ctx.name(pokemon) != "Charizard VSTAR":
+        return False
+    return (ctx.energy_of_type(pokemon, "Fire") >= 2
+            and ctx.energy_attached(pokemon) >= 3)
+
+
+def _cz_output(ctx: StrategyContext, pokemon) -> int:
+    """Explosive Fire damage: 130, or 230 with any damage counters on."""
+    if not _cz_ready(ctx, pokemon):
+        return 0
+    return 130 + (100 if ctx.damage_on(pokemon) > 0 else 0)
+
+
+def _cz_v_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Charizard V's Incinerate cost: two Fire plus one more unit."""
+    if pokemon is None or ctx.name(pokemon) != "Charizard V":
+        return False
+    return (ctx.energy_of_type(pokemon, "Fire") >= 2
+            and ctx.energy_attached(pokemon) >= 3)
+
+
+def _cz_strike_damage(ctx: StrategyContext) -> int:
+    """What our Active can put into the opposing Active right now."""
+    active = ctx.active()
+    if active is None:
+        return 0
+    return max(_cz_output(ctx, active), _cz_v_ready(ctx, active) * 90)
+
+
+def _cz_energy_hungry(ctx: StrategyContext) -> bool:
+    """Any attacker body still has an open Explosive Fire / Incinerate slot."""
+    bodies = [p for p in ctx.in_play() if ctx.name(p) in (CZ_LINE | {"Moltres"})]
+    if not bodies:
+        return True
+    for p in bodies:
+        if ctx.name(p) == "Moltres":
+            if ctx.energy_of_type(p, "Fire") < 1:
+                return True
+            continue
+        if (ctx.energy_attached(p) < 3
+                or ctx.energy_of_type(p, "Fire") < 2):
+            return True
+    return False
+
+
+def _cz_vstar_used(ctx: StrategyContext) -> bool:
+    try:
+        return ctx.me in ctx.session.turn_state.vstar_used
+    except Exception:
+        return False
+
+
+def _cz_star_blaze_window(ctx: StrategyContext) -> bool:
+    """Spend the one-per-game 320 only where the 230 line can't answer."""
+    if _cz_vstar_used(ctx):
+        return False
+    opp = ctx.active(ctx.opp)
+    if opp is None:
+        return False
+    left = ctx.hp_left(opp)
+    return 230 < left <= 320
+
+
+def _cz_threatened(ctx: StrategyContext) -> bool:
+    """The Active Charizard is facing a likely KO next swing."""
+    active = ctx.active()
+    if active is None or ctx.name(active) not in CZ_LINE:
+        return False
+    return ctx.damage_on(active) >= 120
+
+
+def _cz_tool_free(ctx: StrategyContext, pokemon) -> bool:
+    if pokemon is None:
+        return False
+    return not any(
+        c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value
+        for c in (getattr(pokemon, "children", None) or [])
+    )
+
+
+def _cz_basin_ok(ctx: StrategyContext) -> bool:
+    """Magma Basin is playable and useful: a Fire Energy to move onto a
+    Benched Fire body, and no Basin already occupying the stadium slot."""
+    if ctx.opponent_stadium_is("Magma Basin"):
+        return False
+    if not (CZ_FIRE & set(ctx.discard_names())):
+        return False
+    return any(ctx.name(p) in (CZ_LINE | {"Moltres"}) for p in ctx.bench())
+
+
+def _cz_gust_window(ctx: StrategyContext) -> List:
+    damage = _cz_strike_damage(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _cz_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _cz_strike_damage(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _cz_promote(ctx: StrategyContext, pokemon) -> float:
+    """New-Active ranking: ready swingers first, the big developing wall
+    next, then the utility diggers."""
+    name = ctx.name(pokemon)
+    if name == "Charizard VSTAR":
+        if _cz_ready(ctx, pokemon):
+            return 2000.0 + ctx.energy_attached(pokemon) * 10.0
+        return 900.0
+    if name == "Charizard V":
+        if _cz_v_ready(ctx, pokemon):
+            return 1200.0
+        return 600.0
+    if name == "Moltres":
+        return 800.0 if ctx.energy_of_type(pokemon, "Fire") >= 1 else 400.0
+    if name == "Mew":
+        return 350.0                      # Mysterious Tail digs Items
+    if name in ("Crobat V", "Lumineon V"):
+        return 100.0
+    return 0.0
+
+
+def _cz_retreat_ok(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None:
+        return False
+    can_switch = any(
+        _cz_ready(ctx, p) or _cz_v_ready(ctx, p)
+        or (ctx.name(p) == "Moltres" and ctx.energy_of_type(p, "Fire") >= 1)
+        for p in ctx.bench()
+    )
+    if not can_switch:
+        return False
+    if _cz_strike_damage(ctx) <= 0:
+        return True                        # the active can't swing: rotate
+    if ctx.damage_on(active) >= 120:
+        return True                        # doomed Charizard: keep the body
+    return False
+
+
+def _cz_basin_target_score(ctx: StrategyContext, target) -> float:
+    """Magma Basin's bench target: fill the next attacker's energy gap."""
+    name = ctx.name(target)
+    if name == "Charizard VSTAR":
+        score = 400.0
+    elif name == "Charizard V":
+        score = 380.0                      # energy carries into evolution
+    elif name == "Moltres":
+        score = 300.0
+    else:
+        return 0.0
+    have = ctx.energy_attached(target)
+    fire = ctx.energy_of_type(target, "Fire")
+    if fire < 2:
+        score += 200.0
+    elif have < 3:
+        score += 100.0
+    else:
+        score -= 150.0                     # loaded: the counters land anyway
+    if name == "Moltres" and fire >= 1:
+        score -= 120.0
+    return score
+
+
+def _cz_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    if description == "DefaultPokemonPlayAbility":
+        if name == "Crobat V":
+            return ctx.hand_size() <= 5    # Dark Asset draws only to 6
+        if name == "Lumineon V":
+            hand = set(ctx.hand_names())
+            if not (hand & CZ_SUPPORTERS):
+                return True
+            return _cz_gust_window(ctx) and "Boss's Orders" not in hand
+        return True                        # Charizard V / Moltres / Mew
+    if description == "UseTrainerCard":
+        if name == "Professor's Research":
+            return ctx.hand_size() <= 5 and deck > 10
+        if name == "Marnie":
+            return (ctx.hand_size() <= 5
+                    or ctx.hand_size(ctx.opp) >= 6) and deck > 5
+        if name == "Zinnia's Resolve":
+            return (ctx.hand_size() >= 5 and len(ctx.in_play(ctx.opp)) >= 3
+                    and deck > 6)
+        if name == "Raihan":
+            return True                    # engine gate: the KO already fell
+        if name == "Boss's Orders":
+            if _cz_strike_damage(ctx) <= 0:
+                return False
+            if _cz_gust_window(ctx):
+                return True
+            return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+        if name in ("Quick Ball", "Ultra Ball"):
+            return deck > 5
+        if name == "Magma Basin":
+            return _cz_basin_ok(ctx)
+        if name == "Switch":
+            return _cz_retreat_ok(ctx)
+        if name == "Air Balloon":
+            return any(ctx.name(p) in CZ_LINE and _cz_tool_free(ctx, p)
+                       for p in ctx.in_play())
+        return True
+    if description == "DefaultStadiumPlayAbility" and name == "Magma Basin":
+        return _cz_basin_ok(ctx)
+    if description == "DefaultToolPlayAbility" and name == "Air Balloon":
+        return any(ctx.name(p) in CZ_LINE and _cz_tool_free(ctx, p)
+                   for p in ctx.in_play())
+    if description == "UsePokemonAbility":
+        if name == "Mysterious Tail":
+            return True                    # engine gate: Mew Active, once
+        if name == "Dark Asset":
+            return ctx.hand_size() <= 5
+        if name == "Luminous Sign":
+            hand = set(ctx.hand_names())
+            if not (hand & CZ_SUPPORTERS):
+                return True
+            return _cz_gust_window(ctx) and "Boss's Orders" not in hand
+        return True
+    if description == "UsePokemonAttack":
+        if name == "Star Blaze":
+            return _cz_star_blaze_window(ctx)
+        return True                        # Explosive Fire / Incinerate / ...
+    if description == "BaseRetreat":
+        return _cz_retreat_ok(ctx)
+    return True
+
+
+def _cz_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational worth: the attacker line first, then the plays that
+    solve a real problem, then the support bodies for their effect."""
+    hand = ctx.hand_names()
+    handset = set(hand)
+    play = ctx.in_play_names()
+    zards = play.count("Charizard V") + play.count("Charizard VSTAR")
+    active = ctx.active()
+    hs = ctx.hand_size()
+
+    # -- Pokemon gap pieces ------------------------------------------------
+    if name == "Charizard VSTAR":
+        waiting = play.count("Charizard V") > play.count("Charizard VSTAR")
+        if waiting:
+            v = 90.0                       # a V body is waiting to evolve
+        elif zards == 0 and "Charizard V" in handset:
+            v = 55.0                       # the line arrives together
+        elif zards == 0:
+            v = 15.0                       # nothing to evolve into it
+        else:
+            v = 40.0                       # the second line's end state
+    elif name == "Charizard V":
+        if zards == 0:
+            v = 95.0                       # the line must exist
+        elif zards == 1:
+            v = 55.0                       # the backup body
+        else:
+            v = 12.0
+    elif name == "Moltres":
+        if zards == 0 and play.count("Moltres") == 0:
+            v = 70.0                       # emergency attacker, early only
+        elif zards == 0:
+            v = 45.0
+        else:
+            v = 10.0
+    elif name == "Crobat V":
+        v = 75.0 if hs <= 4 else (45.0 if hs == 5 else 10.0)
+    elif name == "Mew":
+        v = 60.0 if not (handset & {"Quick Ball", "Ultra Ball"}) else 25.0
+    elif name == "Lumineon V":
+        if not (handset & CZ_SUPPORTERS):
+            v = 70.0
+        elif _cz_gust_window(ctx) and "Boss's Orders" not in handset:
+            v = 85.0                       # fetch the missing gust
+        else:
+            v = 8.0
+
+    # -- Energy ------------------------------------------------------------
+    elif name == "Fire Energy":
+        v = 85.0 if _cz_energy_hungry(ctx) else 45.0
+    elif name == "Heat Fire Energy":
+        if active is not None and ctx.name(active) == "Charizard VSTAR" \
+                and ctx.energy_attached(active) < 3:
+            v = 80.0                       # typed slot + the +20 HP rider
+        else:
+            v = 55.0
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Professor's Research":
+        v = 80.0 if hs <= 4 else (55.0 if hs <= 6 else 20.0)
+    elif name == "Marnie":
+        v = 70.0 if ctx.hand_size(ctx.opp) >= 6 else (
+            50.0 if hs <= 4 else 30.0)
+    elif name == "Raihan":
+        v = 85.0                           # attach + search, post-KO only
+    elif name == "Zinnia's Resolve":
+        opp_n = len(ctx.in_play(ctx.opp))
+        if hs >= 5 and opp_n >= 4:
+            v = 65.0
+        elif hs >= 5 and opp_n >= 3:
+            v = 55.0
+        else:
+            v = 25.0
+    elif name == "Boss's Orders":
+        if _cz_gust_window(ctx):
+            v = 95.0                       # a KO walks into the 230 line
+        elif any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp)):
+            v = 45.0
+        else:
+            v = 15.0
+    elif name == "Quick Ball":
+        if zards == 0 and "Charizard V" not in handset:
+            v = 85.0                       # fetch the line
+        elif zards == 1 and "Charizard V" not in handset:
+            v = 70.0                       # fetch the backup body
+        else:
+            v = 15.0
+    elif name == "Ultra Ball":
+        if zards == 0 and "Charizard V" not in handset:
+            v = 80.0
+        elif zards == 1 and "Charizard V" not in handset:
+            v = 65.0
+        else:
+            v = 20.0
+    elif name == "Magma Basin":
+        v = 75.0 if _cz_basin_ok(ctx) else 10.0
+    elif name == "Air Balloon":
+        v = 65.0 if (active is not None and ctx.name(active) in CZ_LINE
+                     and _cz_tool_free(ctx, active)) else 20.0
+    elif name == "Switch":
+        if _cz_retreat_ok(ctx) and _cz_strike_damage(ctx) <= 0:
+            v = 70.0                       # rotate into a swinger
+        elif _cz_threatened(ctx):
+            v = 65.0                       # save the loaded Charizard
+        else:
+            v = 20.0
+    else:
+        v = 6.0
+
+    if in_hand and name in handset and name not in CZ_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _cz_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Fire Energy":
+        return 125.0 if _cz_energy_hungry(ctx) else 60.0
+    if name == "Heat Fire Energy":
+        active = ctx.active()
+        if active is not None and ctx.name(active) == "Charizard VSTAR" \
+                and ctx.energy_attached(active) < 3:
+            return 140.0                   # typed slot + the +20 HP rider
+        return 95.0 if _cz_energy_hungry(ctx) else 55.0
+    return 6.0
+
+
+def _cz_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach lands: open slots on the Charizard line first; the
+    doomed Active loses its claim once the next body grows."""
+    name = ctx.name(target)
+    if name == "Charizard VSTAR":
+        score = 520.0 if target is ctx.active() else 400.0
+        if _cz_threatened(ctx) and target is not ctx.active():
+            score += 200.0                 # next attacker grows first
+        fire = ctx.energy_of_type(target, "Fire")
+        have = ctx.energy_attached(target)
+        if fire < 2:
+            score += 250.0                 # the typed slots come first
+        elif have < 3:
+            score += 130.0                 # third unit completes Explosive
+        else:
+            score -= 260.0                 # loaded: the backup grows instead
+        if energy_name == "Heat Fire Energy" and target is ctx.active():
+            score += 60.0
+        return score
+    if name == "Charizard V":
+        score = 430.0
+        if _cz_threatened(ctx):
+            score += 150.0
+        fire = ctx.energy_of_type(target, "Fire")
+        have = ctx.energy_attached(target)
+        if fire < 2:
+            score += 200.0
+        elif have < 3:
+            score += 110.0
+        else:
+            score -= 140.0
+        return score
+    if name == "Moltres":
+        fire = ctx.energy_of_type(target, "Fire")
+        if _cz_zards(ctx) == 0:
+            score = 400.0 if fire < 1 else 280.0
+            if ctx.in_play_names().count("Moltres") == 0:
+                score += 40.0
+            return score
+        return 120.0 if fire < 1 else 40.0
+    return 40.0                            # support bodies never get fed
+
+
+def _cz_bench_score(name: str, ctx: StrategyContext) -> float:
+    names = ctx.in_play_names()
+    free = 5 - len(ctx.bench())
+    zards = names.count("Charizard V") + names.count("Charizard VSTAR")
+    hand = set(ctx.hand_names())
+    hs = ctx.hand_size()
+    if name == "Charizard V":
+        if zards == 0:
+            return 700.0                   # the line takes the bench
+        if zards == 1:
+            return 450.0                   # one backup body is enough
+        return 40.0
+    if name == "Moltres":
+        if zards == 0 and names.count("Moltres") == 0:
+            return 420.0                   # emergency attacker, early only
+        if zards == 0:
+            return 0.0 if free <= 1 else 300.0
+        return 0.0 if free <= 1 else 90.0
+    if name == "Crobat V":
+        if hs <= 4 and free >= 2:
+            return 500.0
+        if hs <= 4:
+            return 380.0
+        if hs == 5 and free >= 3:
+            return 220.0
+        return 0.0                         # full hand: no draw, no liability
+    if name == "Mew":
+        if free == 0:
+            return 0.0
+        if not (hand & {"Quick Ball", "Ultra Ball"}):
+            return 300.0                   # the Item dig matters now
+        return 110.0
+    if name == "Lumineon V":
+        if not (hand & CZ_SUPPORTERS):
+            return 450.0 if free >= 2 else 380.0
+        if _cz_gust_window(ctx) and "Boss's Orders" not in hand:
+            return 480.0
+        return 0.0                         # 2-prize body with no job
+    return 0.0
+
+
+def _cz_evolve_score(name: str, ctx: StrategyContext) -> float:
+    if name == "Charizard VSTAR":
+        return 900.0                       # strictly the better attacker
+    return 0.0
+
+
+def _cz_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "DefaultPokemonPlayAbility":
+        return _cz_bench_score(name, ctx)
+    if description == "DefaultEnergyPlayAbility":
+        return _cz_energy_value(name, ctx)
+    if description == "EvolvePokemonPlayAbility":
+        return _cz_evolve_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Dark Asset":
+            return 85.0                    # fill a small hand
+        if name == "Luminous Sign":
+            return 80.0                    # fetch the missing Supporter
+        if name == "Mysterious Tail":
+            return 70.0                    # free Item dig while Active
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _cz_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _cz_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    if title == "Explosive Fire":
+        damage = _cz_output(ctx, ctx.active())
+        if damage <= 0:
+            return 0.0
+        return _ko(800.0 + damage, damage)
+    if title == "Star Blaze":
+        if not _cz_star_blaze_window(ctx):
+            return 0.0                     # never waste the VSTAR Power
+        return 3000.0
+    if title == "Heat Blast":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Charizard V":
+            return 0.0
+        if not (ctx.energy_of_type(active, "Fire") >= 3
+                and ctx.energy_attached(active) >= 4):
+            return 0.0
+        return _ko(620.0 + 180, 180)
+    if title == "Incinerate":
+        active = ctx.active()
+        if not _cz_v_ready(ctx, active):
+            return 0.0
+        score = 560.0 + 90.0
+        if ctx.opponent_tools():
+            score += 60.0                  # the tool strip rides along
+        return _ko(score, 90)
+    if title == "Inferno Wings":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Moltres":
+            return 0.0
+        if ctx.energy_of_type(active, "Fire") < 1:
+            return 0.0
+        damage = 90 if ctx.damage_on(active) > 0 else 20
+        return _ko(430.0 + damage, damage)
+    if title == "Psyshot":
+        return _ko(320.0 + 30, 30)         # Mew is Active only when stuck
+    return base
+
+
+def _cz_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _cz_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            # the expendable basic copies pay retreat before special energy
+            return 160.0 if ctx.name(target) == "Fire Energy" else 90.0
+        if target.owning_player_id == ctx.me:
+            return _cz_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _cz_energy_target_score(ctx, target, name)
+    if description == "DefaultToolPlayAbility":     # Air Balloon
+        if ctx.name(target) not in CZ_LINE:
+            return 0.0
+        if not _cz_tool_free(ctx, target):
+            return 0.0
+        score = 500.0
+        if target is ctx.active():
+            score += 150.0                 # the pivot hangs on the Active
+        return score
+    if description == "EvolvePokemonPlayAbility":   # Charizard VSTAR
+        score = 8.0 + ctx.energy_attached(target) * 2.0
+        if target is ctx.active():
+            score += 6.0                   # evolve where the energy is
+        return score
+    return 0.0
+
+
+def _cz_search_score(card, ctx: StrategyContext) -> float:
+    return _cz_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _cz_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote the ready swinger;
+    - opponent switch picks -> KO window, then scratch value;
+    - Magma Basin's bench target -> fill the next attacker's gap;
+    - Raihan/Magma Basin attaches -> the Charizard energy ladder;
+    - Star Blaze energy self-dump -> expendable basics first;
+    - hand discards -> dump the least valuable card.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _cz_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _cz_gust(ctx, card)
+    if not mine and ("opponent's" in text or "take" in text):
+        left = ctx.hp_left(card)
+        if 0 < left <= _cz_strike_damage(ctx):
+            return 1000.0
+        return 600.0 + ctx.damage_on(card) if ctx.damage_on(card) > 0 else 0.0
+    if mine and "Benched Fire" in text:
+        return _cz_basin_target_score(ctx, card)
+    if mine and "Item card" in text:
+        return _cz_value(name, ctx, in_hand=False)   # Mew's Mysterious Tail
+    if mine and ("attach it to" in text or "attach the Energy to" in text):
+        return _cz_energy_target_score(ctx, card, "")
+    if mine and "attach" in text:
+        return 100.0                       # pick the energy card itself
+    if mine and "evolve into" in text:
+        return 900.0 if name == "Charizard VSTAR" else 100.0
+    if mine and "in play" in text:
+        return 100.0
+    if mine and "put into your hand" in text:
+        return _cz_value(name, ctx, in_hand=False)
+    if mine and "into your hand" in text:
+        return _cz_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        if isinstance(card, EnergyEntity):  # Star Blaze self-dump
+            return 50.0 if name == "Fire Energy" else 10.0
+        return -_cz_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+CHARIZARD_VSTAR = {
+    "allow_action": _cz_allow,
+    "action_score": _cz_action_score,
+    "attack_score": _cz_attack_score,
+    "target_score": _cz_target_score,
+    "search_score": _cz_search_score,
+    "pick_score": _cz_pick,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
@@ -3634,6 +4282,7 @@ DECK_STRATEGIES = {
     "Eternatus V": ETERNATUS_VMAX,
     "Rayquaza V": RAYQUAZA_VMAX_FLAFFY,
     "Sobble (suicune-ludicolo)": SUICUNE_LUDICOLO,
+    "Charizard (charizard-vmax)": CHARIZARD_VSTAR,
 }
 
 

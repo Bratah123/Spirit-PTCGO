@@ -322,6 +322,27 @@ SCRAPED_DECK_LISTS = {
         (2, 'DAA', 174),   # Heat Fire Energy
     ],
 
+    'Charizard (charizard-vmax)': [
+        (4, 'BRS', 18),   # Charizard VSTAR
+        (4, 'BRS', 17),   # Charizard V
+        (2, 'DAA', 104),   # Crobat V
+        (2, 'CEL', 11),   # Mew
+        (2, 'BRS', 21),   # Moltres
+        (1, 'BRS', 40),   # Lumineon V
+        (4, 'RCL', 154),   # Boss's Orders
+        (4, 'BRS', 147),   # Professor's Research
+        (2, 'SSH', 169),   # Marnie
+        (2, 'EVS', 164),   # Zinnia's Resolve
+        (1, 'EVS', 152),   # Raihan
+        (4, 'BRS', 144),   # Magma Basin
+        (4, 'SSH', 156),   # Air Balloon
+        (4, 'FST', 237),   # Quick Ball
+        (4, 'BRS', 150),   # Ultra Ball
+        (2, 'SSH', 183),   # Switch
+        (11, 'FST', 284),   # Fire Energy
+        (3, 'DAA', 174),   # Heat Fire Energy
+    ],
+
     'Charizard V': [
         (4, 'DAA', 19),   # Charizard V
         (4, 'DAA', 20),   # Charizard VMAX
