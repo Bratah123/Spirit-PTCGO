@@ -73,14 +73,15 @@ namespace SpiritSpeedMod
 
         private void Update()
         {
-            if (Input.GetKeyDown(DuelSpeedCycleKey.Value))
+            string scene = SceneManager.GetActiveScene().name;
+
+            if (scene == DuelSceneName && Input.GetKeyDown(DuelSpeedCycleKey.Value))
             {
                 duelSpeedIndex = (duelSpeedIndex + 1) % DuelSpeeds.Length;
                 Logger.LogInfo($"Duel speed hotkey -> {DuelSpeeds[duelSpeedIndex]:0.#}x");
                 ShowToast($"Duel speed: {DuelSpeeds[duelSpeedIndex]:0.#}x");
             }
 
-            string scene = SceneManager.GetActiveScene().name;
             float wanted = scene == DuelSceneName ? DuelSpeeds[duelSpeedIndex] : 1f;
             if (Mathf.Abs(Time.timeScale - wanted) > 0.0001f)
             {
