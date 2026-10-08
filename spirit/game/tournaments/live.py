@@ -15,11 +15,20 @@ from spirit.game.session.manager import GameSessionManager
 
 
 class Participant:
-    def __init__(self, client, deck: dict):
-        self.account_id = client.player.account_id
-        self.username = (getattr(client.player, "screen_name", None)
-                         or client.player.username)
-        self.client = client
+    def __init__(self, client, deck: dict, bot: bool = False):
+        self.bot = bot
+        if bot:
+            # Bots have no TCP client; a fresh GUID-shaped id keeps the
+            # client's identity deserializer happy in bracket packets.
+            self.account_id = str(uuid.uuid4())
+            deck_name = str((deck or {}).get("deckName") or "AI")
+            self.username = f"Bot ({deck_name})"
+            self.client = None
+        else:
+            self.account_id = client.player.account_id
+            self.username = (getattr(client.player, "screen_name", None)
+                             or client.player.username)
+            self.client = client
         self.deck = deck
         self.withdrawn = False
         self.wins = 0
@@ -97,16 +106,26 @@ class LiveTournament:
     async def _start_or_forfeit(self, matchup: Matchup):
         """Launches the game, or auto-advances when a seat is withdrawn/offline."""
         live = [p for p in matchup.players
-                if not p.withdrawn and self.manager.resolve_client(p) is not None]
+                if not p.withdrawn
+                and (p.bot or self.manager.resolve_client(p) is not None)]
         if len(live) < 2:
             winner = live[0] if live else matchup.players[0]
+            await self.record_result(matchup.game_id, winner.account_id, forfeit=True)
+            return
+        if all(p.bot for p in matchup.players):
+            # Side table between two bots: no session, no AI compute -- a
+            # fabricated winner keeps the round moving instantly.
+            winner = random.choice(matchup.players)
+            logging.info(f"[LiveTournament {self.active_id[:8]}] R{matchup.round} "
+                         f"T{matchup.table} bot-vs-bot resolved instantly: "
+                         f"{winner.username}")
             await self.record_result(matchup.game_id, winner.account_id, forfeit=True)
             return
         gsm = GameSessionManager()
         pairing = {
             "players": {
                 p.account_id: {"client": self.manager.resolve_client(p),
-                               "deck": p.deck, "ready": False}
+                               "deck": p.deck, "ready": p.bot}
                 for p in matchup.players
             },
             "is_solo": False,
@@ -122,7 +141,8 @@ class LiveTournament:
         gsm.pending_pairings[matchup.game_id] = pairing
         gsm._dispatch_ready_check(
             matchup.game_id, pairing["queue_name"],
-            [info["client"] for info in pairing["players"].values()])
+            [info["client"] for info in pairing["players"].values()
+             if info["client"] is not None])
 
     async def record_result(self, game_id: str, winner_account_id: str, forfeit: bool = False):
         matchup = next((m for m in self.matchups if m.game_id == game_id), None)
@@ -191,7 +211,10 @@ class LiveTournament:
         base = self.progress_dict()
         for place, participant in enumerate(standings, start=1):
             granted = _prize_rewards_for(prize_table, place)
-            if granted and not participant.withdrawn:
+            if participant.bot:
+                # Bots have no wallet/account row; they never win prizes.
+                granted = []
+            elif granted and not participant.withdrawn:
                 await run_db(grant_prize_rewards,
                              participant.account_id, granted)
             else:
@@ -269,6 +292,7 @@ class LiveTournamentManager:
         self.queues: Dict[str, List[Participant]] = {}    # tournament_id -> waiting players
         self.active: Dict[str, LiveTournament] = {}       # active_id -> tournament
         self._background_tasks: set = set()
+        self._fill_tasks: Dict[str, asyncio.Task] = {}    # tid -> pending bot-fill timer
 
     def _spawn(self, coro) -> asyncio.Task:
         task = asyncio.create_task(coro)
@@ -333,11 +357,65 @@ class LiveTournamentManager:
         if len(queue) >= tournament.max_size:
             players = [queue.pop(0) for _ in range(tournament.max_size)]
             await self.broadcast_queue_status(tid)
-            live = LiveTournament(self, tournament, players)
-            self.active[live.active_id] = live
-            logging.info(f"[LiveTournament] Starting '{tournament.definition.get('name')}' "
-                         f"({live.active_id}) with {len(players)} players")
-            await live.start()
+            await self._start_bracket(tid, tournament, players)
+        elif tournament.bot_fill:
+            self._ensure_fill_task(tid)
+
+    async def _start_bracket(self, tid: str, tournament: TournamentDef,
+                             players: List[Participant]):
+        live = LiveTournament(self, tournament, players)
+        self.active[live.active_id] = live
+        logging.info(f"[LiveTournament] Starting '{tournament.definition.get('name')}' "
+                     f"({live.active_id}) with {len(players)} players")
+        await live.start()
+
+    # ------------------------------------------------------------- bot fill
+
+    def _make_bot(self, tournament: TournamentDef) -> Participant:
+        """A random brained bot from the pool (same source as queue AI fill)."""
+        deck = GameSessionManager()._ai_deck(
+            {}, f"Tournament_{tournament.tournament_id}")
+        if not deck.get("piles", {}).get("deck"):
+            logging.warning(f"[LiveTournament] bot fill deck resolved empty for "
+                            f"{tournament.tournament_id}")
+        return Participant(None, deck, bot=True)
+
+    def _ensure_fill_task(self, tid: str):
+        if tid in self._fill_tasks:
+            return
+        task = self._spawn(self._fill_after(tid))
+        self._fill_tasks[tid] = task
+        def _done(t, tid=tid):
+            if self._fill_tasks.get(tid) is t:
+                self._fill_tasks.pop(tid, None)
+        task.add_done_callback(_done)
+
+    async def _fill_after(self, tid: str):
+        """Pads the queue with bots and starts the bracket after botFillDelay."""
+        tournament = TournamentManager().get(tid)
+        if tournament is None or not tournament.enabled or not tournament.bot_fill:
+            return
+        delay = tournament.bot_fill_delay
+        if delay > 0:
+            await asyncio.sleep(delay)
+        # State is re-checked after the wait: a full queue started naturally,
+        # an emptied queue, or a deleted/disabled tournament all no-op here.
+        tournament = TournamentManager().get(tid)
+        if tournament is None or not tournament.enabled or not tournament.bot_fill:
+            return
+        queue = self.queue_for(tid)
+        if not queue or len(queue) >= tournament.max_size:
+            return
+        humans = [queue.pop(0) for _ in range(len(queue))]
+        bots = [self._make_bot(tournament)
+                for _ in range(tournament.max_size - len(humans))]
+        await self.broadcast_queue_status(tid)
+        await self._start_bracket(tid, tournament, humans + bots)
+        # A straggler may have joined during the awaits above; give them a
+        # fresh timer instead of leaving them queued forever.
+        if self.queue_for(tid) and tournament.bot_fill:
+            self._fill_tasks.pop(tid, None)
+            self._ensure_fill_task(tid)
 
     async def leave_queue(self, client, tournament_id: str) -> bool:
         tid = tournament_id.lower()

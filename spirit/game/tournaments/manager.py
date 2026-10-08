@@ -179,6 +179,20 @@ class TournamentDef:
         except (TypeError, ValueError):
             return 8
 
+    @property
+    def bot_fill(self) -> bool:
+        return bool(self.definition.get("botFill"))
+
+    @property
+    def bot_fill_delay(self) -> int:
+        raw = self.definition.get("botFillDelay")
+        if raw is None or raw == "":
+            return 30
+        try:
+            return max(0, min(3600, int(raw)))
+        except (TypeError, ValueError):
+            return 30
+
     def legacy_entry_fees(self) -> list:
         """[{currency, amount}] rows the server actually charges (all of them)."""
         return [
@@ -282,6 +296,15 @@ def validate_definition(definition: dict):
         return "maxSize must be 2, 4 or 8 (the bracket UI renders 8-player brackets)"
     if str(definition.get("matchStructure") or "SingleElimination") != "SingleElimination":
         return "only SingleElimination matchStructure is supported"
+    if "botFill" in definition and not isinstance(definition.get("botFill"), bool):
+        return "botFill must be a boolean"
+    if "botFillDelay" in definition:
+        try:
+            bot_delay = int(definition.get("botFillDelay"))
+        except (TypeError, ValueError):
+            return "botFillDelay must be an integer number of seconds"
+        if bot_delay < 0 or bot_delay > 3600:
+            return "botFillDelay must be between 0 and 3600 seconds"
     fmt = definition.get("format")
     if fmt and str(fmt) not in LEGACY_FORMATS:
         return f"format must be one of {', '.join(LEGACY_FORMATS)}"

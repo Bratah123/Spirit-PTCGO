@@ -370,6 +370,10 @@
       <div><label>Delay between rounds (s)</label><input id="tRoundDelay" type="number" min="3" style="width:90px" onchange="tField('delayBetweenRounds', parseInt(this.value) || 10)"></div>
     </div>
     <div class="row">
+      <div><label>Fill with bots after delay</label><input id="tBotFill" type="checkbox" style="width:auto;margin-left:6px" onchange="tField('botFill', !!this.checked)"></div>
+      <div><label>Bot fill delay (s)</label><input id="tBotFillDelay" type="number" min="0" max="3600" style="width:90px" onchange="tField('botFillDelay', isNaN(parseInt(this.value, 10)) ? 30 : Math.min(3600, Math.max(0, parseInt(this.value, 10))))"></div>
+    </div>
+    <div class="row">
       <div><label>Preview from</label><input id="tPreview" type="datetime-local" onchange="tField('previewTime', localToMs(this.value))"></div>
       <div><label>Entries open</label><input id="tStart" type="datetime-local" onchange="tField('startTime', localToMs(this.value))"></div>
       <div><label>Entries close</label><input id="tEntryClose" type="datetime-local" onchange="tField('entryClosingTime', localToMs(this.value))"></div>
@@ -1914,6 +1918,7 @@ function defaultTournament(n) {
     maxRuns: 0,
     maxSize: 8, format: "Unlimited", matchStructure: "SingleElimination",
     roundLength: 30, delayBetweenRounds: 10,
+    botFill: false, botFillDelay: 30,
     run: {entryFee: [], allowDeckSwitching: true, maxWins: 3, maxLosses: 3, maxGames: 0, prizeTable: []},
     leaderboard: {runs: 0, winValue: 3, lossValue: 1, prizeTable: []}
   }};
@@ -2058,6 +2063,8 @@ function renderTournaments() {
   $('#tFormat').value = d.format || 'Unlimited';
   $('#tRoundLength').value = d.roundLength || 30;
   $('#tRoundDelay').value = d.delayBetweenRounds || 10;
+  $('#tBotFill').checked = !!d.botFill;
+  $('#tBotFillDelay').value = d.botFillDelay ?? 30;
   $('#tPreview').value = msToLocal(d.previewTime);
   $('#tStart').value = msToLocal(d.startTime);
   $('#tEntryClose').value = msToLocal(d.entryClosingTime);
