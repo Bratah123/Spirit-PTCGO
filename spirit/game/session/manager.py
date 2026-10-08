@@ -248,14 +248,17 @@ class GameSessionManager:
         # same way a human pairing does (ConfirmReadyForMatch -> MatchFound).
         self._dispatch_ready_check(game_id, queue_name, [client])
 
-    def _ai_deck(self, human_deck: dict, queue_name: str) -> dict:
+    def _ai_deck(self, human_deck: dict, queue_name: str,
+                 exclude_names=None) -> dict:
         """Deck for the auto-fill bot.
 
         Theme queues demand a legal theme deck, so the bot mirrors the player's
         there; anywhere else it rolls a random pick from the curated pool
         (BOT_DECKS plus the four starter decks), avoiding a pure mirror of the
-        player's own deck. Falls back to the player's deck if the catalog is
-        unusable.
+        player's own deck. exclude_names (tournament brackets) reserves deck
+        names already seated so each bot spot gets a distinct archetype while
+        the pool allows; exhausted pools fall back to plain non-mirror picks.
+        Falls back to the player's deck if the catalog is unusable.
         """
         try:
             is_theme_queue = (
@@ -271,7 +274,10 @@ class GameSessionManager:
             # brains of their own.
             pool = list(BOT_DECKS)
             human_name = human_deck.get("deckName")
-            rivals = [d for d in pool if d[0] != human_name] or pool
+            exclude = set(exclude_names or ())
+            rivals = [d for d in pool
+                      if d[0] != human_name and d[0] not in exclude]
+            rivals = rivals or [d for d in pool if d[0] != human_name] or pool
             name, decklist = random.choice(rivals)
             deck = build_deck_data(name, decklist)
             if deck.get("piles", {}).get("deck"):

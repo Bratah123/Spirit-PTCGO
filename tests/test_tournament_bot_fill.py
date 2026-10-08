@@ -252,6 +252,46 @@ class FillAfterTests(LiveCase):
             await asyncio.gather(task, return_exceptions=True)
         self.assertEqual(len(self.m.active), 0)
 
+    async def test_bot_spots_get_unique_archetypes(self):
+        tdef = make_tdef(base_definition(maxSize=4, botFill=True, botFillDelay=0))
+        tid = tdef.tournament_id.lower()
+        client = FakeClient()
+        self.m.queues[tid] = [Participant(client, {"piles": {"deck": []}})]
+        self.m.subscribers.append(client)
+        with patch("spirit.game.tournaments.live.TournamentManager",
+                   lambda: stub_tm(tdef)), \
+             patch.object(GameSessionManager, "_dispatch_ready_check"):
+            await asyncio.wait_for(self.m._fill_after(tid), 5)
+
+        live = next(iter(self.m.active.values()))
+        bots = [p for p in live.participants if p.bot]
+        self.assertEqual(len(bots), 3)
+        names = [p.deck.get("deckName") for p in bots]
+        self.assertTrue(all(names), f"every bot needs a named deck: {names}")
+        self.assertEqual(len(set(names)), 3,
+                         f"each bot spot needs a distinct archetype: {names}")
+
+    async def test_small_pool_falls_back_to_repeats(self):
+        from spirit.game.content import bot_decks as bd
+        tdef = make_tdef(base_definition(maxSize=4, botFill=True, botFillDelay=0))
+        tid = tdef.tournament_id.lower()
+        client = FakeClient()
+        self.m.queues[tid] = [Participant(client, {"piles": {"deck": []}})]
+        self.m.subscribers.append(client)
+        with patch.object(bd, "BOT_DECKS", bd.BOT_DECKS[:2]), \
+             patch("spirit.game.tournaments.live.TournamentManager",
+                   lambda: stub_tm(tdef)), \
+             patch.object(GameSessionManager, "_dispatch_ready_check"):
+            await asyncio.wait_for(self.m._fill_after(tid), 5)
+
+        live = next(iter(self.m.active.values()))
+        bots = [p for p in live.participants if p.bot]
+        self.assertEqual(len(bots), 3, "an exhausted pool must still fill every spot")
+        names = [p.deck.get("deckName") for p in bots]
+        self.assertTrue(all(names))
+        self.assertEqual(len(set(names)), 2,
+                         "2-deck pool: first two spots unique, third repeats")
+
 
 class JoinQueueTests(LiveCase):
     async def test_join_starts_fill_timer_when_enabled(self):

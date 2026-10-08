@@ -446,10 +446,15 @@ class LiveTournamentManager:
 
     # ------------------------------------------------------------- bot fill
 
-    def _make_bot(self, tournament: TournamentDef) -> Participant:
-        """A random brained bot from the pool (same source as queue AI fill)."""
+    def _make_bot(self, tournament: TournamentDef,
+                  exclude_names=None) -> Participant:
+        """A random brained bot from the pool (same source as queue AI fill).
+
+        exclude_names reserves deck names already seated in this bracket so
+        every bot spot gets a distinct archetype while the pool allows it."""
         deck = GameSessionManager()._ai_deck(
-            {}, f"Tournament_{tournament.tournament_id}")
+            {}, f"Tournament_{tournament.tournament_id}",
+            exclude_names=exclude_names)
         if not deck.get("piles", {}).get("deck"):
             logging.warning(f"[LiveTournament] bot fill deck resolved empty for "
                             f"{tournament.tournament_id}")
@@ -482,8 +487,17 @@ class LiveTournamentManager:
         if not queue or len(queue) >= tournament.max_size:
             return
         humans = [queue.pop(0) for _ in range(len(queue))]
-        bots = [self._make_bot(tournament)
-                for _ in range(tournament.max_size - len(humans))]
+        # One archetype per seat: reserve the humans' deck names plus every
+        # bot name already drawn; the pool falls back to repeats only when
+        # it runs dry (ACTIVE_BOT_DECKS currently outnumbers any bracket).
+        taken = {h.deck.get("deckName") for h in humans if h.deck}
+        taken.discard(None)
+        bots = []
+        for _ in range(tournament.max_size - len(humans)):
+            bot = self._make_bot(tournament, exclude_names=taken)
+            if bot.deck.get("deckName"):
+                taken.add(bot.deck["deckName"])
+            bots.append(bot)
         await self.broadcast_queue_status(tid)
         await self._start_bracket(tid, tournament, humans + bots)
         # A straggler may have joined during the awaits above; give them a
