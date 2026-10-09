@@ -241,6 +241,9 @@ class InboundMsg(str, Enum):
     ACCEPT_MATCH_WITH_SPECIFIC_CLIENT = "AcceptMatchWithSpecificClient"
     REJECT_MATCH_WITH_SPECIFIC_CLIENT = "RejectMatchWithSpecificClient"
     CANCEL_MATCH_REQUEST_WITH_SPECIFIC_CLIENT = "CancelMatchRequestWithSpecificClient"
+
+    # Daily versus reward track (day-rollover refresh)
+    REQUEST_CURRENT_DAILY_REWARD_TRACK = "RequestCurrentDailyRewardTrack"
     
     # Gameplay
     PLAYER_READY = "PlayerReady"

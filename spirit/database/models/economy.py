@@ -71,6 +71,13 @@ class VersusProgress(Base):
     all_time_points: Mapped[int] = mapped_column(default=0)
     # {str(threshold): true} thresholds whose rewards were already granted
     granted_json: Mapped[dict] = mapped_column(JSONEncodedDict, default=dict)
+    # Win streak (flat: +1 per win, 0 on loss; non-counting matches untouched)
+    win_streak: Mapped[int] = mapped_column(default=0)
+    # Daily versus wins within daily_wins_date (UTC day; rolls lazily)
+    daily_wins: Mapped[int] = mapped_column(default=0)
+    daily_wins_date: Mapped[str] = mapped_column(default="")
+    # epoch ms of last daily win (client DailyRewardTrackProgress.mostRecentWin)
+    daily_last_win_ms: Mapped[int] = mapped_column(default=0)
 
 
 class DynamicPage(Base):

@@ -96,14 +96,55 @@ from spirit.game.data_utils import (
     subtypes_for, unimplemented,
 )
 from spirit.database.player_data import COINS_PER_WIN, COINS_PER_LOSS, grant_coins
-from spirit.database.versus_data import award_match_points, get_progress
+from spirit.database.versus_data import (
+    award_match_points, get_progress, get_streak_state, record_match_outcome,
+)
 from spirit.database.async_utils import run_db
 
 
-def _persist_match_result(account_id: str, coins: int, is_winner: bool):
-    """One thread hop for a player's match-end persistence (coins + ladder points)."""
+def _persist_match_result(account_id: str, coins: int, is_winner: bool,
+                          counts: bool = False):
+    """One thread hop for a player's match-end persistence (coins + ladder
+    points + streak/daily-versus state). Returns the record outcome."""
     grant_coins(account_id, coins)
     award_match_points(account_id, is_winner)
+    return record_match_outcome(account_id, is_winner, counts)
+
+
+def _streak_attribute_values(outcome):
+    """202010 Streak + 202190 DailyRewardTrackProgress attribute entries."""
+    streak = int(outcome.get("streak") or 0)
+    return [
+        {"name": AttrID.WIN_STREAK.value,
+         "value": {"winStreak": streak > 0, "streakLength": streak}},
+        {"name": AttrID.DAILY_TRACK_PROGRESS.value,
+         "value": {"wins": int(outcome.get("daily_wins") or 0),
+                   "mostRecentWin": int(outcome.get("daily_last_win_ms") or 0)}},
+    ]
+
+
+def _daily_track_reward_entry(outcome, index=0):
+    """EOG rewardList marker for a crossed daily track tier: name/rewardReason
+    = DailyRewardTrackReward (client HasDailyProgressReward gate) and
+    rewardType = DailyRewardTrack (DailyRewardsCount gate; keeps it out of the
+    Tokens totals — the summary panel pulls the tier amount itself)."""
+    amount = sum(int(r.get("rewardAmount") or 0)
+                 for r in outcome.get("granted") or []
+                 if r.get("rewardType") == "Tokens")
+    return {
+        "name": "DailyRewardTrackReward",
+        "rewardType": "DailyRewardTrack",
+        "rewardAmount": amount,
+        "rewardProductID": None,
+        "rewardCurrency": "",
+        "rewardDescription": {"id": "DailyRewardTrack"},
+        "rewardReason": "DailyRewardTrackReward",
+        "selectedFrom": [],
+        "selectedIndex": 0,
+        "rewardSource": "",
+        "index": index,
+        "openedReward": None,
+    }
 from spirit.game.models.board import (
     BoardEntity, BoardState, EnergyEntity, PokemonEntity,
     ComponentCardEntity, CompositePokemonEntity,
@@ -430,14 +471,27 @@ class GameSession:
         _, all_time = get_progress(account_id, "")
         return 1000 + all_time
 
-    def _prefetch_ratings(self) -> Dict[str, int]:
-        """Reads every NetworkPlayer's rating in one thread hop (called via run_db)."""
-        ratings = {}
+    def _player_streak(self, player) -> int:
+        """Win streak for the in-duel gameExtrasWinStreak_ key; same cache/fallback
+        pattern as _player_rating (headless tests build options without prefetch)."""
+        account_id = getattr(player, "account_id", None)
+        if not isinstance(player, NetworkPlayer) or not account_id:
+            return 0
+        cache = getattr(self, "_streak_cache", None)
+        if cache is not None and account_id in cache:
+            return cache[account_id]
+        return get_streak_state(account_id)["streak"]
+
+    def _prefetch_match_meta(self) -> Dict[str, Any]:
+        """Reads every NetworkPlayer's ladder rating + win streak in one thread
+        hop (called via run_db)."""
+        meta = {"ratings": {}, "streaks": {}}
         for account_id, player in self.players.items():
             if isinstance(player, NetworkPlayer):
                 _, all_time = get_progress(account_id, "")
-                ratings[account_id] = 1000 + all_time
-        return ratings
+                meta["ratings"][account_id] = 1000 + all_time
+                meta["streaks"][account_id] = get_streak_state(account_id)["streak"]
+        return meta
 
     def _build_game_options(self) -> Dict[str, Any]:
         """Builds the full gameOptions dict (cosmetics, tokens, elo, tournament ID)."""
@@ -469,10 +523,15 @@ class GameSession:
             game_options_dict[GAME_OPTION_TOKENS_KEY] = ",".join(tokens)
 
         # showPlayerUpsetNUX (G.D) float.Parses gameOptions["eloRating_<id>"]
-        # unguarded for every match participant — the key must exist.
+        # unguarded for every match participant — the key must exist. The streak
+        # display reads gameExtrasWinStreak_<id> the same way (ContainsKey +
+        # int.Parse in VersusPlayerView); emit "0" for bots/streakless players.
         for player_id, player in self.players.items():
             game_options_dict[f"eloRating_{player_id}"] = str(
                 self._player_rating(player)
+            )
+            game_options_dict[f"gameExtrasWinStreak_{player_id}"] = str(
+                self._player_streak(player)
             )
 
         # Legacy bracket matches: the client's TournamentManager reads this key
@@ -512,9 +571,11 @@ class GameSession:
         """Fires the MatchFound packet to notify clients of the finalized match and start transition."""
         logging.info(f"[Session {self.game_id}] Starting GameSession.")
 
-        # Prefetch ladder ratings off the event loop so _build_game_options never
-        # blocks the loop on SQLite reads.
-        self._rating_cache = await run_db(self._prefetch_ratings)
+        # Prefetch ladder ratings + streaks off the event loop so
+        # _build_game_options never blocks the loop on SQLite reads.
+        meta = await run_db(self._prefetch_match_meta)
+        self._rating_cache = meta["ratings"]
+        self._streak_cache = meta["streaks"]
 
         # Build the full gameOptions (cosmetics/tokens/elo) once and persist it so
         # both MatchFound and SerializedGameState carry player avatars/cosmetics.
@@ -3108,12 +3169,24 @@ class GameSession:
             f"[Session {self.game_id}] Game over: "
             f"{self.players[winner_id].screen_name} wins ({reason})."
         )
+        counts = self._streak_counts(reason)
         for pid, player in self._unique_recipients():
             coins = COINS_PER_WIN if pid == winner_id else COINS_PER_LOSS
+            outcome = None
             if isinstance(player, NetworkPlayer):
                 # Off the event loop: match-end money/ladder writes can otherwise
                 # stall the loop up to the busy timeout under write contention.
-                await run_db(_persist_match_result, player.account_id, coins, pid == winner_id)
+                outcome = await run_db(
+                    _persist_match_result, player.account_id, coins,
+                    pid == winner_id, counts)
+                if outcome and outcome.get("updated"):
+                    # Fresh streak/daily attrs BEFORE GameCompleted: the EOG
+                    # summary panel reads daily wins to pick the crossed tier.
+                    await player.send_packet(
+                        OutboundMsg.ACCOUNT_PROPERTIES_UPDATED.value,
+                        {"accountID": player.account_id,
+                         "attributes": _streak_attribute_values(outcome)},
+                    )
             reward_list = []
             if coins > 0:
                 reward_list.append({
@@ -3132,6 +3205,8 @@ class GameSession:
                     "index": 0,
                     "openedReward": None,
                 })
+            if outcome and outcome.get("crossed"):
+                reward_list.append(_daily_track_reward_entry(outcome))
             reward_list.extend(await self._progress_daily_challenges(pid, player, winner_id, reason))
             envelope = self._sequence_envelope(
                 EMPTY_SEQUENCE_ID,
@@ -3159,6 +3234,19 @@ class GameSession:
         await self._push_account_updates()
         self.declare_winner(winner_id, reason)
         raise GameOver()
+
+    def _streak_counts(self, reason: str) -> bool:
+        """Streak/daily-versus eligibility for this game: queue PVP, friend
+        challenges, and queue-AI bot matches count; tournaments and standalone
+        practice never do, and game-error/turn-0 aborts leave streaks untouched."""
+        pairing = self.pairing or {}
+        if pairing.get("tournament") or pairing.get("legacy_tournament"):
+            return False
+        if pairing.get("queue_name") == "SinglePlayer":
+            return False
+        if reason == "A game error occurred." or self.turn_state.turn_number == 0:
+            return False
+        return True
 
     async def _progress_daily_challenges(self, pid, player, winner_id, reason):
         """Credits multiplayer results before the client's end-game quest animation."""

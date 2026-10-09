@@ -1,6 +1,10 @@
+import datetime
 import logging
 
 from spirit.database import db_session, Wallet, Collection, VersusProgress
+from spirit.database.daily_rewards import build_grant_payload
+from spirit.database.economy_data import _grant_reward_in_session
+from spirit.game.progression.daily_versus import DailyVersusTrack
 from spirit.game.progression.seasons import VersusSeasonManager
 
 # Ladder points awarded when a match completes (winner / loser rates)
@@ -100,3 +104,79 @@ def award_match_points(account_id, won, season=None):
     except Exception as e:
         logging.error(f"[Versus] Failed to award points to {account_id}: {e}", exc_info=True)
         return {"points": 0, "all_time_points": 0, "granted": []}
+
+
+def _utc_day(now=None):
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    return str(now.date())
+
+
+def get_streak_state(account_id, *, now=None):
+    """Reads {streak, daily_wins, daily_last_win_ms}; daily_wins is rolled for
+    display only (the persisted day key advances on the next counted match)."""
+    try:
+        with db_session() as session:
+            row = session.query(VersusProgress).filter_by(account_id=account_id).first()
+            if not row:
+                return {"streak": 0, "daily_wins": 0, "daily_last_win_ms": 0}
+            daily = row.daily_wins if row.daily_wins_date == _utc_day(now) else 0
+            return {"streak": row.win_streak or 0,
+                    "daily_wins": daily or 0,
+                    "daily_last_win_ms": row.daily_last_win_ms or 0}
+    except Exception as e:
+        logging.error(f"[Versus] Failed to read streak for {account_id}: {e}")
+        return {"streak": 0, "daily_wins": 0, "daily_last_win_ms": 0}
+
+
+def record_match_outcome(account_id, won, counts, *, now=None):
+    """Streak + daily-versus counters for one completed match.
+
+    - counts=False (practice/tournament/game-error): state is untouched and no
+      loss can break the streak.
+    - win: streak += 1, daily_wins += 1 (UTC-day lazily reset); landing exactly
+      on a configured tier grants it in-session (wallet/collection).
+    - loss: streak resets to 0.
+
+    Returns {updated, streak, daily_wins, daily_last_win_ms, crossed, granted}
+    where crossed = tier wins granted this match (else None).
+    """
+    if not counts:
+        state = get_streak_state(account_id, now=now)
+        return {"updated": False, "crossed": None, "granted": [], **state}
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    today = _utc_day(now)
+    try:
+        with db_session() as session:
+            row = session.query(VersusProgress).filter_by(account_id=account_id).first()
+            if not row:
+                row = VersusProgress(account_id=account_id, season_id="",
+                                     points=0, all_time_points=0, granted_json={})
+                session.add(row)
+            if (row.daily_wins_date or "") != today:
+                row.daily_wins_date = today
+                row.daily_wins = 0
+            crossed = None
+            granted = []
+            if won:
+                row.win_streak = (row.win_streak or 0) + 1
+                row.daily_wins = (row.daily_wins or 0) + 1
+                row.daily_last_win_ms = int(now.timestamp() * 1000)
+                tier = DailyVersusTrack().tier_for_wins(row.daily_wins)
+                if tier is not None:
+                    payload = build_grant_payload(tier["rewards"])
+                    if payload["products"] or payload["coins"] or payload["tickets"]:
+                        _grant_reward_in_session(session, account_id, payload)
+                    crossed = tier["wins"]
+                    granted = [r.to_dict(index=i)
+                               for i, r in enumerate(tier["rewards"])]
+            else:
+                row.win_streak = 0
+            return {"updated": True, "streak": row.win_streak or 0,
+                    "daily_wins": row.daily_wins or 0,
+                    "daily_last_win_ms": row.daily_last_win_ms or 0,
+                    "crossed": crossed, "granted": granted}
+    except Exception as e:
+        logging.error(f"[Versus] Failed to record outcome for {account_id}: {e}",
+                      exc_info=True)
+        return {"updated": False, "crossed": None, "granted": [],
+                "streak": 0, "daily_wins": 0, "daily_last_win_ms": 0}

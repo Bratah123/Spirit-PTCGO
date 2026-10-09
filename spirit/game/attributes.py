@@ -145,6 +145,10 @@ class AttrID(IntEnum):
     # Versus ladder (account attributes read by the client versus screen)
     SEASON_POINTS = 201810
     ALL_TIME_SEASON_POINTS = 201840
+    # Streak {winStreak: bool, streakLength: int}
+    WIN_STREAK = 202010
+    # DailyRewardTrackProgress {wins, mostRecentWin: long ms}
+    DAILY_TRACK_PROGRESS = 202190
 
     # Native daily challenges and affinity levels
     QUESTS_ENABLED = 201800
