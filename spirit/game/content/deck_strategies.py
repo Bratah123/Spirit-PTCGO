@@ -5091,6 +5091,636 @@ PALKIA_VSTAR = {
 }
 
 
+# Decidueye / Jirachi  (deck key: 'Rowlet')
+#
+# Decidueye is the whole plan: Rowlet curves into it as fast as possible
+# (Rare Candy when it delivers the Stage 2 this turn, the Dartrix route
+# only when the candy path is gone) and a SECOND Decidueye grows behind
+# the first so one KO never ends the line.  Deep Forest Camo blanks every
+# Pokemon V / VMAX / GX attack, so the damage that lands comes from
+# single-prize bodies -- survival means rotating a wounded Decidueye out
+# (Bird Keeper, Air Balloon) before it falls and never feeding energy to
+# a body that is about to leave.  Splitting Arrow is 90 into the Active
+# plus 20 to two Benched Pokemon; Boss's Orders finishes what the snipe
+# softened.  Jirachi is support only -- Dreamy Revelation digs while it
+# sits Active, Amazing Star is never a plan -- so Bird Keeper trades it
+# for the attacker.  Turffield Stadium and Great Ball keep the line
+# stocked, Sonia fills the setup gaps, Ordinary Rod walks pieces back.
+# Bench discipline: the line first, one Jirachi, slots left for backups.
+
+DC_LINE = {"Rowlet", "Dartrix", "Decidueye"}
+DC_SUPPORTERS = {"Professor's Research", "Marnie", "Boss's Orders",
+                 "Bird Keeper", "Sonia"}
+_DC_REPEATABLE = {
+    "Professor's Research", "Marnie", "Boss's Orders", "Bird Keeper",
+    "Sonia", "Quick Ball", "Great Ball", "Rare Candy", "Ordinary Rod",
+    "Air Balloon", "Turffield Stadium", "Grass Energy",
+    "Aromatic Grass Energy", "Capture Energy",
+}
+
+
+def _dc_line(ctx: StrategyContext) -> int:
+    return sum(1 for n in ctx.in_play_names() if n in DC_LINE)
+
+
+def _dc_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Splitting Arrow online: one Grass unit plus one more energy."""
+    if pokemon is None or ctx.name(pokemon) != "Decidueye":
+        return False
+    return (ctx.energy_of_type(pokemon, "Grass") >= 1
+            and ctx.energy_attached(pokemon) >= 2)
+
+
+def _dc_sky_circus(ctx: StrategyContext) -> bool:
+    """Rowlet's attack cost is free on a Bird Keeper turn."""
+    try:
+        state = ctx.session.turn_state
+        return any(n == "Bird Keeper" for _, n, _ in state.trainers_played)
+    except Exception:
+        return False
+
+
+def _dc_output(ctx: StrategyContext) -> int:
+    """What our Active can put into the opposing Active right now."""
+    active = ctx.active()
+    if active is None:
+        return 0
+    if _dc_ready(ctx, active):
+        return 90
+    name = ctx.name(active)
+    if name == "Dartrix" and ctx.energy_of_type(active, "Grass") >= 1:
+        return 40
+    return 0                    # Wind Shard snipes the Bench, never here
+
+
+def _dc_threatened(ctx: StrategyContext) -> bool:
+    """The Active sits in likely-KO range (140 hp bodies melt after 70)."""
+    active = ctx.active()
+    if active is None:
+        return False
+    return ctx.hp_left(active) <= 70
+
+
+def _dc_gust_window(ctx: StrategyContext) -> List:
+    damage = _dc_output(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _dc_candy_pairs(ctx: StrategyContext) -> bool:
+    """(Rowlet in play, Decidueye in hand) -- the couple Rare Candy joins."""
+    return ("Rowlet" in ctx.in_play_names()
+            and "Decidueye" in ctx.hand_names())
+
+
+def _dc_balloon(ctx: StrategyContext, pokemon) -> bool:
+    """Air Balloon is this deck's only tool: a name check is enough."""
+    if pokemon is None:
+        return False
+    return any(ctx.name(c) == "Air Balloon"
+               for c in (getattr(pokemon, "children", None) or []))
+
+
+def _dc_energy_hungry(ctx: StrategyContext) -> bool:
+    """Any line body still has an open attack slot."""
+    for p in ctx.in_play():
+        if ctx.name(p) not in DC_LINE:
+            continue
+        if ctx.energy_of_type(p, "Grass") < 1 \
+                or ctx.energy_attached(p) < 2:
+            return True
+    return False
+
+
+def _dc_switch_ok(ctx: StrategyContext) -> bool:
+    """Bird Keeper earns its slot: a wounded body to save, or an Active
+    that cannot attack while the line waits on the bench."""
+    active = ctx.active()
+    if active is None:
+        return False
+    if not any(ctx.name(p) in DC_LINE for p in ctx.bench()):
+        return False
+    if _dc_threatened(ctx):
+        return True
+    return _dc_output(ctx) <= 0
+
+
+def _dc_retreat_ok(ctx: StrategyContext) -> bool:
+    if not _dc_switch_ok(ctx):
+        return False
+    active = ctx.active()
+    # never strip a loaded attacker's energy to walk -- Bird Keeper
+    # (earlier bucket) or the Air Balloon pivots for free
+    if ctx.energy_attached(active) > 0 and not _dc_balloon(ctx, active):
+        return False
+    return True
+
+
+def _dc_sonia_gap(ctx: StrategyContext) -> bool:
+    """Sonia searches basics (the AI always takes the Pokemon mode):
+    only spend her while a basic piece is actually missing."""
+    play = ctx.in_play_names()
+    handset = set(ctx.hand_names())
+    if _dc_line(ctx) == 0 and "Rowlet" not in handset:
+        return True
+    if play.count("Jirachi") == 0 and "Jirachi" not in handset:
+        return True
+    return False
+
+
+def _dc_turffield_ok(ctx: StrategyContext) -> bool:
+    if ctx.opponent_stadium_is("Turffield Stadium"):
+        return False         # the slot already searches evolutions
+    if _dc_line(ctx) == 0:
+        return False         # no Rowlet to evolve yet
+    if ctx.deck_size() <= 5:
+        return False
+    return not (set(ctx.hand_names()) & {"Dartrix", "Decidueye"})
+
+
+def _dc_rod_ok(ctx: StrategyContext) -> bool:
+    if ctx.deck_size() <= 5:
+        return False
+    disc = set(ctx.discard_names())
+    return bool(disc & (DC_LINE | {"Grass Energy"}))
+
+
+def _dc_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational worth: the Decidueye line first, then the plays that
+    solve a real problem, then support."""
+    handset = set(ctx.hand_names())
+    play = ctx.in_play_names()
+    hand_n = ctx.hand_size()
+    line = _dc_line(ctx)
+    free = 5 - len(ctx.bench())
+
+    # -- Pokemon gap pieces ------------------------------------------------
+    if name == "Decidueye":
+        if play.count("Dartrix") > play.count("Decidueye"):
+            v = 95.0                     # a Dartrix is waiting to evolve
+        elif "Rowlet" in play and "Rare Candy" in handset:
+            v = 92.0                     # candy assembles it this turn
+        elif line > 0:
+            v = 75.0                     # the second line's end state
+        else:
+            v = 25.0                     # nothing to evolve into it
+    elif name == "Dartrix":
+        if "Rowlet" not in play:
+            v = 6.0
+        elif "Decidueye" in handset:
+            v = 30.0                     # the candy path outranks it
+        else:
+            v = 60.0                     # the slow route still attacks
+    elif name == "Rowlet":
+        if line == 0:
+            v = 95.0                     # the line must exist
+        elif line < 4:
+            v = 55.0
+        else:
+            v = 8.0
+    elif name == "Jirachi":
+        jirachis = play.count("Jirachi")
+        if jirachis == 0 and hand_n <= 6:
+            v = 70.0                     # the active-slot digger
+        elif jirachis == 1:
+            v = 12.0
+        else:
+            v = 5.0
+
+    # -- Energy ------------------------------------------------------------
+    elif name in ("Grass Energy", "Aromatic Grass Energy"):
+        v = 120.0 if _dc_energy_hungry(ctx) else 55.0
+    elif name == "Capture Energy":
+        if free >= 1 and (line < 4 or play.count("Jirachi") == 0):
+            v = 85.0                     # the rider fetches the next body
+        else:
+            v = 45.0
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Professor's Research":
+        v = 80.0 if hand_n <= 4 else (55.0 if hand_n <= 6 else 20.0)
+    elif name == "Marnie":
+        v = 70.0 if ctx.hand_size(ctx.opp) >= 6 else (
+            50.0 if hand_n <= 4 else 30.0)
+    elif name == "Boss's Orders":
+        if _dc_gust_window(ctx):
+            v = 95.0                     # a finisher walks into range
+        elif any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp)):
+            v = 45.0
+        else:
+            v = 15.0
+    elif name == "Bird Keeper":
+        v = 70.0 if _dc_switch_ok(ctx) else 25.0
+    elif name == "Sonia":
+        v = 75.0 if _dc_sonia_gap(ctx) else 15.0
+    elif name == "Quick Ball":
+        rowlet_seen = line + ctx.hand_names().count("Rowlet")
+        if line == 0 and "Rowlet" not in handset:
+            v = 85.0                     # fetch the line
+        elif play.count("Jirachi") == 0 and "Jirachi" not in handset \
+                and hand_n <= 5 and rowlet_seen > 0:
+            v = 70.0
+        elif rowlet_seen < 3:
+            v = 55.0                     # another body for the ladder
+        else:
+            v = 15.0
+    elif name == "Great Ball":
+        if play.count("Dartrix") > play.count("Decidueye") \
+                and "Decidueye" not in handset:
+            v = 80.0
+        elif line > 0 and not (handset & {"Dartrix", "Decidueye"}):
+            v = 65.0
+        elif line == 0:
+            v = 55.0                     # the top 7 may hold a Rowlet
+        else:
+            v = 15.0
+    elif name == "Rare Candy":
+        v = 90.0 if _dc_candy_pairs(ctx) else 8.0
+    elif name == "Ordinary Rod":
+        disc = set(ctx.discard_names())
+        if "Decidueye" in disc:
+            v = 80.0                     # the attacker walks back
+        elif disc & DC_LINE:
+            v = 60.0
+        elif "Grass Energy" in disc:
+            v = 35.0
+        else:
+            v = 8.0
+    elif name == "Air Balloon":
+        v = 65.0 if any(
+            ctx.name(p) in (DC_LINE | {"Jirachi"})
+            and not _dc_balloon(ctx, p) for p in ctx.in_play()) else 20.0
+    elif name == "Turffield Stadium":
+        v = 75.0 if _dc_turffield_ok(ctx) else 10.0
+    else:
+        v = 6.0
+
+    if in_hand and name in handset and name not in _DC_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _dc_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Grass Energy":
+        return 125.0 if _dc_energy_hungry(ctx) else 60.0
+    if name == "Aromatic Grass Energy":
+        return 130.0 if _dc_energy_hungry(ctx) else 60.0
+    if name == "Capture Energy":
+        if "Grass Energy" in ctx.hand_names() \
+                or "Aromatic Grass Energy" in ctx.hand_names():
+            return 45.0                    # the typed slot waits for Grass
+        if _dc_energy_hungry(ctx):
+            return 90.0                    # the only unit we hold
+        return 45.0
+    return 6.0
+
+
+def _dc_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach lands: the attacker line's open slots first;
+    Jirachi never gets fed."""
+    name = ctx.name(target)
+    if name == "Decidueye":
+        score = 500.0
+        if target is ctx.active():
+            score += 120.0
+        if _dc_threatened(ctx) and target is not ctx.active():
+            score += 160.0                 # the next attacker grows first
+        grass = ctx.energy_of_type(target, "Grass")
+        have = ctx.energy_attached(target)
+        if grass < 1:
+            score += 250.0                 # the typed slot comes first
+        elif have < 2:
+            score += 130.0                 # second unit completes Splitting
+        else:
+            score -= 260.0                 # loaded: the backup grows instead
+        return score
+    if name == "Dartrix":
+        score = 430.0
+        if ctx.energy_of_type(target, "Grass") < 1:
+            score += 200.0
+        elif ctx.energy_attached(target) < 2:
+            score += 110.0
+        else:
+            score -= 140.0
+        return score
+    if name == "Rowlet":
+        score = 400.0
+        if ctx.energy_of_type(target, "Grass") < 1:
+            score += 200.0
+        elif ctx.energy_attached(target) < 2:
+            score += 100.0
+        else:
+            score -= 150.0
+        return score
+    return 40.0                            # Jirachi never gets fed
+
+
+def _dc_bench_score(name: str, ctx: StrategyContext) -> float:
+    free = 5 - len(ctx.bench())
+    line = _dc_line(ctx)
+    hand_n = ctx.hand_size()
+    if name == "Rowlet":
+        if line == 0:
+            return 700.0                   # the line takes the bench
+        if line >= 4:
+            return 40.0
+        if free >= 2:
+            return 450.0                   # room stays for Jirachi / air
+        return 150.0
+    if name == "Jirachi":
+        if free <= 0:
+            return 0.0
+        if hand_n <= 5:
+            return 450.0 if free >= 2 else 300.0
+        return 120.0
+    return 0.0
+
+
+def _dc_evolve_score(name: str, ctx: StrategyContext) -> float:
+    if name == "Decidueye":
+        return 950.0                       # the attacker lands
+    if name == "Dartrix":
+        return 650.0                       # the slow route, still progress
+    return 0.0
+
+
+def _dc_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    hand = set(ctx.hand_names())
+    if description == "DefaultPokemonPlayAbility":
+        if name == "Rowlet":
+            return _dc_line(ctx) < 4
+        if name == "Jirachi":
+            return (5 - len(ctx.bench())) >= 1 and ctx.hand_size() <= 6
+        return True
+    if description == "EvolvePokemonPlayAbility":
+        if name == "Dartrix":
+            # the candy path delivers the Stage 2 NOW: keep the Rowlet
+            if "Decidueye" in hand and "Rare Candy" in hand \
+                    and "Rowlet" in ctx.in_play_names():
+                return False
+        return True
+    if description == "UseTrainerCard":
+        if name == "Professor's Research":
+            return ctx.hand_size() <= 5 and deck > 10
+        if name == "Marnie":
+            return (ctx.hand_size() <= 5
+                    or ctx.hand_size(ctx.opp) >= 6) and deck > 5
+        if name == "Boss's Orders":
+            if _dc_output(ctx) <= 0:
+                return False              # can't swing this turn anyway
+            if _dc_gust_window(ctx):
+                return True
+            return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+        if name == "Bird Keeper":
+            return _dc_switch_ok(ctx)
+        if name in ("Quick Ball", "Great Ball"):
+            return deck > 5
+        if name == "Rare Candy":
+            return _dc_candy_pairs(ctx)
+        if name == "Sonia":
+            return _dc_sonia_gap(ctx)
+        if name == "Ordinary Rod":
+            return _dc_rod_ok(ctx)
+        if name == "Air Balloon":
+            return any(ctx.name(p) in (DC_LINE | {"Jirachi"})
+                       and not _dc_balloon(ctx, p) for p in ctx.in_play())
+        if name == "Turffield Stadium":
+            return _dc_turffield_ok(ctx)
+        return True
+    if description == "DefaultStadiumPlayAbility" \
+            and name == "Turffield Stadium":
+        return _dc_turffield_ok(ctx)
+    if description == "DefaultToolPlayAbility" and name == "Air Balloon":
+        return any(ctx.name(p) in (DC_LINE | {"Jirachi"})
+                   and not _dc_balloon(ctx, p) for p in ctx.in_play())
+    if description == "UsePokemonAbility":
+        if name == "Dreamy Revelation":
+            return True                    # engine: Active spot, once turn
+        if name == "Turffield Stadium":
+            return _dc_turffield_ok(ctx)
+        return True
+    if description == "UsePokemonAttack":
+        if name == "Jirachi":
+            return False                   # Amazing Star is never the plan
+        if name == "Rowlet":
+            return bool(ctx.bench(ctx.opp))  # Wind Shard needs a target
+        return True
+    if description == "BaseRetreat":
+        return _dc_retreat_ok(ctx)
+    return True
+
+
+def _dc_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "DefaultPokemonPlayAbility":
+        return _dc_bench_score(name, ctx)
+    if description == "DefaultEnergyPlayAbility":
+        return _dc_energy_value(name, ctx)
+    if description == "EvolvePokemonPlayAbility":
+        return _dc_evolve_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Dreamy Revelation":
+            return 75.0                    # free dig, always live
+        if name == "Turffield Stadium":
+            return 75.0 if _dc_turffield_ok(ctx) else 10.0
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _dc_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _dc_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    if title == "Splitting Arrow":
+        if not _dc_ready(ctx, ctx.active()):
+            return 0.0
+        score = 750.0 + 90.0
+        if any(0 < ctx.hp_left(p) <= 20 for p in ctx.bench(ctx.opp)):
+            score += 120.0                # the 20-damage snipe closes a KO
+        return _ko(score, 90)
+    if title == "Razor Leaf":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Dartrix":
+            return 0.0
+        if ctx.energy_of_type(active, "Grass") < 1:
+            return 0.0
+        return _ko(380.0 + 40, 40)
+    if title == "Wind Shard":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Rowlet":
+            return 0.0
+        if not ctx.bench(ctx.opp):
+            return 0.0
+        if ctx.energy_attached(active) < 3 and not _dc_sky_circus(ctx):
+            return 0.0
+        if any(0 < ctx.hp_left(p) <= 60 for p in ctx.bench(ctx.opp)):
+            return 950.0                  # the snipe takes the prize
+        if any(ctx.damage_on(p) > 0 for p in ctx.bench(ctx.opp)):
+            return 480.0
+        return 360.0
+    if title == "Amazing Star":
+        return 0.0                         # Jirachi never attacks
+    return base
+
+
+def _dc_gust(ctx: StrategyContext, pokemon) -> float:
+    """Boss's Orders ranking: the finisher first, scratch value after."""
+    damage = _dc_output(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _dc_promote(ctx: StrategyContext, pokemon) -> float:
+    """New-Active ranking: ready swinger, then the wall, then the dig."""
+    name = ctx.name(pokemon)
+    if name == "Decidueye":
+        if _dc_ready(ctx, pokemon):
+            return 2000.0 + ctx.energy_attached(pokemon) * 10.0
+        return 850.0                       # the wall holds the slot
+    if name == "Dartrix":
+        if ctx.energy_of_type(pokemon, "Grass") >= 1:
+            return 600.0
+        return 450.0
+    if name == "Rowlet":
+        if ctx.energy_attached(pokemon) >= 3 or _dc_sky_circus(ctx):
+            return 500.0                   # Sky Circus: free Wind Shard
+        return 250.0
+    if name == "Jirachi":
+        hs = ctx.hand_size()
+        if hs <= 3:
+            return 900.0                   # crisis: the dig earns the slot
+        if hs <= 5:
+            return 800.0
+        return 500.0
+    return 0.0
+
+
+def _dc_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _dc_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            # the recoverable basics pay first; specials are gone for good
+            return 200.0 if ctx.name(target) == "Grass Energy" else 110.0
+        if target.owning_player_id == ctx.me:
+            return _dc_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _dc_energy_target_score(ctx, target, name)
+    if description == "DefaultToolPlayAbility":        # Air Balloon
+        tname = ctx.name(target)
+        if tname not in (DC_LINE | {"Jirachi"}):
+            return 0.0
+        if _dc_balloon(ctx, target):
+            return 0.0
+        if tname == "Decidueye":
+            score = 550.0
+            if target is ctx.active():
+                score += 150.0             # the pivot hangs on the Active
+            return score
+        if tname == "Jirachi":
+            return 500.0
+        if tname == "Dartrix":
+            return 350.0
+        return 300.0                       # Rowlet
+    if description == "EvolvePokemonPlayAbility":
+        score = 8.0 + ctx.energy_attached(target) * 2.0
+        if target is ctx.active():
+            score += 6.0                   # evolve where the energy is
+        return score
+    return 0.0
+
+
+def _dc_search_score(card, ctx: StrategyContext) -> float:
+    return _dc_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _dc_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote the ready swinger;
+    - opponent switch picks -> KO window, then scratch value;
+    - snipe picks -> chip a KO, then soften what is powered;
+    - Rare Candy's Basic/Stage 2 picks -> the candy line;
+    - energy attach targets -> the Decidueye energy ladder;
+    - Capture Energy's bench rider -> the line first;
+    - hand discards -> dump the least valuable card.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _dc_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _dc_gust(ctx, card)
+    if not mine and ("opponent's" in text or "take" in text):
+        digits = "".join(ch for ch in text if ch.isdigit())
+        hit = int(digits) if digits else 20
+        left = ctx.hp_left(card)
+        if 0 < left <= hit:
+            return 1000.0 + ctx.prize_value(card) * 100.0 - left
+        dealt = ctx.damage_on(card)
+        if dealt > 0:
+            return 500.0 + dealt
+        if ctx.energy_attached(card) > 0:
+            return 300.0                   # soften a powered body
+        return 100.0
+    if mine and "evolve into" in text:
+        if name == "Decidueye":
+            return 950.0
+        if name == "Dartrix":
+            return 450.0
+        return 100.0
+    if mine and "in play" in text:
+        # Rare Candy: "Choose a Basic Pokemon in play"
+        if name == "Rowlet" and "Decidueye" in ctx.hand_names():
+            return 900.0
+        return 100.0
+    if mine and ("attach it to" in text or "attach the Energy to" in text):
+        return _dc_energy_target_score(ctx, card, "")
+    if mine and "attach" in text:
+        return 100.0                       # pick the energy card itself
+    if mine and "onto your Bench" in text:
+        return _dc_bench_score(name, ctx)  # Capture Energy's bench rider
+    if mine and "put into your hand" in text:
+        return _dc_value(name, ctx, in_hand=False)
+    if mine and "into your hand" in text:
+        return _dc_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        return -_dc_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+DECIDUEYE_JIRACHI = {
+    "allow_action": _dc_allow,
+    "action_score": _dc_action_score,
+    "attack_score": _dc_attack_score,
+    "target_score": _dc_target_score,
+    "search_score": _dc_search_score,
+    "pick_score": _dc_pick,
+}
+
+
 DECK_STRATEGIES = {
     "Dragapult Inteleon": DRAGAPULT_INTELEON,
     "Rapid Strike Urshifu V": RAPID_STRIKE_URSHIFU,
@@ -5101,6 +5731,7 @@ DECK_STRATEGIES = {
     "Sobble (suicune-ludicolo)": SUICUNE_LUDICOLO,
     "Charizard (charizard-vmax)": CHARIZARD_VSTAR,
     "Origin Forme Palkia VSTAR": PALKIA_VSTAR,
+    "Rowlet": DECIDUEYE_JIRACHI,
 }
 
 

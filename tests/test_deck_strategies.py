@@ -17,6 +17,7 @@ from spirit.game.content import bot_decks  # noqa: E402
 from spirit.game.content.deck_strategies import (  # noqa: E402
     CHARIZARD_VSTAR,
     CORVIKNIGHT_BRONZONG,
+    DECIDUEYE_JIRACHI,
     DRAGAPULT_INTELEON,
     ETERNATUS_VMAX,
     PALKIA_VSTAR,
@@ -59,6 +60,25 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     _cz_strike_damage,
     _cz_target_score,
     _cz_value,
+    _dc_action_score,
+    _dc_allow,
+    _dc_attack_score,
+    _dc_bench_score,
+    _dc_candy_pairs,
+    _dc_energy_target_score,
+    _dc_energy_value,
+    _dc_gust,
+    _dc_gust_window,
+    _dc_output,
+    _dc_pick,
+    _dc_promote,
+    _dc_ready,
+    _dc_search_score,
+    _dc_sonia_gap,
+    _dc_switch_ok,
+    _dc_target_score,
+    _dc_turffield_ok,
+    _dc_value,
     _dragapult_allow,
     _dragapult_pick,
     _dragapult_value,
@@ -182,7 +202,8 @@ from spirit.game.models.board import EnergyEntity  # noqa: E402
 
 class FakeMon:
     def __init__(self, name, owner="p1", hp=0, max_hp=None, energy=0,
-                 cost=0, eid=None, prize=1, fire=0, lightning=0, water=0):
+                 cost=0, eid=None, prize=1, fire=0, lightning=0, water=0,
+                 grass=0):
         self.name_ = name
         self.owning_player_id = owner
         self.hp = hp
@@ -194,6 +215,7 @@ class FakeMon:
         self.fire = fire
         self.lightning = lightning
         self.water = water
+        self.grass = grass
         self.children = []
 
 
@@ -369,14 +391,14 @@ class RegistryTests(unittest.TestCase):
                                  "Eternatus V", "Rayquaza V",
                                  "Sobble (suicune-ludicolo)",
                                  "Charizard (charizard-vmax)",
-                                 "Origin Forme Palkia VSTAR"})
+                                 "Origin Forme Palkia VSTAR", "Rowlet"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
              "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
              "Rayquaza V", "Sobble (suicune-ludicolo)",
              "Charizard (charizard-vmax)",
-             "Origin Forme Palkia VSTAR"},
+             "Origin Forme Palkia VSTAR", "Rowlet"},
         )
 
 
@@ -3670,6 +3692,222 @@ class PalkiaBrainTests(unittest.TestCase):
                          700.0)
 
 
+class DecidueyeBrainTests(unittest.TestCase):
+    def test_rowlet_brain_registered(self):
+        spec = strategy_for("Rowlet")
+        self.assertIs(spec, DECIDUEYE_JIRACHI)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score"):
+            self.assertTrue(callable(spec[hook]), hook)
+        self.assertNotIn("counter_plan", spec)
+
+    @staticmethod
+    def _decidueye(energy=0, grass=0, hp=140, eid="d1", owner="p1"):
+        return FakeMon("Decidueye", owner=owner, hp=hp, max_hp=140,
+                       energy=energy, grass=grass, cost=2, eid=eid)
+
+    @staticmethod
+    def _rowlet(eid="r1"):
+        return FakeMon("Rowlet", hp=50, max_hp=50, eid=eid)
+
+    # -- readiness / output ----------------------------------------------
+    def test_ready_needs_grass_plus_one(self):
+        ctx = FakeCtx()
+        self.assertFalse(_dc_ready(ctx, self._decidueye(energy=1, grass=0)))
+        self.assertFalse(_dc_ready(ctx, self._decidueye(energy=0, grass=1)))
+        self.assertTrue(_dc_ready(ctx, self._decidueye(energy=2, grass=1)))
+
+    def test_output_follows_the_active(self):
+        ctx = FakeCtx(active=self._decidueye(energy=2, grass=1, eid="a"))
+        self.assertEqual(_dc_output(ctx), 90)
+        dartrix = FakeMon("Dartrix", hp=80, max_hp=80, energy=1, grass=1,
+                          eid="b")
+        self.assertEqual(_dc_output(FakeCtx(active=dartrix)), 40)
+        jirachi = FakeMon("Jirachi", hp=70, max_hp=70, eid="j")
+        self.assertEqual(_dc_output(FakeCtx(active=jirachi)), 0)
+
+    # -- gates -------------------------------------------------------------
+    def test_jirachi_never_attacks(self):
+        ctx = FakeCtx(active=FakeMon("Jirachi", hp=70, max_hp=70),
+                      opp_bench=[FakeMon("Body", owner="p2", hp=60,
+                                         max_hp=60)])
+        self.assertFalse(_dc_allow("UsePokemonAttack", "Jirachi", ctx))
+
+    def test_wind_shard_needs_an_opp_bench_target(self):
+        rowlet = self._rowlet()
+        self.assertFalse(_dc_allow("UsePokemonAttack", "Rowlet",
+                                   FakeCtx(active=rowlet)))
+        self.assertTrue(_dc_allow(
+            "UsePokemonAttack", "Rowlet",
+            FakeCtx(active=rowlet,
+                    opp_bench=[FakeMon("Body", owner="p2", hp=60,
+                                       max_hp=60)])))
+
+    def test_rare_candy_beats_the_dartrix_route(self):
+        fast = FakeCtx(hand=["Decidueye", "Rare Candy"], play=["Rowlet"])
+        self.assertTrue(_dc_candy_pairs(fast))
+        self.assertFalse(_dc_allow("EvolvePokemonPlayAbility", "Dartrix",
+                                   fast))
+        self.assertTrue(_dc_allow("UseTrainerCard", "Rare Candy", fast))
+        # no candy card in hand: the slow Dartrix route stays legal
+        slow = FakeCtx(hand=["Decidueye"], play=["Rowlet"])
+        self.assertTrue(_dc_allow("EvolvePokemonPlayAbility", "Dartrix",
+                                  slow))
+        # candy without the Stage 2 to feed it: never play it
+        idle = FakeCtx(hand=["Rare Candy"], play=["Rowlet"])
+        self.assertFalse(_dc_candy_pairs(idle))
+        self.assertFalse(_dc_allow("UseTrainerCard", "Rare Candy", idle))
+
+    def test_bird_keeper_rotates_a_stuck_or_wounded_active(self):
+        jirachi = FakeMon("Jirachi", hp=70, max_hp=70, eid="j")
+        stuck = FakeCtx(active=jirachi, bench=[self._rowlet()])
+        self.assertTrue(_dc_switch_ok(stuck))
+        self.assertTrue(_dc_allow("UseTrainerCard", "Bird Keeper", stuck))
+        loaded = self._decidueye(energy=2, grass=1, eid="d")
+        fine = FakeCtx(active=loaded, bench=[self._rowlet()])
+        self.assertFalse(_dc_allow("UseTrainerCard", "Bird Keeper", fine))
+        wounded = self._decidueye(energy=2, grass=1, hp=60, eid="w")
+        danger = FakeCtx(active=wounded, bench=[self._rowlet()])
+        self.assertTrue(_dc_allow("UseTrainerCard", "Bird Keeper", danger))
+
+    def test_retreat_never_strips_a_loaded_attacker(self):
+        wounded = self._decidueye(energy=2, grass=1, hp=60, eid="w")
+        ctx = FakeCtx(active=wounded, bench=[self._rowlet()])
+        self.assertFalse(_dc_allow("BaseRetreat", "Decidueye", ctx))
+        ballooned = self._decidueye(energy=2, grass=1, hp=60, eid="w")
+        ballooned.children = [SimpleNamespace(name_="Air Balloon",
+                                              owning_player_id="p1",
+                                              children=[])]
+        free = FakeCtx(active=ballooned, bench=[self._rowlet()])
+        self.assertTrue(_dc_allow("BaseRetreat", "Decidueye", free))
+
+    def test_boss_only_when_a_swing_exists(self):
+        ready = self._decidueye(energy=2, grass=1, eid="d")
+        near = FakeMon("VMAX", owner="p2", hp=80, max_hp=320, eid="n")
+        fresh = FakeMon("VMAX", owner="p2", hp=320, max_hp=320, eid="f")
+        unpowered = FakeCtx(
+            active=self._decidueye(energy=1, grass=1),
+            opp_play=[near], opp_active=near)
+        self.assertFalse(_dc_allow("UseTrainerCard", "Boss's Orders",
+                                   unpowered))
+        window = FakeCtx(active=ready, opp_play=[near], opp_active=near)
+        self.assertTrue(_dc_allow("UseTrainerCard", "Boss's Orders",
+                                  window))
+        no_window = FakeCtx(active=ready, opp_play=[fresh],
+                            opp_active=fresh)
+        self.assertFalse(_dc_allow("UseTrainerCard", "Boss's Orders",
+                                   no_window))
+
+    def test_sonia_only_for_setup_gaps(self):
+        self.assertTrue(_dc_sonia_gap(FakeCtx()))
+        self.assertTrue(_dc_allow("UseTrainerCard", "Sonia", FakeCtx()))
+        filled = FakeCtx(hand=["Rowlet", "Jirachi"],
+                         play=["Rowlet", "Jirachi"])
+        self.assertFalse(_dc_sonia_gap(filled))
+        self.assertFalse(_dc_allow("UseTrainerCard", "Sonia", filled))
+
+    def test_turffield_searches_only_with_a_line_and_a_gap(self):
+        self.assertFalse(_dc_turffield_ok(FakeCtx()))
+        ok = FakeCtx(play=["Rowlet"], deck=40)
+        self.assertTrue(_dc_turffield_ok(ok))
+        holding = FakeCtx(play=["Rowlet"], hand=["Decidueye"], deck=40)
+        self.assertFalse(_dc_turffield_ok(holding))
+        occupied = FakeCtx(play=["Rowlet"], deck=40,
+                           stadium="Turffield Stadium")
+        self.assertFalse(_dc_turffield_ok(occupied))
+
+    # -- scoring ------------------------------------------------------------
+    def test_energy_ladder_feeds_the_attacker_not_the_dig(self):
+        ctx = FakeCtx(active=self._decidueye(eid="a"))
+        decidueye = self._decidueye(eid="b")
+        rowlet = self._rowlet(eid="r")
+        jirachi = FakeMon("Jirachi", hp=70, max_hp=70, eid="j")
+        d = _dc_energy_target_score(ctx, decidueye, "Grass Energy")
+        r = _dc_energy_target_score(ctx, rowlet, "Grass Energy")
+        j = _dc_energy_target_score(ctx, jirachi, "Grass Energy")
+        self.assertGreater(d, r)
+        self.assertGreater(r, j)
+        hungry = self._decidueye(energy=0, grass=0, eid="h")
+        loaded = self._decidueye(energy=2, grass=1, eid="l")
+        self.assertGreater(
+            _dc_energy_target_score(ctx, hungry, "Grass Energy"),
+            _dc_energy_target_score(ctx, loaded, "Grass Energy"))
+
+    def test_promote_prefers_ready_swinger_then_wall(self):
+        ready = self._decidueye(energy=2, grass=1, eid="rd")
+        wall = self._decidueye(energy=0, grass=0, eid="wd")
+        dig = FakeMon("Jirachi", hp=70, max_hp=70, eid="j")
+        full = FakeCtx(hand=["a", "b", "c", "d", "e", "f"])
+        self.assertGreater(_dc_promote(full, ready),
+                           _dc_promote(full, wall))
+        self.assertGreater(_dc_promote(full, wall),
+                           _dc_promote(full, dig))
+        crisis = FakeCtx(hand=["a", "b", "c"])
+        self.assertGreater(_dc_promote(crisis, dig),
+                           _dc_promote(crisis, wall))
+
+    def test_attack_scores_take_the_ko_and_never_waste_amazing_star(self):
+        ready = self._decidueye(energy=2, grass=1, eid="d")
+        ko = _dc_attack_score(
+            "Splitting Arrow", 90,
+            FakeCtx(active=ready,
+                    opp_active=FakeMon("VMAX", owner="p2", hp=80,
+                                       max_hp=320)))
+        plain = _dc_attack_score(
+            "Splitting Arrow", 90,
+            FakeCtx(active=ready,
+                    opp_active=FakeMon("VMAX", owner="p2", hp=300,
+                                       max_hp=320)))
+        self.assertGreater(ko, plain)
+        unready = _dc_attack_score(
+            "Splitting Arrow", 90,
+            FakeCtx(active=self._decidueye(energy=1, grass=1),
+                    opp_active=FakeMon("VMAX", owner="p2", hp=80,
+                                       max_hp=320)))
+        self.assertEqual(unready, 0.0)
+        self.assertEqual(
+            _dc_attack_score("Amazing Star", 0, FakeCtx()), 0.0)
+
+    def test_gust_ranks_the_finisher_first(self):
+        ctx = FakeCtx(active=self._decidueye(energy=2, grass=1, eid="d"))
+        in_range = FakeMon("Sableye V", owner="p2", hp=70, max_hp=70,
+                           eid="s")
+        wall = FakeMon("VMAX", owner="p2", hp=300, max_hp=320, eid="v")
+        dented = FakeMon("VMAX", owner="p2", hp=260, max_hp=320, eid="d2")
+        self.assertGreater(_dc_gust(ctx, in_range), _dc_gust(ctx, dented))
+        self.assertGreater(_dc_gust(ctx, dented), _dc_gust(ctx, wall))
+
+    def test_search_ranks_the_waiting_evolution_first(self):
+        ctx = FakeCtx(hand=["Rare Candy"], play=["Rowlet", "Dartrix"])
+        decidueye = FakeMon("Decidueye", eid="d")
+        rowlet = self._rowlet()
+        jirachi = FakeMon("Jirachi", hp=70, max_hp=70, eid="j")
+        self.assertGreater(_dc_search_score(decidueye, ctx),
+                           _dc_search_score(jirachi, ctx))
+        self.assertGreater(_dc_search_score(decidueye, ctx),
+                           _dc_search_score(rowlet, ctx))
+
+    def test_bench_discipline_keeps_the_line_first(self):
+        opening = FakeCtx(hand=["Rowlet", "Jirachi"], bench=[self._rowlet()])
+        self.assertGreater(_dc_bench_score("Rowlet", opening),
+                           _dc_bench_score("Jirachi", opening))
+        stuffed = FakeCtx(
+            play=["Rowlet", "Dartrix", "Decidueye", "Rowlet", "Jirachi"],
+            bench=[self._rowlet("b1"), self._rowlet("b2"),
+                   self._rowlet("b3"), self._rowlet("b4"),
+                   FakeMon("Jirachi", hp=70, max_hp=70, eid="b5")])
+        self.assertEqual(_dc_bench_score("Rowlet", stuffed), 40.0)
+        self.assertFalse(_dc_allow("DefaultPokemonPlayAbility", "Rowlet",
+                                   stuffed))
+
+    def test_value_picks_the_attacker_over_support(self):
+        ctx = FakeCtx(hand=["Rare Candy"], play=["Rowlet", "Dartrix"])
+        self.assertGreater(_dc_value("Decidueye", ctx),
+                           _dc_value("Jirachi", ctx))
+        self.assertGreater(_dc_value("Decidueye", ctx),
+                           _dc_value("Rowlet", ctx))
+
+
 class WiringTests(unittest.TestCase):
     def test_ai_player_attaches_brain_from_deck_name(self):
         from spirit.game.session.ai_player import AIPlayer
@@ -3683,6 +3921,8 @@ class WiringTests(unittest.TestCase):
         palkia = AIPlayer("bot-6", "Bot",
                           {"deckName": "Origin Forme Palkia VSTAR"}, None)
         self.assertIs(palkia.deck_strategy, PALKIA_VSTAR)
+        rowlet = AIPlayer("bot-7", "Bot", {"deckName": "Rowlet"}, None)
+        self.assertIs(rowlet.deck_strategy, DECIDUEYE_JIRACHI)
         generic = AIPlayer("bot-2", "Bot", {"deckName": "Nope"}, None)
         self.assertIsNone(generic.deck_strategy)
         empty = AIPlayer("bot-3", "Bot", {}, None)
