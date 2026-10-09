@@ -24,7 +24,7 @@ namespace SpiritSpeedMod
         public const string DuelSceneName = "Playmat";
         public const string CollectionSceneName = "Collection";
 
-        private static readonly float[] DuelSpeeds = { 1f, 2f, 3f };
+        private static readonly float[] DuelSpeeds = { 1f, 1.5f, 2f };
         private int duelSpeedIndex;
         private string toastText = "";
         private float toastUntil;
@@ -34,7 +34,7 @@ namespace SpiritSpeedMod
             Instance = this;
 
             DuelSpeedCycleKey = Config.Bind("Duel", "SpeedCycleKey", KeyCode.F1,
-                "Hotkey pressed during a duel cycles animation speed: 1x -> 2x -> 3x -> 1x.");
+                "Hotkey pressed during a duel cycles animation speed: 1x -> 1.5x -> 2x -> 1x.");
             PackAutoRip = Config.Bind("PackOpen", "AutoRip", true,
                 "Automatically rip open the booster pack (no rip click needed).");
             PackAutoFlip = Config.Bind("PackOpen", "AutoFlip", true,
