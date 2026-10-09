@@ -28,6 +28,8 @@ def load_catalog():
         for name, minimum in (("target", 1), ("coins", 1), ("xp", 0)):
             if type(row.get(name)) is not int or not minimum <= row[name] <= 100000:
                 raise ValueError(f"Invalid {name} for challenge {row['key']}")
+        if row.get("affinity", "Colorless") not in AFFINITIES:
+            raise ValueError(f"Invalid affinity for challenge {row['key']}")
     if len(rows) < 2:
         raise ValueError("Daily challenges need at least two templates")
     return rows
@@ -50,7 +52,10 @@ def quest_payload(row):
             "questID": row.quest_id, "name": f"SpiritDaily_{row.quest_id}",
             "title": {"id": template["title"]}, "description": {"id": template["description"]},
             "rewards": [coin_reward(template["coins"], row.quest_id)],
-            "affinity": "Colorless", "xp": template["xp"], "tier": 1,
+            # Legacy rows were offered before templates carried an affinity and
+            # stored a Colorless-only definition; keep them on Colorless.
+            "affinity": template.get("affinity", "Colorless"),
+            "xp": template["xp"], "tier": 1,
             "startTime": None, "endTime": None, "priority": "Bronze", "abandonable": True,
             "gameModes": ["PvPMatch", "TournamentMatch"],
             "questInformation": {"id": "Progress counts in multiplayer matches started after accepting. Unfinished challenges carry over; choose one new challenge per UTC day."},
