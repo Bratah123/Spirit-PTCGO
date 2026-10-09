@@ -1,4 +1,4 @@
-from spirit.game.card_effects.trainers import player_has_bench, switch
+from spirit.game.card_effects.trainers import switch, player_has_bench, play_targets
 from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
@@ -13,5 +13,8 @@ card = ItemCardDef(
     set_code="CZ",
     rarity=Rarities.Common,
     effect=switch,
+    play_targets=play_targets(opponent=False, bench_only=True),
+    play_target_prompt="",
     condition=player_has_bench
 )
+

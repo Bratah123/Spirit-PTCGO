@@ -53,12 +53,52 @@ def opponent_has_bench(board, player_id):
     opponent = _other_player(board, player_id)
     return bool(opponent) and bool(_bench_pokemon(board, opponent))
 
+################### --- make_target_selector ---
+# The make_target_selector function is a factory that returns a targeting selector for Trainer cards to highlight valid targets on the UI.
+# It allows the card to be dragged directly into a Pokémon for cards that require selecting a Pokémon.
+# It dynamically evaluates configurations based on two boolean flags:
+# 1) opponent: If True, the only Pokémon you can drag the trainer to will be the ones in the opponent's side; if False, the ones on the player's own side.
+# 2) bench_only: If True, the only Pokémon you can drag the trainer to are the ones inside that player's "bench" area; if False, the Active is also included.
 
-def opponent_bench_play_targets(board, player_id, card):
-    """Public bench targets for a single-target gust trainer."""
-    opponent = _other_player(board, player_id)
-    return _bench_pokemon(board, opponent) if opponent else []
+def make_target_selector(opponent=False, bench_only=False):
 
+    def selector(board, player_id, card):
+        if card is None:
+            return []
+            
+        # Determine the target player ID based on the opponent flag
+        target_id = (
+            next((p for p in board.player_ids if p != player_id), None)
+            if opponent 
+            else player_id
+        )
+        if not target_id:
+            return []
+
+        # Configuration 1: Returns ONLY Benched Pokémon entities (e.g., Boss's Orders, Switch)
+        if bench_only:
+            bench = board.find_player_area(target_id, "bench")
+            return [c for c in (bench.children if bench else []) if c is not None]
+
+        # Configuration 2: Returns all Pokémon in play (Active + Bench) (e.g., Crushing Hammer, Potion)
+        return [p for p in board.pokemon_in_play(target_id) if p is not None]
+        
+    return selector
+
+# --- TEMPORARY BACKWARD COMPATIBILITY LAYER ---
+# These functions route old card registrations directly into the new engine. Please update your coding as it will be removed in the future. 
+def play_targets(opponent=False, bench_only=False):
+    """Deprecated: Use make_target_selector(opponent=..., bench_only=...) instead."""
+    return make_target_selector(opponent=opponent, bench_only=bench_only)
+
+def opponent_play_targets(bench_only=False):
+    """Deprecated: Use make_target_selector(opponent=True, bench_only=...) instead."""
+    return make_target_selector(opponent=True, bench_only=bench_only)
+    
+def player_play_targets(bench_only=False):
+    """Deprecated: Use make_target_selector(opponent=False, bench_only=...) instead."""
+    return make_target_selector(opponent=False, bench_only=bench_only)
+#####################
 
 def player_has_bench(board, player_id):
     return bool(_bench_pokemon(board, player_id))
@@ -506,7 +546,7 @@ async def pokemon_center_lady(ctx):
 
 async def switch(ctx):
     """Switch your Active Pokemon with 1 of your Benched Pokemon."""
-    target = await ctx.choose_pokemon(ctx.my_bench(), "Choose your new Active Pokémon")
+    target = await ctx.choose_play_target(ctx.my_bench(), "Choose your new Active Pokémon")
     if target is not None:
         await ctx.switch_active(ctx.player_id, target)
 
