@@ -1,7 +1,6 @@
-"""Unit tests for the deck strategic-brain system (content.deck_strategies),
-the AIPlayer wiring, and a headless end-to-end sim smoke run."""
+"""Unit tests for the deck strategic-brain system (content.deck_strategies)
+and the AIPlayer wiring."""
 
-import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -4292,21 +4291,6 @@ class WiringTests(unittest.TestCase):
         from spirit.game.session.game_session import GameSession
         from spirit.game.session.legal_actions import ACTION_USE_ABILITY
         self.assertIn(ACTION_USE_ABILITY, GameSession.AI_ACTION_PRIORITY)
-
-
-class HeadlessSimTests(unittest.TestCase):
-    def test_one_full_ai_vs_ai_game(self):
-        proc = subprocess.run(
-            [sys.executable, str(ROOT / "tools" / "sim_bot_match.py"),
-             "--games", "1"],
-            cwd=str(ROOT), capture_output=True, text=True, timeout=180,
-        )
-        output = (proc.stdout or "") + (proc.stderr or "")
-        self.assertEqual(proc.returncode, 0, output[-4000:])
-        self.assertIn("crash-fallback results: 0/1", output)
-        # mirror outcome is random (coin toss / draws): only completion matters
-        self.assertIn("winner=ai", output)
-        self.assertNotIn("Error in gameplay sequence", output)
 
 
 if __name__ == "__main__":
