@@ -15,6 +15,9 @@ TCP_PORT = int(os.environ.get("SPIRIT_TCP_PORT", "39389"))
 # See example in README in sql/README.md
 DATABASE_URL = os.environ.get("SPIRIT_DATABASE_URL")
 
+# WARNING: experimental bundle packing algorithm, we default to lz4 but lzma would cut the sizes in half
+BUNDLE_PACKER = os.environ.get("SPIRIT_BUNDLE_PACKER", "lz4").strip().lower()
+
 HTTP_BASE_URL = f"http://{PUBLIC_HOST}:{HTTP_PORT}"
 PLACEHOLDER_IMG = f"{HTTP_BASE_URL}/placeholder.png"
 

@@ -19,7 +19,7 @@ from spirit.server.state import issue_ticket
 from spirit.database.accounts import get_account_by_username, verify_password, create_account
 from spirit.server import metrics
 from spirit.server.manifest_manager import ManifestManager
-from spirit.server.bundle_variants import DiskBundleCache, trim_textures, variant_version
+from spirit.server.bundle_variants import PACKER, DiskBundleCache, trim_textures, variant_cache_key
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
@@ -95,8 +95,7 @@ def _bundle_build_lock(key):
 
 def _virtual_cache_key(source, name):
     set_code = name.rsplit('_', 1)[0]
-    membership = manifest_manager.card_partitions.get(set_code, {})
-    return f"{os.path.abspath(source)}:{name}:{variant_version(source, membership)}"
+    return variant_cache_key(source, name, manifest_manager.card_partitions.get(set_code, {}))
 
 
 def prepare_virtual_bundles():
@@ -108,6 +107,7 @@ def prepare_virtual_bundles():
         raise RuntimeError("Startup bundle generation requires SPIRIT_BUNDLE_DISK_CACHE_BYTES > 0")
     result = {"built": 0, "reused": 0, "bytes": 0}
     keys = []
+    versions = {}
     logging.info("[HTTP] Preparing %d artwork bundles before accepting players", len(sources))
     for index, (name, source) in enumerate(sorted(sources.items()), 1):
         key = _virtual_cache_key(source, name)
@@ -128,10 +128,14 @@ def prepare_virtual_bundles():
             else:
                 result["reused"] += 1
             result["bytes"] += size
+            versions[key] = VARIANT_DISK_CACHE.version(key)
     if any(VARIANT_DISK_CACHE.entry_size(key) is None for key in keys):
         raise RuntimeError(
             f"Generated bundles need at least {result['bytes']} cache bytes; increase "
             "SPIRIT_BUNDLE_DISK_CACHE_BYTES so startup does not evict required artwork")
+    # Advertise content versions so unchanged variants keep their client-cached URLs.
+    manifest_manager.content_versions.update(versions)
+    manifest_manager.generate_manifest(force_refresh=True)
     logging.info("[HTTP] Artwork ready: %d built, %d reused, %.1f MiB on disk",
                  result["built"], result["reused"], result["bytes"] / 1024**2)
     return result
@@ -588,8 +592,8 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if hasattr(asset, 'name') and asset.name.startswith('CAB-'):
                     asset.name = new_cab_name
 
-            # 3. Serialize back with LZ4 packer
-            file_bytes = env.file.save(packer="lz4")
+            # 3. Serialize back with the configured packer
+            file_bytes = env.file.save(packer=PACKER)
             logging.info("[HTTP] Built %s: %d -> %d bytes", filename, os.path.getsize(asset_full_path), len(file_bytes))
         except Exception as e:
             logging.warning(f"[HTTP] UnityPy CAB customize failed ({e}); raw byte replacement fallback.")

@@ -31,7 +31,9 @@ _LOG_LISTENER = _configure_logging()
 # Imports below are intentionally after logging setup so import-time logs use the
 # queue handler (E402 is expected here).
 from spirit.server.server import PTCGOServer  # noqa: E402
-from spirit.server.http_server import AssetHTTPServer, manifest_manager, prepare_virtual_bundles  # noqa: E402
+from spirit.server.http_server import (  # noqa: E402
+    BUNDLE_CACHE_DIR, AssetHTTPServer, manifest_manager, prepare_virtual_bundles)
+from spirit.server.bundle_variants import strip_stale_bundles  # noqa: E402
 from spirit.server.auto_bundle import check_and_generate_bundles  # noqa: E402
 from spirit.server import metrics  # noqa: E402
 from spirit.database import Base, engine  # noqa: E402
@@ -77,6 +79,7 @@ def main():
 
     # 2. Run the auto bundle generation
     check_and_generate_bundles()
+    strip_stale_bundles(BUNDLE_CACHE_DIR)
     
     logging.info("[Main] Refreshing manifest manager...")
     # Reload asset map and refresh manifest to capture all compiled cards and cosmetics

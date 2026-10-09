@@ -9,16 +9,44 @@ from pathlib import Path
 import re
 import tempfile
 import threading
+import zlib
 
+import UnityPy
+
+from spirit import config
 from spirit.game.attributes import AttrID, CardType, PokemonTypes
+from spirit.game.scripts.cards import loader
 
-REVISION = 1
+REVISION = 2
+PACKER = config.BUNDLE_PACKER if config.BUNDLE_PACKER in ("lz4", "lzma") else "lz4"
 SPLIT_TYPES = tuple(t.name.lower() for t in PokemonTypes if 1 <= t.value <= 11) + ("trainer",)
+
+_FILE_CRCS = {}
+_FILE_CRCS_LOCK = threading.Lock()
+
+
+def file_crc(path):
+    """CRC32 of a file's bytes, memoized on (size, mtime) so touched files are never re-read."""
+    stat = os.stat(path)
+    memo_key = (os.path.abspath(path), stat.st_size, stat.st_mtime_ns)
+    with _FILE_CRCS_LOCK:
+        crc = _FILE_CRCS.get(memo_key)
+    if crc is None:
+        crc = 0
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                crc = zlib.crc32(chunk, crc)
+        with _FILE_CRCS_LOCK:
+            _FILE_CRCS[memo_key] = crc
+    return crc
+
+
+def content_version(crc):
+    # Positive int32: the client int.Parse()s versions and embeds them in bundle URLs.
+    return (crc & 0x7fffffff) or 1
 
 
 def card_partitions():
-    from spirit.game.scripts.cards import loader
-
     result = {}
     for card in loader.load_all():
         get = card.get_attribute_value
@@ -48,32 +76,36 @@ def asset_number(name, set_code):
 
 
 def variant_version(source, membership):
-    stat = os.stat(source)
-    payload = [REVISION, stat.st_size, stat.st_mtime_ns,
+    """Fallback manifest version of a variant, from its source CONTENT (never mtime)."""
+    payload = [REVISION, PACKER, file_crc(source),
                [(n, sorted(k)) for n, k in sorted(membership.items())]]
-    return int.from_bytes(hashlib.sha256(json.dumps(payload).encode()).digest()[:4], "big") & 0x7fffffff
+    return content_version(int.from_bytes(hashlib.sha256(json.dumps(payload).encode()).digest()[:4], "big"))
 
 
-def trim_textures(env, set_code, kind, membership):
-    """Trim only self-contained texture bundles; retain unknown artwork conservatively."""
+def variant_cache_key(source, name, membership):
+    return f"{name}:{variant_version(source, membership)}"
+
+
+def _texture_bundle(env):
+    """(AssetBundle reader, parsed bundle, textures by path id) for self-contained texture bundles."""
     objects = list(env.objects)
-    if len(env.assets) != 1 or any(o.type.name not in ("Texture2D", "AssetBundle") for o in objects):
-        return False
+    if len(env.assets) != 1 or env.assets[0].externals:
+        return None
+    if any(o.type.name not in ("Texture2D", "AssetBundle") for o in objects):
+        return None
     bundles = [o for o in objects if o.type.name == "AssetBundle"]
-    if len(bundles) != 1 or env.assets[0].externals:
-        return False
-    bundle = bundles[0].read()
+    if len(bundles) != 1:
+        return None
     textures = {o.path_id: o for o in objects if o.type.name == "Texture2D"}
-    if any(getattr(o.read(), "m_StreamData", None) and o.read().m_StreamData.path for o in textures.values()):
-        return False
-    by_id = {}
-    for name, info in bundle.m_Container:
-        number = asset_number(name, set_code)
-        by_id.setdefault(info.asset.m_PathID, set()).add(number)
-    remove = {pid for pid, numbers in by_id.items()
-              if pid in textures and numbers and all(n in membership and kind not in membership[n] for n in numbers)}
-    if not remove:
-        return False
+    for texture in textures.values():
+        stream = getattr(texture.read(), "m_StreamData", None)
+        if stream and stream.path:
+            return None
+    return bundles[0], bundles[0].read(), textures
+
+
+def drop_textures(env, reader, bundle, remove):
+    """Remove textures and their exports, then save the bundle with a matching preload table."""
     bundle.m_Container = [(n, i) for n, i in bundle.m_Container if i.asset.m_PathID not in remove]
     # Texture-only exports have no dependencies; rebuild the template's stale preload table.
     preload = []
@@ -86,10 +118,79 @@ def trim_textures(env, set_code, kind, membership):
     if main is not None and main.asset.m_PathID in remove:
         main.asset.m_PathID = 0
         main.preloadIndex = main.preloadSize = 0
-    bundles[0].save_typetree(bundle)
+    reader.save_typetree(bundle)
     for pid in remove:
         del env.assets[0].objects[pid]
+
+
+def strip_orphan_textures(env):
+    """Drop textures no container entry exports (card-template leftovers); returns how many."""
+    found = _texture_bundle(env)
+    if found is None:
+        return 0
+    reader, bundle, textures = found
+    orphans = set(textures) - {info.asset.m_PathID for _, info in bundle.m_Container}
+    if orphans:
+        drop_textures(env, reader, bundle, orphans)
+    return len(orphans)
+
+
+def trim_textures(env, set_code, kind, membership):
+    """Drop other types' artwork and unexported textures; retain unknown artwork conservatively."""
+    found = _texture_bundle(env)
+    if found is None:
+        return False
+    reader, bundle, textures = found
+    numbers_by_id = {}
+    for name, info in bundle.m_Container:
+        numbers_by_id.setdefault(info.asset.m_PathID, set()).add(asset_number(name, set_code))
+    remove = {pid for pid in textures if pid not in numbers_by_id or all(
+        n in membership and kind not in membership[n] for n in numbers_by_id[pid])}
+    if not remove:
+        return False
+    drop_textures(env, reader, bundle, remove)
     return True
+
+
+def _atomic_write(path, data):
+    path = Path(path)
+    with tempfile.NamedTemporaryFile(dir=path.parent, suffix=".tmp", delete=False) as f:
+        temporary = Path(f.name)
+        f.write(data)
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def strip_bundle_file(path):
+    """Rewrite a bundle in place without orphaned textures; returns bytes saved."""
+    data = Path(path).read_bytes()
+    env = UnityPy.load(data)
+    if not strip_orphan_textures(env):
+        return 0
+    stripped = env.file.save(packer="lz4")
+    _atomic_write(path, stripped)
+    return len(data) - len(stripped)
+
+
+def strip_stale_bundles(directory):
+    """One-time cleanup of bundles generated before the card template was stripped at build time."""
+    saved = fixed = 0
+    for path in sorted(Path(directory).glob("*/*/__data")):
+        try:
+            delta = strip_bundle_file(path)
+        except Exception as exc:
+            logging.warning("[Bundles] Could not strip %s: %s", path.parent.parent.name, exc)
+            continue
+        if delta:
+            fixed += 1
+            saved += delta
+            logging.info("[Bundles] Stripped template textures from %s (-%.1f MiB)",
+                         path.parent.parent.name, delta / 1024**2)
+    if fixed:
+        logging.info("[Bundles] Stripped %d bundles, %.1f MiB saved", fixed, saved / 1024**2)
+    return saved
 
 
 class DiskBundleCache:
@@ -126,6 +227,23 @@ class DiskBundleCache:
         except OSError:
             return None
 
+    def version(self, key):
+        """Content version of a cached entry (sidecar; computed once for older entries)."""
+        sidecar = self._path(key).with_suffix(".version")
+        try:
+            return int(sidecar.read_text())
+        except (OSError, ValueError):
+            pass
+        try:
+            version = content_version(file_crc(self._path(key)))
+        except OSError:
+            return None
+        try:
+            sidecar.write_text(str(version))
+        except OSError:
+            pass
+        return version
+
     def put(self, key, data):
         if not self.max_bytes or len(data) > self.max_bytes:
             return
@@ -138,6 +256,7 @@ class DiskBundleCache:
                     f.write(data)
                 target = self._path(key)
                 os.replace(temporary, target)
+                target.with_suffix(".version").write_text(str(content_version(zlib.crc32(data))))
                 files = [(p.stat().st_mtime_ns, p.stat().st_size, p) for p in self.directory.glob("*.bundle")]
                 total = sum(size for _, size, _ in files)
                 for _, size, path in sorted(files):
@@ -147,6 +266,7 @@ class DiskBundleCache:
                         continue
                     try:
                         path.unlink()
+                        path.with_suffix(".version").unlink(missing_ok=True)
                         total -= size
                     except OSError:
                         pass
