@@ -16,6 +16,7 @@ from spirit.game.session.constants import GamePhase
 from spirit.database.async_utils import run_db
 from spirit.database.daily_rewards import process_daily_login
 from spirit.game.progression.daily_rewards import DailyRewardManager
+from spirit.game.progression.daily_versus import DailyVersusTrack
 from spirit.server import metrics
 
 
@@ -244,28 +245,11 @@ class AuthHandler(BaseHandler):
             "versusSeason": season_payload
         }, 0)
 
-        # CurrentDailyRewardTrack
+        # CurrentDailyRewardTrack — wins track + next-UTC-midnight expiry so the
+        # client's daily timer counts down instead of hitting the yr-2100 constant.
         await self.client.send_packet({
             "messageName": OutboundMsg.CURRENT_DAILY_REWARD_TRACK.value,
-            "dailyRewardTrack": {
-                "name": "Standard Track",
-                "rewardTiers": [
-                    {
-                        "wins": 1,
-                        "rewards": [
-                            {
-                                "name": "5 Tokens",
-                                "rewardType": "Currency",
-                                "rewardAmount": 5
-                            }
-                        ],
-                        "isDefault": True,
-                        "isSpecial": False
-                    }
-                ],
-                "isDefault": True
-            },
-            "nextExpiry": 4102444800000
+            **DailyVersusTrack().payload(),
         }, 0)
 
         # QuestConfigurationUpdated

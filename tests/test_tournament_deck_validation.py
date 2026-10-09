@@ -2,9 +2,9 @@ import unittest
 import uuid
 
 from spirit.game.attributes import AttrID, CardType, DeckFormat, PokemonStage
-from spirit.game import rules
+from spirit.game.decks import validation as rules
 from spirit.game.scripts.cards import loader as card_loader
-from spirit.game.tournament_manager import TournamentDef
+from spirit.game.tournaments.manager import TournamentDef
 from spirit.packets.handlers.tournaments import validate_tournament_deck
 
 

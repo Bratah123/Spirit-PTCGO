@@ -11,6 +11,6 @@ card = EnergyCardDef(
     collector_number=175,
     set_code="SWSH3",
     rarity=Rarities.Uncommon,
-    energy_type=PokemonTypes.COLORLESS,
+    energy_type=PokemonTypes.DARKNESS,
     is_special=True
 )

@@ -17,7 +17,15 @@ def _configure_logging():
     fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     stream = logging.StreamHandler()
     stream.setFormatter(fmt)
-    listener = logging.handlers.QueueListener(log_queue, stream, respect_handler_level=True)
+    handlers = [stream]
+    try:
+        log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "server_out.log")
+        file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+        file_handler.setFormatter(fmt)
+        handlers.append(file_handler)
+    except OSError:
+        pass
+    listener = logging.handlers.QueueListener(log_queue, *handlers, respect_handler_level=True)
     listener.start()
     root = logging.getLogger()
     root.handlers.clear()

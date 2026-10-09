@@ -4,7 +4,8 @@ from spirit.database.models import (
     Account, Wallet, Deck, Collection, ArchetypeFlag, Friendship,
     RedemptionCode, CodeRedemptionEntry, ShopItem, TradeOffer, DynamicPage,
     VersusProgress, DailyLoginProgress,
-    AsyncTournament, TournamentEntry, TournamentLeaderboardClaim
+    AsyncTournament, TournamentEntry, TournamentLeaderboardClaim,
+    TournamentHistory
 )
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     "DailyLoginProgress",
     "AsyncTournament",
     "TournamentEntry",
-    "TournamentLeaderboardClaim"
+    "TournamentLeaderboardClaim",
+    "TournamentHistory"
 ]

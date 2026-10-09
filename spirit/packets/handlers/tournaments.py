@@ -196,7 +196,12 @@ class TournamentHandler(BaseHandler):
             return await self._join_invalid_deck(validation, request_id)
 
         fees = tournament.legacy_entry_fees()
-        error = await run_db(tournament_data.charge_fees, account_id, fees)
+        try:
+            error = await run_db(tournament_data.charge_fees, account_id, fees)
+        except Exception as e:
+            logging.error(f"[Tournaments] charge_fees threw for "
+                          f"{self.client.player.username}: {e}", exc_info=e)
+            error = "error"
         if error:
             # WalletFailed makes the client undo its optimistic local deduction;
             # follow with a wallet push so the HUD resyncs regardless.
@@ -246,6 +251,17 @@ class TournamentHandler(BaseHandler):
         await self.send({
             "messageName": OutboundMsg.TOURNAMENTS_IN_PROGRESS_DATA.value,
             "tournamentData": data,
+        }, request_id)
+
+    @handle(InboundMsg.GET_TOURNAMENT_HISTORY_FOR_USER)
+    async def handle_get_tournament_history_for_user(self, message, request_id, flags):
+        # History tab: concluded brackets this account played in (J.G.L[],
+        # newest first). ViewResults builds the final-standings popup from a row.
+        rows = await run_db(tournament_data.get_tournament_history,
+                            self._account_id())
+        await self.send({
+            "messageName": OutboundMsg.TOURNAMENT_HISTORY_LIST.value,
+            "tournamentHistoryList": rows,
         }, request_id)
 
     @handle(InboundMsg.LEAVE_ACTIVE_TOURNAMENT)

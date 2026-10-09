@@ -10,6 +10,11 @@ against -- do not reword them.
 
 from enum import Enum
 
+from spirit.config import (
+    RESPONSE_TIMEOUT_SECONDS,
+    TURN_COUNTDOWN_SECONDS,
+    TURN_INACTIVITY_SECONDS,
+)
 from spirit.game.models.board import BENCH_SLOT_COUNT
 
 
@@ -42,13 +47,19 @@ PRIZE_COUNT = 6
 MAX_SELECTION_RETRIES = 50
 
 # Turn-loop safety bounds and the main action timer (milliseconds).
+# Both timers come from spirit.config so they can be tuned (or env-extended)
+# without touching the turn loop:
+#   ACTION_TIMEOUT_MS    = your own turn (inactivity + visible countdown),
+#                         expiry ends that turn only;
+#   FOLLOW_UP_TIMEOUT_MS = prompts answered during the OPPONENT'S turn,
+#                         expiry auto-resolves the prompt (never the match).
 MAX_TURNS = 500
 MAX_ACTIONS_PER_TURN = 100
 TURN_OFFER_LENGTH_MS = 90000
-ACTION_INACTIVITY_DURATION_MS = 15_000
-ACTION_COUNTDOWN_DURATION_MS = 15_000
+ACTION_INACTIVITY_DURATION_MS = int(TURN_INACTIVITY_SECONDS * 1000)
+ACTION_COUNTDOWN_DURATION_MS = int(TURN_COUNTDOWN_SECONDS * 1000)
 ACTION_TIMEOUT_MS = ACTION_INACTIVITY_DURATION_MS + ACTION_COUNTDOWN_DURATION_MS
-FOLLOW_UP_TIMEOUT_MS = 60_000
+FOLLOW_UP_TIMEOUT_MS = int(RESPONSE_TIMEOUT_SECONDS * 1000)
 
 
 # SequenceID for standalone (unbracketed) SequenceMessages. The client's

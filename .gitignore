@@ -222,6 +222,8 @@ binaries/
 client_source/
 re_tools/dnSpyEx/
 original_game_cache/
+# Full game client install (600+ MB of Unity runtime) -- never commit.
+PokemonTradingCardGameOnline/
 .vscode/
 *.crt
 *.key
@@ -256,3 +258,7 @@ AGENTS.md
 unity_ptcgo_recon/
 docs/
 native/
+
+# C# plugin build output (source lives in mods/, DLL is deployed to the game folder)
+mods/**/bin/
+mods/**/obj/

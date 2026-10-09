@@ -1,3 +1,4 @@
+from spirit.game.card_effects.energies import ALL_TYPES_ONE_AT_A_TIME
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -12,5 +13,6 @@ card = EnergyCardDef(
     set_code="SWSH6",
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
-    is_special=True
+    is_special=True,
+    provides=ALL_TYPES_ONE_AT_A_TIME
 )

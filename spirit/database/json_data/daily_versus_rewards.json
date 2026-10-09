@@ -1,0 +1,33 @@
+[
+    {
+        "wins": 1,
+        "rewards": [
+            {"name": "250 Tokens", "rewardType": "Tokens", "rewardAmount": 250}
+        ]
+    },
+    {
+        "wins": 2,
+        "rewards": [
+            {"name": "500 Tokens", "rewardType": "Tokens", "rewardAmount": 500}
+        ]
+    },
+    {
+        "wins": 3,
+        "rewards": [
+            {"name": "750 Tokens", "rewardType": "Tokens", "rewardAmount": 750}
+        ]
+    },
+    {
+        "wins": 4,
+        "rewards": [
+            {"name": "1000 Tokens", "rewardType": "Tokens", "rewardAmount": 1000}
+        ]
+    },
+    {
+        "wins": 5,
+        "isSpecial": true,
+        "rewards": [
+            {"name": "Booster Pack", "rewardType": "RandomBooster", "rewardAmount": 1}
+        ]
+    }
+]

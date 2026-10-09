@@ -1,4 +1,4 @@
-"""Self-tests for deck-legality validation (spirit/game/rules.py + format_manager).
+"""Self-tests for deck-legality validation (spirit/game/decks/validation.py + decks/formats.py).
 
 Runs headless on the loaded card scripts (no network/DB).
 Usage: python -m spirit.tools.rules_selftest -- exit 0 iff every assertion passes.
@@ -8,8 +8,8 @@ import sys
 import uuid
 
 from spirit.game.attributes import AttrID, CardType, DeckFormat, PokemonStage
-from spirit.game.format_manager import FormatManager, is_basic_energy_card
-from spirit.game import rules
+from spirit.game.decks.formats import FormatManager, is_basic_energy_card
+from spirit.game.decks import validation as rules
 from spirit.game.scripts.cards import loader as card_loader
 
 FAILURES = []

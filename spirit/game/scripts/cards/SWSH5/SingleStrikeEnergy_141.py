@@ -1,3 +1,4 @@
+from spirit.game.card_effects.energies import SINGLE_STRIKE_ENERGY
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -11,6 +12,7 @@ card = EnergyCardDef(
     collector_number=141,
     set_code="SWSH5",
     rarity=Rarities.Uncommon,
-    energy_type=PokemonTypes.COLORLESS,
-    is_special=True
+    energy_type=PokemonTypes.FIGHTING,
+    is_special=True,
+    provides=SINGLE_STRIKE_ENERGY
 )

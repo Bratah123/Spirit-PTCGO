@@ -7,7 +7,8 @@ from spirit.database.models.economy import (
     RedemptionCode, CodeRedemptionEntry, ShopItem, TradeOffer, DynamicPage, VersusProgress, DailyLoginProgress
 )
 from spirit.database.models.tournaments import (
-    AsyncTournament, TournamentEntry, TournamentLeaderboardClaim
+    AsyncTournament, TournamentEntry, TournamentLeaderboardClaim,
+    TournamentHistory
 )
 
 for table in Base.metadata.tables.values():
@@ -20,5 +21,5 @@ __all__ = [
     "RedemptionCode", "CodeRedemptionEntry", "ShopItem", "TradeOffer", "DynamicPage",
     "VersusProgress", "DailyLoginProgress",
     "QuestAccount", "DailyQuest", "QuestMatchCredit",
-    "AsyncTournament", "TournamentEntry", "TournamentLeaderboardClaim"
+    "AsyncTournament", "TournamentEntry", "TournamentLeaderboardClaim", "TournamentHistory"
 ]

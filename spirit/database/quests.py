@@ -141,14 +141,19 @@ def credit_match(account_id, game_id, stats, won, started_at):
                 result["progressedQuests"].append(payload)
                 continue
             row.status = "completed"
-            old_xp = xp.get("Colorless", 0)
+            # XP flows to the quest's own affinity type (legacy stored
+            # definitions without one stay Colorless).
+            affinity = row.definition.get("affinity", "Colorless")
+            if affinity not in AFFINITIES:
+                affinity = "Colorless"
+            old_xp = xp.get(affinity, 0)
             new_xp = min(max(XP_LEVELS.values()), old_xp + row.definition["xp"])
-            xp["Colorless"] = new_xp
+            xp[affinity] = new_xp
             result["completedQuestsAndXPTotal"].append([payload["questDefinition"], new_xp])
             result["rewards"].extend(payload["questDefinition"]["rewards"])
             for level, threshold in XP_LEVELS.items():
                 if old_xp < threshold <= new_xp:
-                    result["rewards"].append(coin_reward(25, f"ColorlessLevel{level}"))
+                    result["rewards"].append(coin_reward(25, f"{affinity}Level{level}"))
         state.affinity_xp = xp
         coins = sum(reward["rewardAmount"] for reward in result["rewards"])
         if coins:

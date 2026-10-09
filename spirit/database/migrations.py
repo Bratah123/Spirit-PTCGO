@@ -18,6 +18,12 @@ _COLUMN_MIGRATIONS = {
     "daily_login_progress": {
         "activations": "INTEGER DEFAULT 0",
     },
+    "versus_progress": {
+        "win_streak": "INTEGER DEFAULT 0",
+        "daily_wins": "INTEGER DEFAULT 0",
+        "daily_wins_date": "TEXT DEFAULT ''",
+        "daily_last_win_ms": "INTEGER DEFAULT 0",
+    },
 }
 
 # Performance indexes for hot-path filters. create_all() only adds indexes to

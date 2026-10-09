@@ -1,8 +1,10 @@
 import logging
+import random
 import uuid
 import asyncio
 
 from typing import Dict, List, Any, Optional
+from spirit import config
 from spirit.network.message_names import OutboundMsg
 from spirit.game.attributes import DeckFormat
 from spirit.game.decks.formats import FormatManager
@@ -187,12 +189,113 @@ class GameSessionManager:
             })
             await client.send_packet(entered_packet, request_id)
 
+            # Lone player in a quiet server: schedule an AI fallback so the
+            # queue doesn't sit forever. A human joining first pops this entry
+            # and the timer's membership check cancels the bot match.
+            if config.AI_MATCH_TIMEOUT > 0 and not tournament_context:
+                self._spawn(self._auto_fill_with_ai(queue_name, client))
+
+    async def _auto_fill_with_ai(self, queue_name: str, client):
+        """Pairs a player who waited alone in a queue with the AI bot."""
+        await asyncio.sleep(config.AI_MATCH_TIMEOUT)
+
+        queue = self.queues.get(queue_name)
+        if not queue:
+            return
+        entry = next((e for e in queue if e["client"] is client), None)
+        if entry is None:
+            # Matched with a human, cancelled, or disconnected (disconnect
+            # handlers pull the client out of every queue).
+            return
+        account_id = client.player.account_id if client.player else None
+        if not account_id or client.server.clients_by_account.get(account_id) is not client:
+            return
+
+        queue.remove(entry)
+        if not queue:
+            self.queues.pop(queue_name, None)
+
+        game_id = str(uuid.uuid4())
+        # The client's AccountID deserializer parses every MatchFound player id
+        # as a GUID, so the bot id must look like one (ai_bot_<gid> throws).
+        bot_id = str(uuid.uuid4())
+        bot_deck = self._ai_deck(entry.get("deck") or {}, queue_name)
+        logging.info(
+            f"[Matchmaking] No human match after {config.AI_MATCH_TIMEOUT:g}s; "
+            f"pairing {client.player.username} with AI bot in '{queue_name}' ({game_id})"
+        )
+
+        self.pending_pairings[game_id] = {
+            "players": {
+                account_id: {
+                    "client": client,
+                    "deck": entry.get("deck") or {},
+                    "ready": False
+                },
+                bot_id: {
+                    "client": None,   # No TCP client connection
+                    "deck": bot_deck,
+                    "ready": True      # AI is instantly ready
+                }
+            },
+            "is_solo": True,
+            "solitaire_id": "queue_ai",
+            "options": entry.get("options") or {},
+            "queue_name": queue_name
+        }
+
+        # The client already got MatchQueueEntered; finish the handshake the
+        # same way a human pairing does (ConfirmReadyForMatch -> MatchFound).
+        self._dispatch_ready_check(game_id, queue_name, [client])
+
+    def _ai_deck(self, human_deck: dict, queue_name: str,
+                 exclude_names=None) -> dict:
+        """Deck for the auto-fill bot.
+
+        Theme queues demand a legal theme deck, so the bot mirrors the player's
+        there; anywhere else it rolls a random pick from the curated pool
+        (BOT_DECKS plus the four starter decks), avoiding a pure mirror of the
+        player's own deck. exclude_names (tournament brackets) reserves deck
+        names already seated so each bot spot gets a distinct archetype while
+        the pool allows; exhausted pools fall back to plain non-mirror picks.
+        Falls back to the player's deck if the catalog is unusable.
+        """
+        try:
+            is_theme_queue = (
+                FormatManager().resolve_format_guid(queue_name) == DeckFormat.THEME.value
+                or queue_name.lower().endswith("themedeck")
+            )
+            if is_theme_queue and human_deck:
+                return human_deck
+            from spirit.game.content.starter import build_deck_data
+            from spirit.game.content.bot_decks import BOT_DECKS
+            # Only decks with a strategic brain are active opponents
+            # (ACTIVE_BOT_DECKS); starter decks stay out until they get
+            # brains of their own.
+            pool = list(BOT_DECKS)
+            human_name = human_deck.get("deckName")
+            exclude = set(exclude_names or ())
+            rivals = [d for d in pool
+                      if d[0] != human_name and d[0] not in exclude]
+            rivals = rivals or [d for d in pool if d[0] != human_name] or pool
+            name, decklist = random.choice(rivals)
+            deck = build_deck_data(name, decklist)
+            if deck.get("piles", {}).get("deck"):
+                logging.info(f"[Matchmaking] AI bot drew deck '{name}'.")
+                return deck
+            logging.warning("[Matchmaking] AI deck resolved empty; mirroring instead.")
+        except Exception as e:
+            logging.warning(f"[Matchmaking] AI deck build failed, mirroring the player's deck: {e}")
+        return human_deck or {}
+
     async def start_solo_match(self, client, deck_data: dict, solitaire_id: str, match_options: dict, request_id: int = 0):
         """Starts a local/offline single player practice match against an AI opponent."""
         await self.remove_from_queue(client, send_left_packet=False)
         self.remove_session_by_player_id(client.player.account_id)
 
         game_id = str(uuid.uuid4())
+        # GUID-form id: the client parses MatchFound player ids as GUIDs.
+        bot_id = str(uuid.uuid4())
         logging.info(f"[Matchmaking] Starting Single Player match {game_id} for {client.player.username} vs AI ({solitaire_id})")
 
         self.pending_pairings[game_id] = {
@@ -202,7 +305,7 @@ class GameSessionManager:
                     "deck": deck_data,
                     "ready": False
                 },
-                "mock_ai_bot": {
+                bot_id: {
                     "client": None, # No TCP client connection
                     "deck": {},    # Standard bot deck
                     "ready": True  # AI is instantly ready

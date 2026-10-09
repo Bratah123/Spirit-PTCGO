@@ -59,15 +59,27 @@ LEGACY_FORMATS = ("Unlimited", "ThemeDeck", "Modified", "Expanded", "Legacy")
 
 
 def _legacy_prizes(prize_table: list) -> list:
-    """run.prizeTable rows -> legacy G.I[] (start/end are 1-based PLACES here)."""
+    """run.prizeTable rows -> legacy G.I[] (start/end are 1-based PLACES here).
+
+    prizeType.type must be one of the client's accepted values:
+    Archetype / Token / Ticket / TournamentTicket / ... (NOT "Tokens" — the
+    client's PrizeRenderer logs "Got unknown prize type" for it).
+    """
     out = []
     for row in prize_table or []:
         for reward in row.get("rewards") or []:
-            is_card = reward.get("rewardType") == "Archetype"
+            rtype = str(reward.get("rewardType") or "")
+            currency = str(reward.get("rewardCurrency") or "").lower()
+            if rtype == "Archetype":
+                legacy_type = "Archetype"
+            elif "ticket" in currency:
+                legacy_type = "TournamentTicket"
+            else:
+                legacy_type = "Token"
             out.append({
                 "prizeType": {
-                    "type": "Archetype" if is_card else "Tokens",
-                    "archetypeID": str(reward.get("rewardProductID")) if is_card else None,
+                    "type": legacy_type,
+                    "archetypeID": str(reward.get("rewardProductID")) if rtype == "Archetype" else None,
                 },
                 "amount": int(reward.get("rewardAmount") or 0),
                 "startPlace": int(row.get("start") or 0),
@@ -179,6 +191,20 @@ class TournamentDef:
         except (TypeError, ValueError):
             return 8
 
+    @property
+    def bot_fill(self) -> bool:
+        return bool(self.definition.get("botFill"))
+
+    @property
+    def bot_fill_delay(self) -> int:
+        raw = self.definition.get("botFillDelay")
+        if raw is None or raw == "":
+            return 30
+        try:
+            return max(0, min(3600, int(raw)))
+        except (TypeError, ValueError):
+            return 30
+
     def legacy_entry_fees(self) -> list:
         """[{currency, amount}] rows the server actually charges (all of them)."""
         return [
@@ -213,7 +239,11 @@ class TournamentDef:
                 for f in self.legacy_entry_fees()
             ],
             "prizes": _legacy_prizes(self.run_config.get("prizeTable")),
-            "active": bool(self.enabled) and self.state() == STATE_OPEN,
+            # active must stay true through PREVIEW/OPEN/ENTRY_CLOSED/RESOLVED:
+            # the client's TournamentView flips to the Maintenance panel (and
+            # clobbers Complete/results state) the moment zero active entries
+            # remain. Only hidden/disabled (already filtered) read as false.
+            "active": bool(self.enabled),
         }
 
 
@@ -282,6 +312,15 @@ def validate_definition(definition: dict):
         return "maxSize must be 2, 4 or 8 (the bracket UI renders 8-player brackets)"
     if str(definition.get("matchStructure") or "SingleElimination") != "SingleElimination":
         return "only SingleElimination matchStructure is supported"
+    if "botFill" in definition and not isinstance(definition.get("botFill"), bool):
+        return "botFill must be a boolean"
+    if "botFillDelay" in definition:
+        try:
+            bot_delay = int(definition.get("botFillDelay"))
+        except (TypeError, ValueError):
+            return "botFillDelay must be an integer number of seconds"
+        if bot_delay < 0 or bot_delay > 3600:
+            return "botFillDelay must be between 0 and 3600 seconds"
     fmt = definition.get("format")
     if fmt and str(fmt) not in LEGACY_FORMATS:
         return f"format must be one of {', '.join(LEGACY_FORMATS)}"
