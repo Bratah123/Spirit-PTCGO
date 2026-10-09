@@ -379,7 +379,7 @@ ACTIVE_BOT_DECKS = ["Dragapult Inteleon", "Rapid Strike Urshifu V",
                     "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
                     "Rayquaza V", "Sobble (suicune-ludicolo)",
                     "Charizard (charizard-vmax)",
-                    "Origin Forme Palkia VSTAR", "Rowlet"]
+                    "Origin Forme Palkia VSTAR", "Rowlet", "Arceus V"]
 
 BOT_DECKS = [(name, decklist) for name, decklist in BOT_DECK_LISTS.items()
              if name in ACTIVE_BOT_DECKS]

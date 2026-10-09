@@ -5711,6 +5711,873 @@ def _dc_pick(prompt: str, ctx: StrategyContext, card) -> float:
     return 0.0
 
 
+# Arceus VSTAR / Giratina VSTAR engine --------------------------------
+# Arceus builds the engine: Starbirth fetches the missing pieces, Trinity
+# Nova swings for 200 and accelerates basic energy onto the V line.  Bidoof
+# -> Bibarel refills small hands; Lumineon/Crobat dig on demand.  Giratina
+# finishes: Lost Impact for 280 (2 energy to the Lost Zone), Star Requiem
+# only when the Lost Zone is full and the shared VSTAR Power is still free.
+# Path to the Peak waits until Starbirth is spent.  Bench discipline: the
+# attacker line first, one Bidoof, support bodies only when they have a job.
+
+AR_LINE = {"Arceus V", "Arceus VSTAR"}
+AR_ATTACKERS = {"Arceus V", "Arceus VSTAR", "Giratina V", "Giratina VSTAR"}
+AR_SUPPORTERS = {"Professor's Research", "Marnie", "Boss's Orders", "Serena"}
+_AR_REPEATABLE = {
+    "Professor's Research", "Marnie", "Boss's Orders", "Serena",
+    "Quick Ball", "Ultra Ball", "Evolution Incense", "Switch",
+    "Escape Rope", "Lost Vacuum", "Path to the Peak", "Choice Belt",
+    "Double Turbo Energy", "Psychic Energy", "Grass Energy",
+}
+
+
+def _ar_vstar_used(ctx: StrategyContext) -> bool:
+    try:
+        return ctx.me in ctx.session.turn_state.vstar_used
+    except Exception:
+        return False
+
+
+def _ar_pay_units(ctx: StrategyContext, pokemon) -> int:
+    """Attached energy in pay-units: Double Turbo Energy provides 2,
+    every other Energy card provides 1."""
+    total = 0
+    for child in getattr(pokemon, "children", None) or []:
+        child_name = ctx.name(child)
+        if not child_name.endswith("Energy"):
+            continue
+        total += 2 if child_name == "Double Turbo Energy" else 1
+    if total == 0:
+        return ctx.energy_attached(pokemon)
+    return total
+
+
+def _ar_tool(ctx: StrategyContext, pokemon, tool_name: str) -> bool:
+    if pokemon is None:
+        return False
+    return any(ctx.name(c) == tool_name
+               for c in (getattr(pokemon, "children", None) or []))
+
+
+def _ar_lz_count(ctx: StrategyContext) -> int:
+    try:
+        lost = ctx.board.find_player_area(ctx.me, "lostZone")
+        return len(lost.children) if lost else 0
+    except Exception:
+        return 0
+
+
+def _ar_stadium_present(ctx: StrategyContext) -> bool:
+    """Any Stadium occupies the shared slot (ours or the opponent's)."""
+    try:
+        area = ctx.board.find_global_area("activeStadium")
+        return bool(area and area.children)
+    except Exception:
+        return False
+
+
+def _ar_nova_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Arceus VSTAR online: 3 pay-units pays Trinity Nova's Colorless cost."""
+    if pokemon is None or ctx.name(pokemon) != "Arceus VSTAR":
+        return False
+    return _ar_pay_units(ctx, pokemon) >= 3
+
+
+def _ar_charge_ready(ctx: StrategyContext, pokemon) -> bool:
+    if pokemon is None or ctx.name(pokemon) != "Arceus V":
+        return False
+    return _ar_pay_units(ctx, pokemon) >= 2
+
+
+def _ar_lost_ready(ctx: StrategyContext, pokemon) -> bool:
+    """Giratina VSTAR online: Grass + Psychic + 1 more pay-unit."""
+    if pokemon is None or ctx.name(pokemon) != "Giratina VSTAR":
+        return False
+    return (ctx.energy_of_type(pokemon, "Grass") >= 1
+            and ctx.energy_of_type(pokemon, "Psychic") >= 1
+            and _ar_pay_units(ctx, pokemon) >= 3)
+
+
+def _ar_shred_ready(ctx: StrategyContext, pokemon) -> bool:
+    if pokemon is None or ctx.name(pokemon) != "Giratina V":
+        return False
+    return (ctx.energy_of_type(pokemon, "Grass") >= 1
+            and ctx.energy_of_type(pokemon, "Psychic") >= 1
+            and _ar_pay_units(ctx, pokemon) >= 3)
+
+
+def _ar_abyss_ready(ctx: StrategyContext, pokemon) -> bool:
+    if pokemon is None or ctx.name(pokemon) != "Giratina V":
+        return False
+    return _ar_pay_units(ctx, pokemon) >= 1
+
+
+def _ar_requiem_ready(ctx: StrategyContext) -> bool:
+    """Star Requiem window: Lost Zone full, VSTAR Power free, Giratina
+    VSTAR Active with its Grass + Psychic attack cost paid."""
+    if _ar_vstar_used(ctx) or _ar_lz_count(ctx) < 10:
+        return False
+    active = ctx.active()
+    if active is None or ctx.name(active) != "Giratina VSTAR":
+        return False
+    return (ctx.energy_of_type(active, "Grass") >= 1
+            and ctx.energy_of_type(active, "Psychic") >= 1
+            and _ar_pay_units(ctx, active) >= 2)
+
+
+def _ar_output(ctx: StrategyContext) -> int:
+    """What our Active can put into the opposing Active right now, with
+    Double Turbo (-20), Powerful Colorless (+20, Colorless carriers only),
+    and Choice Belt (+30 vs a V) folded in."""
+    active = ctx.active()
+    if active is None:
+        return 0
+    name = ctx.name(active)
+    opp = ctx.active(ctx.opp)
+    base = 0
+    if name == "Arceus VSTAR":
+        base = 200 if _ar_nova_ready(ctx, active) else 0
+    elif name == "Arceus V":
+        if _ar_charge_ready(ctx, active):
+            base = 130                      # Power Edge; Trinity Charge is 0
+    elif name == "Giratina VSTAR":
+        base = 280 if _ar_lost_ready(ctx, active) else 0
+    elif name == "Giratina V":
+        base = 160 if _ar_shred_ready(ctx, active) else 0
+    if base <= 0:
+        return 0
+    dte = sum(1 for c in (getattr(active, "children", None) or [])
+              if ctx.name(c) == "Double Turbo Energy")
+    base -= 20 * dte
+    if name in AR_LINE and any(
+            ctx.name(c) == "Powerful Colorless Energy"
+            for c in (getattr(active, "children", None) or [])):
+        base += 20
+    if opp is not None and ctx.prize_value(opp) >= 2 \
+            and _ar_tool(ctx, active, "Choice Belt"):
+        base += 30
+    return max(0, base)
+
+
+def _ar_energy_hungry(ctx: StrategyContext) -> bool:
+    """Any attacker body still has an open attack slot."""
+    for p in ctx.in_play():
+        name = ctx.name(p)
+        if name == "Arceus VSTAR":
+            if _ar_pay_units(ctx, p) < 3:
+                return True
+        elif name == "Arceus V":
+            if _ar_pay_units(ctx, p) < 2:
+                return True
+        elif name == "Giratina VSTAR":
+            if not _ar_lost_ready(ctx, p):
+                return True
+        elif name == "Giratina V":
+            if not (_ar_shred_ready(ctx, p) or _ar_abyss_ready(ctx, p)):
+                return True
+    return False
+
+
+def _ar_threatened(ctx: StrategyContext) -> bool:
+    active = ctx.active()
+    if active is None or ctx.name(active) not in AR_ATTACKERS:
+        return False
+    return ctx.hp_left(active) <= 110
+
+
+def _ar_gust_window(ctx: StrategyContext) -> List:
+    damage = _ar_output(ctx)
+    if damage <= 0:
+        return []
+    return [p for p in ctx.in_play(ctx.opp) if 0 < ctx.hp_left(p) <= damage]
+
+
+def _ar_gust(ctx: StrategyContext, pokemon) -> float:
+    damage = _ar_output(ctx)
+    left = ctx.hp_left(pokemon)
+    if damage > 0 and 0 < left <= damage:
+        return 1000.0 + ctx.prize_value(pokemon) * 100.0 - left
+    dealt = ctx.damage_on(pokemon)
+    return 500.0 + dealt if dealt > 0 else 0.0
+
+
+def _ar_switch_ok(ctx: StrategyContext) -> bool:
+    """Rotate a stuck or doomed Active into a ready attacker."""
+    active = ctx.active()
+    if active is None:
+        return False
+    can_switch = any(
+        _ar_nova_ready(ctx, p) or _ar_lost_ready(ctx, p)
+        or _ar_shred_ready(ctx, p)
+        or (ctx.name(p) == "Arceus V" and _ar_charge_ready(ctx, p))
+        for p in ctx.bench()
+    )
+    if not can_switch:
+        return False
+    if _ar_output(ctx) <= 0:
+        return True                        # the active can't swing: rotate
+    if _ar_threatened(ctx):
+        return True                        # doomed attacker: keep the body
+    return False
+
+
+def _ar_path_ok(ctx: StrategyContext) -> bool:
+    """Never lock our own Starbirth; otherwise Path disrupts rule-box ops."""
+    if ctx.opponent_stadium_is("Path to the Peak"):
+        return False
+    names = ctx.in_play_names()
+    handset = set(ctx.hand_names())
+    if not _ar_vstar_used(ctx) and (
+            "Arceus VSTAR" in names or "Arceus VSTAR" in handset):
+        return False                       # keep Starbirth online
+    if "Lumineon V" in names or "Crobat V" in names:
+        return False                       # on-play digs need their abilities
+    return ctx.opponent_rule_box() or "Arceus VSTAR" not in names
+
+
+def _ar_vacuum_ok(ctx: StrategyContext) -> bool:
+    """Lost Vacuum: strip an opposing Path/tool when the hand can pay."""
+    if ctx.hand_size() < 3:
+        return False
+    if ctx.opponent_stadium_is("Path to the Peak"):
+        return True
+    return ctx.opponent_tools()
+
+
+def _ar_belt_ok(ctx: StrategyContext) -> bool:
+    """Choice Belt only when it changes a KO against a V."""
+    opp = ctx.active(ctx.opp)
+    if opp is None or ctx.prize_value(opp) < 2:
+        return False
+    out = _ar_output(ctx)
+    if out <= 0:
+        return False
+    left = ctx.hp_left(opp)
+    return out < left <= out + 30
+
+
+def _ar_vs_mew(ctx: StrategyContext) -> bool:
+    return any("Mew" in n for n in ctx.in_play_names(ctx.opp))
+
+
+def _ar_starbirth_gap(ctx: StrategyContext) -> bool:
+    """Hand is missing a setup piece Starbirth could fetch."""
+    handset = set(ctx.hand_names())
+    play = ctx.in_play_names()
+    if not (handset & AR_SUPPORTERS):
+        return True
+    if "Arceus V" in play and "Arceus VSTAR" not in play \
+            and "Arceus VSTAR" not in handset:
+        return True
+    if "Giratina V" in play and "Giratina VSTAR" not in play \
+            and "Giratina VSTAR" not in handset:
+        return True
+    if "Bidoof" in play and "Bibarel" not in play \
+            and "Bibarel" not in handset:
+        return True
+    if not any(n.endswith("Energy") for n in ctx.hand_names()):
+        return True
+    if not (handset & {"Quick Ball", "Ultra Ball", "Evolution Incense"}):
+        return True
+    return ctx.hand_size() <= 6
+
+
+def _ar_promote(ctx: StrategyContext, pokemon) -> float:
+    """New-Active ranking: ready swingers first, developing bodies next,
+    the draw engines only when the hand is thin."""
+    name = ctx.name(pokemon)
+    if name == "Arceus VSTAR":
+        return 2000.0 if _ar_nova_ready(ctx, pokemon) else 900.0
+    if name == "Giratina VSTAR":
+        return 2000.0 if _ar_lost_ready(ctx, pokemon) else 850.0
+    if name == "Arceus V":
+        return 1200.0 if _ar_charge_ready(ctx, pokemon) else 600.0
+    if name == "Giratina V":
+        if _ar_shred_ready(ctx, pokemon):
+            return 1100.0
+        if _ar_abyss_ready(ctx, pokemon) and _ar_lz_count(ctx) < 10:
+            return 700.0                   # Abyss Seeking digs from Active
+        return 400.0
+    if name == "Bibarel":
+        hs = ctx.hand_size()
+        if hs <= 3:
+            return 950.0                   # crisis: the dig earns the slot
+        if hs <= 5:
+            return 400.0
+        return 120.0
+    if name == "Bidoof":
+        return 150.0
+    if name in ("Crobat V", "Lumineon V"):
+        return 100.0
+    return 0.0
+
+
+def _ar_retreat_ok(ctx: StrategyContext) -> bool:
+    return _ar_switch_ok(ctx)
+
+
+def _ar_allow(description: str, name: str, ctx: StrategyContext) -> bool:
+    deck = ctx.deck_size()
+    if description == "DefaultPokemonPlayAbility":
+        if name == "Arceus V":
+            return ctx.in_play_names().count("Arceus V") < 2
+        if name == "Giratina V":
+            return ("Arceus V" in ctx.in_play_names()
+                    or "Arceus V" in ctx.hand_names()
+                    or "Arceus VSTAR" in ctx.in_play_names())
+        if name == "Giratina VSTAR":
+            return False                   # evolve only, never bench-play
+        if name == "Bidoof":
+            return ("Bibarel" not in ctx.in_play_names()
+                    and ctx.in_play_names().count("Bidoof") < 1)
+        if name == "Bibarel":
+            return False
+        if name == "Crobat V":
+            return ctx.hand_size() <= 4
+        if name == "Lumineon V":
+            hand = set(ctx.hand_names())
+            if not (hand & AR_SUPPORTERS):
+                return True
+            return _ar_gust_window(ctx) and "Boss's Orders" not in hand
+        if name == "Pumpkaboo":
+            return _ar_stadium_present(ctx)
+        if name == "Drapion V":
+            return _ar_vs_mew(ctx)
+        if name == "Radiant Gardevoir":
+            return ctx.opponent_rule_box()
+        return True
+    if description == "UseTrainerCard":
+        if name == "Professor's Research":
+            return ctx.hand_size() <= 5 and deck > 10
+        if name == "Marnie":
+            return (ctx.hand_size() <= 5
+                    or ctx.hand_size(ctx.opp) >= 6) and deck > 5
+        if name == "Serena":
+            return ctx.hand_size() <= 4 and deck > 5
+        if name == "Boss's Orders":
+            if _ar_output(ctx) <= 0:
+                return False
+            if _ar_gust_window(ctx):
+                return True
+            return any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp))
+        if name in ("Quick Ball", "Ultra Ball"):
+            return deck > 5
+        if name == "Evolution Incense":
+            hand = set(ctx.hand_names())
+            play = ctx.in_play_names()
+            if "Arceus V" in play and "Arceus VSTAR" not in play \
+                    and "Arceus VSTAR" not in hand:
+                return True
+            if "Giratina V" in play and "Giratina VSTAR" not in play \
+                    and "Giratina VSTAR" not in hand:
+                return True
+            if "Bidoof" in play and "Bibarel" not in play \
+                    and "Bibarel" not in hand:
+                return True
+            return False
+        if name == "Switch":
+            return _ar_switch_ok(ctx)
+        if name == "Escape Rope":
+            return _ar_switch_ok(ctx) or bool(_ar_gust_window(ctx))
+        if name == "Lost Vacuum":
+            return _ar_vacuum_ok(ctx)
+        if name == "Path to the Peak":
+            return _ar_path_ok(ctx)
+        if name == "Choice Belt":
+            return _ar_belt_ok(ctx)
+        return True
+    if description == "DefaultStadiumPlayAbility" and name == "Path to the Peak":
+        return _ar_path_ok(ctx)
+    if description == "DefaultToolPlayAbility":
+        if name == "Choice Belt":
+            return _ar_belt_ok(ctx)
+        if name in ("Big Charm", "Big Parasol"):
+            return any(ctx.name(p) in AR_ATTACKERS
+                       and _ar_tool(ctx, p, name) is False
+                       for p in ctx.in_play())
+        return True
+    if description == "UsePokemonAbility":
+        if name == "Starbirth":
+            return not _ar_requiem_ready(ctx)
+        if name == "Industrious Incisors":
+            return ctx.hand_size() <= 5
+        return True
+    if description == "UsePokemonAttack":
+        return True                        # every attack here has a job
+    if description == "BaseRetreat":
+        return _ar_retreat_ok(ctx)
+    return True
+
+
+def _ar_value(name: str, ctx: StrategyContext, in_hand: bool = False) -> float:
+    """Situational worth: the attacker line first, then the plays that
+    solve a real problem, then the support bodies for their effect."""
+    hand = ctx.hand_names()
+    handset = set(hand)
+    play = ctx.in_play_names()
+    arceus = play.count("Arceus V") + play.count("Arceus VSTAR")
+    gira = play.count("Giratina V") + play.count("Giratina VSTAR")
+    active = ctx.active()
+    hs = ctx.hand_size()
+
+    # -- Pokemon gap pieces ------------------------------------------------
+    if name == "Arceus VSTAR":
+        waiting = play.count("Arceus V") > play.count("Arceus VSTAR")
+        if waiting:
+            v = 90.0                       # a V body is waiting to evolve
+        elif arceus == 0 and "Arceus V" in handset:
+            v = 55.0
+        elif arceus == 0:
+            v = 15.0
+        else:
+            v = 40.0
+    elif name == "Arceus V":
+        if arceus == 0:
+            v = 95.0                       # the engine must exist
+        elif arceus == 1:
+            v = 55.0                       # the backup body
+        else:
+            v = 12.0
+    elif name == "Giratina VSTAR":
+        if play.count("Giratina V") > play.count("Giratina VSTAR"):
+            v = 88.0                       # the finisher waits to evolve
+        elif gira == 0:
+            v = 30.0
+        else:
+            v = 35.0
+    elif name == "Giratina V":
+        if gira == 0 and arceus >= 1:
+            v = 85.0                       # fetch the finisher body
+        elif gira == 0:
+            v = 50.0
+        elif gira == 1:
+            v = 35.0
+        else:
+            v = 10.0
+    elif name == "Bibarel":
+        v = 80.0 if hs <= 4 else (50.0 if hs == 5 else 15.0)
+    elif name == "Bidoof":
+        v = 70.0 if "Bibarel" not in play and hs <= 5 else 25.0
+    elif name == "Crobat V":
+        v = 75.0 if hs <= 3 else (40.0 if hs <= 4 else 8.0)
+    elif name == "Lumineon V":
+        if not (handset & AR_SUPPORTERS):
+            v = 72.0                       # fetch the missing Supporter
+        elif _ar_gust_window(ctx) and "Boss's Orders" not in handset:
+            v = 85.0
+        else:
+            v = 8.0
+    elif name == "Drapion V":
+        v = 70.0 if _ar_vs_mew(ctx) else 5.0
+    elif name == "Pumpkaboo":
+        v = 55.0 if _ar_stadium_present(ctx) else 5.0
+    elif name == "Radiant Gardevoir":
+        v = 30.0 if ctx.opponent_rule_box() else 8.0
+
+    # -- Energy ------------------------------------------------------------
+    elif name in ("Psychic Energy", "Grass Energy"):
+        v = 85.0 if _ar_energy_hungry(ctx) else 45.0
+    elif name == "Double Turbo Energy":
+        v = 88.0 if _ar_energy_hungry(ctx) else 50.0
+    elif name == "Powerful Colorless Energy":
+        if active is not None and ctx.name(active) in AR_LINE \
+                and not _ar_tool(ctx, active, "Powerful Colorless Energy") \
+                and _ar_energy_hungry(ctx):
+            v = 80.0                       # +20 on a Colorless attacker
+        else:
+            v = 40.0
+
+    # -- Supporters / items ------------------------------------------------
+    elif name == "Professor's Research":
+        v = 80.0 if hs <= 4 else (55.0 if hs <= 6 else 20.0)
+    elif name == "Marnie":
+        v = 70.0 if ctx.hand_size(ctx.opp) >= 6 else (
+            50.0 if hs <= 4 else 30.0)
+    elif name == "Serena":
+        v = 60.0 if hs <= 4 else 20.0
+    elif name == "Boss's Orders":
+        if _ar_gust_window(ctx):
+            v = 95.0                       # a KO walks into our damage line
+        elif any(ctx.damage_on(p) > 0 for p in ctx.in_play(ctx.opp)):
+            v = 45.0
+        else:
+            v = 15.0
+    elif name == "Quick Ball":
+        if arceus == 0 and "Arceus V" not in handset:
+            v = 86.0                       # fetch the engine
+        elif gira == 0 and arceus >= 1 and "Giratina V" not in handset:
+            v = 75.0                       # fetch the finisher
+        elif "Bidoof" not in play and "Bidoof" not in handset \
+                and "Bibarel" not in play:
+            v = 55.0
+        else:
+            v = 15.0
+    elif name == "Ultra Ball":
+        if arceus == 0 and "Arceus V" not in handset:
+            v = 80.0
+        elif play.count("Arceus V") > play.count("Arceus VSTAR") \
+                and "Arceus VSTAR" not in handset:
+            v = 78.0                       # evolve the waiting V
+        elif play.count("Giratina V") > play.count("Giratina VSTAR") \
+                and "Giratina VSTAR" not in handset:
+            v = 70.0
+        else:
+            v = 20.0
+    elif name == "Evolution Incense":
+        if play.count("Arceus V") > play.count("Arceus VSTAR") \
+                and "Arceus VSTAR" not in handset:
+            v = 76.0
+        elif play.count("Giratina V") > play.count("Giratina VSTAR") \
+                and "Giratina VSTAR" not in handset:
+            v = 68.0
+        else:
+            v = 15.0
+    elif name == "Path to the Peak":
+        v = 72.0 if _ar_path_ok(ctx) else 8.0
+    elif name == "Lost Vacuum":
+        v = 68.0 if _ar_vacuum_ok(ctx) else 8.0
+    elif name == "Choice Belt":
+        v = 65.0 if _ar_belt_ok(ctx) else 12.0
+    elif name == "Big Charm":
+        v = 45.0 if active is not None and ctx.name(active) in AR_ATTACKERS \
+            else 12.0
+    elif name == "Big Parasol":
+        v = 35.0
+    elif name == "Switch":
+        if _ar_switch_ok(ctx) and _ar_output(ctx) <= 0:
+            v = 70.0                       # rotate into a swinger
+        elif _ar_threatened(ctx):
+            v = 60.0                       # save the loaded attacker
+        else:
+            v = 20.0
+    elif name == "Escape Rope":
+        if _ar_switch_ok(ctx) or _ar_gust_window(ctx):
+            v = 62.0
+        else:
+            v = 15.0
+    else:
+        v = 6.0
+
+    if in_hand and name in handset and name not in _AR_REPEATABLE:
+        v -= 40.0                          # a second copy adds little
+    return v
+
+
+def _ar_energy_value(name: str, ctx: StrategyContext) -> float:
+    """Which energy card to spend the turn's manual attach on."""
+    if name == "Double Turbo Energy":
+        return 130.0 if _ar_energy_hungry(ctx) else 55.0
+    if name in ("Psychic Energy", "Grass Energy"):
+        return 125.0 if _ar_energy_hungry(ctx) else 55.0
+    if name == "Powerful Colorless Energy":
+        active = ctx.active()
+        if active is not None and ctx.name(active) in AR_LINE \
+                and not _ar_tool(ctx, active, "Powerful Colorless Energy"):
+            return 120.0
+        return 60.0
+    return 6.0
+
+
+def _ar_energy_target_score(ctx: StrategyContext, target,
+                            energy_name: str) -> float:
+    """Where an attach lands: typed costs on Giratina first, then the
+    Arceus Nova slot; support bodies never get fed."""
+    name = ctx.name(target)
+    if name == "Giratina VSTAR":
+        score = 540.0 if target is ctx.active() else 460.0
+        if not _ar_lost_ready(ctx, target):
+            score += 220.0                 # the finisher grows first
+        else:
+            score -= 240.0
+        if energy_name in ("Psychic Energy", "Grass Energy"):
+            score += 80.0                  # typed slots matter most here
+        return score
+    if name == "Giratina V":
+        score = 480.0
+        grass = ctx.energy_of_type(target, "Grass")
+        psychic = ctx.energy_of_type(target, "Psychic")
+        if grass < 1 or psychic < 1:
+            score += 180.0
+        if _ar_pay_units(ctx, target) < 3:
+            score += 90.0
+        else:
+            score -= 120.0
+        if energy_name in ("Psychic Energy", "Grass Energy"):
+            score += 70.0
+        return score
+    if name == "Arceus VSTAR":
+        score = 500.0 if target is ctx.active() else 400.0
+        if _ar_threatened(ctx) and target is not ctx.active():
+            score += 150.0                 # next attacker grows first
+        if _ar_pay_units(ctx, target) < 3:
+            score += 200.0
+        else:
+            score -= 220.0
+        if energy_name == "Powerful Colorless Energy" and target is ctx.active():
+            score += 60.0
+        return score
+    if name == "Arceus V":
+        score = 420.0
+        if _ar_pay_units(ctx, target) < 2:
+            score += 160.0
+        else:
+            score -= 100.0
+        return score
+    return 30.0                            # support bodies never get fed
+
+
+def _ar_bench_score(name: str, ctx: StrategyContext) -> float:
+    names = ctx.in_play_names()
+    free = 5 - len(ctx.bench())
+    arceus = names.count("Arceus V") + names.count("Arceus VSTAR")
+    gira = names.count("Giratina V") + names.count("Giratina VSTAR")
+    hand = set(ctx.hand_names())
+    hs = ctx.hand_size()
+    if name == "Arceus V":
+        if arceus == 0:
+            return 700.0                   # the engine takes the bench
+        if arceus == 1:
+            return 420.0                   # one backup body is enough
+        return 30.0
+    if name == "Giratina V":
+        if gira == 0 and arceus >= 1:
+            return 620.0                   # the finisher joins the engine
+        if gira == 0:
+            return 380.0
+        if gira == 1:
+            return 180.0
+        return 20.0
+    if name == "Bidoof":
+        if "Bibarel" in names or "Bidoof" in names:
+            return 0.0
+        if hs <= 5 and free >= 2:
+            return 480.0
+        if hs <= 5:
+            return 360.0
+        return 60.0                        # stuffed hand: wait
+    if name == "Crobat V":
+        if hs <= 3 and free >= 2:
+            return 500.0
+        if hs <= 4:
+            return 380.0
+        if hs == 5 and free >= 3:
+            return 180.0
+        return 0.0                         # full hand: no draw, no liability
+    if name == "Lumineon V":
+        if not (hand & AR_SUPPORTERS):
+            return 450.0 if free >= 2 else 360.0
+        if _ar_gust_window(ctx) and "Boss's Orders" not in hand:
+            return 470.0
+        return 0.0                         # 2-prize body with no job
+    if name == "Pumpkaboo":
+        return 340.0 if _ar_stadium_present(ctx) and free >= 2 else (
+            200.0 if _ar_stadium_present(ctx) else 0.0)
+    if name == "Drapion V":
+        if not _ar_vs_mew(ctx):
+            return 0.0
+        return 300.0 if free >= 2 else 150.0
+    if name == "Radiant Gardevoir":
+        if ctx.opponent_rule_box() and free >= 2:
+            return 220.0
+        return 0.0
+    return 0.0
+
+
+def _ar_evolve_score(name: str, ctx: StrategyContext) -> float:
+    if name == "Arceus VSTAR":
+        return 900.0                       # the engine's end state
+    if name == "Giratina VSTAR":
+        return 850.0                       # the finisher's end state
+    if name == "Bibarel":
+        return 800.0 if ctx.hand_size() <= 5 else 400.0
+    return 0.0
+
+
+def _ar_action_score(description: str, name: str,
+                     ctx: StrategyContext) -> float:
+    if description == "DefaultPokemonPlayAbility":
+        return _ar_bench_score(name, ctx)
+    if description == "DefaultEnergyPlayAbility":
+        return _ar_energy_value(name, ctx)
+    if description == "EvolvePokemonPlayAbility":
+        return _ar_evolve_score(name, ctx)
+    if description == "UsePokemonAbility":
+        if name == "Starbirth":
+            return 95.0 if _ar_starbirth_gap(ctx) else 60.0
+        if name == "Industrious Incisors":
+            return 85.0                    # fill a small hand
+        return 0.0
+    if description in ("UseTrainerCard", "DefaultStadiumPlayAbility",
+                       "DefaultToolPlayAbility"):
+        return _ar_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+def _ar_attack_score(title: str, base: float,
+                     ctx: StrategyContext) -> float:
+    opp_active = ctx.active(ctx.opp)
+    opp_left = ctx.hp_left(opp_active) if opp_active is not None else None
+
+    def _ko(score, damage):
+        if opp_left is not None and 0 < opp_left <= damage:
+            return score + 1000.0         # take the KO
+        return score
+
+    if title == "Trinity Nova":
+        damage = _ar_output(ctx)
+        if damage <= 0:
+            return 0.0
+        score = _ko(820.0 + damage, damage)
+        if _ar_energy_hungry(ctx) or any(
+                ctx.name(p) in ("Giratina V", "Giratina VSTAR")
+                for p in ctx.bench()):
+            score += 120.0                 # the accelerate rider matters
+        return score
+    if title == "Trinity Charge":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Arceus V":
+            return 0.0
+        if not _ar_charge_ready(ctx, active):
+            return 0.0
+        if not _ar_energy_hungry(ctx):
+            return 0.0                     # nothing wants the energy
+        return 500.0                       # early engine: accelerate
+    if title == "Power Edge":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Arceus V":
+            return 0.0
+        if not _ar_charge_ready(ctx, active):
+            return 0.0
+        damage = 130 - 20 * sum(
+            1 for c in (getattr(active, "children", None) or [])
+            if ctx.name(c) == "Double Turbo Energy")
+        if _ar_tool(ctx, active, "Choice Belt") and opp_active is not None \
+                and ctx.prize_value(opp_active) >= 2:
+            damage += 30
+        return _ko(600.0 + damage, damage)
+    if title == "Lost Impact":
+        damage = _ar_output(ctx)
+        if damage <= 0:
+            return 0.0
+        return _ko(860.0 + damage, damage)
+    if title == "Shred":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Giratina V":
+            return 0.0
+        if not _ar_shred_ready(ctx, active):
+            return 0.0
+        damage = 160 - 20 * sum(
+            1 for c in (getattr(active, "children", None) or [])
+            if ctx.name(c) == "Double Turbo Energy")
+        return _ko(700.0 + damage, damage)
+    if title == "Abyss Seeking":
+        active = ctx.active()
+        if active is None or ctx.name(active) != "Giratina V":
+            return 0.0
+        if not _ar_abyss_ready(ctx, active):
+            return 0.0
+        if _ar_lz_count(ctx) >= 10:
+            return 0.0                     # the Lost Zone is full: swing
+        score = 550.0
+        if ctx.hand_size() <= 5:
+            score += 80.0                  # dig when the hand is thin
+        return score
+    if title == "Star Requiem":
+        if not _ar_requiem_ready(ctx):
+            return 0.0                     # never waste the VSTAR Power
+        return 3000.0
+    return base
+
+
+def _ar_target_score(description: str, name: str,
+                     ctx: StrategyContext, target_id: str) -> float:
+    target = ctx.board.get_entity(target_id)
+    if target is None:
+        return 0.0
+    if description == "UseTrainerCard" and name == "Boss's Orders":
+        return _ar_gust(ctx, target)
+    if description == "BaseRetreat":
+        if isinstance(target, EnergyEntity):
+            # expendable basics pay retreat before special energy
+            return 160.0 if ctx.name(target) == "Double Turbo Energy" else 90.0
+        if target.owning_player_id == ctx.me:
+            return _ar_promote(ctx, target)
+        return 0.0
+    if description == "DefaultEnergyPlayAbility":
+        return _ar_energy_target_score(ctx, target, name)
+    if description == "DefaultToolPlayAbility":     # Choice Belt / Big Charm
+        if ctx.name(target) not in AR_ATTACKERS:
+            return 0.0
+        if _ar_tool(ctx, target, name):
+            return 0.0
+        score = 520.0
+        if target is ctx.active():
+            score += 160.0                 # the active swings this turn
+        return score
+    if description == "EvolvePokemonPlayAbility":
+        score = 8.0 + ctx.energy_attached(target) * 2.0
+        if target is ctx.active():
+            score += 6.0                   # evolve where the energy is
+        return score
+    return 0.0
+
+
+def _ar_search_score(card, ctx: StrategyContext) -> float:
+    return _ar_value(ctx.name(card), ctx, in_hand=False)
+
+
+def _ar_pick(prompt: str, ctx: StrategyContext, card) -> float:
+    """Ranks in-place picker prompts:
+
+    - own "new Active" choices -> promote the ready swinger;
+    - opponent switch picks -> KO window, then scratch value;
+    - Trinity Nova/Charge attach targets -> the energy ladder;
+    - Lost Impact energy dump -> specials last, loaded bodies last;
+    - hand discards -> dump the least valuable card.
+    """
+    text = prompt or ""
+    name = ctx.name(card)
+    mine = card.owning_player_id == ctx.me
+    if mine and "new Active" in text:
+        return _ar_promote(ctx, card)
+    if not mine and "new Active" in text:
+        return _ar_gust(ctx, card)
+    if not mine and ("opponent's" in text or "take" in text):
+        left = ctx.hp_left(card)
+        if 0 < left <= _ar_output(ctx):
+            return 1000.0
+        return 600.0 + ctx.damage_on(card) if ctx.damage_on(card) > 0 else 0.0
+    if mine and "attach" in text and "Energy" in text:
+        return _ar_energy_target_score(ctx, card, "")
+    if mine and "attach" in text:
+        return 100.0                       # pick the energy card itself
+    if mine and "Lost Zone" in text and name.endswith("Energy"):
+        # Lost Impact dumps 2 energy: spend specials and loaded bodies last
+        if name == "Double Turbo Energy":
+            return 800.0                   # expendable pay-units first
+        if name == "Powerful Colorless Energy":
+            return 700.0
+        return 400.0 + ctx.energy_attached(card.parent) \
+            if getattr(card, "parent", None) is not None else 300.0
+    if mine and "put into your hand" in text:
+        return _ar_value(name, ctx, in_hand=False)
+    if mine and "into your hand" in text:
+        return _ar_value(name, ctx, in_hand=False)
+    if mine and "discard" in text.lower():
+        return -_ar_value(name, ctx, in_hand=True)
+    return 0.0
+
+
+ARCEUS_GIRATINA = {
+    "allow_action": _ar_allow,
+    "action_score": _ar_action_score,
+    "attack_score": _ar_attack_score,
+    "target_score": _ar_target_score,
+    "search_score": _ar_search_score,
+    "pick_score": _ar_pick,
+}
+
+
 DECIDUEYE_JIRACHI = {
     "allow_action": _dc_allow,
     "action_score": _dc_action_score,
@@ -5732,6 +6599,7 @@ DECK_STRATEGIES = {
     "Charizard (charizard-vmax)": CHARIZARD_VSTAR,
     "Origin Forme Palkia VSTAR": PALKIA_VSTAR,
     "Rowlet": DECIDUEYE_JIRACHI,
+    "Arceus V": ARCEUS_GIRATINA,
 }
 
 

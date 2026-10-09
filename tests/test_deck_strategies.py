@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 from spirit.game.attributes import AttrID, TrainerType  # noqa: E402
 from spirit.game.content import bot_decks  # noqa: E402
 from spirit.game.content.deck_strategies import (  # noqa: E402
+    ARCEUS_GIRATINA,
     CHARIZARD_VSTAR,
     CORVIKNIGHT_BRONZONG,
     DECIDUEYE_JIRACHI,
@@ -28,6 +29,31 @@ from spirit.game.content.deck_strategies import (  # noqa: E402
     SR_ATTACKERS,
     StrategyContext,
     SUICUNE_LUDICOLO,
+    _ar_allow,
+    _ar_attack_score,
+    _ar_bench_score,
+    _ar_belt_ok,
+    _ar_charge_ready,
+    _ar_energy_target_score,
+    _ar_energy_value,
+    _ar_gust,
+    _ar_gust_window,
+    _ar_lost_ready,
+    _ar_lz_count,
+    _ar_nova_ready,
+    _ar_output,
+    _ar_path_ok,
+    _ar_pay_units,
+    _ar_pick,
+    _ar_promote,
+    _ar_requiem_ready,
+    _ar_retreat_ok,
+    _ar_search_score,
+    _ar_starbirth_gap,
+    _ar_switch_ok,
+    _ar_target_score,
+    _ar_value,
+    _ar_vacuum_ok,
     _cv_allow,
     _cv_action_score,
     _cv_attack_score,
@@ -203,7 +229,7 @@ from spirit.game.models.board import EnergyEntity  # noqa: E402
 class FakeMon:
     def __init__(self, name, owner="p1", hp=0, max_hp=None, energy=0,
                  cost=0, eid=None, prize=1, fire=0, lightning=0, water=0,
-                 grass=0):
+                 grass=0, psychic=0):
         self.name_ = name
         self.owning_player_id = owner
         self.hp = hp
@@ -216,6 +242,7 @@ class FakeMon:
         self.lightning = lightning
         self.water = water
         self.grass = grass
+        self.psychic = psychic
         self.children = []
 
 
@@ -238,6 +265,17 @@ class _FakeBoard:
                     return entity
         return None
 
+    def find_player_area(self, pid, name):
+        if name == "lostZone":
+            return SimpleNamespace(children=self._ctx.lost_zone_cards)
+        return None
+
+    def find_global_area(self, name):
+        if name == "activeStadium" and self._ctx.stadium:
+            return SimpleNamespace(
+                children=[SimpleNamespace(name_=self._ctx.stadium)])
+        return None
+
 
 class FakeCtx:
     """Duck-typed stand-in for StrategyContext (surface used by the brain)."""
@@ -249,7 +287,7 @@ class FakeCtx:
                  opp_active=None, bench=(), opp_bench=(),
                  active_damage=130, stadium=None, opp_rule_box=False,
                  opp_tools=False, prizes_lost=0, entered=(), discard=(),
-                 deck=40, locked=()):
+                 deck=40, locked=(), lost_zone=0):
         self.hand = list(hand)
         self.play = list(play)
         self.opp_play = list(opp_play)
@@ -267,6 +305,8 @@ class FakeCtx:
         self.deck_cards = list(deck) if isinstance(deck, (list, tuple)) \
             else list(range(deck))
         self.locked_titles = set(locked)
+        self.lost_zone_cards = list(lost_zone) if isinstance(
+            lost_zone, (list, tuple)) else list(range(lost_zone))
         self.board = _FakeBoard(self)
 
     def attack_locked(self, pokemon, title):
@@ -391,14 +431,15 @@ class RegistryTests(unittest.TestCase):
                                  "Eternatus V", "Rayquaza V",
                                  "Sobble (suicune-ludicolo)",
                                  "Charizard (charizard-vmax)",
-                                 "Origin Forme Palkia VSTAR", "Rowlet"})
+                                 "Origin Forme Palkia VSTAR", "Rowlet",
+                                 "Arceus V"})
         self.assertEqual(
             set(bot_decks.ACTIVE_BOT_DECKS),
             {"Dragapult Inteleon", "Rapid Strike Urshifu V",
              "Shadow Rider Calyrex V", "Bronzor", "Eternatus V",
              "Rayquaza V", "Sobble (suicune-ludicolo)",
              "Charizard (charizard-vmax)",
-             "Origin Forme Palkia VSTAR", "Rowlet"},
+             "Origin Forme Palkia VSTAR", "Rowlet", "Arceus V"},
         )
 
 
@@ -3908,6 +3949,323 @@ class DecidueyeBrainTests(unittest.TestCase):
                            _dc_value("Rowlet", ctx))
 
 
+class ArceusBrainTests(unittest.TestCase):
+    def test_arceus_brain_registered(self):
+        spec = strategy_for("Arceus V")
+        self.assertIs(spec, ARCEUS_GIRATINA)
+        for hook in ("allow_action", "action_score", "attack_score",
+                     "target_score", "search_score", "pick_score"):
+            self.assertTrue(callable(spec[hook]), hook)
+        self.assertNotIn("counter_plan", spec)
+
+    @staticmethod
+    def _arceus_vstar(energy=0, eid="a1", owner="p1"):
+        return FakeMon("Arceus VSTAR", owner=owner, hp=280, max_hp=280,
+                       energy=energy, cost=3, eid=eid)
+
+    @staticmethod
+    def _giratina_vstar(energy=0, grass=0, psychic=0, eid="g1",
+                        owner="p1"):
+        return FakeMon("Giratina VSTAR", owner=owner, hp=280, max_hp=280,
+                       energy=energy, grass=grass, psychic=psychic,
+                       cost=3, eid=eid)
+
+    @staticmethod
+    def _dte():
+        return SimpleNamespace(name_="Double Turbo Energy",
+                               owning_player_id="p1", children=[])
+
+    # -- readiness / output ----------------------------------------------
+    def test_nova_ready_needs_three_pay_units(self):
+        ctx = FakeCtx()
+        self.assertFalse(_ar_nova_ready(ctx, self._arceus_vstar(energy=2)))
+        self.assertTrue(_ar_nova_ready(ctx, self._arceus_vstar(energy=3)))
+        dte_body = self._arceus_vstar(energy=0)
+        dte_body.children = [self._dte(), self._dte()]
+        self.assertTrue(_ar_nova_ready(ctx, dte_body))
+
+    def test_lost_ready_needs_typed_energy_plus_third_unit(self):
+        ctx = FakeCtx()
+        almost = self._giratina_vstar(energy=2, grass=1, psychic=1)
+        self.assertFalse(_ar_lost_ready(ctx, almost))
+        ready = self._giratina_vstar(energy=3, grass=1, psychic=1)
+        self.assertTrue(_ar_lost_ready(ctx, ready))
+
+    def test_output_folds_dte_and_choice_belt(self):
+        plain = self._arceus_vstar(energy=3)
+        ctx = FakeCtx(active=plain,
+                      opp_active=FakeMon("Body", owner="p2", hp=300,
+                                         max_hp=300, prize=1))
+        self.assertEqual(_ar_output(ctx), 200)
+        discounted = self._arceus_vstar(energy=0)
+        discounted.children = [
+            self._dte(),
+            SimpleNamespace(name_="Psychic Energy", owning_player_id="p1",
+                            children=[]),
+        ]
+        ctx = FakeCtx(active=discounted,
+                      opp_active=FakeMon("VMAX", owner="p2", hp=300,
+                                         max_hp=320, prize=3))
+        self.assertEqual(_ar_output(ctx), 180)
+        belted = self._arceus_vstar(energy=3)
+        belted.children = [SimpleNamespace(name_="Choice Belt",
+                                           owning_player_id="p1",
+                                           children=[])]
+        ctx = FakeCtx(active=belted,
+                      opp_active=FakeMon("VMAX", owner="p2", hp=300,
+                                         max_hp=320, prize=3))
+        self.assertEqual(_ar_output(ctx), 230)
+
+    # -- VSTAR power sharing ---------------------------------------------
+    def test_requiem_needs_full_lost_zone_and_ready_giratina(self):
+        giratina = self._giratina_vstar(energy=3, grass=1, psychic=1)
+        empty = FakeCtx(active=giratina, lost_zone=9)
+        self.assertFalse(_ar_requiem_ready(empty))
+        full = FakeCtx(active=giratina, lost_zone=10)
+        self.assertTrue(_ar_requiem_ready(full))
+
+    def test_starbirth_denied_while_requiem_window_is_open(self):
+        giratina = self._giratina_vstar(energy=3, grass=1, psychic=1)
+        window = FakeCtx(active=giratina, lost_zone=10,
+                         play=["Giratina VSTAR"])
+        self.assertFalse(_ar_allow("UsePokemonAbility", "Starbirth", window))
+        setup = FakeCtx(active=self._arceus_vstar(energy=3),
+                        play=["Arceus VSTAR"], lost_zone=2)
+        self.assertTrue(_ar_allow("UsePokemonAbility", "Starbirth", setup))
+
+    def test_starbirth_gap_when_hand_misses_setup_pieces(self):
+        gap = FakeCtx(hand=["Quick Ball"], play=["Arceus V"])
+        self.assertTrue(_ar_starbirth_gap(gap))
+        stocked = FakeCtx(
+            hand=["Boss's Orders", "Arceus VSTAR", "Psychic Energy",
+                  "Ultra Ball", "Marnie", "Professor's Research",
+                  "Double Turbo Energy", "Quick Ball"],
+            play=["Arceus V"])
+        self.assertFalse(_ar_starbirth_gap(stocked))
+
+    # -- Path timing ------------------------------------------------------
+    def test_path_waits_for_starbirth_and_avoids_own_digs(self):
+        live = FakeCtx(play=["Arceus VSTAR"], deck=30)
+        self.assertFalse(_ar_path_ok(live))
+        in_hand = FakeCtx(play=["Arceus V"], hand=["Arceus VSTAR"],
+                          deck=30)
+        self.assertFalse(_ar_path_ok(in_hand))
+        no_vstar = FakeCtx(play=["Arceus V"], deck=30,
+                           opp_rule_box=True)
+        self.assertTrue(_ar_path_ok(no_vstar))
+        self.assertFalse(_ar_path_ok(
+            FakeCtx(play=["Arceus V", "Lumineon V"], deck=30)))
+        occupied = FakeCtx(play=["Arceus V"], deck=30,
+                           stadium="Path to the Peak")
+        self.assertFalse(_ar_path_ok(occupied))
+
+    # -- switches / retreat -----------------------------------------------
+    def test_switch_rotates_stuck_or_doomed_active(self):
+        stuck = FakeCtx(active=FakeMon("Giratina V", hp=220, max_hp=220,
+                                       eid="s"),
+                        bench=[self._arceus_vstar(energy=3, eid="b")])
+        self.assertTrue(_ar_switch_ok(stuck))
+        self.assertTrue(_ar_allow("UseTrainerCard", "Switch", stuck))
+        fine = FakeCtx(active=self._arceus_vstar(energy=3, eid="a"),
+                       bench=[self._giratina_vstar(energy=3, grass=1,
+                                                   psychic=1, eid="b")])
+        self.assertFalse(_ar_switch_ok(fine))
+        wounded = self._arceus_vstar(energy=3, eid="w")
+        wounded.hp = 80
+        danger = FakeCtx(active=wounded,
+                         bench=[self._giratina_vstar(energy=3, grass=1,
+                                                     psychic=1, eid="b")])
+        self.assertTrue(_ar_switch_ok(danger))
+
+    # -- Boss / gust -------------------------------------------------------
+    def test_boss_only_when_a_swing_exists(self):
+        ready = self._arceus_vstar(energy=3, eid="d")
+        near = FakeMon("VMAX", owner="p2", hp=180, max_hp=320, eid="n")
+        fresh = FakeMon("VMAX", owner="p2", hp=320, max_hp=320, eid="f")
+        unpowered = FakeCtx(
+            active=self._arceus_vstar(energy=2),
+            opp_play=[near], opp_active=near)
+        self.assertFalse(_ar_allow("UseTrainerCard", "Boss's Orders",
+                                   unpowered))
+        window = FakeCtx(active=ready, opp_play=[near], opp_active=near)
+        self.assertTrue(_ar_allow("UseTrainerCard", "Boss's Orders",
+                                  window))
+        no_window = FakeCtx(active=ready, opp_play=[fresh],
+                            opp_active=fresh)
+        self.assertFalse(_ar_allow("UseTrainerCard", "Boss's Orders",
+                                   no_window))
+
+    # -- Choice Belt / Vacuum ---------------------------------------------
+    def test_choice_belt_only_when_it_flips_a_ko(self):
+        opp = FakeMon("VMAX", owner="p2", hp=210, max_hp=320, prize=3)
+        ctx = FakeCtx(active=self._arceus_vstar(energy=3),
+                      opp_active=opp)
+        self.assertTrue(_ar_belt_ok(ctx))      # 200 < 210 <= 230
+        far = FakeMon("VMAX", owner="p2", hp=300, max_hp=320, prize=3)
+        self.assertFalse(_ar_belt_ok(
+            FakeCtx(active=self._arceus_vstar(energy=3), opp_active=far)))
+        no_v = FakeMon("Body", owner="p2", hp=200, max_hp=200, prize=1)
+        self.assertFalse(_ar_belt_ok(
+            FakeCtx(active=self._arceus_vstar(energy=3), opp_active=no_v)))
+
+    def test_lost_vacuum_needs_a_target_and_hand_fuel(self):
+        self.assertTrue(_ar_vacuum_ok(
+            FakeCtx(hand=["a", "b", "c"],
+                    stadium="Path to the Peak")))
+        self.assertFalse(_ar_vacuum_ok(
+            FakeCtx(hand=["a", "b"], stadium="Path to the Peak")))
+        self.assertFalse(_ar_vacuum_ok(FakeCtx(hand=["a", "b", "c"])))
+
+    # -- support Pokemon discipline ---------------------------------------
+    def test_drapion_only_vs_mew(self):
+        mew = FakeCtx(play=["Arceus V"], opp_play=["Mew VMAX"])
+        self.assertTrue(_ar_allow("DefaultPokemonPlayAbility", "Drapion V",
+                                  mew))
+        other = FakeCtx(play=["Arceus V"], opp_play=["Lugia V"])
+        self.assertFalse(_ar_allow("DefaultPokemonPlayAbility", "Drapion V",
+                                   other))
+
+    def test_pumpkaboo_only_with_a_stadium(self):
+        self.assertTrue(_ar_allow("DefaultPokemonPlayAbility", "Pumpkaboo",
+                                  FakeCtx(stadium="Path to the Peak")))
+        self.assertFalse(_ar_allow("DefaultPokemonPlayAbility", "Pumpkaboo",
+                                   FakeCtx()))
+
+    def test_crobat_and_lumineon_gated_on_hand(self):
+        thin = FakeCtx(hand=["Quick Ball"])
+        self.assertTrue(_ar_allow("DefaultPokemonPlayAbility", "Crobat V",
+                                  thin))
+        full = FakeCtx(hand=list("abcdefg"))
+        self.assertFalse(_ar_allow("DefaultPokemonPlayAbility", "Crobat V",
+                                   full))
+        no_sup = FakeCtx(hand=["Quick Ball", "Ultra Ball"])
+        self.assertTrue(_ar_allow("DefaultPokemonPlayAbility", "Lumineon V",
+                                  no_sup))
+        has_sup = FakeCtx(hand=["Boss's Orders", "Quick Ball"])
+        self.assertFalse(_ar_allow("DefaultPokemonPlayAbility", "Lumineon V",
+                                   has_sup))
+
+    # -- attacks ------------------------------------------------------------
+    def test_attack_scores_take_the_ko_and_gate_requiem(self):
+        ready = self._arceus_vstar(energy=3, eid="d")
+        ko = _ar_attack_score(
+            "Trinity Nova", 200,
+            FakeCtx(active=ready,
+                    opp_active=FakeMon("VMAX", owner="p2", hp=190,
+                                       max_hp=320)))
+        plain = _ar_attack_score(
+            "Trinity Nova", 200,
+            FakeCtx(active=ready,
+                    opp_active=FakeMon("VMAX", owner="p2", hp=300,
+                                       max_hp=320)))
+        self.assertGreater(ko, plain)
+        unready = _ar_attack_score(
+            "Trinity Nova", 200,
+            FakeCtx(active=self._arceus_vstar(energy=2),
+                    opp_active=FakeMon("VMAX", owner="p2", hp=190,
+                                       max_hp=320)))
+        self.assertEqual(unready, 0.0)
+        giratina = self._giratina_vstar(energy=3, grass=1, psychic=1)
+        self.assertEqual(
+            _ar_attack_score("Star Requiem", 0,
+                             FakeCtx(active=giratina, lost_zone=9)), 0.0)
+        self.assertEqual(
+            _ar_attack_score("Star Requiem", 0,
+                             FakeCtx(active=giratina, lost_zone=10)), 3000.0)
+
+    def test_abyss_seeking_stops_once_lost_zone_is_full(self):
+        giratina = FakeMon("Giratina V", hp=220, max_hp=220, energy=1,
+                           cost=1, eid="g")
+        digging = _ar_attack_score(
+            "Abyss Seeking", 0, FakeCtx(active=giratina, lost_zone=4))
+        self.assertGreater(digging, 0.0)
+        full = _ar_attack_score(
+            "Abyss Seeking", 0, FakeCtx(active=giratina, lost_zone=10))
+        self.assertEqual(full, 0.0)
+
+    # -- scoring ------------------------------------------------------------
+    def test_energy_ladder_feeds_giratina_then_arceus(self):
+        ctx = FakeCtx(active=self._arceus_vstar(eid="a"))
+        gira = self._giratina_vstar(eid="g")
+        arceus = self._arceus_vstar(energy=3, eid="a2")
+        bibarel = FakeMon("Bibarel", hp=120, max_hp=120, eid="b")
+        g = _ar_energy_target_score(ctx, gira, "Psychic Energy")
+        a = _ar_energy_target_score(ctx, arceus, "Double Turbo Energy")
+        b = _ar_energy_target_score(ctx, bibarel, "Psychic Energy")
+        self.assertGreater(g, a)
+        self.assertGreater(a, b)
+        hungry = self._giratina_vstar(energy=0, eid="h")
+        loaded = self._giratina_vstar(energy=3, grass=1, psychic=1, eid="l")
+        self.assertGreater(
+            _ar_energy_target_score(ctx, hungry, "Psychic Energy"),
+            _ar_energy_target_score(ctx, loaded, "Psychic Energy"))
+
+    def test_promote_prefers_ready_swinger_then_wall(self):
+        ready = self._giratina_vstar(energy=3, grass=1, psychic=1, eid="rd")
+        wall = self._arceus_vstar(energy=0, eid="wd")
+        dig = FakeMon("Bibarel", hp=120, max_hp=120, eid="j")
+        full = FakeCtx(hand=["a", "b", "c", "d", "e", "f"])
+        self.assertGreater(_ar_promote(full, ready),
+                           _ar_promote(full, wall))
+        self.assertGreater(_ar_promote(full, wall),
+                           _ar_promote(full, dig))
+        crisis = FakeCtx(hand=["a", "b", "c"])
+        self.assertGreater(_ar_promote(crisis, dig),
+                           _ar_promote(crisis, wall))
+
+    def test_gust_ranks_the_finisher_first(self):
+        ctx = FakeCtx(active=self._arceus_vstar(energy=3, eid="d"))
+        in_range = FakeMon("Sableye V", owner="p2", hp=180, max_hp=180,
+                           eid="s", prize=2)
+        wall = FakeMon("VMAX", owner="p2", hp=300, max_hp=320, eid="v")
+        dented = FakeMon("VMAX", owner="p2", hp=220, max_hp=320, eid="d2")
+        self.assertGreater(_ar_gust(ctx, in_range), _ar_gust(ctx, dented))
+        self.assertGreater(_ar_gust(ctx, dented), _ar_gust(ctx, wall))
+
+    def test_search_ranks_the_waiting_evolution_first(self):
+        ctx = FakeCtx(hand=["Ultra Ball"], play=["Arceus V"])
+        arceus_vstar = self._arceus_vstar()
+        giratina_v = FakeMon("Giratina V", hp=220, max_hp=220, eid="gv")
+        bibarel = FakeMon("Bibarel", hp=120, max_hp=120, eid="b")
+        self.assertGreater(_ar_search_score(arceus_vstar, ctx),
+                           _ar_search_score(bibarel, ctx))
+        self.assertGreater(_ar_search_score(giratina_v, ctx),
+                           _ar_search_score(bibarel, ctx))
+
+    def test_bench_discipline_keeps_the_line_first(self):
+        opening = FakeCtx(hand=["Arceus V", "Bidoof"], bench=[])
+        self.assertGreater(_ar_bench_score("Arceus V", opening),
+                           _ar_bench_score("Bidoof", opening))
+        stuffed = FakeCtx(
+            play=["Arceus V", "Arceus V", "Arceus VSTAR", "Giratina V",
+                  "Bibarel"],
+            bench=[FakeMon("Arceus V", eid="b1"),
+                   FakeMon("Arceus V", hp=220, max_hp=220, eid="b1b"),
+                   FakeMon("Giratina V", hp=220, max_hp=220, eid="b2"),
+                   FakeMon("Bibarel", hp=120, max_hp=120, eid="b4"),
+                   FakeMon("Crobat V", hp=180, max_hp=180, eid="b5")],
+            hand=list("abcdefgh"))
+        self.assertEqual(_ar_bench_score("Arceus V", stuffed), 30.0)
+        self.assertFalse(_ar_allow("DefaultPokemonPlayAbility", "Arceus V",
+                                   stuffed))
+
+    def test_value_picks_the_engine_over_support(self):
+        ctx = FakeCtx(hand=["Ultra Ball"], play=["Arceus V"])
+        self.assertGreater(_ar_value("Arceus VSTAR", ctx),
+                           _ar_value("Lumineon V", ctx))
+        opening = FakeCtx(hand=["Ultra Ball"], play=[])
+        self.assertGreater(_ar_value("Arceus V", opening),
+                           _ar_value("Bibarel", opening))
+
+    def test_pay_units_counts_double_turbo_as_two(self):
+        body = self._arceus_vstar(energy=0)
+        body.children = [self._dte(),
+                         SimpleNamespace(name_="Psychic Energy",
+                                         owning_player_id="p1",
+                                         children=[])]
+        self.assertEqual(_ar_pay_units(FakeCtx(), body), 3)
+
+
 class WiringTests(unittest.TestCase):
     def test_ai_player_attaches_brain_from_deck_name(self):
         from spirit.game.session.ai_player import AIPlayer
@@ -3923,6 +4281,8 @@ class WiringTests(unittest.TestCase):
         self.assertIs(palkia.deck_strategy, PALKIA_VSTAR)
         rowlet = AIPlayer("bot-7", "Bot", {"deckName": "Rowlet"}, None)
         self.assertIs(rowlet.deck_strategy, DECIDUEYE_JIRACHI)
+        arceus = AIPlayer("bot-8", "Bot", {"deckName": "Arceus V"}, None)
+        self.assertIs(arceus.deck_strategy, ARCEUS_GIRATINA)
         generic = AIPlayer("bot-2", "Bot", {"deckName": "Nope"}, None)
         self.assertIsNone(generic.deck_strategy)
         empty = AIPlayer("bot-3", "Bot", {}, None)
