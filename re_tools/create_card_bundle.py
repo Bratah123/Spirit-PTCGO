@@ -15,6 +15,9 @@ except ImportError:
     print("Please run: pip install UnityPy Pillow")
     sys.exit(1)
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from spirit.server.bundle_variants import drop_textures  # noqa: E402
+
 ASSET_MAP_PATH = "spirit/server/asset_map.json"
 OUTPUT_DIR = "spirit/assets/bundleCache"
 
@@ -186,8 +189,12 @@ def create_card_set_bundle(png_mapping, template_path, target_bundle_name, keep_
 
     asset_bundle_data.m_Container = original_non_textures + new_mappings
     asset_bundle_data.m_Name = unique_prefix
-    asset_bundle_obj.save_typetree(asset_bundle_data)
-    print(f"Updated AssetBundle container with {len(asset_bundle_data.m_Container)} entries (Dynamic Appending Complete).")
+    # Template textures are no longer exported; left in place they ship ~7 MB of dead art per bundle.
+    template_ids = {obj.path_id for obj in env.objects
+                    if obj.type.name == "Texture2D" and obj.path_id not in appended_path_ids}
+    drop_textures(env, asset_bundle_obj, asset_bundle_data, template_ids)
+    print(f"Updated AssetBundle container with {len(asset_bundle_data.m_Container)} entries "
+          f"(Dynamic Appending Complete, {len(template_ids)} template textures removed).")
 
     # Save
     bundle_logical_name = target_bundle_name.replace(".unity3d", "")

@@ -4,12 +4,12 @@ import hashlib
 import gzip
 import logging
 import re
-import time
 import zlib
 import UnityPy
 
 from spirit import config
-from spirit.server.bundle_variants import SPLIT_TYPES, asset_number, card_partitions, variant_version
+from spirit.server.bundle_variants import (
+    SPLIT_TYPES, asset_number, card_partitions, content_version, file_crc, variant_cache_key, variant_version)
 
 class ManifestManager:
     """
@@ -19,8 +19,9 @@ class ManifestManager:
     def __init__(self, asset_dirs: list):
         self.asset_dirs = asset_dirs
         self.manifest_cache = None
-        # Use timestamp to force refresh
-        self.manifest_version = int(time.time())
+        self.manifest_version = 0
+        # Variant cache key -> content version of its prepared bytes.
+        self.content_versions = {}
 
         self.asset_map = {}
         map_path = os.path.join(os.path.dirname(__file__), "asset_map.json")
@@ -50,8 +51,7 @@ class ManifestManager:
     def _calculate_crc(self, filepath: str) -> int:
         """Calculates CRC32 of a file, ensuring it fits in a uint32."""
         try:
-            with open(filepath, "rb") as f:
-                return zlib.crc32(f.read()) & 0xFFFFFFFF
+            return file_crc(filepath)
         except Exception as e:
             logging.error(f"CRC calculation error: {e}")
             return 0
@@ -102,12 +102,8 @@ class ManifestManager:
                 if logical_name in unique_descriptors:
                     continue
 
-                # Calculate real CRC and version
-                bundle_crc = self._calculate_crc(bundle_file_path)
-                
-                # Version logic: We use the file mtime as a simple versioning proxy
-                # PTCGO client compares Version and CRC. If either changes, it redownloads.
-                bundle_version = int(os.path.getmtime(bundle_file_path))
+                # Version is in the client's cache URL: content-derived so identical rebuilds stay cached.
+                bundle_version = content_version(self._calculate_crc(bundle_file_path))
 
                 asset_names = []
                 aliases = {bundle_name_raw, logical_name}
@@ -308,7 +304,7 @@ class ManifestManager:
 
                     membership = partitions.get(set_code, {})
                     if membership:
-                        version = variant_version(bundle_file_path, membership)
+                        fallback_version = variant_version(bundle_file_path, membership)
                         routed = []
                         for item in descriptor["assets"]:
                             number = asset_number(item["name"], set_code)
@@ -319,14 +315,20 @@ class ManifestManager:
                             unique_descriptors[f"{set_code}_{kind}"]["assets"].append(item)
                         descriptor["assets"] = routed
                         for kind in SPLIT_TYPES:
-                            unique_descriptors[f"{set_code}_{kind}"]["versionings"][0]["version"] = version
-                            self.variant_sources[f"{set_code}_{kind}"] = bundle_file_path
+                            name = f"{set_code}_{kind}"
+                            key = variant_cache_key(bundle_file_path, name, membership)
+                            version = self.content_versions.get(key, fallback_version)
+                            unique_descriptors[name]["versionings"][0]["version"] = version
+                            self.variant_sources[name] = bundle_file_path
 
         bundle_descriptors = list(unique_descriptors.values())
         actual_preloads = [n for n in preload_names if any(b['name'] == n for b in bundle_descriptors)]
 
         logging.info(f"[Manifest] Generated {len(bundle_descriptors)} bundle descriptors. Preloading: {actual_preloads}")
 
+        # Clients keep the last manifest on disk keyed by this version; only content changes bump it.
+        self.manifest_version = content_version(zlib.crc32(
+            json.dumps([bundle_descriptors, actual_preloads], sort_keys=True).encode('utf-8')))
         manifest_data = {
             "platform": "pc",
             "version": self.manifest_version,
@@ -340,6 +342,5 @@ class ManifestManager:
         return self.manifest_cache
 
     def refresh(self):
-        """Invalidates the cache and increments version."""
-        self.manifest_version += 1
+        """Rescans assets; the manifest version changes only when its content does."""
         self.generate_manifest(force_refresh=True)
