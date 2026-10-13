@@ -65,3 +65,17 @@ class NetworkPlayer(GamePlayer):
     async def prompt_selection(self, prompt_packet: Dict[str, Any]):
         logging.info(f"[Session] Prompting NetworkPlayer {self.username} with choice.")
         await self.send_packet("SelectionWithTargetsAndActionsRequired", prompt_packet)
+
+    async def send_packets(self, packets):
+        """Enqueue a complete sequence without exposing partial brackets."""
+        if self.client_handler is None:
+            return False
+        return await self.client_handler.send_packets(
+            (dict(value, messageName=name), 0, flags) for name, value, flags in packets)
+
+    async def flush_outbound(self):
+        handler = self.client_handler
+        if handler is None:
+            return False
+        drained = await handler.flush_outbound()
+        return drained and self.client_handler is handler and self.connected

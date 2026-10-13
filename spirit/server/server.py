@@ -40,6 +40,8 @@ class PTCGOServer:
 
         metrics.register_gauge("connections", lambda: len(self.clients))
         metrics.register_gauge("authenticated", lambda: len(self.clients_by_account))
+        metrics.register_gauge("outbound_pending_bytes", lambda: sum(
+            client.outbound.pending_bytes for client in self.clients))
 
     async def start(self):
         self.server = await asyncio.start_server(

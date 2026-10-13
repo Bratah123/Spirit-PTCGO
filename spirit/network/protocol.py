@@ -1,3 +1,5 @@
+import asyncio
+from collections import deque
 import struct
 import json
 import zlib
@@ -5,6 +7,7 @@ import sys
 import os
 
 from spirit import config
+from spirit.server import metrics
 
 # Ensure path is loaded
 protobuf_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'protobuf', 'compiled'))
@@ -142,3 +145,123 @@ class WargProtocol:
             body = data # Assume bytes
         
         return body
+
+
+class OutboundQueue:
+    def __init__(self, writer, on_error, *, max_bytes=8 * 1024 * 1024,
+                 batch_bytes=256 * 1024, timeout=60):
+        if max_bytes <= 0 or batch_bytes <= 0 or timeout <= 0:
+            raise ValueError("Outbound limits and timeout must be positive")
+        self.writer = writer
+        self.on_error = on_error
+        self.max_bytes = max_bytes
+        self.batch_bytes = batch_bytes
+        self.timeout = timeout
+        self.pending_bytes = 0
+        self._frames = deque()
+        self._ready = asyncio.Event()
+        self._progress = asyncio.Event()
+        self._accepted = 0
+        self._drained = 0
+        self._closed = False
+        self._task = None
+
+    def enqueue(self, frames):
+        """Accept a complete batch without yielding, or fail the connection."""
+        if self._closed:
+            return False
+        batch = []
+        size = 0
+        for frame in frames:
+            size += len(frame)
+            if self.pending_bytes + size > self.max_bytes:
+                metrics.inc("outbound_overflows")
+                self.fail(BufferError("Outbound byte limit exceeded"))
+                return False
+            if frame:
+                batch.append(frame)
+        if not batch:
+            return True
+        deadline = asyncio.get_running_loop().time() + self.timeout
+        self._frames.extend((frame, deadline) for frame in batch)
+        self.pending_bytes += size
+        self._accepted += size
+        self._ready.set()
+        if self._task is None:
+            self._task = asyncio.create_task(self._run(), name="warg-writer")
+        return True
+
+    def _notify_progress(self):
+        self._progress.set()
+        self._progress = asyncio.Event()
+
+    async def flush(self):
+        """Wait for bytes accepted before this call to drain, not for peer acknowledgment."""
+        target = self._accepted
+        while not self._closed and self._drained < target:
+            await self._progress.wait()
+        return not self._closed
+
+    def _discard(self):
+        self._closed = True
+        self._frames.clear()
+        self.pending_bytes = 0
+        self._ready.set()
+        self._notify_progress()
+
+    def fail(self, error):
+        if self._closed:
+            return
+        self._discard()
+        try:
+            self.writer.transport.abort()
+        finally:
+            self.on_error(error)
+
+    async def _run(self):
+        try:
+            while not self._closed:
+                await self._ready.wait()
+                if self._closed:
+                    break
+                frames = []
+                size = 0
+                deadline = self._frames[0][1]
+                while self._frames:
+                    frame = self._frames[0][0]
+                    if frames and size + len(frame) > self.batch_bytes:
+                        break
+                    self._frames.popleft()
+                    frames.append(frame)
+                    size += len(frame)
+                if not self._frames:
+                    self._ready.clear()
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise TimeoutError("Outbound queue deadline expired")
+                self.writer.write(b"".join(frames))
+                metrics.inc("bytes_out", size)
+                metrics.inc("outbound_batches")
+                metrics.inc("outbound_frames", len(frames))
+                del frames, frame
+                await asyncio.wait_for(self.writer.drain(), timeout=remaining)
+                if self._closed:
+                    break
+                self.pending_bytes -= size
+                self._drained += size
+                self._notify_progress()
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            if isinstance(error, TimeoutError):
+                metrics.inc("send_timeouts")
+            else:
+                metrics.inc("outbound_errors")
+            self.fail(error)
+
+    async def close(self):
+        """Discard pending output and join the writer task."""
+        self._discard()
+        if self._task is not None:
+            self._task.cancel()
+            await asyncio.gather(self._task, return_exceptions=True)

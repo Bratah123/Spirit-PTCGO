@@ -4,7 +4,7 @@ import time
 import uuid
 import asyncio
 from spirit import config
-from spirit.network.protocol import WargProtocol, WargFlags
+from spirit.network.protocol import OutboundQueue, WargProtocol, WargFlags
 from spirit.packets.router import PacketRouter
 from spirit.game.models.player import Player
 from spirit.game.session.manager import GameSessionManager
@@ -31,6 +31,8 @@ class ClientHandler:
         self._bucket_tokens = config.INBOUND_RATE_BURST
         self._bucket_ts = time.monotonic()
         self._rate_warned_at = 0.0
+        self._disconnect_task = None
+        self.outbound = OutboundQueue(writer, self._outbound_failed)
 
     def _rate_ok(self) -> bool:
         """Per-connection token bucket. Generous enough that legit play never trips it."""
@@ -114,36 +116,51 @@ class ClientHandler:
         _log.debug(f"[TCP] [{self.addr}] {direction} [RID={request_id}, Flags={flags}]: {log_msg}")
 
     async def send_packet(self, response_body, request_id, flags=WargFlags.CLEAR):
+        """Enqueue one packet; use flush_outbound only at delivery-sensitive boundaries."""
+        return await self.send_packets([(response_body, request_id, flags)])
+
+    async def send_packets(self, packets):
+        """Encode and enqueue a complete ordered batch without waiting on the socket."""
+        if self._disconnect_task is not None:
+            return False
         try:
-            encoded_body = WargProtocol.encode_body(response_body, flags)
+            return self.outbound.enqueue(self._encode_packets(packets))
+        except Exception as error:
+            self.outbound.fail(error)
+            return False
 
+    def _encode_packets(self, packets):
+        for response_body, request_id, flags in packets:
+            body = WargProtocol.encode_body(response_body, flags)
             if _log.isEnabledFor(logging.DEBUG):
-                self._log_packet("Sent", response_body, request_id, flags, encoded_body)
+                self._log_packet("Queued", response_body, request_id, flags, body)
+            yield WargProtocol.encode_header(len(body), request_id, flags) + body
 
-            header = WargProtocol.encode_header(len(encoded_body), request_id, flags)
-            self.writer.write(header + encoded_body)
-            # Bound the drain: a peer whose receive window is full (wedged client,
-            # zero-window) would otherwise block this coroutine forever, freezing the
-            # match under _wire_lock. On timeout, abort and fall into the disconnect
-            # path (detach + reconnect grace) — the designed behavior for a dead peer.
-            try:
-                await asyncio.wait_for(self.writer.drain(), timeout=config.SEND_TIMEOUT_SECONDS)
-            except asyncio.TimeoutError:
-                logging.warning(f"[TCP] [{self.addr}] Send drain timed out; aborting stalled peer.")
-                metrics.inc("send_timeouts")
-                try:
-                    self.writer.transport.abort()
-                except Exception:
-                    pass
-                await self.disconnect()
-            metrics.inc("bytes_out", len(encoded_body) + WargProtocol.HEADER_SIZE)
-        except Exception as e:
-            logging.error(f"[TCP] [{self.addr}] Error sending packet: {e}")
-            await self.disconnect()
+    async def flush_outbound(self):
+        """Drain prior output and finish disconnect cleanup if sending failed."""
+        drained = await self.outbound.flush()
+        if not drained and self._disconnect_task is not None:
+            await asyncio.shield(self._disconnect_task)
+        return drained
+
+    def _outbound_failed(self, error):
+        logging.warning("[TCP] [%s] Outbound connection failed (%s): %s",
+                        self.addr, type(error).__name__, error)
+        self._begin_disconnect()
+
+    def _begin_disconnect(self):
+        if self._disconnect_task is None:
+            self.running = False
+            self._disconnect_task = asyncio.create_task(
+                self._disconnect(), name="warg-disconnect")
+        return self._disconnect_task
 
     async def disconnect(self):
-        if self.running:
-            self.running = False
+        await asyncio.shield(self._begin_disconnect())
+
+    async def _disconnect(self):
+        await self.outbound.close()
+        try:
             metrics.inc("disconnects")
             shutting_down = getattr(self.server, "shutting_down", False)
 
@@ -195,9 +212,10 @@ class ClientHandler:
                     except Exception as e:
                         logging.error(f"[TCP] [{self.addr}] Error broadcasting offline presence: {e}")
 
+        finally:
             self.writer.close()
             try:
-                await self.writer.wait_closed()
+                await asyncio.wait_for(self.writer.wait_closed(), timeout=5)
             except Exception:
-                pass
+                self.writer.transport.abort()
             self.server.remove_client(self)

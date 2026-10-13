@@ -24,11 +24,6 @@ PLACEHOLDER_IMG = f"{HTTP_BASE_URL}/placeholder.png"
 # --- Operational tunables (env-overridable; safe defaults chosen to never affect legit play) ---
 LOG_LEVEL = os.environ.get("SPIRIT_LOG_LEVEL", "INFO").upper()
 
-# Outbound send: abort a socket whose write buffer never drains within this many
-# seconds (a wedged/zero-window peer). Largest payloads are a few-hundred-KB SGS
-# snapshots, so a stalled drain past this is a dead peer, not a slow one.
-SEND_TIMEOUT_SECONDS = float(os.environ.get("SPIRIT_SEND_TIMEOUT", "60"))
-
 # Inbound read idle deadlines. The client pings regularly, so a header that never
 # arrives for this long is a half-open/dead socket. Pre-auth is tighter to reap
 # port-scanners and stalled handshakes before they allocate a router.

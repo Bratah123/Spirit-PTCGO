@@ -601,8 +601,8 @@ class GameSession:
         )
         async with self._wire_lock:
             for _, player in self._unique_recipients(players):
-                for packet in packets:
-                    await player.send_packet(OutboundMsg.SEQUENCE_MESSAGE.value, packet)
+                await player.send_packets(
+                    (OutboundMsg.SEQUENCE_MESSAGE.value, packet, 0) for packet in packets)
             self._last_sequence_sent_at = time.monotonic()
 
     def _nested_sequence_envelopes(self, nested: NestedSequence) -> List[Dict[str, Any]]:
@@ -679,6 +679,8 @@ class GameSession:
                 )
                 timer_running = remaining > 0
         try:
+            if timed:
+                await player.flush_outbound()
             while True:
                 self._mark_prompt_checkpoint()
                 wait_status = "reply"
@@ -762,6 +764,7 @@ class GameSession:
                             OutboundMsg.FORCE_SELECTION_FINISHED.value, {}
                         )
                     timer_running = False
+                    await player.flush_outbound()
                     await self.choreo_pause(FORCE_SELECTION_SETTLE_SECONDS)
                     logging.info(
                         f"[Session {self.game_id}] {player.screen_name}'s "
@@ -816,6 +819,8 @@ class GameSession:
                 OutboundMsg.SET_IDLE_TIMER.value,
                 self._idle_timer_payload(player.account_id, remaining_ms),
             )
+        if remaining_ms > 0:
+            await player.flush_outbound()
 
     async def _send_pause_prompt(
         self, player: GamePlayer, prompt_text: str, remember: bool = True
@@ -1020,11 +1025,11 @@ class GameSession:
             return
         # Place reconnect control only at an authoritative checkpoint.
         await self._state_checkpoint.wait()
-        settle_remaining = RECONNECT_SEQUENCE_SETTLE_SECONDS - (
-            time.monotonic() - self._last_sequence_sent_at
-        )
-        if settle_remaining > 0:
-            await self.choreo_pause(settle_remaining)
+        viewers = [viewer for pid, viewer in self._network_players().items()
+                   if pid != subject_id and viewer.connected]
+        await asyncio.gather(*(viewer.flush_outbound() for viewer in viewers))
+        if self._last_sequence_sent_at:
+            await self.choreo_pause(RECONNECT_SEQUENCE_SETTLE_SECONDS)
         force_ended = False
         async with self._wire_lock:
             if self._connection_pause_stale(subject_id, epoch):
@@ -1043,6 +1048,7 @@ class GameSession:
         if force_ended:
             # m.d ends by wiping the prompt override the banner sets; a banner
             # sent before it finishes is erased a frame later.
+            await asyncio.gather(*(viewer.flush_outbound() for viewer in viewers))
             await self.choreo_pause(FORCE_SELECTION_SETTLE_SECONDS)
         async with self._wire_lock:
             if self._connection_pause_stale(subject_id, epoch):
@@ -1206,6 +1212,8 @@ class GameSession:
                     or account_id not in self._reconnecting):
                 return
             await self.send_serialized_game_state(only_player_id=account_id)
+            if not await player.flush_outbound():
+                return
             await self.choreo_pause(0.5)
             if (not player.connected or player.client_handler is not reconnect_handler
                     or account_id not in self._reconnecting):
@@ -1267,6 +1275,11 @@ class GameSession:
                             OutboundMsg.SEQUENCE_MESSAGE.value,
                             self._pause_prompt_envelope(prompt_text),
                         )
+            drained = await asyncio.gather(*(
+                player.flush_outbound() for player in self._network_players().values()))
+            if not all(drained):
+                self._restoring_offers.clear()
+                return
         except Exception:
             self._restoring_offers.clear()
             raise

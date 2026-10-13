@@ -68,6 +68,15 @@ class GamePlayer(abc.ABC):
         """Prompts this player for choices or targets (Blocking or Async)."""
         pass
 
+    async def send_packets(self, packets):
+        """Send an ordered batch; network players override this with atomic enqueue."""
+        for name, value, flags in packets:
+            await self.send_packet(name, value, flags)
+
+    async def flush_outbound(self):
+        """Non-network players have no socket backlog."""
+        return True
+
     async def prompt_custom_choice(self, name: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Prompts the player with a custom choice and waits for their action in-line."""
         loop = asyncio.get_running_loop()
