@@ -523,6 +523,10 @@ class OutboundMsg(str, Enum):
 
     # Source: dwd.core.commerce.messages.incoming.ProductsPurchased
     PRODUCTS_PURCHASED = "ProductsPurchased"
+    # Source: ProductPurchaseFailure.cs closes the shop wait dialog.
+    PRODUCT_PURCHASE_FAILURE = "ProductPurchaseFailure"
+    # Source: ProductsFulfilled.cs opens ProductsReceivedDialog (C.s).
+    PRODUCTS_FULFILLED = "ProductsFulfilled"
 
     # Source: dwd.core.commerce.messages.incoming.ArchetypesPurchased
     ARCHETYPES_PURCHASED = "ArchetypesPurchased"

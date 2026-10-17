@@ -3,12 +3,24 @@ import random
 import string
 import uuid
 
+from sqlalchemy import text
+
 from spirit.database import (
     db_session, Wallet, Collection, Account,
     RedemptionCode, CodeRedemptionEntry, ShopItem, DynamicPage, TradeOffer
 )
+from spirit.game.attributes import AttrID
 
 CODE_ALPHABET = string.ascii_uppercase + string.digits
+
+# Wallet column for each shop price-map currency.
+WALLET_FIELDS = {
+    AttrID.TRAINER_TOKENS.value: "coins",
+    AttrID.GEMS.value: "gems",
+    AttrID.EVENT_TICKETS.value: "tickets",
+}
+PURCHASE_ERROR_FUNDS = "You don't have enough currency for this purchase."
+PURCHASE_ERROR_CURRENCY = "This item can't be bought with that currency."
 
 
 def _code_to_dict(c):
@@ -164,6 +176,36 @@ def _grant_reward_in_session(session, account_id, reward):
         wallet.coins += coins
         wallet.gems += gems
         wallet.tickets += tickets
+
+
+def purchase_products(account_id, charges, grants):
+    """Deducts {currency: amount} and grants {archetype_id: count} as tradable in ONE
+    transaction. Returns an error message (nothing changed) or None on success."""
+    with db_session() as session:
+        if session.bind.dialect.name == "sqlite":
+            session.execute(text("BEGIN IMMEDIATE"))
+        wallet = session.query(Wallet).filter_by(account_id=account_id).with_for_update().first()
+        due = {currency: amount for currency, amount in charges.items() if amount > 0}
+        for currency, amount in due.items():
+            field = WALLET_FIELDS.get(currency)
+            if field is None:
+                return PURCHASE_ERROR_CURRENCY
+            if wallet is None or getattr(wallet, field) < amount:
+                return PURCHASE_ERROR_FUNDS
+        for currency, amount in due.items():
+            field = WALLET_FIELDS[currency]
+            setattr(wallet, field, getattr(wallet, field) - amount)
+        owned = {row.archetype_id: row for row in session.query(Collection).filter(
+            Collection.account_id == account_id,
+            Collection.archetype_id.in_(list(grants))).with_for_update()}
+        for archetype_id, count in grants.items():
+            row = owned.get(archetype_id)
+            if row is None:
+                row = Collection(account_id=account_id, archetype_id=archetype_id,
+                                 tradable_count=0, nontradable_count=0)
+                session.add(row)
+            row.tradable_count += count
+    return None
 
 
 # ---------------------------------------------------------------- Shop items

@@ -1,6 +1,8 @@
+import json
 import logging
 import uuid
 import time
+from collections import Counter
 
 from spirit import config
 from spirit.network.message_names import InboundMsg, OutboundMsg
@@ -12,6 +14,12 @@ from spirit.game.models.product import Deck
 from spirit.database.deck_products import open_products
 from spirit.database.async_utils import run_db
 from spirit.database.player_data import add_to_collection, get_decks_by_account_id
+from spirit.database.economy_data import purchase_products
+
+# ProductPurchaseFailure texts; unknown loc keys render verbatim in the failure dialog.
+PURCHASE_ERROR_SIGN_IN = "Sign in to buy products."
+PURCHASE_ERROR_UNAVAILABLE = "This product is no longer available. Please reopen the shop."
+PURCHASE_ERROR_GENERIC = "Your purchase could not be completed. You have not been charged."
 
 def build_item(owner_id: str, archetype_id: str, is_tradable: bool = False) -> dict:
     """Builds the client's Item JSON shape (shared with the trade lots protocol)."""
@@ -173,57 +181,90 @@ class ShopHandler(BaseHandler):
             await self.push_collection()
             await self.push_wallet()
 
+    @staticmethod
+    def _resolve_listings(shop, message):
+        """Shop listings for a PurchaseCatalogProducts request (one entry per unit), or None
+        if any is unknown. Prefers the exact listing GUIDs in selections over name loc-IDs."""
+        selections = message.get("selections") or []
+        requested = selections or message.get("products") or message.get("productIDs") or []
+        listings = []
+        for p_id in requested:
+            p_id = str(p_id)
+            listing = shop.available_products.get(p_id) or shop.available_products.get(p_id.lower())
+            if listing is None and not selections:
+                listing = next((p for p in shop.available_products.values() if p.name == p_id), None)
+            if listing is None:
+                logging.warning(f"[Shop] Purchase references unavailable product {p_id}")
+                return None
+            listings.append(listing)
+        return listings or None
+
+    async def _purchase_failed(self, request_id, reason: str):
+        """Fails a pending purchase: closes the client's wait dialog with the reason."""
+        await self.send({
+            "messageName": OutboundMsg.PRODUCT_PURCHASE_FAILURE.value,
+            "error": {"id": reason},
+        }, request_id)
+        if self.client.player:
+            await self.push_wallet()  # the client already deducted its display locally
+
     @handle(InboundMsg.PURCHASE_CATALOG_PRODUCTS)
     async def handle_purchase_catalog_products(self, message, request_id, flags):
         logging.info(f"[TCP] [{self.client.addr}] Client requested Purchase Catalog Products.")
-
-        # product_ids can be string IDs like "product.bw1.boostersmall"
-        product_ids = message.get("productIDs") or message.get("products") or []
-
-        shop = shop_manager.get_shop()
-
-        # Resolve products (IDs may be names rather than GUIDs)
-        target_guids = []
-        for p_id in product_ids:
-            target_guid = p_id
-            if p_id not in shop.available_products:
-                for guid, product in shop.available_products.items():
-                    if product.name == p_id:
-                        target_guid = guid
-                        break
-
-            if target_guid in shop.available_products:
-                target_guids.append(target_guid)
-            else:
-                logging.warning(f"[Shop] Product not found: {p_id}")
-
-        basket = [(shop.available_products[guid], 1) for guid in target_guids]
-        if not await self._charge_for(basket, "PurchaseCatalogProducts"):
+        player = self.client.player
+        if not player:
+            await self._purchase_failed(request_id, PURCHASE_ERROR_SIGN_IN)
             return
 
-        # Process successful purchase (SKU -> real collection pack GUID)
-        def _persist_sync():
-            purchased = []
-            for target_guid in target_guids:
-                pack_guid = shop.resolve_product_guid(target_guid)
-                purchased.append(build_item(self._owner_id(), pack_guid, is_tradable=True))
-                if self.client.player:
-                    add_to_collection(self.client.player.account_id, pack_guid, count=1, is_tradable=True)
-            return purchased
+        shop = shop_manager.get_shop()
+        listings = self._resolve_listings(shop, message)
+        if listings is None:
+            await self._purchase_failed(request_id, PURCHASE_ERROR_UNAVAILABLE)
+            return
 
-        purchased_items = await run_db(_persist_sync)
+        charges = Counter()
+        for listing in listings:
+            for price in listing.prices[:1]:
+                charges[price.get("name")] += max(0, int(price.get("value") or 0))
+        purchase_type = message.get("purchaseType")
+        if purchase_type is not None and any(charges.values()) and purchase_type not in charges:
+            logging.warning(f"[Shop] purchaseType {purchase_type} differs from listed currencies {list(charges)}")
+        product_guids = [shop.resolve_product_guid(listing.guid) for listing in listings]
 
-        response = {
+        def _purchase_sync():
+            error = purchase_products(player.account_id, charges, Counter(product_guids))
+            if error is None:
+                player.wallet.refresh_wallet()
+            return error
+
+        try:
+            error = await run_db(_purchase_sync)
+        except Exception:
+            logging.exception(f"[Shop] Purchase failed for {player.username}")
+            error = PURCHASE_ERROR_GENERIC
+        if error:
+            logging.warning(f"[Shop] Purchase rejected for {player.username}: {error}")
+            await self._purchase_failed(request_id, error)
+            return
+
+        purchased_items = [build_item(player.account_id, guid, is_tradable=True)
+                           for guid in product_guids]
+        await self.send({
             "messageName": OutboundMsg.PRODUCTS_PURCHASED.value,
             "invoiceID": str(uuid.uuid4()),
             "items": purchased_items
-        }
-        await self.send(response, request_id)
-
-        # Sync collection + wallet after purchase (unsolicited sync uses request_id=0)
-        if self.client.player:
-            await self.push_collection()
-            await self.push_wallet()
+        }, request_id)
+        # No push_collection: the dialog command adds these items client-side (would double).
+        await self.send({
+            "messageName": OutboundMsg.NOTIFICATION.value,
+            "notificationID": str(uuid.uuid4()),
+            "payload": json.dumps({
+                "name": OutboundMsg.PRODUCTS_FULFILLED.value,
+                "value": {"items": purchased_items},
+            }),
+            "notificationType": 0,
+        })
+        await self.push_wallet()
 
     @handle(InboundMsg.GET_AVAILABLE_PRODUCTS)
     async def handle_get_available_products(self, message, request_id, flags):
