@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+async def synchronoise(ctx):
+    """20 to Active; 20 to each opposing Bench Pokémon sharing a type with defender."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None:
+        return
+    def_types = set(defender.get_attribute(AttrID.POKEMON_TYPES) or [])
+    if not def_types:
+        return
+    for pokemon in ctx.opponent_bench():
+        p_types = set(pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+        if def_types & p_types:
+            await ctx.deal_damage(20, target=pokemon, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="952c7a5b-60a9-5e69-a56d-1531500b8153",
@@ -24,7 +40,7 @@ card = PokemonCardDef(
             game_text="Does 20 damage to each of your opponent's Benched Pok\u00e9mon that shares a type with the Defending Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            effect=unimplemented,
+            effect=synchronoise,
         ),
         Attack(
             title="Psyshot",

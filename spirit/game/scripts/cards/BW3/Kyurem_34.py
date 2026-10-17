@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    damage_all_opponents, damage_counters_on, damage_per,
+)
 
 card = PokemonCardDef(
     guid="708d63bd-2092-5582-bbe4-105c00b28eaa",
@@ -24,13 +27,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on("self"), 10, base=20),
         ),
         Attack(
             title="Glaciate",
             game_text="This attack does 30 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(30),
         ),
     ],
 )

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import guts_survive_passive
 
 card = PokemonCardDef(
     guid="4b699deb-a960-5de1-944a-5d88186526ce",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Durable Body",
             game_text="If this Pok\u00e9mon would be Knocked Out by damage from an attack, flip a coin. If heads, this Pok\u00e9mon is not Knocked Out and its remaining HP becomes 10 instead.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=guts_survive_passive(hp_floor=10, flip=True, title="Durable Body"),
         ),
         Attack(
             title="Ambush",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
 card = PokemonCardDef(
     guid="128c878b-7d15-5515-bab1-e9939d400508",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Gunk Shot",
             game_text="The Defending Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

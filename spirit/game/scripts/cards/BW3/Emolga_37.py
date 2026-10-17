@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _has_lightning_bench(ctx) -> bool:
+    return any(
+        PokemonTypes.LIGHTNING.value in (p.get_attribute(AttrID.POKEMON_TYPES) or [])
+        for p in ctx.my_bench()
+    )
+
 
 card = PokemonCardDef(
     guid="9efc152e-f8a6-5014-a5f9-5b05c4d680b1",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_has_lightning_bench, 20),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack, recoil_attack
 
 card = PokemonCardDef(
     guid="81482476-4c26-58be-bb78-ed0410b5536e",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Wild Charge",
             game_text="This Pok\u00e9mon does 10 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=recoil_attack(10),
         ),
     ],
 )

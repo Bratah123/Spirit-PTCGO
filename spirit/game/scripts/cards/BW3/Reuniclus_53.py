@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, flip_damage
 
 card = PokemonCardDef(
     guid="fa94eb37-147c-5f6e-ab22-3b1abad07855",
@@ -25,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=30),
         ),
         Attack(
             title="Mind Bend",
             game_text="The Defending Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

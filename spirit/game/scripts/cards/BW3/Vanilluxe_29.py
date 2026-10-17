@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def double_freeze(ctx):
+    """Flip 2 coins. 40x heads; if any heads, Paralyze the Defending Pokémon."""
+    results = await ctx.flip_coins(2, "Double Freeze")
+    heads = sum(1 for r in results if r)
+    if heads:
+        await ctx.deal_damage(40 * heads)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="22bbdf6c-e6f5-55db-8a6e-867f9f36f05a",
@@ -25,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=double_freeze,
         ),
         Attack(
             title="Frost Breath",

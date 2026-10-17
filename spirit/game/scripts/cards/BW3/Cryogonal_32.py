@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import active_is, bonus_if, condition_attack
+
+
+def _is_fighting(pokemon) -> bool:
+    return PokemonTypes.FIGHTING.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="d352ae53-b4c7-5036-b13d-fa876efdf0ff",
@@ -22,7 +28,7 @@ card = PokemonCardDef(
             title="Icy Wind",
             game_text="The Defending Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Ice Shard",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(_is_fighting), 40),
         ),
     ],
 )
