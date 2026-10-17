@@ -28,8 +28,19 @@ RARITY_MAP = {
     "Rare Rainbow": "Rarities.RareRainbow",
     "Rare Promo": "Rarities.RarePromo",
     "Promo": "Rarities.RarePromo",
-    "Amazing Rare": "Rarities.Amazing", 
+    "Amazing Rare": "Rarities.Amazing",
     "Radiant Rare": "Rarities.RareRadiant",
+    # BW / HGSS-era print rarities (pokemon-tcg-data)
+    "Rare Prime": "Rarities.RarePrime",
+    "LEGEND": "Rarities.Legendary",
+    "Rare ACE": "Rarities.Ace",
+}
+
+# JSON abilities[].type -> AbilityTypes enum ref for generated Ability(...)
+ABILITY_TYPE_MAP = {
+    "Poké-Body": "AbilityTypes.POKE_BODY",
+    "Poké-Power": "AbilityTypes.POKE_POWER",
+    "Ability": "AbilityTypes.POKE_ABILITY",
 }
 
 # Mapping for Types
@@ -92,16 +103,61 @@ def build_cost_src(cost: List[str]) -> str:
             counts[enum_ref] = counts.get(enum_ref, 0) + 1
     return "{" + ", ".join(f"{k}: {v}" for k, v in counts.items()) + "}"
 
+
+def map_ability_type(raw_type: Optional[str]) -> str:
+    """Map pokemon-tcg-data abilities[].type to an AbilityTypes.* source ref."""
+    if not raw_type:
+        return "AbilityTypes.POKE_ABILITY"
+    return ABILITY_TYPE_MAP.get(raw_type, "AbilityTypes.POKE_ABILITY")
+
+
+def map_rarity(raw_rarity: Optional[str]) -> str:
+    """Map API rarity string to a Rarities.* source ref.
+
+    Exact RARITY_MAP hits win. Fallback prefers Rare Holo EX over generic
+    RareHolo so 'Rare Holo EX' never collapses to RareHolo when unmapped.
+    """
+    raw = raw_rarity or "Common"
+    rarity = RARITY_MAP.get(raw)
+    if rarity is not None:
+        return rarity
+    if raw == "Common":
+        return "Rarities.Common"
+    # Specific before generic: EX contains 'Holo' and must not become RareHolo.
+    if "EX" in raw and "Holo" in raw:
+        return "Rarities.RareHoloEX"
+    if "Prime" in raw:
+        return "Rarities.RarePrime"
+    if raw == "LEGEND" or "LEGEND" in raw:
+        return "Rarities.Legendary"
+    if "ACE" in raw:
+        return "Rarities.Ace"
+    if "Secret" in raw:
+        return "Rarities.RareSecret"
+    if "Holo" in raw:
+        return "Rarities.RareHolo"
+    if "Rare" in raw:
+        return "Rarities.Rare"
+    return "Rarities.Common"
+
+
 def build_abilities_src(card: Dict[str, Any]) -> tuple:
-    """Renders the abilities=[...] entries; returns (source_lines, uses_unimplemented)."""
+    """Renders abilities=[...] entries.
+
+    Returns (source_lines, uses_unimplemented, uses_ability_types).
+    """
     lines: List[str] = []
     uses_unimplemented = False
+    uses_ability_types = False
     for ability in card.get("abilities", []):
         uses_unimplemented = True
+        uses_ability_types = True
+        ability_type = map_ability_type(ability.get("type"))
         lines.extend([
             "        Ability(",
             f"            title={py_str(fix_text(ability.get('name', '')))},",
             f"            game_text={py_str(fix_text(ability.get('text', '')))},",
+            f"            ability_type={ability_type},",
             "            effect=unimplemented,",
             "        ),",
         ])
@@ -122,7 +178,7 @@ def build_abilities_src(card: Dict[str, Any]) -> tuple:
             lines.append("            effect=unimplemented,")
             uses_unimplemented = True
         lines.append("        ),")
-    return lines, uses_unimplemented
+    return lines, uses_unimplemented, uses_ability_types
 
 def download_image(url: str, filepath: str):
     if os.path.exists(filepath):
@@ -163,15 +219,7 @@ def render_script(card: Dict[str, Any]) -> Optional[str]:
     safe_name = clean_name(name)
 
     # Prepare script content
-    raw_rarity = card.get("rarity", "Common")
-    rarity = RARITY_MAP.get(raw_rarity, "Rarities.Common")
-
-    # Fallback for complex rarity strings
-    if rarity == "Rarities.Common" and raw_rarity != "Common":
-        if "Holo" in raw_rarity:
-            rarity = "Rarities.RareHolo"
-        elif "Rare" in raw_rarity:
-            rarity = "Rarities.Rare"
+    rarity = map_rarity(card.get("rarity", "Common"))
 
     guid = get_guid(card.get("id"))
 
@@ -196,14 +244,17 @@ def render_script(card: Dict[str, Any]) -> Optional[str]:
         family_id = get_family_id(card)
         weaknesses = card.get("weaknesses") or []
         resistances = card.get("resistances") or []
-        ability_lines, uses_unimplemented = build_abilities_src(card)
+        ability_lines, uses_unimplemented, uses_ability_types = build_abilities_src(card)
 
         imports = "PokemonCardDef, Attack, Ability"
         if uses_unimplemented:
             imports += ", unimplemented"
+        attr_imports = "PokemonTypes, PokemonStage, Rarities"
+        if uses_ability_types:
+            attr_imports += ", AbilityTypes"
 
         content = f"""from spirit.game.data_utils import {imports}
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import {attr_imports}
 
 card = PokemonCardDef(
     guid="{guid}",
@@ -242,17 +293,35 @@ card = PokemonCardDef(
         content += ")"
 
     elif supertype == "Trainer":
+        # GAP notes (BW-era subtypes with no dedicated *CardDef subclass):
+        # - Technical Machine: no TechnicalMachineCardDef; emit TrainerCardDef
+        #   with TrainerType.TECHNICAL_MACHINE. Engine has the enum + AbilityTypes
+        #   but no TM attach / granted-attack play path like DP-era TMs.
+        # - ACE SPEC: no AceSpecCardDef; keep as Item/Tool/Stadium and leave
+        #   'ACE SPEC' in subtypes (deck singleton enforced in validation).
+        trainer_extra_kw = ""
+        attr_imports = "Rarities"
         if "Supporter" in subtypes:
             trainer_class = "SupporterCardDef"
         elif "Stadium" in subtypes:
             trainer_class = "StadiumCardDef"
         elif any("Pok" in s and "Tool" in s for s in subtypes):
             trainer_class = "PokemonToolCardDef"
+        elif "Technical Machine" in subtypes:
+            trainer_class = "TrainerCardDef"
+            trainer_extra_kw = "    trainer_type=TrainerType.TECHNICAL_MACHINE,\n"
+            attr_imports = "Rarities, TrainerType"
         else:
             trainer_class = "ItemCardDef"
 
+        ace_comment = ""
+        if "ACE SPEC" in subtypes:
+            ace_comment = (
+                "    # GAP: no AceSpecCardDef; ACE SPEC is a subtype flag only\n"
+            )
+
         content = f"""from spirit.game.data_utils import {trainer_class}, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.attributes import {attr_imports}
 
 card = {trainer_class}(
     guid="{guid}",
@@ -264,7 +333,7 @@ card = {trainer_class}(
     collector_number={number},
     set_code="{SET_CODE}",
     rarity={rarity},
-    effect=unimplemented
+{trainer_extra_kw}{ace_comment}    effect=unimplemented
 )
 """
     elif supertype == "Energy":
@@ -296,15 +365,18 @@ card = EnergyCardDef(
 
     return content or None
 
-def process_card(card: Dict[str, Any]):
+def process_card(card: Dict[str, Any], skip_existing: bool = False):
     filename = f"{clean_name(card.get('name', 'Unknown'))}_{card.get('number', '0')}"
     script_path = os.path.join(SCRIPT_OUTPUT_DIR, f"{filename}.py")
     asset_path = os.path.join(ASSET_OUTPUT_DIR, f"{filename}.png")
 
     content = render_script(card)
     if content:
-        with open(script_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        if skip_existing and os.path.exists(script_path):
+            print(f"Skipping existing script: {script_path}")
+        else:
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(content)
 
     image_url = card.get("images", {}).get("large")
     if image_url:
@@ -317,6 +389,11 @@ def main():
     parser = argparse.ArgumentParser(description="Import a Pokemon TCG set from a JSON file.")
     parser.add_argument("json_path", nargs="?", default="spirit/game/scripts/cards/SWSH12/swsh12.json", help="Path to the TCG JSON file to import.")
     parser.add_argument("--set-code", help="The set code to use (defaults to upper case of JSON filename).")
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Do not overwrite card scripts that already exist (keeps hand-written BW stubs).",
+    )
     args = parser.parse_args()
 
     JSON_PATH = args.json_path
@@ -351,7 +428,7 @@ def main():
     print(f"Processing {len(cards)} cards...")
     download_tasks = []
     for card in cards:
-        task = process_card(card)
+        task = process_card(card, skip_existing=args.skip_existing)
         if task:
             download_tasks.append(task)
             
