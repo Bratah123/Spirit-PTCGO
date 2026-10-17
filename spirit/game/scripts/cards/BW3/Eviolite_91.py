@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import PokemonToolCardDef
+from spirit.game.attributes import AttrID, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import takes_less_passive
+from spirit.game.session.passives import carrier_pokemon
+
+
+def _basic_holder(target, carrier):
+    if carrier_pokemon(carrier) is not target:
+        return False
+    return target.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value
+
 
 card = PokemonToolCardDef(
     guid="f975ed78-41cc-5739-9a23-c063368516d7",
@@ -11,5 +20,5 @@ card = PokemonToolCardDef(
     collector_number=91,
     set_code="BW3",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=takes_less_passive(20, protects=_basic_holder),
 )
