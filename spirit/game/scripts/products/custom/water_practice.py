@@ -6,7 +6,8 @@ product = ThemeDeckDef(
     key="NoSet",
     name="Water Practice",
     description="Evolve Sobble and Chewtle into powerful Water Pokemon.",
-    image_name="_default_deckbox",
+    image_name="swsh1inteleonpcd",
+    deck_box="82d49cb9-05e3-448a-817c-e7cb649bfca0",  # Inteleon Deck Box
     theme_legal=True,
     contents=[
         DeckEntry("SWSH1/54", 4),  # Sobble

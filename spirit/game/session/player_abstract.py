@@ -1,8 +1,11 @@
 import abc
 import asyncio
-from typing import Dict, Any, List, Optional
-from spirit.game.attributes import AttrID
+from typing import Dict, Any, List, Optional, Tuple
+from spirit.game.attributes import AttrID, DefaultCosmetic, DeckBoxShape
+from spirit.game.models.product import DeckBox
 from spirit.game.models.avatar import get_default_avatar_items_list
+from spirit.game.scripts.products import loader as product_loader
+from spirit.server.auto_bundle_cosmetics import deckbox_flat_names
 
 class GamePlayer(abc.ABC):
     def __init__(self, account_id: str, username: str, deck_data: Dict[str, Any]):
@@ -46,17 +49,28 @@ class GamePlayer(abc.ABC):
     @property
     def sleeve_id(self) -> str:
         """Returns the selected card sleeve GUID."""
-        return self._get_cosmetic_id(AttrID.SELECTED_SLEEVE.value, "e079c0d3-b934-4fbd-b021-545106c75693")
+        return self._get_cosmetic_id(AttrID.SELECTED_SLEEVE.value, DefaultCosmetic.SLEEVE.value)
 
     @property
     def coin_id(self) -> str:
         """Returns the selected coin GUID."""
-        return self._get_cosmetic_id(AttrID.SELECTED_COIN.value, "B9A4EA96-949E-11E1-890F-EFB676C7909C")
+        return self._get_cosmetic_id(AttrID.SELECTED_COIN.value, DefaultCosmetic.COIN.value)
 
     @property
     def deckbox_id(self) -> str:
         """Returns the selected deck box GUID."""
-        return self._get_cosmetic_id(AttrID.SELECTED_DECK_BOX.value, "e129b0d3-b934-4fbd-b021-545106c75694")
+        return self._get_cosmetic_id(AttrID.SELECTED_DECK_BOX.value, DefaultCosmetic.DECK_BOX.value)
+
+    @property
+    def playmat_deck_box(self) -> Tuple[str, DeckBoxShape]:
+        """(image name, shape) of the selected deck box; ("", TWO_TONE) when it has no playmat flat."""
+        product = product_loader.products_by_guid.get(self.deckbox_id.lower())
+        if not isinstance(product, DeckBox) or product.shape not in (DeckBoxShape.THEME_DECK, DeckBoxShape.KEEPER):
+            return "", DeckBoxShape.TWO_TONE
+        image = str(product.get_attribute_value(AttrID.IMAGE_NAME, "") or "").lower()
+        if image not in deckbox_flat_names():
+            return "", DeckBoxShape.TWO_TONE
+        return image, product.shape
 
     @abc.abstractmethod
     async def send_packet(self, name: str, value: Dict[str, Any], flags: int = 0):

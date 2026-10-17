@@ -4,7 +4,7 @@ import uuid
 import random
 import logging
 from typing import Any, Optional, Dict, List
-from spirit.game.attributes import AttrID, ProductType, CardType, Rarities
+from spirit.game.attributes import AttrID, ProductType, CardType, Rarities, DefaultCosmetic, DeckBoxShape
 from spirit.game.models.card import Card
 import spirit.server.state as state
 from spirit.game.scripts.cards import loader as card_loader
@@ -282,12 +282,19 @@ class BoosterPack(Product):
         pack_guids = assemble_pack_contents(set_key)
         return pack_guids
 
+class DeckBox(Product):
+    def __init__(self, guid: str, key: str, attributes: Optional[Dict[str, Any]] = None,
+                 prices: Optional[List[Dict[str, Any]]] = None, *, shape=DeckBoxShape.TWO_TONE):
+        super().__init__(guid, key, attributes, prices)
+        self.shape = shape
+
 class Deck(Product):
     def __init__(self, guid: str, key: str, attributes: Optional[Dict[str, Any]] = None,
                  prices: Optional[List[Dict[str, Any]]] = None, *, contents=(),
-                 is_theme_deck=False, theme_legal=False):
+                 is_theme_deck=False, theme_legal=False, deck_box=None):
         super().__init__(guid, key, attributes, prices)
         self.contents = tuple(contents)
+        self.deck_box = deck_box
         self.is_theme_deck = is_theme_deck
         self.theme_legal = theme_legal
 
@@ -302,8 +309,9 @@ class Deck(Product):
             "attributes": [
                 {"name": AttrID.IS_THEME_DECK.value,
                  "value": self.is_theme_deck and self.theme_legal},
-                {"name": AttrID.SELECTED_COIN.value, "value": "b9a4ea96-949e-11e1-890f-efb676c7909c"},
-                {"name": AttrID.SELECTED_SLEEVE.value, "value": "e079c0d3-b934-4fbd-b021-545106c75693"},
-                {"name": AttrID.SELECTED_DECK_BOX.value, "value": "e129b0d3-b934-4fbd-b021-545106c75694"},
+                {"name": AttrID.SELECTED_COIN.value, "value": DefaultCosmetic.COIN.value},
+                {"name": AttrID.SELECTED_SLEEVE.value, "value": DefaultCosmetic.SLEEVE.value},
+                {"name": AttrID.SELECTED_DECK_BOX.value,
+                 "value": self.deck_box or DefaultCosmetic.DECK_BOX.value},
             ],
         }

@@ -10,6 +10,10 @@ from spirit.database.economy_data import list_shop_items
 from spirit.game.scripts.cards import loader as card_loader
 
 DEFAULT_BOOSTER_PRICE = 200
+# Listed under SKU GUIDs: the client evicts real shop GUIDs from the collection on shop exit.
+SKU_LISTED_TYPES = frozenset(t.value for t in (
+    ProductType.PACKS, ProductType.DECKS, ProductType.DECK_BOX,
+    ProductType.COINS, ProductType.SLEEVE))
 LOCAL_IMG = config.PLACEHOLDER_IMG
 
 
@@ -92,7 +96,7 @@ class ShopManager:
                     continue
                 product.prices = [{"name": item["currency"], "value": item["price"]}]
                 listed = self.shop.add_as_sku(product) \
-                    if product.product_type in (ProductType.PACKS.value, ProductType.DECKS.value) else product
+                    if product.product_type in SKU_LISTED_TYPES else product
                 if listed is product:
                     self.shop.add_product(product)
                 if item["featured"]:

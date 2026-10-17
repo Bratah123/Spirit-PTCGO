@@ -15,6 +15,7 @@ class AttrID(IntEnum):
     CURRENCY_TYPE = 10200
     PRODUCT_TYPE = 10540
     IS_THEME_DECK = 201290
+    THEME_DECK_NAME = 10800
     DECK_CONTENTS_ID = 201640
     DESCRIPTION = 10060
     # Booster pack rarity odds (a.g[]): the "i" info popup builds new List<a.g>(ValueFor)
@@ -399,6 +400,19 @@ class DeckFormat(str, Enum):
     LEGACY = "6b33d420-73cc-40d4-ada5-88a7d68063a9"
     THEME = "1414fd67-a632-4e38-ae04-0adf0074ac16"
     TRAINER_CHALLENGE = "6a1dec5a-34db-4cee-a503-4ee759304136"
+
+class DefaultCosmetic(str, Enum):
+    """Client-default cosmetic archetype GUIDs (basic coin/sleeve/deck box)."""
+    COIN = "B9A4EA96-949E-11E1-890F-EFB676C7909C"
+    SLEEVE = "e079c0d3-b934-4fbd-b021-545106c75693"
+    DECK_BOX = "e129b0d3-b934-4fbd-b021-545106c75694"
+
+class DeckBoxShape(IntEnum):
+    """The shape of the deckbox when shown in-game."""
+    TWO_TONE = 0  # Plain tinted box, no texture
+    THEME_DECK = 1  # Theme-deck box (PCD)
+    KEEPER = 2  # The flap type deck boxes
+    KEEPER_SPLIT = 3  # Flap type with left/right currently not implemented, but that's how those default typed deck boxes are done.
 
 class PlayerAttrID(IntEnum):
     """

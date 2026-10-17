@@ -6,12 +6,12 @@ import logging
 import threading
 from types import SimpleNamespace
 from typing import Dict, List
-from spirit.game.models.product import Product, BoosterPack, Deck
+from spirit.game.models.product import Product, BoosterPack, Deck, DeckBox
 from spirit.game.attributes import ProductType, AttrID, CardType, Rarities
 from spirit.game.content.sets import eligible_booster_sets
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.game.decks.theme_decks import CardReferenceResolver, ThemeDeckRegistry, theme_decks
-from spirit.game.data_utils import BoosterPackDef, DeckDef
+from spirit.game.data_utils import BoosterPackDef, DeckBoxDef, DeckDef
 
 BOOSTER_GUID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "spiritptcgo.auto.boosters")
 
@@ -194,7 +194,12 @@ class ProductLoader:
                         raise ValueError("; ".join(errors))
                     prod_obj = Deck(
                         guid, key, attrs, contents=prod_def.resolve_contents(self._card_resolver),
-                        is_theme_deck=prod_def.is_theme_deck, theme_legal=prod_def.theme_legal)
+                        is_theme_deck=prod_def.is_theme_deck, theme_legal=prod_def.theme_legal,
+                        deck_box=prod_def.deck_box)
+                elif ptype == ProductType.DECK_BOX:
+                    if not isinstance(prod_def, DeckBoxDef):
+                        raise ValueError("Deck box products must use DeckBoxDef")
+                    prod_obj = DeckBox(guid, key, attrs, shape=prod_def.shape)
                 else:
                     prod_obj = Product(guid, key, attrs)
                 

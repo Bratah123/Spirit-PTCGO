@@ -134,7 +134,7 @@ class ManifestManager:
                 # manifest key the client rejects the request before opening
                 # the selected Unity bundle.
                 dynamic_texture_patterns = [
-                    "cardsleeves", "coins", "deckboxes", "packs", "pcdboxes",
+                    "cardsleeves", "coins", "deckboxes", "deckboxflats", "packs", "pcdboxes",
                     "avatar", "gxtoken", "vstartoken", "landingpage", "logos"
                 ]
                 if not exact_assets and any(pat in lower_entry for pat in dynamic_texture_patterns):
@@ -148,6 +148,8 @@ class ManifestManager:
                             prefix = "coins"
                         elif "deckBoxes" in bundle_name_raw:
                             prefix = "deckBoxes"
+                        elif "deckboxFlats" in bundle_name_raw:
+                            prefix = "deckboxFlats"
                         elif "packs" in bundle_name_raw:
                             prefix = "packs"
                         elif "pcdBoxes" in bundle_name_raw:
@@ -189,6 +191,10 @@ class ManifestManager:
                                     continue
                                 tex_raw = obj.read().m_Name
                                 tex_name = tex_raw.lower()
+                                if prefix == "deckboxFlats":
+                                    # Flats share names with deckBoxes/pcdBoxes icons; prefixed key only.
+                                    exact_assets.append(f"{prefix}/{tex_name}")
+                                    continue
                                 exact_assets.append(tex_name)
                                 if prefix:
                                     exact_assets.append(f"{prefix}/{tex_name}")
@@ -275,7 +281,7 @@ class ManifestManager:
                 # so the client can resolve things like "SWSH12_water" to this same physical bundle file.
                 if set_code and exact_assets and not any(
                     pat in lower_entry
-                    for pat in ["cardsleeves", "coins", "deckboxes", "packs", "pcdboxes", "avatar", "landingpage", "_wp_"]
+                    for pat in ["cardsleeves", "coins", "deckboxes", "deckboxflats", "packs", "pcdboxes", "avatar", "landingpage", "_wp_"]
                 ):
                     card_types = [
                         "grass", "fire", "water", "lightning", "psychic", "fighting",

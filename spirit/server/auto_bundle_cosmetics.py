@@ -2,6 +2,7 @@ import os
 import shutil
 import logging
 import copy
+from functools import lru_cache
 from PIL import Image
 import UnityPy
 
@@ -12,6 +13,25 @@ logging.basicConfig(level=logging.INFO)
 ASSETS_DIR = "spirit/assets"
 TEMPLATES_DIR = "spirit/templates/cosmetic_templates"
 BUNDLE_CACHE_DIR = os.path.join(ASSETS_DIR, "bundleCache")
+DECKBOX_FLATS_DIR = os.path.join(ASSETS_DIR, "products", "custom_deckbox_flats")
+DECKBOX_FLATS_TEMPLATE = os.path.join(TEMPLATES_DIR, "deckboxFlats.template")
+
+
+@lru_cache(maxsize=1)
+def deckbox_flat_names() -> frozenset:
+    """Lowercase texture names servable as deckboxFlats/<name> (the playmat 3D box)."""
+    names = set()
+    if os.path.isdir(DECKBOX_FLATS_DIR):
+        names.update(os.path.splitext(f)[0].lower()
+                     for f in os.listdir(DECKBOX_FLATS_DIR) if f.endswith(".png"))
+    if os.path.exists(DECKBOX_FLATS_TEMPLATE):
+        try:
+            for obj in UnityPy.load(DECKBOX_FLATS_TEMPLATE).objects:
+                if obj.type.name == "AssetBundle":
+                    names.update(name.lower() for name, _ in obj.read().m_Container)
+        except Exception as e:
+            logging.error(f"[Cosmetics] Could not index deckbox flats template: {e}")
+    return frozenset(names)
 
 def compile_cosmetic_bundle(category, custom_dir, template_file, target_bundle_folder, prefix):
     """
@@ -215,6 +235,15 @@ def compile_all_cosmetics():
         template_file="deckBoxes.template",
         target_bundle_folder="en_US_deckBoxes",
         prefix="deckBoxes"
+    )
+
+    # 3b. Deck Box Flats (unfolded textures for the in-game 3D deck box)
+    compile_cosmetic_bundle(
+        category="Deck Box Flats",
+        custom_dir=DECKBOX_FLATS_DIR,
+        template_file="deckboxFlats.template",
+        target_bundle_folder="en_US_deckboxFlats",
+        prefix="deckboxFlats"
     )
 
     # 4. Booster Packs

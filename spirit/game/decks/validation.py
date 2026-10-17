@@ -186,3 +186,13 @@ def validate_deck(deck_dict: Dict[str, Any], format_guids: Optional[List[str]] =
 def valid_format_names(deck_dict: Dict[str, Any],
                        owned_counts: Optional[Dict[str, int]] = None) -> List[str]:
     return DeckValidator(deck_dict, owned_counts=owned_counts).valid_format_names()
+
+
+def set_theme_deck_attributes(deck_dict: Dict[str, Any], is_theme: bool) -> None:
+    """Sets IS_THEME_DECK on the deck's attribute list, adding THEME_DECK_NAME when flagged."""
+    attributes = deck_dict.setdefault("attributes", [])
+    attributes[:] = [a for a in attributes if a.get("name") != AttrID.IS_THEME_DECK.value]
+    attributes.append({"name": AttrID.IS_THEME_DECK.value, "value": is_theme})
+    if is_theme and not any(a.get("name") == AttrID.THEME_DECK_NAME.value for a in attributes):
+        attributes.append({"name": AttrID.THEME_DECK_NAME.value,
+                           "value": {"id": deck_dict.get("deckName", "")}})

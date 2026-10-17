@@ -85,6 +85,7 @@ from spirit.game.content.visualizations import (
 from spirit.game.attributes import (
     AttrID,
     CLIENT_SPECIAL_CONDITION_NAMES,
+    DeckBoxShape,
     GameSequence,
     PlayerAttrID,
     SpecialConditions,
@@ -188,7 +189,8 @@ class GameOptions:
         avatar_items: List[str],
         sleeve_id: str,
         coin_id: str,
-        deckbox_id: str
+        deckbox_image: str,
+        deckbox_shape: DeckBoxShape
     ):
         """Registers a player's screen name and selected deck cosmetics for the match."""
         self._player_options[player_id] = {
@@ -196,11 +198,10 @@ class GameOptions:
             f"avatarProfile_{player_id}": ",".join(avatar_items),
             f"gameExtrasSleeve_{player_id}": sleeve_id,
             f"gameExtrasCoin_{player_id}": coin_id,
-            # Empty deckbox extras force the client's dependency-free TwoTone box
-            # (see the DeckBoxType note above). Leaving these as the GUID/image name
-            # routes through the broken cosmetic-bundle texture path -> white box.
-            f"gameExtrasDeckBox_{player_id}": "",
-            f"gameExtrasDeckImage_{player_id}": "",
+            # Image name -> textured box from deckboxFlats/<name>; "" -> red/white TwoTone.
+            f"gameExtrasDeckBox_{player_id}": deckbox_image,
+            f"gameExtrasDeckImage_{player_id}": deckbox_image,
+            f"gameExtrasKeeperDeckBox_{player_id}": str(deckbox_shape == DeckBoxShape.KEEPER).lower(),
         }
 
     def to_dict(self) -> Dict[str, str]:
@@ -444,13 +445,15 @@ class GameSession:
 
         for player_id, player in self.players.items():
             # Add player metadata and cosmetics to options
+            deckbox_image, deckbox_shape = player.playmat_deck_box
             options.add_player(
                 player_id=player_id,
                 name=player.screen_name,
                 avatar_items=player.avatar_items,
                 sleeve_id=player.sleeve_id,
                 coin_id=player.coin_id,
-                deckbox_id=player.deckbox_id
+                deckbox_image=deckbox_image,
+                deckbox_shape=deckbox_shape
             )
 
         game_options_dict = options.to_dict()

@@ -1,7 +1,8 @@
 from spirit.game.data_utils import SleeveDef
+from spirit.game.attributes import DefaultCosmetic
 
 product = SleeveDef(
-    guid="e079c0d3-b934-4fbd-b021-545106c75693", # Client Default Sleeve GUID (eo)
+    guid=DefaultCosmetic.SLEEVE.value,
     key="NoSet",
     name="Basic Sleeve",
     image_url="_default_sleeve"

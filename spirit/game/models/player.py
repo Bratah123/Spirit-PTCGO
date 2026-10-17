@@ -1,5 +1,5 @@
 import copy
-from spirit.game.decks.validation import valid_format_names
+from spirit.game.decks.validation import valid_format_names, set_theme_deck_attributes
 
 from typing import Dict, Any
 from spirit.game.attributes import AttrID, CurrencyType
@@ -97,8 +97,7 @@ class Player:
             "value": names
         })
         if not is_avatar:
-            attributes[:] = [a for a in attributes if a.get("name") != AttrID.IS_THEME_DECK.value]
-            attributes.append({"name": AttrID.IS_THEME_DECK.value, "value": "ThemeDeck" in names})
+            set_theme_deck_attributes(deck_copy, "ThemeDeck" in names)
 
         return deck_copy
 

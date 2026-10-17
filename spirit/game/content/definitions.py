@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 from typing import Any, Callable, Optional, List, Dict
 from spirit.game.decks.theme_decks import CardReferenceResolver, DeckEntry
 from spirit.game.decks.validation import DeckValidator
-from spirit.game.attributes import AttrID, CardType, TrainerType, PokemonStage, PokemonTypes, ProductType, AbilityTypes, Rarities, CLIENT_POKEMON_TYPE_NAMES, FoilMasks, FoilEffects
+from spirit.game.attributes import AttrID, CardType, TrainerType, PokemonStage, PokemonTypes, ProductType, AbilityTypes, Rarities, CLIENT_POKEMON_TYPE_NAMES, FoilMasks, FoilEffects, DeckBoxShape
 
 _ABILITY_ID_NAMESPACE = uuid.UUID("a3f2c6e8-9d41-4d7a-8b5f-2e7c90d13a64")
 
@@ -823,7 +823,7 @@ class BoosterPackDef(ProductDef):
 class DeckDef(ProductDef):
     """A fixed 60-card product; ThemeDeckDef additionally approves Theme play."""
 
-    def __init__(self, *, contents, description="", image_name=None, **kwargs):
+    def __init__(self, *, contents, description="", image_name=None, deck_box=None, **kwargs):
         kwargs['product_type'] = ProductType.DECKS
         if image_name is not None:
             if kwargs.get("image_url") is not None:
@@ -835,6 +835,8 @@ class DeckDef(ProductDef):
         if not all(isinstance(entry, DeckEntry) for entry in self.contents):
             raise ValueError("contents must contain DeckEntry objects")
         self.description = description
+        # Deck-box product GUID the opened deck is saved with (None = basic box).
+        self.deck_box = str(uuid.UUID(deck_box)) if deck_box else None
         self.theme_legal = False
         self.is_theme_deck = False
 
@@ -882,9 +884,12 @@ class CoinDef(ProductDef):
         super().__init__(**kwargs)
 
 class DeckBoxDef(ProductDef):
-    def __init__(self, **kwargs):
+    def __init__(self, *, shape, **kwargs):
+        if not isinstance(shape, DeckBoxShape):
+            raise ValueError("shape must be a DeckBoxShape")
         kwargs['product_type'] = ProductType.DECK_BOX
         super().__init__(**kwargs)
+        self.shape = shape
 
 class SleeveDef(ProductDef):
     def __init__(self, **kwargs):

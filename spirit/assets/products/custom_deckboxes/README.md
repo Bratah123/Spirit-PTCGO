@@ -8,4 +8,4 @@ Place your custom deckbox PNG textures in this directory.
 * **File Format:** PNG.
 * **Naming:** Use lowercase letters, numbers, and underscores (e.g., `my_custom_deckbox.png`). The filename (without extension) becomes the logical asset ID.
 
-*Note: The deckbox texture maps directly to the 3D model's UV layout (folding flat). The compilation tool will automatically scale non-standard PNGs to `512x512`.*
+*Note: These are pre-rendered 2D box icons (shop, collection, deck builder). The in-game 3D box uses an unfolded texture of the same name in `../custom_deckbox_flats/`. Non-standard PNGs are scaled to `512x512`.*

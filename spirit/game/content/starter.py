@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from spirit.game.attributes import AttrID, ProductType
+from spirit.game.attributes import AttrID, ProductType, DefaultCosmetic
 from spirit.game.content.sets import eligible_booster_sets
 from spirit.game.scripts.cards import loader as card_loader
 from spirit.game.scripts.products import loader as product_loader
@@ -13,10 +13,7 @@ from spirit.database.player_data import (
 STARTER_BOOSTER_PACK_COUNT = 10
 
 # Default cosmetics granted to every new account (basic coin/sleeve/deck box)
-STARTER_COIN_GUID = "B9A4EA96-949E-11E1-890F-EFB676C7909C"
-STARTER_SLEEVE_GUID = "e079c0d3-b934-4fbd-b021-545106c75693"
-STARTER_DECK_BOX_GUID = "e129b0d3-b934-4fbd-b021-545106c75694"
-STARTER_COSMETICS = [STARTER_COIN_GUID, STARTER_SLEEVE_GUID, STARTER_DECK_BOX_GUID]
+STARTER_COSMETICS = [c.value for c in DefaultCosmetic]
 
 # PTCG-Live set codes (used by exported decklists) -> local card-script set codes
 SET_CODE_MAP = {
@@ -226,9 +223,9 @@ def build_deck_data(deck_name: str, decklist) -> dict:
         "deckName": deck_name,
         "piles": {"deck": resolve_decklist(decklist)},
         "attributes": [
-            {"name": AttrID.SELECTED_COIN.value, "value": "B9A4EA96-949E-11E1-890F-EFB676C7909C"},
-            {"name": AttrID.SELECTED_SLEEVE.value, "value": "e079c0d3-b934-4fbd-b021-545106c75693"},
-            {"name": AttrID.SELECTED_DECK_BOX.value, "value": "e129b0d3-b934-4fbd-b021-545106c75694"},
+            {"name": AttrID.SELECTED_COIN.value, "value": DefaultCosmetic.COIN.value},
+            {"name": AttrID.SELECTED_SLEEVE.value, "value": DefaultCosmetic.SLEEVE.value},
+            {"name": AttrID.SELECTED_DECK_BOX.value, "value": DefaultCosmetic.DECK_BOX.value},
         ],
     }
 

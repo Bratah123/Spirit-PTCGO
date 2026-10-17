@@ -27,14 +27,15 @@ from dwd.Protobuf.Collection import collection_pb2
 from dwd.Protobuf.cake.item import cake_item_pb2
 from dwd.Protobuf import base_pb2
 from spirit.game.attributes import (
-    AttrID, CardType, CurrencyType, ProductType, TrainerType, FeatureToken, DeckFormat
+    AttrID, CardType, CurrencyType, ProductType, TrainerType, FeatureToken, DeckFormat,
+    DefaultCosmetic
 )
 
 from spirit.database.social import get_incoming_invites_by_account_id
 from spirit.database.player_data import get_merged_collection_payload, get_archetype_flags, get_owned_counts
 from spirit.database.async_utils import run_db
 from spirit.game.models.card import Card, PokemonCard, Rarities
-from spirit.game.decks.validation import DeckValidator, validate_deck
+from spirit.game.decks.validation import DeckValidator, validate_deck, set_theme_deck_attributes
 from spirit.game.decks.formats import FormatManager
 
 from spirit.game.scripts.cards import loader as card_loader
@@ -753,21 +754,21 @@ class DataSyncHandler(BaseHandler):
         if coin_attr not in attrs_dict:
             attrs_dict[coin_attr] = {
                 "name": AttrID.SELECTED_COIN.value,
-                "value": "B9A4EA96-949E-11E1-890F-EFB676C7909C"
+                "value": DefaultCosmetic.COIN.value
             }
         # Default Sleeve
         sleeve_attr = str(AttrID.SELECTED_SLEEVE.value)
         if sleeve_attr not in attrs_dict:
             attrs_dict[sleeve_attr] = {
                 "name": AttrID.SELECTED_SLEEVE.value,
-                "value": "e079c0d3-b934-4fbd-b021-545106c75693"
+                "value": DefaultCosmetic.SLEEVE.value
             }
         # Default Deck Box
         deckbox_attr = str(AttrID.SELECTED_DECK_BOX.value)
         if deckbox_attr not in attrs_dict:
             attrs_dict[deckbox_attr] = {
                 "name": AttrID.SELECTED_DECK_BOX.value,
-                "value": "e129b0d3-b934-4fbd-b021-545106c75694"
+                "value": DefaultCosmetic.DECK_BOX.value
             }
 
         # Validate the deck; an illegal deck still SAVES (PTCGO keeps WIP decks),
@@ -785,11 +786,11 @@ class DataSyncHandler(BaseHandler):
                 "name": AttrID.VALID_FORMATS.value,
                 "value": valid_names
             }
-            attrs_dict[str(AttrID.IS_THEME_DECK.value)] = {
-                "name": AttrID.IS_THEME_DECK.value, "value": "ThemeDeck" in valid_names}
 
         # Normalize attributes back to a list of dictionaries for JSON-compatibility
         deck_dict["attributes"] = list(attrs_dict.values())
+        if not is_avatar:
+            set_theme_deck_attributes(deck_dict, "ThemeDeck" in valid_names)
 
         # Save deck using the player model
         if self.client.player:
