@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import (
+    AttrID, PokemonTypes, PokemonStage, Rarities, AbilityTypes,
+)
+from spirit.game.session.passives import Passive
+
+
+class GritPassive(Passive):
+    """If this Pokémon has a Special Condition, its attacks do +40."""
+
+    def modify_damage_dealt(self, calc, carrier):
+        if calc.attacker is not carrier:
+            return
+        if not (calc.is_attack and calc.is_opposing and calc.to_active):
+            return
+        if not (carrier.get_attribute(AttrID.SPECIAL_CONDITIONS) or []):
+            return
+        calc.amount += 40
+
 
 card = PokemonCardDef(
     guid="3665cf9c-4cff-543d-8917-f1693321f78c",
@@ -23,7 +40,7 @@ card = PokemonCardDef(
             title="Grit",
             game_text="If this Pok\u00e9mon is affected by a Special Condition, each of its attacks does 40 more damage (before applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=GritPassive(),
         ),
         Attack(
             title="Dragon Claw",
