@@ -4,6 +4,7 @@ import re
 import sys
 import uuid
 import argparse
+import unicodedata
 import requests
 from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor
@@ -60,7 +61,10 @@ STAGE_MAP = {
 }
 
 def clean_name(name: str) -> str:
-    return re.sub(r'[^a-zA-Z0-9]', '', name)
+    """ASCII stem for filenames: Flabébé -> Flabebe, Pokémon -> Pokemon."""
+    decomposed = unicodedata.normalize("NFKD", name or "")
+    ascii_only = decomposed.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r'[^a-zA-Z0-9]', '', ascii_only)
 
 def collector_number_int(number: Any) -> int:
     """Spirit collector_number is int; strip letter suffixes (77a -> 77)."""
@@ -315,7 +319,12 @@ card = {trainer_class}(
 
         header = ""
         extra_lines = ""
-        if is_special:
+        # Known special energy with no conditional text beyond provides.
+        if name == "Double Colorless Energy":
+            extra_lines = (
+                "    provides=[[PokemonTypes.COLORLESS, PokemonTypes.COLORLESS]],\n"
+            )
+        elif is_special:
             header = stub_header(
                 f"{name} ({SET_CODE} #{number_raw}): special energy provides/passive/attach "
                 "rules stubbed until matched to a known energy pattern.",
