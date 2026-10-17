@@ -1,4 +1,5 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import switch, player_has_bench, play_targets
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +12,8 @@ card = ItemCardDef(
     collector_number=104,
     set_code="BW1",
     rarity=Rarities.Common,
-    effect=unimplemented
+    effect=switch,
+    play_targets=play_targets(opponent=False, bench_only=True),
+    play_target_prompt="",
+    condition=player_has_bench,
 )

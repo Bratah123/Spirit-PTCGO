@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_lightning_energy
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
 card = PokemonCardDef(
     guid="f8adbbbe-efd6-5f14-aa09-652be8bbb7aa",
@@ -22,14 +25,18 @@ card = PokemonCardDef(
             title="Energize",
             game_text="Attach a Lightning Energy from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_lightning_energy, count=1, target="self",
+                minimum=0,
+                prompt="Choose a Lightning Energy to attach to this Pokémon",
+            ),
         ),
         Attack(
             title="Thunderbolt",
             game_text="Discard all Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(all_energy=True),
         ),
     ],
 )
