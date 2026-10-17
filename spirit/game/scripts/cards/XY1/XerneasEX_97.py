@@ -1,0 +1,43 @@
+"""STUB: effect not implemented — do not guess mechanics.
+Xerneas-EX (XY1 #97): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="14a7ea20-0b6e-50fc-892c-a23a767bcd41",
+    key="XY1",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.XerneasEX.Name",
+    display_name="Xerneas-EX",
+    searchable_by=["Xerneas-EX", "Basic", "EX", "XerneasEX"],
+    subtypes=["Basic", "EX"],
+    collector_number=97,
+    set_code="XY1",
+    rarity=Rarities.RareHoloEX,
+    hp=170,
+    elements=[PokemonTypes.FAIRY],
+    stage=PokemonStage.BASIC,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.METAL,
+    resistance_type=PokemonTypes.DARKNESS,
+    family_id=716,
+    abilities=[
+        Attack(
+            title="Break Through",
+            game_text="This attack does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
+            damage=60,
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+        Attack(
+            title="X Blast",
+            game_text="This Pok\u00e9mon can't use X Blast during your next turn.",
+            cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 2},
+            damage=140,
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+    ],
+)

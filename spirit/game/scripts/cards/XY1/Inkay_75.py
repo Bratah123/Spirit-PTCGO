@@ -1,0 +1,40 @@
+"""STUB: effect not implemented — do not guess mechanics.
+Inkay (XY1 #75): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="b3a488e5-5e16-528b-801f-b9165ea6d063",
+    key="XY1",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Inkay.Name",
+    display_name="Inkay",
+    searchable_by=["Inkay", "Basic", "Inkay"],
+    subtypes=["Basic"],
+    collector_number=75,
+    set_code="XY1",
+    rarity=Rarities.Common,
+    hp=50,
+    elements=[PokemonTypes.DARKNESS],
+    stage=PokemonStage.BASIC,
+    retreat_cost=1,
+    weakness_type=PokemonTypes.FIGHTING,
+    resistance_type=PokemonTypes.PSYCHIC,
+    family_id=686,
+    abilities=[
+        Attack(
+            title="Tackle",
+            cost={PokemonTypes.COLORLESS: 1},
+            damage=10,
+        ),
+        Attack(
+            title="Puncture",
+            game_text="This attack's damage isn't affected by Resistance.",
+            cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
+            damage=20,
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+    ],
+)
