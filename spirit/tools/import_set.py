@@ -376,9 +376,10 @@ def main():
 
     JSON_PATH = args.json_path
     
-    # Determine the set code
+    # Determine the set code. Preserve caller casing when --set-code is given
+    # (sets.json uses mixed-case names like TwentiethAnn).
     if args.set_code:
-        SET_CODE = args.set_code.upper()
+        SET_CODE = args.set_code
     else:
         # Get uppercase filename without extension
         SET_CODE = os.path.splitext(os.path.basename(JSON_PATH))[0].upper()
