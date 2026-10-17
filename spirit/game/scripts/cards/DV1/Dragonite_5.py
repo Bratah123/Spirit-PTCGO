@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def hyper_beam(ctx):
+    """Flip a coin. If heads, discard an Energy from the Defending Pokémon."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if heads:
+        target = ctx.opponent_active()
+        if target is not None and not ctx.effects_blocked(target):
+            await ctx.discard_energy_from(
+                target, 1,
+                prompt="Choose Energy to discard from the Defending Pok\u00e9mon",
+            )
+
 
 card = PokemonCardDef(
     guid="94502a0c-2793-5a19-98ee-549ed90f6bf5",
@@ -24,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
-            effect=unimplemented,
+            effect=hyper_beam,
         ),
         Attack(
             title="Hurricane Tail",
@@ -32,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=4, per_heads=60),
         ),
     ],
 )

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _latias_on_bench(ctx):
+    return any(
+        p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Latias"
+        for p in ctx.my_bench()
+    )
+
 
 card = PokemonCardDef(
     guid="c4f94ed4-0e9e-5089-b43f-91259841d0f4",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_latias_on_bench, 20),
         ),
         Attack(
             title="Speed Wing",

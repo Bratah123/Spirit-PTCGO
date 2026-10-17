@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, mill_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+def _defender_is_colorless(ctx):
+    defender = ctx.defender
+    if defender is None:
+        return False
+    types = defender.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.COLORLESS.value in types
+
 
 card = PokemonCardDef(
     guid="297ebda3-063e-536a-97a0-0f684b01e3c7",
@@ -25,14 +35,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_defender_is_colorless, 60),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top card of your deck.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
-            effect=unimplemented,
+            effect=mill_attack(1, opponent=False),
         ),
     ],
 )

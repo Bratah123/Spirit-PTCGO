@@ -1,4 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.card_effects.attacks_common import mill_attack, ignore_effects_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -23,14 +24,14 @@ card = PokemonCardDef(
             game_text="Discard the top 2 cards of your deck.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=40,
-            effect=unimplemented,
+            effect=mill_attack(2, opponent=False),
         ),
         Attack(
             title="Shred",
             game_text="This attack's damage isn't affected by any effects on the Defending Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=ignore_effects_attack(),
         ),
     ],
 )
