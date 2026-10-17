@@ -1,0 +1,44 @@
+"""STUB: effect not implemented — do not guess mechanics.
+Magmortar (XY3 #11): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="b808a4cf-540f-528b-82ed-f44800402c15",
+    key="XY3",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Magmortar.Name",
+    display_name="Magmortar",
+    searchable_by=["Magmortar", "Stage 1", "Magmortar"],
+    subtypes=["Stage 1"],
+    collector_number=11,
+    set_code="XY3",
+    rarity=Rarities.Rare,
+    hp=120,
+    elements=[PokemonTypes.FIRE],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.WATER,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Magmar.Name",
+    family_id=126,
+    abilities=[
+        Attack(
+            title="Flame Charge",
+            game_text="Search your deck for a Fire Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
+            cost={PokemonTypes.FIRE: 1},
+            damage=30,
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Twin Bursts",
+            game_text="If Electivire is on your Bench, this attack does 80 more damage.",
+            cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 3},
+            damage=80,
+            damage_operator="+",
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+    ],
+)
