@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, flip_damage
+
+
+def _kos_suffered_last_turn(ctx):
+    return ctx.kos_suffered_last_turn() > 0
+
 
 card = PokemonCardDef(
     guid="eba91c76-acef-576e-8fd1-37bbcf223366",
@@ -24,14 +30,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_kos_suffered_last_turn, 70),
         ),
         Attack(
             title="Head Charge",
             game_text="Flip a coin. If tails, this Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=80,
-            effect=unimplemented,
+            effect=flip_damage(tails_self_damage=20),
         ),
     ],
 )

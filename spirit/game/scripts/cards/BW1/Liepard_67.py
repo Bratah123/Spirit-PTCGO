@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+from spirit.game.card_effects.support_common import gust_attack
+
+_darkness_on_self = count_energy("self", energy_type=PokemonTypes.DARKNESS)
 
 card = PokemonCardDef(
     guid="a86f8f44-daa3-5ca2-8552-aa226398f478",
@@ -24,7 +28,7 @@ card = PokemonCardDef(
             title="Taunt",
             game_text="Switch the Defending Pok\u00e9mon with 1 of your opponent's Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=gust_attack(),
         ),
         Attack(
             title="Sucker Punch",
@@ -32,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _darkness_on_self(ctx) > 0, 30),
         ),
     ],
 )

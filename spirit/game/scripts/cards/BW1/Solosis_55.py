@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
+
+def _is_solosis(card) -> bool:
+    definition = def_for(card.archetype_id)
+    return definition is not None and definition.display_name == "Solosis"
+
 
 card = PokemonCardDef(
     guid="a9fef81e-e927-558f-91f2-1987877bee41",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Cell Culture",
             game_text="Search your deck for Solosis and put it into your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=search_to_bench(predicate=_is_solosis, count=1),
         ),
         Attack(
             title="Rollout",

@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+async def _leaf_storm(ctx):
+    await ctx.deal_damage()
+    for pokemon in ctx.my_pokemon_in_play():
+        types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+        if PokemonTypes.GRASS.value in types:
+            await ctx.heal(20, pokemon)
+
 
 card = PokemonCardDef(
     guid="d171baa9-c86c-555f-a13c-9d5c4e20978f",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from each of your Grass Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=_leaf_storm,
         ),
     ],
 )

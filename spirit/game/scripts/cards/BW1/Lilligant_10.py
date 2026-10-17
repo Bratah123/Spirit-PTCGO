@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import (
+    AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions,
+)
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _petal_dance(ctx):
+    await flip_damage(coins=3, per_heads=30)(ctx)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+
+
+async def _leaf_storm(ctx):
+    await ctx.deal_damage()
+    for pokemon in ctx.my_pokemon_in_play():
+        types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+        if PokemonTypes.GRASS.value in types:
+            await ctx.heal(20, pokemon)
+
 
 card = PokemonCardDef(
     guid="765819c4-849a-5aa1-9b34-064a52008037",
@@ -26,14 +43,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_petal_dance,
         ),
         Attack(
             title="Leaf Storm",
             game_text="Heal 20 damage from each of your Grass Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=_leaf_storm,
         ),
     ],
 )

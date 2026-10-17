@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.session.effects import is_stage2_pokemon
+
+
+async def blindside(ctx):
+    """50 damage to 1 of your opponent's Pokémon that has damage counters."""
+    candidates = [
+        p for p in ctx.opponent_pokemon_in_play()
+        if p.get_attribute(AttrID.HP, 0) < ctx.max_hp(p)
+    ]
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose a Pokémon with damage counters",
+    )
+    if target is not None:
+        await ctx.deal_damage(50, target=target)
+
 
 card = PokemonCardDef(
     guid="0c5d265d-7eb2-5a0c-8ea7-9c1a916f762b",
@@ -24,7 +42,7 @@ card = PokemonCardDef(
             title="Blindside",
             game_text="Does 50 damage to 1 of your opponent's Pok\u00e9mon that has any damage counters on it. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=blindside,
         ),
         Attack(
             title="Punishment",
@@ -32,7 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_stage2_pokemon), 60),
         ),
     ],
 )

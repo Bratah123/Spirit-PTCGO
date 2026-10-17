@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _leech_life(ctx):
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt)
+
 
 card = PokemonCardDef(
     guid="89fd4a87-0151-50e0-9e5c-65411d77d74d",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            effect=unimplemented,
+            effect=_leech_life,
         ),
     ],
 )

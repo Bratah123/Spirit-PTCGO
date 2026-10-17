@@ -1,5 +1,32 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+
+
+async def torment(ctx):
+    """10 damage. Choose 1 of the Defending Pokémon's attacks; it can't use
+    that attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    entries = [
+        e for e in (defender.get_attribute(AttrID.PIE_ABILITIES) or [])
+        if isinstance(e, dict) and e.get("abilityType") == "Attack"
+        and e.get("abilityID")
+    ]
+    if not entries:
+        return
+    index = 0
+    if len(entries) > 1:
+        index = await ctx.choose(
+            "Choose an attack to lock",
+            [e.get("title", {}).get("id", "Attack") for e in entries],
+        )
+    entry = entries[index]
+    state = ctx.session.turn_state
+    state.attack_locks[(defender.entity_id, entry["abilityID"])] = \
+        state.turn_number + 1
+
 
 card = PokemonCardDef(
     guid="6e642eb2-4d7a-51a9-9898-bc0acfbf7655",
@@ -25,7 +52,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of the Defending Pok\u00e9mon's attacks. That Pok\u00e9mon can't use that attack during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            effect=unimplemented,
+            effect=torment,
         ),
         Attack(
             title="Bite",

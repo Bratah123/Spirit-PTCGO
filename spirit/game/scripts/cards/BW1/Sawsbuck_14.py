@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="208a81a7-87e2-5662-933a-efaeca9845ca",
@@ -26,14 +28,16 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("both", energy_type=PokemonTypes.GRASS), 10, base=20,
+            ),
         ),
         Attack(
             title="Horn Leech",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
     ],
 )

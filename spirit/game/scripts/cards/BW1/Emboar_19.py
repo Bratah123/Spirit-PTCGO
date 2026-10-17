@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
 card = PokemonCardDef(
     guid="cc512e9e-f3e4-543e-8f0d-042559edae70",
@@ -29,7 +30,9 @@ card = PokemonCardDef(
             game_text="Discard all Fire Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(
+                all_energy=True, energy_type=PokemonTypes.FIRE
+            ),
         ),
     ],
 )

@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import (
+    condition_attack, bonus_if, defender_has_condition,
+)
 
 card = PokemonCardDef(
     guid="c50c5c6d-d87a-5973-9906-d093d84d8383",
@@ -22,14 +25,16 @@ card = PokemonCardDef(
             title="Hypnosis",
             game_text="The Defending Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Dream Eater",
             game_text="If the Defending Pok\u00e9mon is not Asleep, this attack does nothing.",
             cost={PokemonTypes.PSYCHIC: 2},
             damage=60,
-            effect=unimplemented,
+            effect=bonus_if(
+                defender_has_condition(SpecialConditions.ASLEEP), 0, else_nothing=True
+            ),
         ),
     ],
 )

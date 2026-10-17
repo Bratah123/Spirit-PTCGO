@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def magical_leaf(ctx):
+    """Flip a coin. If heads, +10 damage and heal 10 from this Pokémon."""
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    await ctx.deal_damage(ctx.ability.damage + (10 if heads else 0))
+    if heads:
+        await ctx.heal(10, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="08e542e8-4979-5072-8f8a-c13f5d071699",
@@ -25,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=magical_leaf,
         ),
     ],
 )
