@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, ignore_effects_attack
 
 card = PokemonCardDef(
     guid="cd9d2679-2378-5eb0-a7be-c118d3f08e66",
@@ -24,14 +25,14 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on the Defending Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=40,
-            effect=unimplemented,
+            effect=ignore_effects_attack(),
         ),
         Attack(
             title="Swing Around",
             game_text="Flip 2 coins. This attack does 30 more damage for each heads.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=30),
         ),
     ],
 )

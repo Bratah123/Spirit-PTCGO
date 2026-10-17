@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    damage_per, count_energy, lock_defender_attacks,
+)
+
+
+async def iron_breaker(ctx):
+    """80. Defending Pokemon can't attack during opponent's next turn."""
+    await ctx.deal_damage()
+    lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="a689caad-6c2a-581d-bba5-5c54e027176f",
@@ -25,14 +35,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy("defender"), 20, base=20),
         ),
         Attack(
             title="Iron Breaker",
             game_text="The Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=iron_breaker,
         ),
     ],
 )

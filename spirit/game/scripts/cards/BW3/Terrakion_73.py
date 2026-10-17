@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _kos_suffered_last_turn(ctx):
+    return ctx.kos_suffered_last_turn() > 0
+
 
 card = PokemonCardDef(
     guid="dba0ac5f-5d89-5f8c-83ef-1c707019c2d5",
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_kos_suffered_last_turn, 60),
         ),
         Attack(
             title="Land Crush",

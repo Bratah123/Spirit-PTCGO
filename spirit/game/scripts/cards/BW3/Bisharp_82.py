@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_metal_energy_card
 
 card = PokemonCardDef(
     guid="28260b7b-9560-58ee-8ec6-bd61479ddd03",
@@ -25,7 +28,10 @@ card = PokemonCardDef(
             game_text="Attach a Metal Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=attach_from_discard(
+                predicate=is_metal_energy_card, count=1, target="self",
+                prompt="Choose a Metal Energy card to attach.",
+            ),
         ),
         Attack(
             title="Metal Scissors",
@@ -33,7 +39,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("self", energy_type=PokemonTypes.METAL), 20, base=40,
+            ),
         ),
     ],
 )
