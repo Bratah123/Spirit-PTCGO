@@ -10,7 +10,7 @@ from .base import BaseHandler, handle
 from spirit.shop import shop_manager
 from spirit.game.scripts.products import loader as product_loader
 from spirit.game.attributes import AttrID
-from spirit.game.models.product import Deck
+from spirit.game.models.product import BoosterPack, Deck
 from spirit.database.deck_products import open_products
 from spirit.database.async_utils import run_db
 from spirit.database.player_data import add_to_collection, get_decks_by_account_id
@@ -65,6 +65,15 @@ class ShopHandler(BaseHandler):
 
         return opened_items, opened_products
 
+    async def _send_notification(self, name: str, value: dict):
+        """Pushes a Notification; the client also dispatches its payload as a normal message."""
+        await self.send({
+            "messageName": OutboundMsg.NOTIFICATION.value,
+            "notificationID": str(uuid.uuid4()),
+            "payload": json.dumps({"name": name, "value": value}),
+            "notificationType": 0,
+        })
+
     async def _process_opening(self, request_id, flags, product_ids, is_tradable_override=None,
                                purchased=False):
         try:
@@ -78,24 +87,27 @@ class ShopHandler(BaseHandler):
             }, request_id)
             return
 
-        response = {
-            "messageName": OutboundMsg.PRODUCTS_OPENED.value,
+        opened = {
             "accountID": self._owner_id(),
             "items": opened_items,
             "products": opened_products,
             "additionalData": {}
         }
-        await self.send(response, request_id)
-
-        # Sync collection count after opening (unsolicited sync uses request_id=0)
-        if self.client.player:
-            await self.push_collection()
-            if any(isinstance(product_loader.products_by_guid.get(item["archetypeID"]), Deck)
-                   for item in opened_products):
+        products = [product_loader.products_by_guid.get(item["archetypeID"]) for item in opened_products]
+        if any(isinstance(product, BoosterPack) for product in products):
+            await self.send(dict(opened, messageName=OutboundMsg.PRODUCTS_OPENED.value), request_id)
+        else:
+            # No pack-opening sequence: the client only reacts to ProductsOpened as a notification.
+            if self.client.player and any(isinstance(product, Deck) for product in products):
                 self.client.player.decks = await run_db(
                     get_decks_by_account_id, self.client.player.account_id)
                 payload = self.client.player.get_decks_data()
                 await self.send(dict(payload, messageName=OutboundMsg.DECK_LIST.value))
+            await self._send_notification(OutboundMsg.PRODUCTS_OPENED.value, opened)
+
+        # Sync collection count after opening (unsolicited sync uses request_id=0)
+        if self.client.player:
+            await self.push_collection()
 
     @staticmethod
     def _price_total(products_with_qty):
@@ -255,15 +267,7 @@ class ShopHandler(BaseHandler):
             "items": purchased_items
         }, request_id)
         # No push_collection: the dialog command adds these items client-side (would double).
-        await self.send({
-            "messageName": OutboundMsg.NOTIFICATION.value,
-            "notificationID": str(uuid.uuid4()),
-            "payload": json.dumps({
-                "name": OutboundMsg.PRODUCTS_FULFILLED.value,
-                "value": {"items": purchased_items},
-            }),
-            "notificationType": 0,
-        })
+        await self._send_notification(OutboundMsg.PRODUCTS_FULFILLED.value, {"items": purchased_items})
         await self.push_wallet()
 
     @handle(InboundMsg.GET_AVAILABLE_PRODUCTS)
