@@ -17,7 +17,7 @@ async def leaf_tornado(ctx):
         return
     await ctx.move_energy_freely(
         mine, mine,
-        predicate=lambda e: energy_provides_type(e, PokemonTypes.GRASS),
+        predicate=lambda e: energy_provides_type(e, PokemonTypes.GRASS.value),
         prompt="Choose a Grass Energy to move",
     )
 

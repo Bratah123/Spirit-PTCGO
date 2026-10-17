@@ -9,7 +9,7 @@ def _shift_gear_condition(board, player_id, pokemon) -> bool:
     if len(pkmn) < 2:
         return False
     return any(
-        energy_provides_type(e, PokemonTypes.METAL)
+        energy_provides_type(e, PokemonTypes.METAL.value)
         for p in pkmn for e in board.attached_energies(p)
     )
 
@@ -19,7 +19,7 @@ async def shift_gear(ctx):
     mine = ctx.my_pokemon_in_play()
     await ctx.move_energy_freely(
         mine, mine,
-        predicate=lambda e: energy_provides_type(e, PokemonTypes.METAL),
+        predicate=lambda e: energy_provides_type(e, PokemonTypes.METAL.value),
         max_count=1,
         prompt="Choose a Metal Energy to move",
     )

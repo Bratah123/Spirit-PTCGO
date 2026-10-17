@@ -5,7 +5,8 @@ from spirit.game.card_effects.trainers import is_energy_card
 
 
 def _is_fire_energy(card) -> bool:
-    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE)
+    return is_energy_card(card) and energy_provides_type(
+        card, PokemonTypes.FIRE.value)
 
 
 def _inferno_fandango_condition(board, player_id, pokemon) -> bool:
