@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import is_in_active_spot, protect_next_turn
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
 card = PokemonCardDef(
     guid="b8d044a1-1a9c-5e56-bd18-98f4f336453a",
@@ -24,14 +27,20 @@ card = PokemonCardDef(
             title="Helping Hand",
             game_text="Search your deck for a basic Energy card and attach it to 1 of your Benched Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(
+                predicate=is_basic_energy_card,
+                count=1,
+                distribute=False,
+                target_pred=lambda p: not is_in_active_spot(p),
+                prompt="Choose a basic Energy card to attach.",
+            ),
         ),
         Attack(
             title="Cotton Guard",
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 30 (after applying Weakness and Resistance).",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
     ],
 )

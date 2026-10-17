@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+
+
+async def zap_cannon(ctx):
+    """80 damage. Flip; if tails, can't use Zap Cannon next turn."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and not results[0] and ctx.ability.ability_id:
+        ctx.session.turn_state.lock_attack(
+            ctx.attacker.entity_id, ctx.ability.ability_id,
+        )
+
 
 card = PokemonCardDef(
     guid="e66feb3c-65c1-575e-b3d1-a077f412e5f6",
@@ -25,14 +37,14 @@ card = PokemonCardDef(
             game_text="Attach an Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1},
             damage=30,
-            effect=unimplemented,
+            effect=attach_from_discard(),
         ),
         Attack(
             title="Zap Cannon",
             game_text="Flip a coin. If tails, this Pok\u00e9mon can't use Zap Cannon during your next turn.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=zap_cannon,
         ),
     ],
 )

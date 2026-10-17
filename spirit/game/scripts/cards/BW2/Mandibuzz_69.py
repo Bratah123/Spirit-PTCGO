@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    flip_damage, damage_per, count_energy,
+)
 
 card = PokemonCardDef(
     guid="33888914-5eb2-5fa9-8848-4b6f380da952",
@@ -26,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
         Attack(
             title="Dark Pulse",
@@ -34,7 +37,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("mine", PokemonTypes.DARKNESS), 10, base=20),
         ),
     ],
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
 
 card = PokemonCardDef(
     guid="3773d40c-3009-5bee-a2fa-6115c7f47ded",
@@ -23,7 +24,7 @@ card = PokemonCardDef(
             title="Grass Cocooning",
             game_text="Heal 40 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=heal_attack(40),
         ),
         Attack(
             title="Razor Leaf",

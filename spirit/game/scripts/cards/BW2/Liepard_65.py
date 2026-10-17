@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
+
+async def feint_attack(ctx):
+    """30 to 1 of opponent's Pokémon; ignore W/R and other effects on that Pokémon."""
+    candidates = ctx.opponent_pokemon_in_play()
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(
+        candidates, "Choose a Pokémon to take 30 damage",
+    )
+    if target is None:
+        return
+    await ctx.deal_damage(
+        30, target=target,
+        apply_modifiers=False, ignore_target_effects=True,
+    )
+
 
 card = PokemonCardDef(
     guid="bd1f34cf-6e54-5934-9d3f-99b538a869d9",
@@ -24,7 +42,7 @@ card = PokemonCardDef(
             title="Feint Attack",
             game_text="Does 30 damage to 1 of your opponent's Pok\u00e9mon. This attack's damage isn't affected by Weakness, Resistance, or any other effects on that Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=feint_attack,
         ),
         Attack(
             title="Claw Rend",
@@ -32,7 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage(), 30),
         ),
     ],
 )

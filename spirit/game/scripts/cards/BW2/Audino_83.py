@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+from spirit.game.card_effects.attacks_common import flip_damage, count_energy
 
 card = PokemonCardDef(
     guid="86f05f3f-b8bf-5172-8a8d-70d73850d7e2",
@@ -24,13 +26,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy(), per_heads=40),
         ),
         Attack(
             title="Heal Pulse",
             game_text="Heal 50 damage from 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
-            effect=unimplemented,
+            effect=heal_targets(50, scope='choice'),
         ),
     ],
 )

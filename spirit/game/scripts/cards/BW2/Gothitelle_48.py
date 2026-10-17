@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def mental_shock(ctx):
+    """60 damage. Flip: heads Confused, tails discard Energy from defender."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    if heads:
+        await ctx.apply_special_condition(defender, SpecialConditions.CONFUSED)
+    else:
+        await ctx.discard_energy_from(
+            defender, 1,
+            prompt="Choose Energy to discard from the Defending Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="e016bcab-0d9c-5692-8357-b54afe554425",
@@ -29,7 +46,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Confused. If tails, discard an Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=mental_shock,
         ),
     ],
 )

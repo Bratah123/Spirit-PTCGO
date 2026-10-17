@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def scarf_hold(ctx):
+    """30 damage. Flip: heads, Defending Pokémon can't attack next turn."""
+    await ctx.deal_damage()
+    if (await ctx.flip_coins(1, ctx.ability.title))[0]:
+        lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="777375ba-8f32-5a14-9985-7eb1309eb1b0",
@@ -23,7 +32,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=scarf_hold,
         ),
     ],
 )

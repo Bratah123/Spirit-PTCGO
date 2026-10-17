@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import apply_own_next_turn_boost
+
+
+async def hone_claws(ctx):
+    """No damage. During your next turn, this Pokémon's attacks do 30 more."""
+    await apply_own_next_turn_boost(ctx, 30)
+
 
 card = PokemonCardDef(
     guid="627abe51-2952-5290-8474-cb995a2092fc",
@@ -23,7 +30,7 @@ card = PokemonCardDef(
             title="Hone Claws",
             game_text="During your next turn, each of this Pok\u00e9mon's attacks does 30 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=hone_claws,
         ),
         Attack(
             title="Scratch",

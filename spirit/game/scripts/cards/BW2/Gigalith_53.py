@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import is_energy
+
+
+async def shear(ctx):
+    """Discard top 5 of your deck; attach any Fighting Energy among them."""
+    top = ctx.deck_top(5)
+    await ctx.discard_cards(top)
+    for card in top:
+        if is_energy(card) and energy_provides_type(
+                card, PokemonTypes.FIGHTING.value):
+            await ctx.attach_energy(card, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="23ef2ef2-9eaf-5118-9b0b-8480c01e74ce",
@@ -23,7 +37,7 @@ card = PokemonCardDef(
             title="Shear",
             game_text="Discard the top 5 cards of your deck. If any of those cards are Fighting Energy cards, attach them to this Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1},
-            effect=unimplemented,
+            effect=shear,
         ),
         Attack(
             title="Rock Bullet",
@@ -31,7 +45,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(
+                count_energy("self", PokemonTypes.FIGHTING), 20, base=40),
         ),
     ],
 )

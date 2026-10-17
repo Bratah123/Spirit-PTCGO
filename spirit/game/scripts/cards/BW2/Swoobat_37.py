@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def phat_sound(ctx):
+    """Flip 3 coins. 10×heads to each of opponent's Pokémon (no W/R on bench)."""
+    results = await ctx.flip_coins(3, ctx.ability.title)
+    amount = 10 * sum(1 for r in results if r)
+    if amount <= 0:
+        return
+    for p in ctx.opponent_pokemon_in_play():
+        await ctx.deal_damage(amount, target=p, apply_modifiers=None)
+
 
 card = PokemonCardDef(
     guid="4ebca1d6-11c4-5508-a3aa-587864218886",
@@ -29,7 +40,7 @@ card = PokemonCardDef(
             title="Phat Sound",
             game_text="Flip 3 coins. This attack does 10 damage times the number of heads to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=phat_sound,
         ),
     ],
 )

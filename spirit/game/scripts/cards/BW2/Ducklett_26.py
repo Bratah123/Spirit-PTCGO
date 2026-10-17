@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def roost(ctx):
+    """Heal 40. This Pokémon can't retreat during your next turn."""
+    await ctx.heal(40, ctx.attacker)
+    ctx.lock_retreat(
+        ctx.attacker,
+        through_turn=ctx.session.turn_state.turn_number + 2,
+    )
+
 
 card = PokemonCardDef(
     guid="0cbee559-53ed-50ec-8b78-3996438d41d8",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Roost",
             game_text="Heal 40 damage from this Pok\u00e9mon. This Pok\u00e9mon can't retreat during your next turn.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=roost,
         ),
         Attack(
             title="Rain Splash",

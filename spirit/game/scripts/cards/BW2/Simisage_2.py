@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import (
+    PokemonTypes, PokemonStage, Rarities, SpecialConditions,
+)
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def fires_power(ctx):
+    """30. If this Pokémon has any Fire Energy, Defending is Burned."""
+    await ctx.deal_damage()
+    if any(
+        energy_provides_type(e, PokemonTypes.FIRE.value)
+        for e in ctx.attached_energies(ctx.attacker)
+    ):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
+
 
 card = PokemonCardDef(
     guid="da050c61-ae6a-568a-b7b6-6c02f99add87",
@@ -25,7 +39,7 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon has any Fire Energy attached to it, the Defending Pok\u00e9mon is now Burned.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=fires_power,
         ),
         Attack(
             title="Seed Bomb",

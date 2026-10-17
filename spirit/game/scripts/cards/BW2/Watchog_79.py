@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def watcheck(ctx):
+    """Look at top 5 of opponent's deck; put back in any order."""
+    await ctx.reorder_deck_top(
+        5,
+        player_id=ctx.opponent_id,
+        prompt="Rearrange the top cards of your opponent's deck",
+    )
+
+
+async def quick_tail_smash(ctx):
+    """Optional flip before damage: heads +60; tails nothing; no flip = printed."""
+    if await ctx.ask_yes_no("Flip a coin for Quick Tail Smash?"):
+        if not (await ctx.flip_coins(1, ctx.ability.title))[0]:
+            return
+        await ctx.deal_damage(80)
+    else:
+        await ctx.deal_damage(20)
+
 
 card = PokemonCardDef(
     guid="0876a883-621b-5d93-9a46-78b966ce3264",
@@ -23,7 +43,7 @@ card = PokemonCardDef(
             title="Watcheck",
             game_text="Look at the top 5 cards of your opponent's deck and put them back on top of his or her deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=watcheck,
         ),
         Attack(
             title="Quick Tail Smash",
@@ -31,7 +51,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=quick_tail_smash,
         ),
     ],
 )

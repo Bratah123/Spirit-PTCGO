@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def giga_drain(ctx):
+    """Heal from this Pokémon the same amount of damage dealt to the Defending."""
+    dealt = await ctx.deal_damage()
+    if dealt:
+        await ctx.heal(dealt)
+
 
 card = PokemonCardDef(
     guid="ed37d0b0-5200-5531-8141-b235ee150c17",
@@ -24,14 +32,14 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=giga_drain,
         ),
         Attack(
             title="Sacred Sword",
             game_text="This Pok\u00e9mon can't use Sacred Sword during your next turn.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

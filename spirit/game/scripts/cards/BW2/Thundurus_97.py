@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_energy_card
 
 card = PokemonCardDef(
     guid="c539ebaf-8b8b-5ae1-8efb-d74c84575217",
@@ -22,14 +26,20 @@ card = PokemonCardDef(
             title="Charge",
             game_text="Search your deck for a Lightning Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(
+                predicate=lambda c: is_energy_card(c) and energy_provides_type(
+                    c, PokemonTypes.LIGHTNING.value
+                ),
+                to_self=True,
+                prompt="Choose a Lightning Energy card to attach.",
+            ),
         ),
         Attack(
             title="Disaster Volt",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(1),
         ),
     ],
 )

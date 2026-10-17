@@ -1,5 +1,40 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+async def tailwind(ctx):
+    """Attach an Energy from your hand to 1 of your Pokémon."""
+    energies = [c for c in ctx.hand() if is_energy_card(c)]
+    if not energies:
+        return
+    picks = await ctx.choose_cards(
+        energies, 1, minimum=0,
+        prompt="Choose an Energy card from your hand to attach",
+    )
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(
+        ctx.my_pokemon_in_play(),
+        "Choose a Pokémon to attach the Energy to",
+    )
+    if target is not None:
+        await ctx.attach_energy(picks[0], target)
+
+
+async def feather_strike(ctx):
+    """Flip: heads +40; tails discard Energy from defender. Printed 40 either way."""
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    await ctx.deal_damage(40 + (40 if heads else 0))
+    if not heads:
+        defender = ctx.defender
+        if defender is None or ctx.effects_blocked(defender):
+            return
+        await ctx.discard_energy_from(
+            defender, 1,
+            prompt="Choose Energy to discard from the Defending Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="c7ca7565-d40e-50d6-bd3e-0510dbfeb0a4",
@@ -24,7 +59,7 @@ card = PokemonCardDef(
             title="Tailwind",
             game_text="Attach an Energy from your hand to 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=tailwind,
         ),
         Attack(
             title="Feather Strike",
@@ -32,7 +67,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=feather_strike,
         ),
     ],
 )
