@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_bench
+
 
 card = PokemonCardDef(
     guid="50b2fb5f-f383-5c91-bdba-e6d58feaea58",
@@ -23,7 +25,10 @@ card = PokemonCardDef(
             game_text="If you have 4 or fewer Benched Pok\u00e9mon, this attack does nothing.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=bonus_if(
+                lambda ctx: count_bench("mine")(ctx) >= 5,
+                0, else_nothing=True,
+            ),
         ),
     ],
 )

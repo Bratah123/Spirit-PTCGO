@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.passives_common import no_weakness_passive
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _leaf_tailor_protects(target, carrier):
+    if target.owning_player_id != carrier.owning_player_id:
+        return False
+    return any(is_energy_card(c) for c in target.children)
+
 
 card = PokemonCardDef(
     guid="62b16c8a-312e-536a-b551-b3478d04b37b",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Leaf Tailor",
             game_text="Each of your Pok\u00e9mon that has any Energy attached to it has no Weakness.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=no_weakness_passive(_leaf_tailor_protects),
         ),
         Attack(
             title="Cutting Arm",
@@ -31,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
     ],
 )

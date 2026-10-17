@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.session.passives import Passive
+
+
+class AncientPowerPassive(Passive):
+    """Each player can't evolve Pokémon from hand."""
+
+    def blocks_evolution(self, player_id, target, carrier):
+        return True
+
 
 card = PokemonCardDef(
     guid="c46546cf-1e8c-52e8-a10d-53b49941a0ec",
@@ -23,14 +33,14 @@ card = PokemonCardDef(
             title="Ancient Power",
             game_text="Each play can't play any Pok\u00e9mon from his or her hand to evolve his or her Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=AncientPowerPassive(),
         ),
         Attack(
             title="Rock Slide",
             game_text="Does 10 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=snipe_attack(10, pool="bench", count=2, also_base=True),
         ),
     ],
 )
