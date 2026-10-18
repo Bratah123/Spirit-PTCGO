@@ -228,7 +228,7 @@ Start the server as usual. On startup, the `AutoBundle` system detects the new s
 $env:PYTHONPATH=(Get-Location).Path; python -m spirit.main
 ```
 
-## Custom Cosmetic Creation
+## Custom Sleeve / Coin Creation
 
 SpiritPTCGO supports an advanced **Dynamic Cosmetic Asset Injection** system. You can add fully custom card sleeves, gameplay coins, and 3D deck boxes by placing your PNG textures in the designated folders. The server will dynamically expand the master asset templates and generate the client-prefixed AssetBundles automatically on startup.
 
@@ -239,12 +239,10 @@ Save your custom textures as PNGs under the respective subdirectories inside `sp
   * *Recommended Resolution:* **`512x512`** or **`256x256`** pixels (Square `1:1`).
 * **Coins:** Place in `spirit/assets/products/custom_coins/`
   * *Recommended Resolution:* **`256x256`** pixels (Square `1:1`). Transparent background outside the circular border is recommended.
-* **Deck Boxes:** Place in `spirit/assets/products/custom_deckboxes/`
-  * *Recommended Resolution:* **`512x512`** pixels (Square `1:1`). This texture folds directly over the 3D model's UV layout.
 
 *Note: Filenames must be lowercase and use underscores/numbers (e.g., `my_cool_sleeve.png`). The filename (without extension) becomes the logical asset ID. Non-standard dimensions are automatically scaled to the proper size on server boot.*
 
-### 2. Update your Product Definition
+### 2. Define the Scripts
 To assign your custom cosmetics to players or set them as defaults, use their lowercase filenames as the logical `image_url` property in your product definitions (located inside `spirit/game/scripts/products/`):
 
 Example: In `spirit/game/scripts/products/noset/basic_sleeve.py`
@@ -255,30 +253,14 @@ product = SleeveDef(
     guid="e079c0d3-b934-4fbd-b021-545106c75693", # Client Default Sleeve GUID
     key="NoSet",
     name="Basic Sleeve",
-    image_url="my_cool_sleeve" # Points directly to your custom 'my_cool_sleeve.png'!
+    image_url="my_cool_sleeve" # <-
+    # Points directly to your custom 'my_cool_sleeve.png'!
 )
 ```
 
-### 3. Sync the Database
-To apply any updated product properties and synchronize the items to existing players:
-```powershell
-python spirit/database/seed_collection.py
-```
+## Custom Booster Pack
 
-### 4. Run the Server
-On boot, the server automatically reads your templates, allocates unique PathIDs, dynamically appends your custom textures to the unified master bundles, and registers them in the asset manifest for the client:
-```powershell
-$env:PYTHONPATH=(Get-Location).Path; python -m spirit.main
-```
-Your custom cosmetics are now ready to be equipped and rendered in game!
-
-## Custom Booster Pack & Theme Deck Creation
-
-For deck contents, automatic Theme eligibility, previews and opening into a saved
-deck, see the [theme-deck scripting guide](spirit/game/decks/THEME_DECKS.md).
-The [game package map](spirit/game/README.md) describes where the implementation lives.
-
-SpiritPTCGO supports the exact same advanced dynamic appending system for **Booster Packs** and **PCD/Theme Decks**. You can customize the look of pack foils and deck boxes in the Shop and Opening scenes by placing your PNG textures in the designated folders.
+SpiritPTCGO supports the exact same system for **Booster Packs**. You can customize the look of pack foils and deck boxes in the Shop and Opening scenes by placing your PNG textures in the designated folders.
 
 ### 1. Place your Custom Textures
 Save your custom textures as PNGs under the respective subdirectories inside `spirit/assets/products/`:
@@ -288,13 +270,11 @@ Save your custom textures as PNGs under the respective subdirectories inside `sp
     * **Canvas Dimensions:** `512x512` pixels (RGBA transparent background).
     * **Booster Art Position:** The visible booster pack artwork should be scaled to a height of **`496`** pixels, with exactly **`16`** pixels of top padding (stretching from Y=16 to Y=512).
     * **Horizontal Alignment:** Center the artwork horizontally. It should have a width of roughly **`270`** to **`285`** pixels (depending on your source artwork's aspect ratio), leaving transparent padding on the left and right.
-* **Theme Decks (PCDs):** Place in `spirit/assets/products/custom_pcds/`
-  * *Recommended Resolution:* **`512x512`** pixels (Square `1:1`). This texture represents the flat box skin used by the client's PCD renderer.
 
 *Note: Filenames must be lowercase (e.g., `xy_breakthrough_booster.png`). The filename (without extension) becomes the logical asset ID inside the client packs/pcdBoxes bundle.*
 
-### 2. Update your Product Definition
-To link your custom booster or deck art to the item, use its lowercase filename as the `image_url` property in your product scripts (located inside `spirit/game/scripts/products/`):
+### 2. Define the Booster Pack Script
+To link your custom booster pack image the item, use its lowercase filename as the `image_url` property in your product scripts (located inside `spirit/game/scripts/products/`):
 
 Example: In `spirit/game/scripts/products/xy8/booster_7df512a8.py` (Breakthrough Booster Pack)
 ```python
@@ -304,66 +284,19 @@ product = BoosterPackDef(
     guid="7df512a8-8f81-432d-ae52-9d3df3902341",
     key="xy8",
     name="BREAKthrough Booster Pack",
-    image_url="xy_breakthrough_booster" # Points directly to your custom 'xy_breakthrough_booster.png'!
+    image_url="xy_breakthrough_booster" # <-
+    # Points directly to your custom 'xy_breakthrough_booster.png'!
 )
 ```
+## Custom Theme Decks
+To be written..
 
-### 3. Run the Server
-On boot, the server reads `packs.template` and `pcdBoxes.template`, dynamically appends your custom textures to the unified master bundles, updates the client-side mappings, and serves them automatically in game!
-```powershell
-$env:PYTHONPATH=(Get-Location).Path; python -m spirit.main
-```
+## Custom Deck Boxes
+To be written..
 
 ## Custom Versus Season Rewards
 
-SpiritPTCGO features a configuration-driven **Versus Season Reward System** that allows server administrators to easily customize, add, or schedule different seasons and tiers of rewards (Trainer Coins, Booster Packs, Cards, Deck Boxes, Sleeves, etc.) without writing any code.
-
-### 1. Edit the Seasons Configuration
-All versus seasons are defined inside the following JSON file:
-`spirit/database/json_data/versus_seasons.json`
-
-You can edit this file to modify the active season, update the start/end timestamps, adjust the point thresholds, or add custom rewards.
-
-Example season block:
-```json
-[
-  {
-    "seasonID": "Season1",
-    "startTime": 0,
-    "endTime": 4102444800000,
-    "description": {
-      "id": "SpiritPTCGO Season 1"
-    },
-    "tiers": [
-      {
-        "rewards": {
-          "10": [
-            {
-              "name": "5 Tokens",
-              "rewardType": "Tokens",
-              "rewardAmount": 5,
-              "rewardCurrency": "prizeTrainerCoin"
-            }
-          ]
-        }
-      },
-      {
-        "rewards": {
-          "50": [
-            {
-              "name": "1 Pack",
-              "rewardType": "Product",
-              "rewardAmount": 1,
-              "rewardProductID": "your-booster-pack-archetype-guid"
-            }
-          ]
-        }
-      }
-    ],
-    "resetRewardID": ""
-  }
-]
-```
+SpiritPTCGO features a configuration-driven **Versus Season Reward System** that allows server administrators to easily customize, add, or schedule different seasons and tiers of rewards (Trainer Coins, Booster Packs, Cards, Deck Boxes, Sleeves, etc.) without writing any code. Simply just log into the admin dashboard at http://127.0.0.1:8000/admin and configure the Season Rewards that way. It'll automatically update the JSON file that stores the season reward configurations for you!
 
 ### 2. Supported Reward Types & Fields
 Each reward object inside the `rewards` list supports these core fields:
