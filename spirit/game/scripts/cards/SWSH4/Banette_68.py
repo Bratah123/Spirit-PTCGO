@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.card_effects.pokemon import curse_of_devolution
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 

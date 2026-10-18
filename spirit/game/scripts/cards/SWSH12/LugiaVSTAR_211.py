@@ -3,7 +3,7 @@ from spirit.game.card_effects.pokemon import (
     summoning_star_condition,
     tempest_dive,
 )
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(

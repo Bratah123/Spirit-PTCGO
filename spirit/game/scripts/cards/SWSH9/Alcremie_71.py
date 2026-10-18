@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import AttrID, CardType, PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.effects import is_special_energy
 

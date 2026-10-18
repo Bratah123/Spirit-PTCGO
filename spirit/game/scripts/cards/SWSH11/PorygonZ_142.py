@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.card_effects.pokemon import downgrading_beam
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 

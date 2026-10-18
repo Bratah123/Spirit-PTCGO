@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.card_effects.pokemon import yoga_loop, yoga_loop_condition
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
