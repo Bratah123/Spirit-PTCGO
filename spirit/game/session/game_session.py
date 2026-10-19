@@ -46,9 +46,9 @@ from .constants import (
     PROMPT_TAILS,
     PROMPT_YES,
     PROMPT_NO,
+    PROMPT_YES_COUNT,
     PROMPT_CHOOSE_ACTIVE,
     PROMPT_CHOOSE_BENCH,
-    PROMPT_WAIT_OPPONENT_ACTIVE,
     PROMPT_WAIT_OPPONENT_SETUP,
     PROMPT_WAIT_OPPONENT_DECISION,
     PROMPT_MULLIGAN_EXTRA_DRAW,
@@ -1318,7 +1318,6 @@ class GameSession:
             for phase in (
                 self.run_pregame_coin_flip,
                 self.run_setup_phase,
-                self.run_mulligan_phase,
             ):
                 await self._wait_for_connection_resume()
                 await self._run_state_unit(phase())
@@ -3366,78 +3365,61 @@ class GameSession:
         await asyncio.sleep(SHUFFLE_ANIM_SECONDS)
 
         # 2. Deal the opening hands from the (now shuffled) decks.
-        moves_by_player: Dict[str, List[Dict[str, Any]]] = {}
-        intros_by_player: Dict[str, List[Dict[str, Any]]] = {}
+        dealt: Dict[str, List[Dict[str, Any]]] = {}
         for player_id in self._turn_order():
-            drawn = self.board_state.draw_cards(player_id, STARTING_HAND_SIZE)
+            dealt[player_id] = self.board_state.draw_cards(player_id, STARTING_HAND_SIZE)
             logging.info(
-                f"[Session {self.game_id}] Dealt {len(drawn)} cards to "
+                f"[Session {self.game_id}] Dealt {len(dealt[player_id])} cards to "
                 f"{self.players[player_id].screen_name}."
             )
-            intros_by_player[player_id] = [
-                self._entity_introduced_msg(d["card"]) for d in drawn
-            ]
-            moves_by_player[player_id] = [
-                self._entity_moved_msg(
-                    d["entity_id"], d["destination_id"], d["position"]
-                )
-                for d in drawn
-            ]
-
-        grouped_moves = [
-            NestedSequence(GameSequence.GROUPED_MOVE, moves_by_player[pid])
-            for pid in self._turn_order()
-            if moves_by_player.get(pid)
-        ]
-        if grouped_moves:
-            for player_id, player in self.players.items():
-                for intro in intros_by_player.get(player_id, []):
-                    await player.send_packet(
-                        OutboundMsg.SEQUENCE_MESSAGE.value,
-                        self._sequence_envelope(EMPTY_SEQUENCE_ID, intro),
-                    )
-                await self.send_game_sequence(
-                    [player],
-                    GameSequence.DEAL_INITIAL_HANDS,
-                    grouped_moves,
-                )
+        await self._send_hand_deal(dealt)
 
         # Hands are dealt; the mulligan check picks up from here.
         self.game_phase = GamePhase.SETUP_PHASE
 
-    async def run_mulligan_phase(self):
-        """Reshuffles Basic-less opening hands and offers the opponent extra draws."""
-        self.game_phase = GamePhase.MULLIGAN_PHASE
+    async def _send_hand_deal(self, dealt: Dict[str, List[Dict[str, Any]]]):
+        """Animates hand deals for several players in one parallel DealInitialHands bracket."""
+        grouped_moves = [
+            NestedSequence(GameSequence.GROUPED_MOVE, [
+                self._entity_moved_msg(d["entity_id"], d["destination_id"], d["position"])
+                for d in dealt[pid]
+            ])
+            for pid in self._turn_order()
+            if dealt.get(pid)
+        ]
+        if not grouped_moves:
+            return
+        for player_id, player in self.players.items():
+            for d in dealt.get(player_id, []):
+                await player.send_packet(
+                    OutboundMsg.SEQUENCE_MESSAGE.value,
+                    self._sequence_envelope(
+                        EMPTY_SEQUENCE_ID, self._entity_introduced_msg(d["card"])
+                    ),
+                )
+            await self.send_game_sequence(
+                [player],
+                GameSequence.DEAL_INITIAL_HANDS,
+                grouped_moves,
+            )
+
+    def _needs_mulligan(self, player_id: str) -> bool:
         board = self.board_state
-        mulligan_counts: Dict[str, int] = {pid: 0 for pid in self.players}
-        # player_id -> list of {entity_id: [attribute dicts]} piles, one per mulligan
-        reveal_piles: Dict[str, List[Dict[str, Any]]] = {pid: [] for pid in self.players}
+        return not board.setup_active_candidates(player_id) and board.player_has_any_basic(player_id)
 
-        while True:
-            needs_mulligan = [
-                pid for pid in self._turn_order()
-                if not board.setup_active_candidates(pid)
-            ]
-            if not needs_mulligan:
-                break
-
-            for player_id in needs_mulligan:
-                if not board.player_has_any_basic(player_id):
-                    logging.error(
-                        f"[Session {self.game_id}] Deck of "
-                        f"{self.players[player_id].screen_name} contains no Basic "
-                        f"Pokemon; skipping impossible mulligan."
-                    )
-                    needs_mulligan = None
-                    break
-
+    async def _resolve_mulligans(
+        self,
+        player_ids: List[str],
+        mulligan_counts: Dict[str, int],
+        reveal_piles: Dict[str, List[Dict[str, Any]]],
+    ):
+        """Mulligans the players together until one holds a Basic, shown as one mulligan each."""
+        board = self.board_state
+        returned: Dict[str, List[str]] = {}
+        while player_ids and all(self._needs_mulligan(pid) for pid in player_ids):
+            for player_id in player_ids:
                 hand_area = board.find_player_area(player_id, "hand")
-                deck_area = board.find_player_area(player_id, "deck")
-                if not hand_area or not deck_area:
-                    continue
-
-                # Snapshot the busted hand for the reveal carousel before it
-                # goes back into the deck (attributes travel inline).
+                returned.setdefault(player_id, [card.entity_id for card in hand_area.children])
                 reveal_piles[player_id].append({
                     card.entity_id: card.serialize_attributes()
                     for card in hand_area.children
@@ -3448,36 +3430,41 @@ class GameSession:
                     f"{self.players[player_id].screen_name} mulligans "
                     f"(#{mulligan_counts[player_id]})."
                 )
-
-                # The Mulligan executor (M.v) runs its inner commands strictly
-                # sequentially, so the hand-return moves ride a nested
-                # GroupedMove bracket to animate back into the deck together.
-                back_moves = [
-                    self._entity_moved_msg(card.entity_id, deck_area.entity_id, i)
-                    for i, card in enumerate(hand_area.children)
-                ]
                 board.return_hand_to_deck(player_id)
                 board.shuffle_deck(player_id)
-                await self.send_game_sequence(
-                    list(self.players.values()),
-                    GameSequence.MULLIGAN,
-                    [
-                        NestedSequence(GameSequence.GROUPED_MOVE, back_moves),
-                        self._build_msg(
-                            OutboundMsg.SHUFFLED.value,
-                            {"gameID": self.game_id, "entityID": deck_area.entity_id},
-                        ),
-                    ],
-                )
-                await asyncio.sleep(SHUFFLE_ANIM_SECONDS)
+                board.draw_cards(player_id, STARTING_HAND_SIZE)
+        if not returned:
+            return
 
-                await self._broadcast_draw(player_id, STARTING_HAND_SIZE)
+        for player_id, entity_ids in returned.items():
+            deck_area = board.find_player_area(player_id, "deck")
+            # M.v runs its commands sequentially; the nested GroupedMove returns the hand together.
+            back_moves = [
+                self._entity_moved_msg(entity_id, deck_area.entity_id, i)
+                for i, entity_id in enumerate(entity_ids)
+            ]
+            await self.send_game_sequence(
+                list(self.players.values()),
+                GameSequence.MULLIGAN,
+                [
+                    NestedSequence(GameSequence.GROUPED_MOVE, back_moves),
+                    self._build_msg(
+                        OutboundMsg.SHUFFLED.value,
+                        {"gameID": self.game_id, "entityID": deck_area.entity_id},
+                    ),
+                ],
+            )
+        await asyncio.sleep(SHUFFLE_ANIM_SECONDS)
 
-            if needs_mulligan is None:
-                break
-
-        await self._reveal_mulligans(reveal_piles)
-        await self._offer_extra_draws(mulligan_counts)
+        redealt: Dict[str, List[Dict[str, Any]]] = {}
+        for player_id in returned:
+            hand_area = board.find_player_area(player_id, "hand")
+            redealt[player_id] = [
+                {"entity_id": card.entity_id, "destination_id": hand_area.entity_id,
+                 "position": i, "card": card}
+                for i, card in enumerate(hand_area.children)
+            ]
+        await self._send_hand_deal(redealt)
 
     async def _broadcast_draw(self, player_id: str, count: int):
         """Draws cards server-side and animates them in a Draw bracket on both clients.
@@ -3492,7 +3479,7 @@ class GameSession:
         """
         drawn = self.board_state.draw_cards(player_id, count)
         if not drawn:
-            return
+            return []
         self.stat_add(player_id, "cardsdrawn", len(drawn))
         nested_moves = NestedSequence(GameSequence.GROUPED_MOVE, [
             self._entity_moved_msg(d["entity_id"], d["destination_id"], d["position"])
@@ -3505,6 +3492,7 @@ class GameSession:
                 GameSequence.DRAW,
                 (intros + [nested_moves]) if pid == player_id else [nested_moves],
             )
+        return drawn
 
     async def _reveal_mulligans(self, reveal_piles: Dict[str, List[Dict[str, Any]]]):
         """Shows each player's mulliganed hands to both clients via the reveal carousel.
@@ -3536,54 +3524,109 @@ class GameSession:
                 [effect],
             )
 
-    async def _offer_extra_draws(self, mulligan_counts: Dict[str, int]):
+    async def _offer_extra_draws(self, mulligan_counts: Dict[str, int]) -> Dict[str, List[str]]:
         """Offers the less-mulliganed player one Yes/No extra draw per net mulligan.
 
         Uses CustomChoiceRequired (generic R.y button dialog) rather than
         MulliganChoiceRequired: the client contains no UI that can answer a
         MulliganChoiceNode, which would soft-lock the prompt.
+        Returns the entity IDs each player drew.
         """
+        drawn_by_player: Dict[str, List[str]] = {}
         for player_id in self._turn_order():
             opponent_id = self._opponent_id(player_id)
             net_draws = mulligan_counts.get(opponent_id, 0) - mulligan_counts.get(player_id, 0)
             if net_draws <= 0:
                 continue
             player = self.players[player_id]
-            for i in range(net_draws):
+            prompt = PROMPT_MULLIGAN_EXTRA_DRAW.format(mulligan_counts.get(opponent_id, 0))
+            remaining = net_draws
+            while remaining > 0:
+                buttons = [PROMPT_YES_COUNT.format(remaining), PROMPT_NO]
+                if remaining > 1:
+                    buttons.append(PROMPT_YES_COUNT.format(1))
                 picked = await self.prompt_player_choice(
-                    player_id, PROMPT_MULLIGAN_EXTRA_DRAW,
-                    [PROMPT_YES, PROMPT_NO], PROMPT_SORT_MULLIGAN,
+                    player_id, prompt, buttons, PROMPT_SORT_MULLIGAN,
                 )
-                if picked != 0:
+                if picked == 0:
+                    count = remaining
+                elif picked == 2:
+                    count = 1
+                else:
                     break
                 logging.info(
-                    f"[Session {self.game_id}] {player.screen_name} draws an "
-                    f"extra card for opponent mulligan ({i + 1}/{net_draws})."
+                    f"[Session {self.game_id}] {player.screen_name} draws {count} "
+                    f"extra card(s) for opponent mulligans ({remaining} available)."
                 )
-                await self._broadcast_draw(player_id, 1)
+                drawn = await self._broadcast_draw(player_id, count)
+                if not drawn:
+                    break
+                drawn_by_player.setdefault(player_id, []).extend(
+                    d["entity_id"] for d in drawn
+                )
+                remaining -= len(drawn)
+        return drawn_by_player
 
     async def run_placement_phase(self):
-        """Both players place their Active (required), then their Bench (optional)."""
+        """Mulligans and setup in original PTCGO order; Basic holders set up first."""
         self.game_phase = GamePhase.PLACEMENT_PHASE
+        order = self._turn_order()
+        mulligan_counts: Dict[str, int] = {pid: 0 for pid in self.players}
+        # player_id -> list of {entity_id: [attribute dicts]} piles, one per mulligan
+        reveal_piles: Dict[str, List[Dict[str, Any]]] = {pid: [] for pid in self.players}
+        for pid in order:
+            if not self.board_state.player_has_any_basic(pid):
+                logging.error(
+                    f"[Session {self.game_id}] Deck of {self.players[pid].screen_name} "
+                    f"contains no Basic Pokemon; skipping impossible mulligan."
+                )
+
+        waiting = [pid for pid in order if self._needs_mulligan(pid)]
+        if len(waiting) > 1:
+            self.game_phase = GamePhase.MULLIGAN_PHASE
+            await self._wait_for_connection_resume()
+            await self._run_state_unit(
+                self._resolve_mulligans(waiting, mulligan_counts, reveal_piles)
+            )
+            waiting = [pid for pid in waiting if self._needs_mulligan(pid)]
 
         done_players: set = set()
-        await asyncio.gather(*(
-            self._run_state_unit(self._run_active_placement(pid, done_players))
-            for pid in self._turn_order()
-        ))
-        # Barrier reached: clear any lingering "please wait" prompts.
-        for player in self.players.values():
+        first = [pid for pid in order if pid not in waiting] if waiting else []
+        if waiting:
+            if first:
+                self.game_phase = GamePhase.PLACEMENT_PHASE
+                await self._send_setup_wait_prompts(waiting)
+                await self._run_setups(first, done_players)
+                await self._close_setup_prompts()
+            self.game_phase = GamePhase.MULLIGAN_PHASE
             await self._wait_for_connection_resume()
-            await self._send_close_pause_prompt(player)
+            await self._run_state_unit(
+                self._resolve_mulligans(waiting, mulligan_counts, reveal_piles)
+            )
 
-        done_players = set()
-        await asyncio.gather(*(
-            self._run_state_unit(self._run_bench_placement(pid, done_players))
-            for pid in self._turn_order()
-        ))
-        for player in self.players.values():
-            await self._wait_for_connection_resume()
-            await self._send_close_pause_prompt(player)
+        await self._wait_for_connection_resume()
+        await self._run_state_unit(self._reveal_mulligans(reveal_piles))
+
+        self.game_phase = GamePhase.PLACEMENT_PHASE
+        await self._send_setup_wait_prompts(first)
+        await self._run_setups(waiting or order, done_players)
+        await self._close_setup_prompts()
+
+        self.game_phase = GamePhase.MULLIGAN_PHASE
+        await self._wait_for_connection_resume()
+        extra_drawn = await self._run_state_unit(self._offer_extra_draws(mulligan_counts))
+
+        if extra_drawn:
+            self.game_phase = GamePhase.PLACEMENT_PHASE
+            done_players = set(self.players) - set(extra_drawn)
+            await self._send_setup_wait_prompts(done_players)
+            await asyncio.gather(*(
+                self._run_state_unit(
+                    self._run_bench_placement(pid, done_players, set(drawn))
+                )
+                for pid, drawn in extra_drawn.items()
+            ))
+            await self._close_setup_prompts()
 
         self.game_phase = GamePhase.PRIZE_DEAL
         await self._wait_for_connection_resume()
@@ -3593,6 +3636,29 @@ class GameSession:
         await self._run_state_unit(self._introduce_initial_pokemon())
         self.game_phase = GamePhase.SETUP_COMPLETE
         logging.info(f"[Session {self.game_id}] Setup complete; board is ready for turn 1.")
+
+    async def _close_setup_prompts(self):
+        """Clears setup "please wait" prompts once setup is reached."""
+        for player in self.players.values():
+            await self._wait_for_connection_resume()
+            await self._send_close_pause_prompt(player)
+
+    async def _send_setup_wait_prompts(self, player_ids):
+        for pid in player_ids:
+            if isinstance(self.players[pid], NetworkPlayer):
+                await self._wait_for_connection_resume()
+                await self._send_pause_prompt(self.players[pid], PROMPT_WAIT_OPPONENT_SETUP)
+
+    async def _run_setups(self, player_ids: List[str], done_players: set):
+        """Runs the given players' Active and Bench picks concurrently."""
+        await asyncio.gather(*(
+            self._run_state_unit(self._run_player_setup(pid, done_players))
+            for pid in player_ids
+        ))
+
+    async def _run_player_setup(self, player_id: str, done_players: set):
+        await self._run_active_placement(player_id)
+        await self._run_bench_placement(player_id, done_players)
 
     # ------------------------------------------------------------------
     # Main turn loop
@@ -5209,7 +5275,7 @@ class GameSession:
             await self._resolve_raw_knockout(attacker)
         return False
 
-    async def _run_active_placement(self, player_id: str, done_players: set):
+    async def _run_active_placement(self, player_id: str):
         """Drives one player's required Active Pokemon pick.
 
         The offer itself is sent with forced=false (a forced bare root
@@ -5224,51 +5290,46 @@ class GameSession:
             logging.error(f"[Session {self.game_id}] Missing active area for {player_id}.")
             return
 
-        try:
-            if isinstance(player, AIPlayer):
-                basics = board.setup_active_candidates(player_id)
-                if basics:
-                    await self._place_setup_card(player_id, basics[0].entity_id, active_area)
-                return
+        if isinstance(player, AIPlayer):
+            basics = board.setup_active_candidates(player_id)
+            if basics:
+                await self._place_setup_card(player_id, basics[0].entity_id, active_area)
+            return
 
-            await self._send_pause_prompt(player, PROMPT_CHOOSE_ACTIVE)
-            for _ in range(MAX_SELECTION_RETRIES):
-                if active_area.children:
-                    break
-                basics = board.setup_active_candidates(player_id)
-                if not basics:
-                    logging.error(
-                        f"[Session {self.game_id}] {player.screen_name} has no Basic "
-                        f"to place as Active; skipping placement."
-                    )
-                    break
-                offer = self._placement_offer_value(
-                    player_id, PROMPT_CHOOSE_ACTIVE, basics, TARGET_TYPE_ACTIVE
+        await self._send_pause_prompt(player, PROMPT_CHOOSE_ACTIVE)
+        for _ in range(MAX_SELECTION_RETRIES):
+            if active_area.children:
+                break
+            basics = board.setup_active_candidates(player_id)
+            if not basics:
+                logging.error(
+                    f"[Session {self.game_id}] {player.screen_name} has no Basic "
+                    f"to place as Active; skipping placement."
                 )
-                reply = await self.prompt_selection_message(
-                    player,
-                    OutboundMsg.SELECTION_WITH_TARGETS_REQUIRED.value,
-                    offer,
-                    expected_counter=offer["counter"],
-                )
-                picked = self._parse_placement_reply(reply, basics)
-                if picked:
-                    await self._place_setup_card(player_id, picked, active_area)
-        finally:
-            done_players.add(player_id)
+                break
+            offer = self._placement_offer_value(
+                player_id, PROMPT_CHOOSE_ACTIVE, basics, TARGET_TYPE_ACTIVE
+            )
+            reply = await self.prompt_selection_message(
+                player,
+                OutboundMsg.SELECTION_WITH_TARGETS_REQUIRED.value,
+                offer,
+                expected_counter=offer["counter"],
+            )
+            picked = self._parse_placement_reply(reply, basics)
+            if picked:
+                await self._place_setup_card(player_id, picked, active_area)
 
-        # Swap the "choose" prompt for the waiting prompt (or clear it if the
-        # opponent already finished -- run_placement_phase closes the rest).
+        # The bench offer that follows needs its Done button back.
         if isinstance(player, NetworkPlayer):
-            if self._opponent_id(player_id) in done_players:
-                await self._send_close_pause_prompt(player)
-            else:
-                await self._send_pause_prompt(player, PROMPT_WAIT_OPPONENT_ACTIVE)
+            await self._send_close_pause_prompt(player)
 
-    async def _run_bench_placement(self, player_id: str, done_players: set):
-        """Drives one player's optional Bench picks: one offer per placement,
-        ended by Done (selection=null) or a full bench. Never auto-ended on an
-        empty hand -- instant skips would leak that no Basics remain."""
+    async def _run_bench_placement(
+        self,
+        player_id: str,
+        done_players: set,
+        candidates: Optional[set] = None,
+    ):
         player = self.players[player_id]
         board = self.board_state
         bench_area = board.find_player_area(player_id, "bench")
@@ -5276,9 +5337,17 @@ class GameSession:
             logging.error(f"[Session {self.game_id}] Missing bench area for {player_id}.")
             return
 
+        def bench_candidates():
+            return [
+                card for card in board.basic_pokemon_in_hand(player_id)
+                if candidates is None or card.entity_id in candidates
+            ]
+
         try:
             if isinstance(player, AIPlayer):
-                for card in board.basic_pokemon_in_hand(player_id)[:BENCH_CAPACITY]:
+                for card in bench_candidates():
+                    if len(bench_area.children) >= BENCH_CAPACITY:
+                        break
                     await self._place_setup_card(player_id, card.entity_id, bench_area)
                 return
 
@@ -5286,7 +5355,7 @@ class GameSession:
                 if len(bench_area.children) >= BENCH_CAPACITY:
                     logging.info(f"[Session {self.game_id}] {player.screen_name}'s bench is full.")
                     break
-                basics = board.basic_pokemon_in_hand(player_id)
+                basics = bench_candidates()
                 logging.info(
                     f"[Session {self.game_id}] Offering {player.screen_name} a bench "
                     f"placement ({len(basics)} Basics in hand)."

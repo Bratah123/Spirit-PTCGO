@@ -161,6 +161,7 @@ PROMPT_TAILS = "Tails"
 PROMPT_GO_FIRST = "Would you like to go first?"
 PROMPT_YES = "Yes"
 PROMPT_NO = "No"
+PROMPT_YES_COUNT = "Yes ({0})"
 
 TEXT_COIN_TOSS_RESULT = "Coin Toss Result"
 TEXT_HEADS_RESULT = "Heads!"
@@ -177,7 +178,7 @@ PROMPT_CHOOSE_BENCH = "You may put Basic Pokémon on your Bench"
 PROMPT_WAIT_OPPONENT_ACTIVE = "Please wait while your opponent chooses an Active Pokémon."
 PROMPT_WAIT_OPPONENT_SETUP = "Please wait while your opponent finishes setting up."
 PROMPT_WAIT_OPPONENT_DECISION = "Please wait while your opponent makes a decision."
-PROMPT_MULLIGAN_EXTRA_DRAW = "Your opponent had no Basic Pokémon. Would you like to draw an extra card?"
+PROMPT_MULLIGAN_EXTRA_DRAW = "Your opponent took {0} mulligan(s). Would you like to draw extra cards?"
 
 # MulliganRevealArea does string.Format(prompt, pileCount) for its subheader.
 TEXT_MULLIGAN_REVEAL_PROMPT = "Hands revealed: {0}"
