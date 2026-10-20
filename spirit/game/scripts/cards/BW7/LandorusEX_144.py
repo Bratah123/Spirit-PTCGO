@@ -1,6 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fighting_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIGHTING.value)
+
+
+async def _lands_judgment(ctx):
+    """You may discard all Fighting Energy attached to this Pokemon; if you do, +70."""
+    fighting = [e for e in ctx.attached_energies(ctx.attacker) if _is_fighting_energy(e)]
+    bonus = 0
+    if fighting and await ctx.ask_yes_no("Discard all Fighting Energy for 70 more damage?"):
+        await ctx.discard_cards(fighting)
+        bonus = 70
+    await ctx.deal_damage(ctx.ability.damage + bonus)
 
 
 card = PokemonCardDef(
@@ -34,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_lands_judgment,
         ),
     ],
 )

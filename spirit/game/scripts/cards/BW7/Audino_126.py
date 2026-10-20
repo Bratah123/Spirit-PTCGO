@@ -1,6 +1,30 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID, CLIENT_SPECIAL_CONDITION_NAMES
 from spirit.game.card_effects.attacks_common import smokescreen_attack
+
+
+_CONDITION_BY_NAME = {name: cond for cond, name in CLIENT_SPECIAL_CONDITION_NAMES.items()}
+
+
+def _busybody_condition(board, player_id, pokemon=None):
+    return board.active_pokemon(player_id) is not None
+
+
+async def _busybody(ctx):
+    """From your hand: reveal this card, heal 10 damage and remove a Special
+    Condition from your Active Pokemon, then discard this card."""
+    await ctx.reveal_cards([ctx.source])
+    active = ctx.my_active()
+    if active is not None:
+        await ctx.heal(10, active)
+        names = [n for n in (active.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+                 if n in _CONDITION_BY_NAME]
+        if names:
+            index = 0
+            if len(names) > 1:
+                index = await ctx.choose("Remove which Special Condition?", [str(n) for n in names])
+            await ctx.cure_condition(active, _CONDITION_BY_NAME[names[index]])
+    await ctx.discard_cards([ctx.source])
 
 
 card = PokemonCardDef(
@@ -24,7 +48,10 @@ card = PokemonCardDef(
             title="Busybody",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is in your hand, you may reveal it. If you do, heal 10 damage and remove a Special Condition from your Active Pok\u00e9mon. Then, discard this Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            usable_from="hand",
+            activation=Activations.ONCE_PER_TURN,
+            condition=_busybody_condition,
+            effect=_busybody,
         ),
         Attack(
             title="Hip Bump",

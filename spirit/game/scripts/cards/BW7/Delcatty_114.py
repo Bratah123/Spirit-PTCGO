@@ -1,6 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _gather_energy(ctx):
+    """Printed damage; search your deck for a basic Energy card and attach it to
+    1 of your Pokemon; shuffle."""
+    await ctx.deal_damage()
+    picks = await ctx.search_deck(is_basic_energy_card, count=1, minimum=0,
+                                  prompt="Choose a basic Energy card to attach")
+    if picks:
+        target = await ctx.choose_pokemon(ctx.my_pokemon_in_play(), "Choose a Pok\u00e9mon to attach it to")
+        await ctx.attach_energy(picks[0], target or ctx.attacker)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -26,7 +39,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a basic Energy card and attach it to 1 of your Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=_gather_energy,
         ),
         Attack(
             title="Double Slap",

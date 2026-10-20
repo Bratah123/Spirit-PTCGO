@@ -1,5 +1,27 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+
+async def _gnaw_through(ctx):
+    """Discard a Pokemon Tool card attached to the Defending Pokemon."""
+    d = ctx.defender
+    if d is None or ctx.effects_blocked(d):
+        return
+    tools = [c for c in d.children
+             if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value]
+    if tools:
+        await ctx.discard_cards(tools[:1])
+
+
+async def _super_fang(ctx):
+    """Put damage counters on the Defending Pokemon until its remaining HP is 10."""
+    d = ctx.defender
+    if d is None:
+        return
+    amount = d.get_attribute(AttrID.HP, 0) - 10
+    if amount >= 10:
+        await ctx.deal_damage(amount - amount % 10, target=d, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="a592835b-5a78-57bd-b189-872307284e38",
@@ -23,13 +45,13 @@ card = PokemonCardDef(
             title="Gnaw Through",
             game_text="Discard a Pok\u00e9mon Tool card attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_gnaw_through,
         ),
         Attack(
             title="Super Fang",
             game_text="Put damage counters on the Defending Pok\u00e9mon until its remaining HP is 10.",
             cost={PokemonTypes.COLORLESS: 3},
-            effect=unimplemented,
+            effect=_super_fang,
         ),
     ],
 )

@@ -1,6 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+
+
+async def _healing_melody(ctx):
+    """Flip a coin. If heads, heal 60 damage from each of your Pokemon."""
+    results = await ctx.flip_coins(1, "Healing Melody")
+    if results and results[0]:
+        for pokemon in ctx.my_pokemon_in_play():
+            await ctx.heal(60, pokemon)
 
 
 card = PokemonCardDef(
@@ -25,7 +33,7 @@ card = PokemonCardDef(
             title="Healing Melody",
             game_text="Flip a coin. If heads, heal 60 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_healing_melody,
         ),
         Attack(
             title="Kick Away",

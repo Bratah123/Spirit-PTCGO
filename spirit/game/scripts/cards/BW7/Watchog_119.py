@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 
 card = PokemonCardDef(
@@ -33,7 +34,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Psych Up attack does 30 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=boost_own_next_turn(30, attack_title='Psych Up'),
         ),
     ],
 )
