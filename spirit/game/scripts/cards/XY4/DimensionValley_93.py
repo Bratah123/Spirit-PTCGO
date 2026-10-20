@@ -1,13 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dimension Valley (XY4 #93): trainer effect stubbed.
+from spirit.game.data_utils import StadiumCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonTypes
+from spirit.game.session.passives import Passive
 
-Card text:
-  - Each Psychic Pokémon's attacks (both yours and your opponent's) cost Colorless less.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
 
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+class _DimensionValley(Passive):
+    """Each Psychic Pokemon's attacks (both players) cost Colorless less."""
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if PokemonTypes.PSYCHIC.value not in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or []):
+            return cost
+        if "Colorless" not in cost:
+            return cost
+        if cost["Colorless"] > 1:
+            cost["Colorless"] -= 1
+        else:
+            del cost["Colorless"]
+        return cost
+
 
 card = StadiumCardDef(
     guid="915776f2-92b4-53ab-97ad-bcf2d4ce25a9",
@@ -19,6 +27,5 @@ card = StadiumCardDef(
     collector_number=93,
     set_code="XY4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_DimensionValley()
 )

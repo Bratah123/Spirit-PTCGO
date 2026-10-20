@@ -1,14 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Archie's Ace in the Hole (XY5 #124): trainer effect stubbed.
+from spirit.game.data_utils import SupporterCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonTypes
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.session.passives import effective_bench_capacity
 
-Card text:
-  - You can play this card only when it is the last card in your hand.
-  - Put a Water Pokémon from your discard pile onto your Bench. Then, draw 5 cards.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import SupporterCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _is_water_pokemon(card):
+    return is_pokemon_card(card) and PokemonTypes.WATER.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
+
+def archies_ace_condition(board, player_id):
+    """You can play this card only when it is the last card in your hand."""
+    hand = board.find_player_area(player_id, "hand")
+    return hand is not None and len(hand.children) == 1
+
+
+async def archies_ace(ctx):
+    """Put a Water Pokemon from your discard pile onto your Bench. Then, draw 5 cards."""
+    cards = [c for c in ctx.discard_pile() if _is_water_pokemon(c)]
+    bench = ctx.board.find_player_area(ctx.player_id, "bench")
+    if cards and bench is not None and len(bench.children) < effective_bench_capacity(ctx.board, ctx.player_id):
+        picks = await ctx.choose_cards(cards, 1, minimum=1, prompt="Choose a Water Pokémon")
+        if picks:
+            await ctx.bench_pokemon(picks[0])
+    await ctx.draw_cards(5)
+
 
 card = SupporterCardDef(
     guid="5e2efbe1-2f95-58b8-b68e-9bdea3db53d2",
@@ -20,6 +35,6 @@ card = SupporterCardDef(
     collector_number=124,
     set_code="XY5",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=archies_ace,
+    condition=archies_ace_condition
 )

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Girafarig (XY4 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
 
 card = PokemonCardDef(
     guid="48da419f-3215-5cc2-a2e2-65537d72ce96",
@@ -33,8 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: count_energy('self', energy_type=PokemonTypes.PSYCHIC)(ctx) > 0, 30),
         ),
     ],
 )

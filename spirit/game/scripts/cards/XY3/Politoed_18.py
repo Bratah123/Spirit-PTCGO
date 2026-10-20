@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Politoed (XY3 #18): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import attack_discount_passive
+from spirit.game.content.definitions import def_for
+
+
+def _named(card, *names):
+    d = def_for(card.archetype_id)
+    return getattr(d, "display_name", None) in names
+
 
 card = PokemonCardDef(
     guid="49c5dde7-5222-5894-b399-716edb5f95ed",
@@ -26,8 +30,8 @@ card = PokemonCardDef(
         Ability(
             title="King's Song",
             game_text="Ignore all Colorless Energy in the attack cost of each of your Poliwag, Poliwhirl, and Poliwrath's attacks.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=attack_discount_passive(99, self_only=False,
+                pred=lambda p: _named(p, "Poliwag", "Poliwhirl", "Poliwrath")),
         ),
         Attack(
             title="Hyper Voice",

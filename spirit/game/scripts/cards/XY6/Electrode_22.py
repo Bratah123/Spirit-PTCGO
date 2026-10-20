@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Electrode (XY6 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _energy_bomb(ctx):
+    """70; you may move all Energy from this Pokemon to your Benched Pokemon in any way."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    if bench and ctx.attached_energies(ctx.attacker) and await ctx.ask_yes_no("Move Energy to your Benched Pokémon?"):
+        await ctx.move_energy_freely([ctx.attacker], bench, prompt="Choose an Energy to move")
+
 
 card = PokemonCardDef(
     guid="829b611a-a7a2-5bd2-973d-54763ea3c983",
@@ -21,6 +27,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.METAL,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Voltorb.Name",
     family_id=100,
     abilities=[
@@ -30,16 +37,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=20),
         ),
         Attack(
             title="Energy Bomb",
             game_text="You may move all Energy from this Pok\u00e9mon to your Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_energy_bomb,
         ),
     ],
 )

@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diggersby (XY5 #90): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def deck_distiller(ctx):
+    heads = await ctx.flip_until_tails("Deck Distiller")
+    if heads <= 0:
+        return
+    top_cards = ctx.deck_top(heads, ctx.opponent_id)
+    if top_cards:
+        await ctx.discard_cards(top_cards)
+
 
 card = PokemonCardDef(
     guid="bf2f0637-7c94-5bc1-8a11-1e7cabf9f96e",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
             title="Ear Dig",
             game_text="Flip a coin until you get tails. For each heads, discard the top card of your opponent's deck.",
             cost={PokemonTypes.FIGHTING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=deck_distiller,
         ),
         Attack(
             title="Hammer In",

@@ -114,6 +114,10 @@ class Triggers:
     """Events the game session fires scripted abilities on (Ability.trigger)."""
     ON_PLAY = "on_play"  # the Pokemon is played from hand onto the bench
     ON_EVOLVE = "on_evolve"  # the Pokemon evolves into this card
+    # This in-play Pokemon is about to evolve (Alakazam-EX Kinesis: "before it
+    # evolves"); fires on the PRE-evolution before the card moves; ctx carries
+    # evolution_card.
+    ON_BEING_EVOLVED = "on_being_evolved"
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
     # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
@@ -653,10 +657,14 @@ class PokemonToolCardDef(TrainerCardDef):
     restricts legal attach targets (Hero's Medal)."""
     def __init__(self, passive: Optional[Any] = None,
                  granted_abilities: Optional[List[Ability]] = None,
-                 attach_to: Optional[Callable] = None, **kwargs):
+                 attach_to: Optional[Callable] = None,
+                 on_carrier_knocked_out: Optional[Any] = None, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        # async (ctx) run after the holder is Knocked Out by damage from an
+        # opponent's attack; ctx.ko_energies lists its Energy pre-discard.
+        self.on_carrier_knocked_out = on_carrier_knocked_out
         self.attach_to = attach_to
         self.granted_abilities: List[Ability] = granted_abilities or []
         for idx, a in enumerate(self.granted_abilities):
@@ -684,6 +692,19 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    on_carrier_damaged_by_attack -- async (ctx) run when the carrier is damaged
+                        by an opponent's attack (even if Knocked Out); ctx.source
+                        is the energy, ctx.attached_to the carrier, ctx.damaged_by
+                        the attacker (Dangerous Energy).
+    discard_unless_attach_to -- XY type-locked energies: "(If this card is
+                        attached to anything other than a X Pokemon, discard
+                        this card.)" -- checked before every action offer.
+    discard_end_of_attach_turn -- "Discard this card at the end of the turn you
+                        attached it" (Double Aqua/Magma Energy).
+    reattach_after_own_attack -- "If this card is discarded by an attack of the
+                        Pokemon this card is attached to, attach this card from
+                        your discard pile to that Pokemon after attacking"
+                        (Burning Energy).
     """
     def __init__(
         self,
@@ -702,6 +723,10 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        on_carrier_damaged_by_attack: Optional[Any] = None,
+        discard_unless_attach_to: bool = False,
+        discard_end_of_attach_turn: bool = False,
+        reattach_after_own_attack: bool = False,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -718,6 +743,10 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        self.on_carrier_damaged_by_attack = on_carrier_damaged_by_attack
+        self.discard_unless_attach_to = discard_unless_attach_to
+        self.discard_end_of_attach_turn = discard_end_of_attach_turn
+        self.reattach_after_own_attack = reattach_after_own_attack
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]

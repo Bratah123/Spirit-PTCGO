@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Togekiss (XY6 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, count_energy, snipe_attack
+
 
 card = PokemonCardDef(
     guid="a781d24d-5844-5d8e-96f5-60cc48f96e92",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Togetic.Name",
     family_id=175,
     abilities=[
@@ -30,16 +29,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy(), per_heads=50),
         ),
         Attack(
             title="Aura Sphere",
             game_text="This attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, also_base=True),
         ),
     ],
 )

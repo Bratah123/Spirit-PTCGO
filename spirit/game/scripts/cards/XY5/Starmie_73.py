@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie (XY5 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
+
+def _same_energy(ctx):
+    return ctx.defender is not None and count_energy('self')(ctx) == count_energy('defender')(ctx)
+
 
 card = PokemonCardDef(
     guid="c3a6c661-2a50-5994-9a68-05c6a5814732",
@@ -29,8 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_same_energy, 60),
         ),
     ],
 )

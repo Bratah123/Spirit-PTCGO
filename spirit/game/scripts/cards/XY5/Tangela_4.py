@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tangela (XY5 #4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="c7524bd0-8eb1-5e39-bac2-1f3e7e68c00e",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
         Attack(
             title="Vine Whip",
