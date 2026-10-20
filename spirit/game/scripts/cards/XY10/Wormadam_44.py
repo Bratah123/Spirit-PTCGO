@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wormadam (XY10 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.content.definitions import def_for
+
+
+def _named(p, name):
+    return getattr(def_for(p.archetype_id), "display_name", None) == name
+
+
+async def _link(ctx):
+    """Bonus damage for linked Pokemon on your Bench."""
+    bench = ctx.my_bench()
+    await ctx.deal_damage(ctx.ability.damage + (60 if any(_named(p, "Mothim") for p in bench) else 0))
+
 
 card = PokemonCardDef(
     guid="3205659b-83e7-5705-b1f2-74c4ea2eea27",
@@ -34,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_link,
         ),
     ],
 )

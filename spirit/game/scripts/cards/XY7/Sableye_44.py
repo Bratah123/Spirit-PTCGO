@@ -1,9 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sableye (XY7 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_supporter_card
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.attacks_common import place_counters
+
+
+async def _bewitching_eyes(ctx):
+    """Choose a Supporter card from your opponent's discard pile and use it as
+    the effect of this attack."""
+    pool = [c for c in ctx.discard_pile(ctx.opponent_id) if is_supporter_card(c)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(pool, 1, minimum=1, prompt="Choose a Supporter to use")
+    definition = def_for(picks[0].archetype_id) if picks else None
+    effect = getattr(definition, "effect", None)
+    if effect is None:
+        return
+    condition = getattr(definition, "condition", None)
+    try:
+        if condition is not None and not condition(ctx.board, ctx.player_id):
+            return
+    except TypeError:
+        pass
+    await effect(ctx)
+
 
 card = PokemonCardDef(
     guid="2e9af8ac-c023-5caa-a614-6d33d7d4220b",
@@ -25,15 +45,13 @@ card = PokemonCardDef(
             title="Bewitching Eyes",
             game_text="Choose a Supporter card from your opponent's discard pile and use it as the effect of this attack.",
             cost={PokemonTypes.DARKNESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_bewitching_eyes,
         ),
         Attack(
             title="Furtive Drop",
             game_text="Put 3 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(3),
         ),
     ],
 )

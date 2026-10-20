@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hypno (XY9 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _goodnight_babies(ctx):
+    """Leave both Active Pokemon Asleep."""
+    for p in (ctx.my_active(), ctx.opponent_active()):
+        if p is not None:
+            await ctx.apply_special_condition(p, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="326f178e-93e8-5403-bcd0-778cc7c1e51e",
@@ -26,8 +30,8 @@ card = PokemonCardDef(
         Ability(
             title="Goodnight, Babies",
             game_text="Once during your turn (before your attack), you may leave both Active Pok\u00e9mon Asleep.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=_goodnight_babies,
         ),
         Attack(
             title="Zen Headbutt",

@@ -1,13 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Silent Lab (XY5 #140): trainer effect stubbed.
+from spirit.game.data_utils import StadiumCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonStage
+from spirit.game.session.passives import Passive
 
-Card text:
-  - Each Basic Pokémon in play, in each player's hand, and in each player's discard pile has no Abilities.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
 
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+class _SilentLab(Passive):
+    """Each Basic Pokemon in play has no Abilities."""
+    def blocks_abilities(self, pokemon, carrier):
+        return pokemon.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value
+
 
 card = StadiumCardDef(
     guid="ff59974c-334d-58fb-bd26-96f35695006e",
@@ -19,6 +19,5 @@ card = StadiumCardDef(
     collector_number=140,
     set_code="XY5",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_SilentLab()
 )

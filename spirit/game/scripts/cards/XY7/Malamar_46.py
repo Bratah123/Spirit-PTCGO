@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Malamar (XY7 #46): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.support_common import gust_then, recover_from_discard
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _alluring_dance_confuse(ctx, new_active):
+    await ctx.apply_special_condition(new_active, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="016c5ef3-65fa-5a96-ad24-48f948a78e74",
@@ -29,16 +31,14 @@ card = PokemonCardDef(
             title="Entangling Control",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with his or her Active Pok\u00e9mon. The new Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gust_then(_alluring_dance_confuse),
         ),
         Attack(
             title="Trash Tentacle",
             game_text="Put a card from your discard pile into your hand.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recover_from_discard(count=1, minimum=1, reveal=False, to='hand'),
         ),
     ],
 )

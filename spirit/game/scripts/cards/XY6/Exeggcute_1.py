@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Exeggcute (XY6 #1): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _bounce(ctx):
+    """10; flip a coin. If heads, switch this Pokemon with 1 of your Benched."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    bench = ctx.my_bench()
+    if results and results[0] and bench:
+        target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+        await ctx.switch_active(ctx.player_id, target or bench[0])
+
 
 card = PokemonCardDef(
     guid="c6eeecf2-ae11-50dc-b051-e0a464804d04",
@@ -26,8 +33,7 @@ card = PokemonCardDef(
             title="Loathe",
             game_text="Flip a coin. If heads, switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_bounce,
         ),
         Attack(
             title="Ram",

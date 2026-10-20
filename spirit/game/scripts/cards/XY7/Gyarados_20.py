@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gyarados (XY7 #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage, flip_damage, count_energy
+
 
 card = PokemonCardDef(
     guid="b1f941c1-c5ed-56d6-99b0-767ebda70f96",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="This attack does 10 damage to each Benched Pok\u00e9mon (both yours and your opponent's). (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, side='both', also_base=True),
         ),
         Attack(
             title="Aqua Tail",
@@ -37,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 3},
             damage=90,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy('self', energy_type=PokemonTypes.WATER), bonus_per_heads=30),
         ),
     ],
 )

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Larvitar (XY10 #41): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
 
 card = PokemonCardDef(
     guid="00e10ee9-4810-5a83-b54b-35a88e560bff",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Mountain Munch",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Corkscrew Punch",

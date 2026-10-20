@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Misdreavus (XY8 #65): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="d0bb35df-1317-51bb-b6eb-5442a5cd528e",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             title="Haunt",
             game_text="Put 2 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(2, 'opponent_active'),
         ),
     ],
 )

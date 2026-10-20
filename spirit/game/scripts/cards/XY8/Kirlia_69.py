@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kirlia (XY8 #69): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_supporter_card
+
 
 card = PokemonCardDef(
     guid="41b3f92a-5099-5420-8a29-3e1785343aa2",
@@ -27,8 +27,7 @@ card = PokemonCardDef(
             title="Beckon",
             game_text="Put a Supporter card from your discard pile into your hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recover_from_discard(predicate=is_supporter_card, count=1, minimum=1, reveal=True, to="hand"),
         ),
         Attack(
             title="Quick Turn",
@@ -36,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=30),
         ),
     ],
 )

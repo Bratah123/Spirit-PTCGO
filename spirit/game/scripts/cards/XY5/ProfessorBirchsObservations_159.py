@@ -1,13 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Professor Birch's Observations (XY5 #159): trainer effect stubbed.
-
-Card text:
-  - Shuffle your hand into your deck and flip a coin. If heads, draw 7 cards. If tails, draw 4 cards.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def professor_birchs_observations(ctx):
+    """Shuffle your hand into your deck; flip: heads draw 7, tails draw 4."""
+    hand = [c for c in ctx.hand() if c is not ctx.source]
+    if hand:
+        await ctx.shuffle_into_deck(hand, ctx.player_id)
+    else:
+        await ctx.shuffle_deck()
+    results = await ctx.flip_coins(1, "Professor Birch's Observations")
+    await ctx.draw_cards(7 if results and results[0] else 4)
+
 
 card = SupporterCardDef(
     guid="cc26edad-ecc7-55b9-b7c5-ff405493cea1",
@@ -19,6 +23,5 @@ card = SupporterCardDef(
     collector_number=159,
     set_code="XY5",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=professor_birchs_observations
 )

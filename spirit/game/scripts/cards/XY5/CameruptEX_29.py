@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Camerupt-EX (XY5 #29): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+async def _explosive_jet(ctx):
+    """Discard any number of Fire Energy from your Pokemon: 50 times the
+    number of Energy cards discarded."""
+    pool = [e for p in ctx.my_pokemon_in_play() for e in ctx.attached_energies(p)
+            if _is_fire_energy(e)]
+    picks = await ctx.choose_cards(pool, len(pool), minimum=0,
+                                   prompt="Discard any number of Fire Energy") if pool else []
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.deal_damage(50 * len(picks or []))
+
 
 card = PokemonCardDef(
     guid="565f2e1e-3ff7-532a-9749-d303a682e74f",
@@ -28,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
         Attack(
             title="Explosive Jet",
@@ -37,8 +51,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_explosive_jet,
         ),
     ],
 )

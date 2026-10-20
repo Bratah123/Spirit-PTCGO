@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shuppet (XY6 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_special_energy
+
+
+async def _bleh(ctx):
+    """Discard a Special Energy attached to 1 of your opponent's Pokemon."""
+    await ctx.deal_damage()
+    pool = [e for p in ctx.opponent_pokemon_in_play() if not ctx.effects_blocked(p)
+            for e in ctx.attached_energies(p) if is_special_energy(e)]
+    if pool:
+        picks = await ctx.choose_cards(pool, 1, minimum=1, prompt="Discard a Special Energy")
+        if picks:
+            await ctx.discard_cards(picks)
+
 
 card = PokemonCardDef(
     guid="9efdc946-4b2b-5622-abf5-84d83b63b37a",
@@ -28,8 +37,7 @@ card = PokemonCardDef(
             title="Bleh",
             game_text="Discard a Special Energy attached to 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_bleh,
         ),
     ],
 )

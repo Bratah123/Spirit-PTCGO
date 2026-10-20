@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Carbink (XY10 #50): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+from spirit.game.content.definitions import def_for
+
+
+def _is_ex(p):
+    return "EX" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+def _from_opposing_ex(calc, carrier):
+    return calc.attacker is not None and calc.is_opposing and _is_ex(calc.attacker)
+
 
 card = PokemonCardDef(
     guid="bc7c455b-c3b1-5bba-b4ff-dadac545497e",
@@ -25,8 +32,7 @@ card = PokemonCardDef(
         Ability(
             title="Safeguard",
             game_text="Prevent all effects of attacks, including damage, done to this Pok\u00e9mon by your opponent's Pok\u00e9mon-EX.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=prevent_damage_when(_from_opposing_ex),
         ),
         Attack(
             title="Power Gem",

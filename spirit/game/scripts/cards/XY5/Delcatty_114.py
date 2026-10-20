@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Delcatty (XY5 #114): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _replace(ctx):
+    """Move as many Energy attached to your Pokemon to your other Pokemon in any way you like."""
+    mine = ctx.my_pokemon_in_play()
+    if len(mine) < 2:
+        return
+    await ctx.move_energy_freely(mine, mine, prompt="Choose an Energy to move")
+
 
 card = PokemonCardDef(
     guid="5c2bd2a8-d8dd-5829-aa56-9b4297270304",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
             title="Replace",
             game_text="Move as many Energy attached to your Pok\u00e9mon to your other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_replace,
         ),
         Attack(
             title="Play Rough",
@@ -36,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zoroark (XY8 #91): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import is_in_active_spot
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+async def _rush_in(ctx):
+    """If this Pokemon is on your Bench, switch it with your Active Pokemon."""
+    await ctx.switch_active(ctx.player_id, ctx.source)
+
+
+def _on_bench(board, player_id, pokemon):
+    return pokemon is not None and not is_in_active_spot(pokemon) \
+        and board.active_pokemon(player_id) is not None
+
 
 card = PokemonCardDef(
     guid="ed2b8872-2b39-5033-9704-5f509031b197",
@@ -28,8 +37,9 @@ card = PokemonCardDef(
         Ability(
             title="Stand In",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is on your Bench, you may switch this Pok\u00e9mon with your Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_on_bench,
+            effect=_rush_in,
         ),
         Attack(
             title="Mind Jack",
@@ -37,8 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_bench('opponent'), 30, base=10),
         ),
     ],
 )

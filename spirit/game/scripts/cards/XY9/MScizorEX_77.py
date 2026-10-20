@@ -1,9 +1,32 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Scizor-EX (XY9 #77): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_special_energy
+
+
+async def _iron_crusher(ctx):
+    """120; you may discard a Special Energy from the opponent's Active or a Stadium in play."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    specials = [e for e in ctx.attached_energies(d) if is_special_energy(e)] if d is not None else []
+    if d is not None and ctx.effects_blocked(d):
+        specials = []
+    options = []
+    if specials:
+        options.append("Discard a Special Energy")
+    if ctx.stadium_in_play() is not None:
+        options.append("Discard the Stadium")
+    if not options:
+        return
+    pick = await ctx.choose("Iron Crusher", options + ["Do nothing"], use_panel=False)
+    if pick >= len(options):
+        return
+    if options[pick].endswith("Stadium"):
+        await ctx.discard_stadium()
+    else:
+        chosen = await ctx.choose_cards(specials, 1, minimum=1, prompt="Choose a Special Energy to discard")
+        if chosen:
+            await ctx.discard_cards(chosen)
+
 
 card = PokemonCardDef(
     guid="7185c0fa-936b-5722-8378-51c035146b06",
@@ -30,8 +53,7 @@ card = PokemonCardDef(
             game_text="You may discard a Special Energy attached to your opponent's Active Pok\u00e9mon or a Stadium card in play.",
             cost={PokemonTypes.METAL: 2},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_crusher,
         ),
     ],
 )

@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Granbull (XY8 #99): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _startling_bark(ctx):
+    """Flip: heads, 3 random cards from your opponent's hand are revealed and shuffled into their deck."""
+    import random
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    hand = list(ctx.hand(ctx.opponent_id))
+    if results and results[0] and hand:
+        picks = random.sample(hand, min(3, len(hand)))
+        await ctx.reveal_cards(picks)
+        await ctx.shuffle_into_deck(picks, ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="710bf233-4a6a-5c1f-a4a8-47b22e628824",
@@ -29,16 +38,14 @@ card = PokemonCardDef(
             title="Startling Bark",
             game_text="Flip a coin. If heads, choose 3 random cards from your opponent's hand. Your opponent reveals those cards and shuffles them into his or her deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_startling_bark,
         ),
         Attack(
             title="Tantrum",
             game_text="This Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(self_conditions=(SpecialConditions.CONFUSED,)),
         ),
     ],
 )

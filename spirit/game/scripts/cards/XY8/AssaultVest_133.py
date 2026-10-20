@@ -1,14 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Assault Vest (XY8 #133): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - Any damage done to the Pokémon this card is attached to by attacks from your opponent's Pokémon that have any Special Energy attached to them is reduced by 40 (after applying Weakness and Resistance).
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.session.effects import is_special_energy
+
+
+class _AssaultVest(Passive):
+    """Damage from attacks by opposing Pokemon with any Special Energy attached
+    is reduced by 40 (after Weakness and Resistance)."""
+    def modify_damage_taken(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        att = calc.attacker
+        if (me is None or calc.target is not me or not calc.is_attack or att is None
+                or att.owning_player_id == me.owning_player_id):
+            return
+        if any(is_special_energy(e) for e in calc.board.attached_energies(att)):
+            calc.amount = max(0, calc.amount - 40)
+
 
 card = PokemonToolCardDef(
     guid="f54a3999-16b8-5b65-abd8-76ea5df7846f",
@@ -20,6 +27,5 @@ card = PokemonToolCardDef(
     collector_number=133,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_AssaultVest()
 )

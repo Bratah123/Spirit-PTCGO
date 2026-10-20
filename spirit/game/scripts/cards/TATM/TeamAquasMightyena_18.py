@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Mightyena (TATM #18): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+
+
+async def _flip_discard_defender_energy(ctx):
+    """Printed damage; flip a coin. If heads, discard an Energy attached to
+    your opponent's Active Pokemon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    target = ctx.opponent_active()
+    if results and results[0] and target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(target, 1, minimum=1,
+                                      prompt="Choose an Energy to discard")
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
 
 card = PokemonCardDef(
     guid="770ac1cf-fe03-5ce3-a92c-fe727fc8a6fa",
@@ -31,16 +46,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(per_heads=30, coins_from=lambda ctx: sum(1 for p in ctx.my_pokemon_in_play() if _team(p, "Aqua"))),
         ),
         Attack(
             title="Crunch",
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_flip_discard_defender_energy,
         ),
     ],
 )
