@@ -63,6 +63,7 @@ STAGE_MAP = {
     "Basic": "PokemonStage.BASIC",
     "Stage 1": "PokemonStage.STAGE1",
     "Stage 2": "PokemonStage.STAGE2",
+    "Restored": "PokemonStage.RESTORED",
     "VMAX": "PokemonStage.VMAX",
     "VSTAR": "PokemonStage.VSTAR",
     "V-UNION": "PokemonStage.VUNION",

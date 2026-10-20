@@ -454,6 +454,8 @@ def compute_legal_actions(
             continue
         if isinstance(card, PokemonEntity):
             stage = card.get_attribute(AttrID.STAGE)
+            if stage == PokemonStage.RESTORED.value:
+                continue  # Restored Pokemon enter play only via their Fossil Item
             if stage == PokemonStage.BASIC.value:
                 if getattr(def_for(card.archetype_id), "unplayable_from_hand", False):
                     continue  # Shedinja: enters play only via an effect
