@@ -1,10 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import distribute_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
 
 async def feint(ctx):
     """30. This attack's damage isn't affected by Resistance."""
     await ctx.deal_damage(ignore_resistance=True)
+
+
+async def _pump_up_smash(ctx):
+    """Printed damage, then attach up to 2 basic Energy cards from your hand
+    to your Benched Pokemon in any way you like."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    pool = [c for c in ctx.hand() if is_basic_energy_card(c)]
+    if not bench or not pool:
+        return
+    picks = await ctx.choose_cards(pool, min(2, len(pool)), minimum=0,
+                                   prompt="Choose up to 2 basic Energy cards to attach")
+    if picks:
+        await distribute_energy(ctx, picks, bench)
 
 
 card = PokemonCardDef(
@@ -36,7 +52,7 @@ card = PokemonCardDef(
             game_text="Attach 2 basic Energy cards from your hand to your Benched Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=_pump_up_smash,
         ),
     ],
 )

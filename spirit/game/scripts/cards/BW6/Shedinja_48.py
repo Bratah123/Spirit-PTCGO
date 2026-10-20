@@ -1,6 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import place_counters
+from spirit.game.session.passives import Passive
+
+
+class _EmptyShellPassive(Passive):
+    """If this Pokemon is Knocked Out, the opponent takes no Prize cards for it."""
+
+    def modify_prizes_for_knockout(self, pokemon, ctx, count, carrier):
+        return 0 if pokemon is carrier else count
 
 
 card = PokemonCardDef(
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             title="Empty Shell",
             game_text="If this Pok\u00e9mon is Knocked Out, your opponent can't take any Prize cards for it.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_EmptyShellPassive(),
         ),
         Attack(
             title="Cursed Drop",

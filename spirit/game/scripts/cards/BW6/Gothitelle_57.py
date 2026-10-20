@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+async def _doom_decree(ctx):
+    """Flip 2 coins. If both are heads, the Defending Pokemon is Knocked Out."""
+    results = await ctx.flip_coins(2, "Doom Decree")
+    if len(results) == 2 and all(results) and ctx.defender is not None \
+            and not ctx.effects_blocked(ctx.defender):
+        await ctx.knock_out(ctx.defender)
+
 
 card = PokemonCardDef(
     guid="e1f605ef-dfb9-515a-9d0d-53a5e4324a93",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Doom Decree",
             game_text="Flip 2 coins. If both of them are heads, the Defending Pok\u00e9mon is Knocked Out.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_doom_decree,
         ),
         Attack(
             title="Black Magic",
@@ -31,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_bench('opponent'), 20, base=40),
         ),
     ],
 )

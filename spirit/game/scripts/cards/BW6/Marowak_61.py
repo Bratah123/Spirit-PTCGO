@@ -1,6 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if
+
+
+def _defender_has_resistance(ctx):
+    d = ctx.defender
+    return d is not None and bool(d.get_attribute(AttrID.RESISTANCE_TYPES))
 
 
 card = PokemonCardDef(
@@ -35,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_defender_has_resistance, 30),
         ),
     ],
 )

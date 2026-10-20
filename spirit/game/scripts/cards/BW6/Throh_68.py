@@ -1,5 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 
 async def superpower(ctx):
@@ -11,6 +11,15 @@ async def superpower(ctx):
         await ctx.deal_damage(20, target=ctx.attacker, apply_modifiers=False)
     else:
         await ctx.deal_damage(70)
+
+
+async def _squeeze(ctx):
+    """Flip a coin. If heads, +20 damage and the Defending Pokemon is Paralyzed."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (20 if heads else 0))
+    if heads and ctx.defender is not None and not ctx.effects_blocked(ctx.defender):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
 
 
 card = PokemonCardDef(
@@ -36,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_squeeze,
         ),
         Attack(
             title="Superpower",

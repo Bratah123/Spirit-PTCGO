@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.attacks_common import snipe_attack, damage_per, count_energy
 
 
 card = PokemonCardDef(
@@ -27,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy('opponent'), 20),
         ),
         Attack(
             title="Flash Impact",

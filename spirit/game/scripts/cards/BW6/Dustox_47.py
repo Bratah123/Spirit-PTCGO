@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_bonus, condition_attack
 
 
 card = PokemonCardDef(
@@ -25,7 +25,7 @@ card = PokemonCardDef(
             title="Hazardous Scales",
             game_text="The Defending Pok\u00e9mon is now Asleep, Burned, and Poisoned.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, SpecialConditions.BURNED, SpecialConditions.POISONED),
         ),
         Attack(
             title="Aerial Ace",

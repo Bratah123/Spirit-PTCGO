@@ -1,5 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _is_special_energy(card):
+    return is_energy_card(card) and bool(card.get_attribute(AttrID.IS_SPECIAL_ENERGY))
+
+
+async def _plentiful_placement(ctx):
+    """Put 4 damage counters on 1 of your opponent's Pokemon."""
+    pool = ctx.opponent_pokemon_in_play()
+    if not pool:
+        return
+    target = await ctx.choose_pokemon(pool, "Choose a Pok\u00e9mon to put 4 damage counters on")
+    if target is not None:
+        await ctx.deal_damage(40, target=target, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="adeec38a-9df0-5067-b505-21255d9f7ef0",
@@ -25,13 +42,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_discard('opponent', _is_special_energy), 50),
         ),
         Attack(
             title="Plentiful Placement",
             game_text="Put 4 damage counters on 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_plentiful_placement,
         ),
     ],
 )

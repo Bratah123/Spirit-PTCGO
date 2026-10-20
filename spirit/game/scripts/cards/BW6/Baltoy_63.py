@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _reverse_spin(ctx):
+    """Your opponent shuffles their hand into their deck and draws 4 cards."""
+    await ctx.shuffle_into_deck(ctx.hand(ctx.opponent_id), ctx.opponent_id)
+    await ctx.draw_cards(4, ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="bc2a7c0f-1eaf-50e8-bc64-6ce870bb4c7f",
@@ -27,7 +34,7 @@ card = PokemonCardDef(
             title="Reverse Spin",
             game_text="Your opponent shuffles his or her hand into his or her deck and draws 4 cards.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_reverse_spin,
         ),
     ],
 )

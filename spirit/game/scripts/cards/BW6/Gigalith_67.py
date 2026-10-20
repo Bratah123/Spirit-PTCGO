@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import recoil_attack, damage_per
+
+
+def _bench_counters(ctx):
+    total = 0
+    for pokemon in ctx.my_bench():
+        total += max(0, ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)) // 10
+    return total
 
 
 card = PokemonCardDef(
@@ -27,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_bench_counters, 10, base=10),
         ),
         Attack(
             title="Reckless Charge",
