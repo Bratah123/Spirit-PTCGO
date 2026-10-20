@@ -88,6 +88,7 @@ from spirit.game.attributes import (
     DeckBoxShape,
     GameSequence,
     PlayerAttrID,
+    PokemonStage,
     SpecialConditions,
     TrainerType,
 )
@@ -216,6 +217,15 @@ class GameOptions:
             serialized.update(options)
         return serialized
 
+
+
+def break_previous_evolution(pokemon):
+    """For a Pokemon BREAK in play, the previous Evolution it BREAK-evolved
+    from (last-tucked Pokemon card); None for anything else."""
+    if pokemon is None or pokemon.get_attribute(AttrID.STAGE) != PokemonStage.BREAK.value:
+        return None
+    tucked = [c for c in pokemon.children if isinstance(c, PokemonEntity)]
+    return tucked[-1] if tucked else None
 
 
 def mega_evolution_ends_turn(evolution_card) -> bool:
@@ -4351,6 +4361,12 @@ class GameSession:
         dynamic attacks (Ditto, Memory Capsule) deduped by title+text."""
         definition = def_for(pokemon.archetype_id)
         entries = [a.to_dict() for a in (getattr(definition, "abilities", None) or [])]
+        # Pokemon BREAK keeps the attacks and Abilities of its previous
+        # Evolution (the last-tucked PokemonEntity), listed before its own.
+        pre = break_previous_evolution(pokemon)
+        if pre is not None:
+            entries = [a.to_dict() for a in (getattr(def_for(pre.archetype_id), "abilities", None) or [])] \
+                + entries
         for child in pokemon.children:
             tool_def = def_for(child.archetype_id)
             grants = getattr(tool_def, "granted_abilities", None) or []
@@ -4377,6 +4393,15 @@ class GameSession:
                 seen.add(key)
                 entries.append(row)
         return entries
+
+    async def _apply_break_inheritance(self, card, previous):
+        """BREAK Evolution rule: the Pokemon BREAK keeps the attacks, Abilities,
+        Weakness, Resistance, and Retreat Cost of its previous Evolution (its
+        own HP and type apply)."""
+        for attr in (AttrID.WEAKNESS_TYPES, AttrID.RESISTANCE_TYPES,
+                     AttrID.RESISTANCE_AMOUNT, AttrID.RETREAT_COST):
+            await self._broadcast_entity_attribute(card, attr, previous.get_attribute(attr))
+        await self.refresh_granted_abilities(card)
 
     async def refresh_granted_abilities(self, pokemon: PokemonEntity):
         """Rebroadcasts `pokemon`'s canonical PIE_ABILITIES (also sheds any
@@ -4811,6 +4836,9 @@ class GameSession:
                 heal_ctx = EffectContext(self, player_id, card, None)
                 if await heal_ctx.heal(heal, target=card):
                     await self._flush_effect_runs(heal_ctx)
+
+        if break_previous_evolution(card) is not None:
+            await self._apply_break_inheritance(card, target)
 
         await self._fire_triggered_abilities(player_id, card, Triggers.ON_EVOLVE)
         # Hand-played evolutions also fire the owner's OTHER Pokemon (Eevee's
