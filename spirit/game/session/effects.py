@@ -43,6 +43,7 @@ from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
+    flip_coin_for,
     TempPassive,
     ability_effects_blocked,
     ability_locked,
@@ -929,10 +930,12 @@ class EffectContext:
         the results, True = heads. `source` re-anchors the flip visual."""
         if count <= 0:
             return []
-        results = [random.choice([0, 1]) for _ in range(count)]
+        def _flip() -> int:
+            return flip_coin_for(self.board, self.player_id)
+        results = [_flip() for _ in range(count)]
         final = await self._maybe_reroll_attack_coins(
             results, title, source,
-            lambda: [random.choice([0, 1]) for _ in range(count)])
+            lambda: [_flip() for _ in range(count)])
         if final is None:
             await self._queue_coin_results(results, title, source)
         else:
@@ -943,9 +946,9 @@ class EffectContext:
         """"Flip a coin until you get tails": one coin screen shows the whole
         run; returns the heads count."""
         def _run() -> List[int]:
-            run = [random.choice([0, 1])]
+            run = [flip_coin_for(self.board, self.player_id)]
             while run[-1] == 0:
-                run.append(random.choice([0, 1]))
+                run.append(flip_coin_for(self.board, self.player_id))
             return run
         results = _run()
         final = await self._maybe_reroll_attack_coins(results, title, None, _run)
