@@ -1,5 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flash Energy (XY7 #83): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
+"""Flash Energy (XY7 #83): scripted (spirit.game.card_effects.xy_energies).
 
 Card text:
   - This card can only be attached to Lightning Pokémon. This card provides Lightning Energy only while this card is attached to a Lightning Pokémon.
@@ -7,6 +6,7 @@ Card text:
   - (If this card is attached to anything other than a Lightning Pokémon, discard this card.)
 """
 
+from spirit.game.card_effects.xy_energies import only_type, FlashEnergyPassive
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -22,5 +22,8 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
+    attach_to=only_type(PokemonTypes.LIGHTNING),
+    provides=[[PokemonTypes.LIGHTNING]],
+    discard_unless_attach_to=True,
+    passive=FlashEnergyPassive(),
 )

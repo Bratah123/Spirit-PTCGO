@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sliggoo (XY2 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="df5c6f6d-ae62-5e7d-9dfe-64292b207c45",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             title="Gooey",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Gentle Slap",

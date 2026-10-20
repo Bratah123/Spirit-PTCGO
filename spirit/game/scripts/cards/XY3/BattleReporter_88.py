@@ -1,13 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Battle Reporter (XY3 #88): trainer effect stubbed.
-
-Card text:
-  - Draw cards until you have the same number of cards in your hand as your opponent.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def battle_reporter(ctx):
+    """Draw cards until you have as many cards in hand as your opponent."""
+    await ctx.draw_until(ctx.hand_size(ctx.opponent_id))
+
 
 card = SupporterCardDef(
     guid="439780a0-3336-5ebe-99b8-8abfba93d6ea",
@@ -19,6 +17,5 @@ card = SupporterCardDef(
     collector_number=88,
     set_code="XY3",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=battle_reporter
 )

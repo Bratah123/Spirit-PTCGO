@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Swellow (XY1 #103): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
+from spirit.game.card_effects.trainers import opponent_has_bench
+
+
+def _drive_off_condition(board, player_id, pokemon=None):
+    return opponent_has_bench(board, player_id)
+
+
+async def _drive_off(ctx):
+    """Have your opponent switch their Active Pokemon with 1 of their Benched."""
+    await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="e46b37c3-8309-518d-bf51-d2c9859b28dd",
@@ -21,14 +29,16 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Taillow.Name",
     family_id=276,
     abilities=[
         Ability(
             title="Drive Off",
             game_text="Once during your turn (before your attack), you may have your opponent switch his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_drive_off_condition,
+            effect=_drive_off,
         ),
         Attack(
             title="Wing Attack",
