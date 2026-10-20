@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trevenant BREAK (XY9 #66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="fd5a1224-8387-5d6e-b0c6-b761f54ba11b",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Silent Fear",
             game_text="Put 3 damage counters on each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(3, 'each_opponent'),
         ),
     ],
 )

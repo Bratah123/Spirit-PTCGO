@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cloyster (XY9 #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _sudden_grip(ctx):
+    """10; if this Pokemon evolved from Shellder this turn, Paralyze."""
+    await ctx.deal_damage()
+    ts = ctx.session.turn_state
+    me = ctx.attacker
+    from_shellder = any(getattr(def_for(c.archetype_id), "display_name", None) == "Shellder" for c in me.children)
+    if from_shellder and ts.entered_play_turn.get(me.entity_id) == ts.turn_number:
+        await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="70af333e-9290-5d1a-b718-134a335faba8",
@@ -28,8 +36,7 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon evolved from Shellder during this turn, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sudden_grip,
         ),
         Attack(
             title="Surf",
