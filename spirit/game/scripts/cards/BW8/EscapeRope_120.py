@@ -1,4 +1,5 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import escape_rope, someone_has_bench
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -11,5 +12,6 @@ card = ItemCardDef(
     collector_number=120,
     set_code="BW8",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=escape_rope,
+    condition=someone_has_bench
 )
