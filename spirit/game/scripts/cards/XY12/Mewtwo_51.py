@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mewtwo (XY12 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.passives_common import protect_next_turn
+
+
+_BARRIER_USED = {}
+
+
+def _barrier_condition(board, player_id, pokemon=None):
+    """Not usable if 1 of your Pokemon used Barrier during your last turn."""
+    ts = getattr(board, "turn_state", None)
+    return ts is None or _BARRIER_USED.get(player_id) != ts.turn_number - 2
+
+
+async def _barrier(ctx):
+    """During the opponent's next turn, prevent all effects of attacks,
+    including damage, done to this Pokemon."""
+    _BARRIER_USED[ctx.player_id] = ctx.session.turn_state.turn_number
+    await protect_next_turn(prevent=True, effects_too=True)(ctx)
+
 
 card = PokemonCardDef(
     guid="5308c025-6003-5773-84be-8886e9b419dc",
@@ -28,15 +43,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('defender'), 20, base=20),
         ),
         Attack(
             title="Barrier",
             game_text="During your opponent's next turn, prevent all effects of attacks, including damage, done to this Pok\u00e9mon. If 1 of your Pok\u00e9mon used Barrier during your last turn, this attack can't be used.",
             cost={PokemonTypes.PSYCHIC: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            condition=_barrier_condition,
+            effect=_barrier,
         ),
     ],
 )

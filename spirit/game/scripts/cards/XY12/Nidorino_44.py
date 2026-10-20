@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nidorino (XY12 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="102f5601-a21e-5a50-8c55-24feb09a9b97",
@@ -34,8 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=30),
         ),
     ],
 )
