@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=4,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Golett.Name",
     family_id=622,
     abilities=[

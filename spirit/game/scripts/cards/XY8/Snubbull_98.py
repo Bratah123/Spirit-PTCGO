@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     family_id=209,
     abilities=[
         Attack(

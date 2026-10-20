@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=0,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Cottonee.Name",
     family_id=546,
     abilities=[
