@@ -24,6 +24,7 @@ card = PokemonCardDef(
     retreat_cost=0,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Golbat.Name",
     family_id=41,
     abilities=[

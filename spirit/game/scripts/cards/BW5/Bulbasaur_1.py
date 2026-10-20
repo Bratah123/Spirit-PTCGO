@@ -17,6 +17,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.WATER,
+    resistance_amount=20,
     family_id=1,
     abilities=[
         Attack(

@@ -24,6 +24,7 @@ card = PokemonCardDef(
     retreat_cost=4,
     weakness_type=PokemonTypes.WATER,
     resistance_type=PokemonTypes.LIGHTNING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Drilbur.Name",
     family_id=529,
     abilities=[

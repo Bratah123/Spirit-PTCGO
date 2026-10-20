@@ -431,7 +431,8 @@ async def opponent_switches(ctx):
     target = await ctx.choose_pokemon(
         bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 
@@ -459,7 +460,8 @@ def switch_self_attack(damage=None, optional=False, bench_predicate=None):
 
 async def _gust(ctx, opponent_chooses=False):
     """Switch one of the opponent's Benched Pokémon with their Active;
-    returns the new Active or None (no bench / effect-shielded Active)."""
+    returns the new Active or None (no bench / effect-shielded Active /
+    switch blocked), so "damage to the new Active" is skipped when no switch happens."""
     old_active = ctx.opponent_active()
     bench = ctx.opponent_bench()
     if old_active is None or not bench:
@@ -471,7 +473,8 @@ async def _gust(ctx, opponent_chooses=False):
     target = await ctx.choose_pokemon(
         bench, "Choose the opponent's new Active Pokémon"
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 

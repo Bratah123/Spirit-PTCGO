@@ -20,6 +20,7 @@ card = PokemonCardDef(
     retreat_cost=0,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.WATER,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Skiploom.Name",
     family_id=187,
     abilities=[
