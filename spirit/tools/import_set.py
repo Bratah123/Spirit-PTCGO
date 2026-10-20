@@ -446,7 +446,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="Import a Pokemon TCG set from a JSON file.")
     parser.add_argument("json_path", nargs="?", default="spirit/game/scripts/cards/SWSH12/swsh12.json", help="Path to the TCG JSON file to import.")
-    parser.add_argument("--set-code", help="The set code to use (defaults to upper case of JSON filename).")
+    parser.add_argument("--set-code", help="The set code to use, case preserved (defaults to upper case of JSON filename).")
     parser.add_argument(
         "--skip-existing",
         action="store_true",
@@ -457,8 +457,10 @@ def main():
     JSON_PATH = args.json_path
     
     # Determine the set code
+    # Preserve caller casing when --set-code is given (sets.json uses
+    # mixed-case names like Promo_BW / TwentiethAnn).
     if args.set_code:
-        SET_CODE = args.set_code.upper()
+        SET_CODE = args.set_code
     else:
         # Get uppercase filename without extension
         SET_CODE = os.path.splitext(os.path.basename(JSON_PATH))[0].upper()
