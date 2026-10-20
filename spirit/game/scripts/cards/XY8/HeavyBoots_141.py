@@ -1,14 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heavy Boots (XY8 #141): trainer effect stubbed.
+from spirit.game.data_utils import PokemonToolCardDef
+from spirit.game.attributes import Rarities, AttrID, SpecialConditions
+from spirit.game.session.passives import Passive, carrier_pokemon
 
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - If the Retreat Cost of the Pokémon this card is attached to is 3 or more, that Pokémon gets +20 HP and can't be Confused. (If that Pokémon is currently Confused, remove that Special Condition.)
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
-from spirit.game.attributes import Rarities
+class _HeavyBoots(Passive):
+    """If the holder's Retreat Cost is 3 or more: +20 HP and it can't be Confused."""
+    def _heavy(self, pokemon, carrier):
+        me = carrier_pokemon(carrier)
+        if me is None or pokemon is not me:
+            return False
+        # Printed Retreat Cost (the HP/condition hooks get no board for the
+        # live, passive-adjusted cost).
+        return int(me.get_attribute(AttrID.RETREAT_COST) or 0) >= 3
+
+    def max_hp_bonus(self, pokemon, carrier):
+        return 20 if self._heavy(pokemon, carrier) else 0
+
+    def blocks_special_conditions(self, target, condition, carrier):
+        return condition == SpecialConditions.CONFUSED and self._heavy(target, carrier)
+
 
 card = PokemonToolCardDef(
     guid="45cfde93-0bea-5428-b2b2-cc8af213e333",
@@ -20,6 +30,5 @@ card = PokemonToolCardDef(
     collector_number=141,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_HeavyBoots()
 )

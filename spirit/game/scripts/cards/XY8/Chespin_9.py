@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chespin (XY8 #9): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
 
 card = PokemonCardDef(
     guid="cc0d4a4a-088a-5349-a094-9cd0a6363362",
@@ -26,8 +29,8 @@ card = PokemonCardDef(
             title="Tree Climb",
             game_text="Search your deck for a Grass Energy card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(_is_grass_energy, count=1, minimum=0, reveal=True,
+                                   prompt='Choose a Grass Energy card'),
         ),
         Attack(
             title="Seed Bomb",
