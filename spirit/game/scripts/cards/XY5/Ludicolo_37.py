@@ -7,6 +7,7 @@ from spirit.game.card_effects.passives_common import boost_own_next_turn
 async def _astonish(ctx):
     """Choose a random card from your opponent's hand; they reveal it and
     shuffle it into their deck."""
+    await ctx.deal_damage()
     import random
     hand = ctx.hand(ctx.opponent_id)
     if not hand:
