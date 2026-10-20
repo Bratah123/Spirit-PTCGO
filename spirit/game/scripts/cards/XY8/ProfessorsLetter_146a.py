@@ -16,7 +16,7 @@ card = ItemCardDef(
     display_name="Professor's Letter",
     searchable_by=["Professor's Letter", "Item"],
     subtypes=["Item"],
-    collector_number=146,
+    collector_number=165,
     set_code="XY8",
     rarity=Rarities.Uncommon,
     # STUB: trainer effect not implemented
