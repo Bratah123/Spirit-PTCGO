@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+
+async def _tool_drop(ctx):
+    """20 damage for each Pokemon Tool card attached to Pokemon in play (both sides)."""
+    n = sum(1 for p in ctx.my_pokemon_in_play() + ctx.opponent_pokemon_in_play()
+            for c in p.children
+            if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value)
+    await ctx.deal_damage(20 * n)
+
 
 card = PokemonCardDef(
     guid="f4306236-3046-5709-bf22-baba5a76d239",
@@ -24,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_tool_drop,
         ),
     ],
 )

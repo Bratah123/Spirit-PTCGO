@@ -1,7 +1,31 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented, TRAINER_EFFECTS_BY_GUID
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_supporter_card
+
+
+def _runnable_supporter(card):
+    if not is_supporter_card(card):
+        return False
+    effect = TRAINER_EFFECTS_BY_GUID.get((card.archetype_id or "").lower())
+    return effect is not None and effect is not unimplemented
+
+
+async def _silent_claw(ctx):
+    """Your opponent reveals their hand. Discard a Supporter card you find
+    there and use its effect as the effect of this attack."""
+    hand = await ctx.reveal_hand(ctx.opponent_id) or []
+    supporters = [c for c in hand if is_supporter_card(c)]
+    if not supporters:
+        return
+    picked = await ctx.choose_cards(supporters, 1, minimum=1,
+                                    prompt="Choose a Supporter card to discard and use")
+    if not picked:
+        return
+    card = picked[0]
+    await ctx.discard_cards([card])
+    if _runnable_supporter(card):
+        await TRAINER_EFFECTS_BY_GUID[(card.archetype_id or "").lower()](ctx)
 
 
 card = PokemonCardDef(
@@ -27,7 +51,7 @@ card = PokemonCardDef(
             title="Silent Claw",
             game_text="Your opponent reveal his or her hand. Discard a Supporter card you find there. Use the effect of that card as the effect of this attack.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_silent_claw,
         ),
         Attack(
             title="Fake Out",

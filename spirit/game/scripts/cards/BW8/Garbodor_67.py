@@ -1,7 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack, flip_damage
+from spirit.game.card_effects.attacks_common import flip_damage, damage_per
+from spirit.game.session.passives import effective_retreat_cost
+
+
+def _defender_retreat_cost(ctx):
+    d = ctx.defender
+    return effective_retreat_cost(ctx.board, d) if d is not None else 0
 
 
 card = PokemonCardDef(
@@ -28,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 20),
         ),
         Attack(
             title="Double Ducts",

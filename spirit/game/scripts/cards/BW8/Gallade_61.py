@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
 
 
 card = PokemonCardDef(
@@ -27,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy('mine'), 20),
         ),
         Attack(
             title="Swift Lunge",

@@ -1,6 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus, recoil_attack
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _double_assist(ctx):
+    """Printed damage; attach 2 basic Energy cards from your discard pile to 1 of your Pokemon."""
+    await ctx.deal_damage()
+    pool = [c for c in ctx.discard_pile() if is_basic_energy_card(c)]
+    n = min(2, len(pool))
+    if n <= 0:
+        return
+    picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 2 basic Energy cards to attach")
+    target = await ctx.choose_pokemon(ctx.my_pokemon_in_play(), "Choose a Pokémon to attach them to")
+    for card in picks:
+        await ctx.attach_energy(card, target or ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -26,7 +40,7 @@ card = PokemonCardDef(
             game_text="Attach 2 basic Energy cards from your discard pile to 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
             damage=30,
-            effect=unimplemented,
+            effect=_double_assist,
         ),
         Attack(
             title="Tumbling Attack",

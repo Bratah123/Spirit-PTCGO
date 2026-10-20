@@ -1,7 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.support_common import opponent_switches
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import Passive
 
 
 async def gyro_ball(ctx):
@@ -13,6 +13,13 @@ async def gyro_ball(ctx):
         await ctx.switch_active(ctx.player_id, target or bench[0])
         await ctx.flush_choreography()
     await opponent_switches(ctx)
+
+
+class _DualBrainsPassive(Passive):
+    """During your turn, you may play 2 Supporter cards."""
+
+    def supporter_limit(self, player_id, carrier):
+        return 2 if player_id == carrier.owning_player_id else 1
 
 
 card = PokemonCardDef(
@@ -37,7 +44,7 @@ card = PokemonCardDef(
             title="Dual Brains",
             game_text="During your turn, you may play 2 Supporter cards.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_DualBrainsPassive(),
         ),
         Attack(
             title="Gyro Ball",

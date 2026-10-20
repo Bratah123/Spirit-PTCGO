@@ -1,6 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import condition_attack, recoil_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import effective_max_hp
+
+
+async def _damakinesis(ctx):
+    """Move 6 damage counters from any of your Pokemon to the Defending Pokemon."""
+    d = ctx.defender
+    remaining = 6
+    while d is not None and remaining > 0:
+        pool = [p for p in ctx.my_pokemon_in_play()
+                if p.get_attribute(AttrID.HP, 0) < effective_max_hp(ctx.board, p)]
+        if not pool:
+            break
+        src = pool[0] if len(pool) == 1 else await ctx.choose_pokemon(
+            pool, f"Move damage counters from which Pokémon? ({remaining} left)")
+        moved = await ctx.move_damage_counters(src or pool[0], d, max_count=remaining)
+        if moved <= 0:
+            break
+        remaining -= moved
 
 
 card = PokemonCardDef(
@@ -32,7 +50,7 @@ card = PokemonCardDef(
             title="Damakinesis",
             game_text="Move 6 damage counters from any of your Pok\u00e9mon to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_damakinesis,
         ),
     ],
 )

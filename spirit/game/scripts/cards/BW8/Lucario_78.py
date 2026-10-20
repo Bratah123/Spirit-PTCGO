@@ -1,8 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.card_effects.support_common import search_attach_energy
-from spirit.game.card_effects.trainers import is_grass_energy_card
 from spirit.game.card_effects.attacks_common import damage_per, count_prizes_taken
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_metal_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.METAL.value)
+
+
+class _DualArmorPassive(Passive):
+    """If this Pokemon has any Metal Energy attached, its type is both Fighting and Metal."""
+
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        if pokemon is not carrier_pokemon(carrier):
+            return types
+        if any(_is_metal_energy(c) for c in pokemon.children) \
+                and PokemonTypes.METAL.value not in types:
+            return list(types) + [PokemonTypes.METAL.value]
+        return types
 
 
 card = PokemonCardDef(
@@ -27,7 +43,7 @@ card = PokemonCardDef(
             title="Dual Armor",
             game_text="If this Pok\u00e9mon has any Metal Energy attached to it, this Pok\u00e9mon's type is both Fighting and Metal.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_DualArmorPassive(),
         ),
         Attack(
             title="Hurricane Kick",

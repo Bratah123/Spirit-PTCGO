@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.support_common import heal_attack, gust_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, CLIENT_SPECIAL_CONDITION_NAMES, SpecialConditions
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _has(pokemon, condition):
+    return CLIENT_SPECIAL_CONDITION_NAMES[condition] in (pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
+
+def _burned_or_poisoned(ctx):
+    me = ctx.attacker
+    return _has(me, SpecialConditions.BURNED) or _has(me, SpecialConditions.POISONED)
 
 
 card = PokemonCardDef(
@@ -27,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_burned_or_poisoned, 60),
         ),
         Attack(
             title="Drain Punch",

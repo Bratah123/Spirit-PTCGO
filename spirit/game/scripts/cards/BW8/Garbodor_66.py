@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def _biosmog(ctx):
+    """Printed damage; the Defending Pokemon is now Poisoned. Flip a coin; if
+    heads, discard an Energy attached to it."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is None or ctx.effects_blocked(d):
+        return
+    await ctx.apply_special_condition(d, SpecialConditions.POISONED)
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0] and ctx.attached_energies(d):
+        await ctx.discard_energy_from(d, 1, minimum=1)
+
 
 card = PokemonCardDef(
     guid="a4a2a152-f8ec-58a2-bfea-a273634228ab",
@@ -24,7 +38,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon is now Poisoned. Flip a coin. If heads, discard an Energy attached to that Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=_biosmog,
         ),
         Attack(
             title="Sludge Bomb",

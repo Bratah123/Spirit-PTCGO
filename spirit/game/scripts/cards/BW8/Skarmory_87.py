@@ -1,7 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import protect_next_turn
-from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.session.effects import is_team_plasma_card
+
+
+async def _cargo_jet(ctx):
+    """Discard a Team Plasma card from your hand. If you do, draw 3 cards."""
+    if not any(is_team_plasma_card(c) for c in ctx.hand()):
+        return
+    gone = await ctx.discard_from_hand(1, minimum=0, predicate=is_team_plasma_card,
+                                       prompt="Discard a Team Plasma card to draw 3")
+    if gone:
+        await ctx.draw_cards(3)
 
 
 card = PokemonCardDef(
@@ -26,7 +36,7 @@ card = PokemonCardDef(
             title="Cargo Jet",
             game_text="Discard a Team Plasma card from your hand. if you do, draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_cargo_jet,
         ),
         Attack(
             title="Steel Wing",

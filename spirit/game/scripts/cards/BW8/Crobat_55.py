@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _night_sight(ctx):
+    """Once during your turn (before your attack), you may draw a card."""
+    await ctx.draw_cards(1)
+
 
 card = PokemonCardDef(
     guid="ff0fdd93-db6f-5692-96c5-907745a63505",
@@ -24,14 +31,15 @@ card = PokemonCardDef(
             title="Night Sight",
             game_text="Once during your turn (before your attack), you may draw a card.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=_night_sight,
         ),
         Attack(
             title="Ultra-Toxic Fang",
             game_text="The Defending Pok\u00e9mon is now Poisoned. Put 4 damage counters instead of 1 on this Pok\u00e9mon between turns.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED, counters=4),
         ),
     ],
 )

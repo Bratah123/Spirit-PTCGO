@@ -1,5 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.session.effects import is_trainer_card
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _electribonus(ctx):
+    """Discard a Lightning Energy card from your hand. If you do, draw 3 cards."""
+    if not any(_is_lightning_energy(c) for c in ctx.hand()):
+        return
+    gone = await ctx.discard_from_hand(1, minimum=0, predicate=_is_lightning_energy,
+                                       prompt="Discard a Lightning Energy card to draw 3")
+    if gone:
+        await ctx.draw_cards(3)
+
+
+async def _poltergeist(ctx):
+    """Your opponent reveals their hand; 20 damage times the number of Trainer cards there."""
+    hand = await ctx.reveal_hand(ctx.opponent_id)
+    await ctx.deal_damage(20 * sum(1 for c in (hand or []) if is_trainer_card(c)))
+
 
 card = PokemonCardDef(
     guid="45de73f2-b223-5213-99b1-2ad16e4be12d",
@@ -22,7 +45,7 @@ card = PokemonCardDef(
             title="Electribonus",
             game_text="Discard a Lightning Energy card from your hand. If you do, draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_electribonus,
         ),
         Attack(
             title="Poltergeist",
@@ -30,7 +53,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_poltergeist,
         ),
     ],
 )

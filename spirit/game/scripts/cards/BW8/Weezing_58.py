@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.card_effects.attacks_common import bonus_if, damage_all_opponents
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+
+
+async def _aftermath(ctx):
+    """When this Pokemon is Knocked Out by damage from an opponent's attack,
+    discard the top 3 cards of your opponent's deck."""
+    if not ctx.ko_from_attack:
+        return
+    top = ctx.deck_top(3, player_id=ctx.opponent_id)
+    if top:
+        await ctx.discard_cards(top)
 
 
 card = PokemonCardDef(
@@ -25,7 +35,8 @@ card = PokemonCardDef(
             title="Aftermath",
             game_text="When this Pok\u00e9mon is Knocked Out by damage from an opponent's attack, discard the top 3 cards of your opponent's deck.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_KNOCKED_OUT,
+            effect=_aftermath,
         ),
         Attack(
             title="Smogbank",

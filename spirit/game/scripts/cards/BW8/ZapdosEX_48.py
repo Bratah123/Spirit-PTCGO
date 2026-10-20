@@ -1,7 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import count_energy
 from spirit.game.card_effects.passives_common import flip_protection
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.session.effects import plasma_energy_attached
 
 
 card = PokemonCardDef(
@@ -35,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: bool(plasma_energy_attached(ctx.attacker)), 40),
         ),
     ],
 )

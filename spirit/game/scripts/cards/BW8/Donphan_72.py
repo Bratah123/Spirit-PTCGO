@@ -1,7 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import switch_self_attack
+
+
+async def _wreck(ctx):
+    """If there is any Stadium card in play, 60 more damage; discard the Stadium."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(ctx.ability.damage + 60)
+    await ctx.discard_stadium()
 
 
 card = PokemonCardDef(
@@ -36,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_wreck,
         ),
     ],
 )

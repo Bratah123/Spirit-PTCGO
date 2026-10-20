@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import bonus_if, has_tool
 
 
 card = PokemonCardDef(
@@ -35,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: has_tool(ctx.attacker), 50),
         ),
     ],
 )
