@@ -17,7 +17,7 @@ card = PokemonToolCardDef(
     display_name="Floral Crown",
     searchable_by=["Floral Crown", "Pokémon Tool"],
     subtypes=["Pokémon Tool"],
-    collector_number=26,
+    collector_number=109,
     set_code="TwentiethAnn",
     rarity=Rarities.Common,
     # STUB: trainer effect not implemented
