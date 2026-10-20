@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Carvanha (TATM #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="b61e8ff2-bb43-51b1-967b-2e0f793647d1",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=10),
         ),
     ],
 )

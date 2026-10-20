@@ -5,6 +5,16 @@ Talonflame (XY11 #96): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _aero_blitz(ctx):
+    """40; search your deck for up to 2 cards and put them into your hand; shuffle."""
+    await ctx.deal_damage()
+    picked = await ctx.search_deck(None, 2, minimum=0, prompt="Choose up to 2 cards")
+    if picked:
+        await ctx.put_in_hand(picked, reveal=False)
+    await ctx.shuffle_deck()
+
+
 card = PokemonCardDef(
     guid="d7899595-c1ec-54f6-b766-37fe395384b2",
     key="XY11",
@@ -37,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_aero_blitz,
         ),
     ],
 )

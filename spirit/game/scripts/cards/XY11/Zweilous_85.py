@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zweilous (XY11 #85): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="8c033dbb-026b-59d4-8ffc-4c118e745931",
@@ -29,16 +27,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=20),
         ),
         Attack(
             title="Power Breath",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

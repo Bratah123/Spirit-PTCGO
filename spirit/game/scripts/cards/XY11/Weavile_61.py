@@ -1,9 +1,26 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Weavile (XY11 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _tool_reversal_condition(board, player_id, pokemon=None):
+    return any(_tools_on(p) for p in board.pokemon_in_play(player_id))
+
+
+def _tools_on(pokemon):
+    return [c for c in pokemon.children
+            if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value]
+
+
+async def _tool_reversal(ctx):
+    """As often as you like during your turn, put a Pokemon Tool card attached
+    to 1 of your Pokemon into your hand."""
+    tools = [t for p in ctx.my_pokemon_in_play() for t in _tools_on(p)]
+    if not tools:
+        return
+    picks = await ctx.choose_cards(tools, 1, minimum=1, prompt="Choose a Pokémon Tool to put into your hand")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="9371c31d-973a-510b-ac31-fef489b9fe09",
@@ -28,8 +45,9 @@ card = PokemonCardDef(
         Ability(
             title="Tear Away",
             game_text="As often as you like during your turn (before your attack), you may put a Pok\u00e9mon Tool card attached to 1 of your Pok\u00e9mon into your hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.UNLIMITED,
+            condition=_tool_reversal_condition,
+            effect=_tool_reversal,
         ),
         Attack(
             title="Slash",

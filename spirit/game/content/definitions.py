@@ -658,10 +658,15 @@ class PokemonToolCardDef(TrainerCardDef):
     def __init__(self, passive: Optional[Any] = None,
                  granted_abilities: Optional[List[Ability]] = None,
                  attach_to: Optional[Callable] = None,
-                 on_carrier_knocked_out: Optional[Any] = None, **kwargs):
+                 on_carrier_knocked_out: Optional[Any] = None,
+                 attach_to_opponent: bool = False, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        # Team Flare Hyper Gear: attaches to the OPPONENT's Pokemon; the card
+        # keeps its owner (home_player_id) and returns to its owner's discard
+        # pile when it leaves that Pokemon for any reason.
+        self.attach_to_opponent = attach_to_opponent
         # async (ctx) run after the holder is Knocked Out by damage from an
         # opponent's attack; ctx.ko_energies lists its Energy pre-discard.
         self.on_carrier_knocked_out = on_carrier_knocked_out

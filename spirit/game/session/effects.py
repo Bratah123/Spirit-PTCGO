@@ -62,6 +62,7 @@ from .passives import (
     energy_removal_blocked,
     healing_blocked,
     supporter_effect_replacement,
+    player_attack_effects_blocked,
     trainer_effects_blocked,
 )
 
@@ -107,6 +108,10 @@ class EffectContext:
         self.attached_to = attached_to
         self.play_target = play_target
         self._play_target_consumed = False
+        # Hand Control: "your opponent plays that Supporter card. However, you
+        # make all decisions for that card." Prompts addressed to player_id
+        # are routed to decider_id instead (see _chooser).
+        self.decider_id: Optional[str] = None
         self.knockouts: List[PokemonEntity] = []
         # Extra prizes the attacker takes for knockouts this attack causes
         # (e.g. Stoutland V's Double Dip Fangs).
@@ -282,7 +287,12 @@ class EffectContext:
         direct object belongs to a shielded player OTHER than the acting one.
         Guards: deal_damage/counters, apply_special_condition, switch_active,
         draw_cards/draw_until, discard_from_hand, hand_to_bottom_of_deck,
-        shuffle_into_deck, discard_cards/move_to_lost_zone (per card)."""
+        shuffle_into_deck, discard_cards/move_to_lost_zone (per card).
+        In an ATTACK context the same guards honour Bodyguard: the opposing
+        player and the cards in their hand are shielded (not their Pokemon
+        or deck)."""
+        if self.is_attack_effect() and not self.is_trainer_effect:
+            return self._player_attack_shielded(player_or_entity)
         if not self.is_trainer_effect:
             return False
         pid = player_or_entity if isinstance(player_or_entity, str) \
@@ -297,6 +307,27 @@ class EffectContext:
             )
             return True
         return False
+
+    def _player_attack_shielded(self, player_or_entity) -> bool:
+        """Bodyguard: an attack effect on the opposing player (str) or on a
+        card in their hand is prevented."""
+        pid = player_or_entity if isinstance(player_or_entity, str) \
+            else getattr(player_or_entity, "owning_player_id", None)
+        if pid is None or pid == self.player_id:
+            return False
+        if not isinstance(player_or_entity, str):
+            parent = getattr(player_or_entity, "parent", None)
+            if parent is None or parent.get_attribute(AttrID.NAME) != "hand":
+                return False
+        if player_attack_effects_blocked(self.board, pid):
+            logging.info(f"[Effects {self.game_id}] Attack effect on {pid} prevented (Bodyguard).")
+            return True
+        return False
+
+    def player_attack_shielded(self, player_id: str) -> bool:
+        """Public form for scripts: is `player_id` shielded from this
+        attack's effects (Bodyguard)?"""
+        return self.is_attack_effect() and self._player_attack_shielded(player_id)
 
     def _energy_removal_blocked(self, card) -> bool:
         """Brazen Tail shield: in a trainer context, True when a passive keeps
@@ -720,6 +751,18 @@ class EffectContext:
                    through_turn: Optional[int] = None) -> None:
         """"<player> can't play <cards matching predicate>" (default: through
         their next turn)."""
+        if self.is_attack_effect() and player_id != self.player_id:
+            if self._player_attack_shielded(player_id):
+                return
+            # Bodyguard "Remove any existing effects": an attack-made lock
+            # switches off for good once the shield is seen while it runs.
+            board, inner, state = self.board, predicate, {"off": False}
+
+            def predicate(card, _pid=player_id):
+                if state["off"] or player_attack_effects_blocked(board, _pid):
+                    state["off"] = True
+                    return False
+                return inner(card)
         self.session.turn_state.lock_plays(player_id, predicate, through_turn)
 
     def restrict_attachments(self, target: PokemonEntity,
@@ -849,7 +892,7 @@ class EffectContext:
         floating panel (a FORCED pick: once the copy attack is declared it
         cannot be cancelled) and returns the chosen pair."""
         idx = await self.session.prompt_attack_selection(
-            self.player_id, self.source, candidates, prompt
+            self._chooser(self.player_id), self.source, candidates, prompt
         )
         return candidates[idx] if idx is not None else None
 
@@ -995,7 +1038,7 @@ class EffectContext:
         if not pool or count <= 0:
             return
         placement = await self.session.prompt_damage_counter_placement(
-            self.player_id, self.source.entity_id, pool, count,
+            self._chooser(self.player_id), self.source.entity_id, pool, count,
             prompt=f"Place {count} damage counters on your opponent's Pokemon.",
         )
         by_id = {p.entity_id: p for p in pool}
@@ -1049,7 +1092,7 @@ class EffectContext:
             if not pool:
                 return 0
             placement = await self.session.prompt_damage_counter_placement(
-                self.player_id, self.source.entity_id, pool, count, prompt=prompt,
+                self._chooser(self.player_id), self.source.entity_id, pool, count, prompt=prompt,
             )
         total = sum(v for v in placement.values() if v > 0)
         if total <= 0:
@@ -1086,11 +1129,20 @@ class EffectContext:
         source controlled by the chooser, so a cross-player prompt uses the
         dialog."""
         pid = player_id or self.player_id
-        if use_panel and self.source is not None and pid == self.player_id:
+        if use_panel and self.source is not None and pid == self.player_id \
+                and self.decider_id is None:
             return await self.session.prompt_choice_panel(
                 pid, self.source, buttons, prompt, descriptions
             )
-        return await self.session.prompt_player_choice(pid, prompt, buttons)
+        return await self.session.prompt_player_choice(self._chooser(pid), prompt, buttons)
+
+    def _chooser(self, pid: Optional[str]) -> str:
+        """The player who answers a prompt addressed to `pid`: decider_id
+        stands in for this ctx's player (Hand Control)."""
+        pid = pid or self.player_id
+        if self.decider_id is not None and pid == self.player_id:
+            return self.decider_id
+        return pid
 
     async def ask_yes_no(self, prompt: str, player_id: Optional[str] = None) -> bool:
         """Yes/No dialog for a card's "you may ..." text; True when Yes is picked."""
@@ -1126,11 +1178,11 @@ class EffectContext:
         if not ordered and display_cards is None and cards \
                 and self._visible_in_place(cards, pid):
             picked_ids = await self.session.prompt_entity_picker(
-                pid, self.source.entity_id, cards, count, minimum, prompt
+                self._chooser(pid), self.source.entity_id, cards, count, minimum, prompt
             )
         else:
             picked_ids = await self.session.prompt_card_chooser(
-                pid, self.source.entity_id, cards, count, minimum, prompt,
+                self._chooser(pid), self.source.entity_id, cards, count, minimum, prompt,
                 ordered, display_cards, slot_prompt
             )
         by_id = {c.entity_id: c for c in cards}
@@ -1234,7 +1286,7 @@ class EffectContext:
             specs.append({"cards": cards, "count": count, "minimum": 0,
                           "slot_prompt": slot_prompt})
         picked_ids = await self.session.prompt_card_chooser_groups(
-            pid, self.source.entity_id, specs, prompt, display_cards=deck_cards,
+            self._chooser(pid), self.source.entity_id, specs, prompt, display_cards=deck_cards,
             total=total, any_of=any_of,
         )
         by_id = {c.entity_id: c for c in deck_cards}
@@ -1386,6 +1438,33 @@ class EffectContext:
         for vid, entries in reveal_batches.items():
             self._queue_reveal_batch(entries, vid)
 
+    async def play_opponent_supporter(self, card: CardEntity) -> bool:
+        """Hand Control: the card's owner plays that Supporter, but this ctx's
+        player makes all decisions for it; it is then discarded. The nested
+        effect's choreography rides this ctx's queue (attack bracket order).
+        Returns True when the Supporter resolved."""
+        owner = card.owning_player_id
+        if owner is None or owner == self.player_id:
+            return False
+        sub = EffectContext(self.session, owner, card, None)
+        sub.is_trainer_effect = True
+        sub.decider_id = self.player_id
+        replacement = supporter_effect_replacement(self.board, card, owner)
+        effect = replacement or TRAINER_EFFECTS_BY_GUID.get((card.archetype_id or "").lower())
+        if effect is not None and effect is not unimplemented:
+            await effect(sub)
+        else:
+            logging.info(f"[Effects {self.game_id}] Hand Control: {card.archetype_id} has no scripted effect.")
+        parent = getattr(card, "parent", None)
+        if parent is not None and parent.get_attribute(AttrID.NAME) != "discard":
+            await sub.discard_cards([card])
+        self._messages.extend(sub._messages)
+        self.deferred_actions.extend(sub.deferred_actions)
+        for ko in sub.knockouts:
+            if ko not in self.knockouts:
+                self.knockouts.append(ko)
+        return True
+
     async def reveal_hand(self, of_player: Optional[str] = None,
                           to_player: Optional[str] = None) -> List[CardEntity]:
         """View-only reveal browser over a player's whole hand ("your opponent
@@ -1393,6 +1472,8 @@ class EffectContext:
         so callers can count matches. AI viewers skip the browser."""
         owner = of_player or self.player_id
         viewer = to_player or self.session._opponent_id(owner)
+        if self._player_attack_shielded(owner):
+            return []
         cards = self.hand(owner)
         if not cards:
             return []
@@ -1407,7 +1488,7 @@ class EffectContext:
         player_id: Optional[str] = None,
     ) -> int:
         """Show a single card in the ability-select pull-out with choice buttons."""
-        pid = player_id or self.player_id
+        pid = self._chooser(player_id)
         viewer = self.session.players[pid]
         if isinstance(viewer, AIPlayer):
             return 0
@@ -1470,7 +1551,7 @@ class EffectContext:
             picked = energies
         else:
             picked_ids = await self.session.prompt_energy_unit_picker(
-                self.player_id,
+                self._chooser(self.player_id),
                 self.source.entity_id,
                 energies,
                 amount,
@@ -1749,7 +1830,7 @@ class EffectContext:
         if len(top) <= 1:
             return top
         picked_ids = await self.session.prompt_card_chooser(
-            pid, self.source.entity_id, top, len(top), minimum=len(top),
+            self._chooser(pid), self.source.entity_id, top, len(top), minimum=len(top),
             prompt=prompt, ordered=True,
         )
         by_id = {c.entity_id: c for c in top}

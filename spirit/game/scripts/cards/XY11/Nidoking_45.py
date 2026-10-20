@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nidoking (XY11 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import team_damage_boost_passive
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+from spirit.game.session.effects import is_basic_pokemon, is_restored_pokemon
+
+
+def _named(p, name):
+    return getattr(def_for(p.archetype_id), "display_name", None) == name
+
+
+def _is_evolution(p):
+    return not is_basic_pokemon(p) and not is_restored_pokemon(p)
+
 
 card = PokemonCardDef(
     guid="eff15dce-c705-5284-9c93-ca049ecfb296",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="King's Palace",
             game_text="Your Nidoqueen's attacks do 20 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=team_damage_boost_passive(20, attacker_pred=lambda p: _named(p, "Nidoqueen")),
         ),
         Attack(
             title="Power Lariat",
@@ -35,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_bench("mine", _is_evolution), 30, base=60),
         ),
     ],
 )

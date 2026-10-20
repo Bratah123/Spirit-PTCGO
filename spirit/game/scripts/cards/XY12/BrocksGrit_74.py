@@ -1,13 +1,28 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Brock's Grit (XY12 #74): trainer effect stubbed.
-
-Card text:
-  - Shuffle 6 in any combination of Pokémon and basic Energy cards from your discard pile into your deck.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+def _pool(board, player_id):
+    discard = board.find_player_area(player_id, "discard")
+    return [c for c in (discard.children if discard else [])
+            if is_pokemon_card(c) or is_basic_energy_card(c)]
+
+
+def brocks_grit_condition(board, player_id):
+    return bool(_pool(board, player_id))
+
+
+async def brocks_grit(ctx):
+    """Shuffle 6 in any combination of Pokemon and basic Energy cards from your
+    discard pile into your deck."""
+    pool = _pool(ctx.board, ctx.player_id)
+    n = min(6, len(pool))
+    picked = pool if len(pool) == n else await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 6 cards to shuffle into your deck")
+    if picked:
+        await ctx.shuffle_into_deck(picked)
+
 
 card = SupporterCardDef(
     guid="84280e62-8e67-5282-b954-38cc270be2f4",
@@ -19,6 +34,6 @@ card = SupporterCardDef(
     collector_number=74,
     set_code="XY12",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    condition=brocks_grit_condition,
+    effect=brocks_grit
 )

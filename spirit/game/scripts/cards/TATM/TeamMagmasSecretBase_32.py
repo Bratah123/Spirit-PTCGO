@@ -1,13 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Magma's Secret Base (TATM #32): trainer effect stubbed.
-
-Card text:
-  - Whenever any player puts a Basic Pokémon (except for Team Magma Pokémon) from his or her hand onto his or her Bench, put 2 damage counters on that Pokémon.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
-
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.data_utils import StadiumCardDef, Ability, Triggers
 from spirit.game.attributes import Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.session.effects import is_basic_pokemon
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+async def team_magmas_secret_base_watch(ctx):
+    """2 damage counters on any non-Team Magma Basic just benched from hand."""
+    pokemon = getattr(ctx, "benched_pokemon", None)
+    if pokemon is None or not is_basic_pokemon(pokemon) or _team(pokemon, "Magma"):
+        return
+    await ctx.deal_damage(20, target=pokemon, apply_modifiers=False, as_counters=True)
+
 
 card = StadiumCardDef(
     guid="00a64349-e0e4-532e-a4fb-89d300f40dbd",
@@ -19,6 +27,12 @@ card = StadiumCardDef(
     collector_number=32,
     set_code="TATM",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    abilities=[
+        Ability(
+            title="Team Magma's Secret Base",
+            game_text="Whenever any player puts a Basic Pok\u00e9mon (except for Team Magma Pok\u00e9mon) from his or her hand onto his or her Bench, put 2 damage counters on that Pok\u00e9mon.",
+            trigger=Triggers.ON_POKEMON_BENCHED,
+            effect=team_magmas_secret_base_watch,
+        ),
+    ]
 )
