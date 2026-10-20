@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starly (XY8 #125): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import search_to_bench
 from spirit.game.session.effects import is_pokemon_card
@@ -36,7 +32,6 @@ card = PokemonCardDef(
             title="Call for Pals",
             game_text="Search your deck for as many Starly as you like and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=search_to_bench(_is_starly, count=5, prompt='Choose any number of Starly'),
         ),
     ],

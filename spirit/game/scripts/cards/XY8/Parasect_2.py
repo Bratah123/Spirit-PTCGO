@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Parasect (XY8 #2): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
 from spirit.game.card_effects.trainers import is_basic_energy_card
-from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 async def _colorful_spores(ctx):
@@ -52,7 +47,6 @@ card = PokemonCardDef(
             title="Colorful Spores",
             game_text="Choose 3 of your Pok\u00e9mon. For each of those Pok\u00e9mon, search your deck for a different type of basic Energy card and attach it to that Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_colorful_spores,
         ),
         Attack(
@@ -61,7 +55,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
     ],

@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Stunfisk (XY8 #56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import self_energy_discard_attack
-from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack, bonus_if
 
 
 card = PokemonCardDef(
@@ -33,7 +28,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(lambda ctx: ctx.kos_suffered_last_turn() > 0, 80),
         ),
         Attack(
@@ -41,7 +35,6 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
             effect=self_energy_discard_attack(count=1),
         ),
     ],

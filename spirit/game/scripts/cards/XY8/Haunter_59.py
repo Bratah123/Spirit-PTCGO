@@ -1,12 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Haunter (XY8 #59): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
-from spirit.game.data_utils import Triggers
-from spirit.game.attributes import SpecialConditions
 
 
 async def _gothic_fear(ctx):
@@ -41,7 +35,6 @@ card = PokemonCardDef(
         Ability(
             title="Gothic Fear",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may leave both Active Pok\u00e9mon Confused.",
-            # STUB: ability effect not implemented
             trigger=Triggers.ON_EVOLVE,
             effect=_gothic_fear,
         ),
@@ -49,7 +42,6 @@ card = PokemonCardDef(
             title="Poison Ring",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned. That Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED, no_retreat=True),
         ),
     ],

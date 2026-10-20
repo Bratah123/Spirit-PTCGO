@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Typhlosion (XY8 #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
 
 
 async def _jagged_fang(ctx):
@@ -14,7 +11,6 @@ async def _jagged_fang(ctx):
     d = ctx.defender
     if d is not None and ctx.attached_energies(d) and not ctx.effects_blocked(d):
         await ctx.discard_energy_from(d, 1, minimum=1, prompt="Discard an Energy from the Defending Pokémon")
-from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 async def _massive_eruption(ctx):
@@ -49,7 +45,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=80,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=_massive_eruption,
         ),
         Attack(
@@ -57,7 +52,6 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to this Pok\u00e9mon. Then, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            # STUB: attack effect not implemented
             effect=_jagged_fang,
         ),
     ],

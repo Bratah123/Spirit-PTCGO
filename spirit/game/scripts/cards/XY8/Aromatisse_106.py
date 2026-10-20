@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Aromatisse (XY8 #106): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
-from spirit.game.attributes import SpecialConditions
 
 
 async def _heavy_perfume(ctx):
@@ -37,7 +32,6 @@ card = PokemonCardDef(
             title="Heavy Perfume",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused. Put 6 damage counters instead of 3 on that Pok\u00e9mon for this Special Condition.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
             effect=_heavy_perfume,
         ),
         Attack(
@@ -45,7 +39,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.FAIRY: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(no_retreat=True),
         ),
     ],

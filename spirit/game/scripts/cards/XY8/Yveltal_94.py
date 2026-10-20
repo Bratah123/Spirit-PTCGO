@@ -1,12 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yveltal (XY8 #94): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.session.passives import Passive
-from spirit.game.session.passives import carrier_pokemon
-from spirit.game.attributes import AttrID
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive, carrier_pokemon
 from spirit.game.content.definitions import def_for
 
 
@@ -54,7 +48,6 @@ card = PokemonCardDef(
         Ability(
             title="Fright Night",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, each Pok\u00e9mon Tool card in play has no effect.",
-            # STUB: ability effect not implemented
             passive=_FrightNight(),
         ),
         Attack(
@@ -62,7 +55,6 @@ card = PokemonCardDef(
             game_text="This attack does 60 damage to 1 of your opponent's Benched Pok\u00e9mon-EX. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=_pitch_black_spear,
         ),
     ],

@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Florges (XY8 #103): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
 from spirit.game.session.passives import Passive
-from spirit.game.session.passives import carrier_pokemon
 
 
 class _CalmingAroma(Passive):
@@ -43,7 +38,6 @@ card = PokemonCardDef(
         Ability(
             title="Calming Aroma",
             game_text="Each of your Pok\u00e9mon's attacks costs Fairy less.",
-            # STUB: ability effect not implemented
             passive=_CalmingAroma(),
         ),
         Attack(
@@ -51,7 +45,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FAIRY: 3},
             damage=70,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],

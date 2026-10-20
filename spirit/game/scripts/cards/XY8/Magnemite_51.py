@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magnemite (XY8 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.session.passives import Passive
-from spirit.game.session.passives import carrier_pokemon
+from spirit.game.session.passives import Passive, carrier_pokemon
 from spirit.game.content.definitions import def_for
 
 
@@ -42,7 +37,6 @@ card = PokemonCardDef(
         Ability(
             title="Sparkling Induction",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, its Retreat Cost is Colorless less for each Magnemite on your Bench.",
-            # STUB: ability effect not implemented
             passive=_SparklingInduction(),
         ),
         Attack(

@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Raichu (XY8 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
 from spirit.game.content.definitions import def_for
@@ -43,7 +39,6 @@ card = PokemonCardDef(
             title="Thunderclap Shot",
             game_text="This attack does 50 damage to each of your opponent's Pok\u00e9mon-EX. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_thunderclap_shot,
         ),
         Attack(
@@ -52,7 +47,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(20),
         ),
     ],

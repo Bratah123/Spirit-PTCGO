@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cresselia (XY8 #70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
-from spirit.game.session.passives import Passive
-from spirit.game.session.passives import carrier_pokemon
+from spirit.game.session.passives import Passive, carrier_pokemon
 
 
 class _MyWay(Passive):
@@ -38,7 +33,6 @@ card = PokemonCardDef(
         Ability(
             title="My Way",
             game_text="If there is any Stadium card in play, this Pok\u00e9mon has no Retreat Cost.",
-            # STUB: ability effect not implemented
             passive=_MyWay(),
         ),
         Attack(
@@ -46,7 +40,6 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
             effect=heal_attack(20),
         ),
     ],

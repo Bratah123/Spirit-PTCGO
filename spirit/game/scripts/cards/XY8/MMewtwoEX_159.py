@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Mewtwo-EX (XY8 #159): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -38,7 +34,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=150,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_vanishing_strike,
         ),
     ],

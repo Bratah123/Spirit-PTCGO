@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Meowth (XY8 #114): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -36,7 +32,6 @@ card = PokemonCardDef(
             title="Exhausted Tackle",
             game_text="Flip a coin. If heads, this attack does 30 damage to your opponent's Active Pok\u00e9mon. If tails, this Pok\u00e9mon does 30 damage to itself.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_exhausted_tackle,
         ),
     ],

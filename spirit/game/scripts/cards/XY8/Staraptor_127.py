@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Staraptor (XY8 #127): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import recoil_attack
 
@@ -42,7 +38,6 @@ card = PokemonCardDef(
             game_text="Before doing damage, have your opponent switch his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
             effect=_cyclone_slash,
         ),
         Attack(
@@ -50,7 +45,6 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
-            # STUB: attack effect not implemented
             effect=recoil_attack(20),
         ),
     ],

@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Houndoom-EX (XY8 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
@@ -46,7 +41,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_inferno_fang,
         ),
     ],

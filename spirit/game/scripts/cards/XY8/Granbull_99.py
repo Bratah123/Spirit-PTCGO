@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Granbull (XY8 #99): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
 
@@ -42,7 +38,6 @@ card = PokemonCardDef(
             title="Startling Bark",
             game_text="Flip a coin. If heads, choose 3 random cards from your opponent's hand. Your opponent reveals those cards and shuffles them into his or her deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
             effect=_startling_bark,
         ),
         Attack(
@@ -50,7 +45,6 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            # STUB: attack effect not implemented
             effect=condition_attack(self_conditions=(SpecialConditions.CONFUSED,)),
         ),
     ],

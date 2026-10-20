@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pinsir (XY8 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.passives import effective_retreat_cost
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 async def _iron_crash(ctx):
@@ -12,7 +9,6 @@ async def _iron_crash(ctx):
     target = ctx.opponent_active()
     cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
     await ctx.deal_damage(ctx.ability.damage + 20 * cost)
-from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 card = PokemonCardDef(
@@ -37,7 +33,6 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to 1 of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=snipe_attack(20, side='mine', also_base=True),
         ),
         Attack(
@@ -46,7 +41,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_iron_crash,
         ),
     ],

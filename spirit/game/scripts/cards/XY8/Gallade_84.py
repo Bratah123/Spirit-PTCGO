@@ -1,15 +1,10 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gallade (XY8 #84): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import bonus_if
 
 
 def _supporter_played_this_turn(ctx):
     return ctx.supporters_played_this_turn() > 0
-from spirit.game.data_utils import Activations
 
 
 def _premonition_condition(board, player_id, pokemon=None):
@@ -49,7 +44,6 @@ card = PokemonCardDef(
         Ability(
             title="Premonition",
             game_text="Once during your turn (before your attack), you may look at the top 5 cards of your deck and put them back on top of your deck in any order.",
-            # STUB: ability effect not implemented
             activation=Activations.ONCE_PER_TURN,
             condition=_premonition_condition,
             effect=_premonition,
@@ -60,7 +54,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(_supporter_played_this_turn, 70),
         ),
     ],

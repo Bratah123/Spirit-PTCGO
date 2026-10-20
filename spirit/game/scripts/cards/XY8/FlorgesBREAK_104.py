@@ -1,14 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Florges BREAK (XY8 #104): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.data_utils import Activations
+from spirit.game.data_utils import PokemonCardDef, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, CLIENT_SPECIAL_CONDITION_NAMES, SpecialConditions
 from spirit.game.session.passives import effective_max_hp
-from spirit.game.attributes import AttrID
-from spirit.game.attributes import CLIENT_SPECIAL_CONDITION_NAMES
-from spirit.game.attributes import SpecialConditions
 
 
 def _breeze_condition(board, player_id, pokemon=None):
@@ -50,7 +42,6 @@ card = PokemonCardDef(
         Ability(
             title="Floral Breeze",
             game_text="Once during your turn (before your attack), you may heal 30 damage and remove a Special Condition from your Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
             activation=Activations.ONCE_PER_TURN,
             condition=_breeze_condition,
             effect=_floral_breeze,

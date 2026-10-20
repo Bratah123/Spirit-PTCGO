@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cacturne (XY8 #88): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
-from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack, flip_damage
 
 
 card = PokemonCardDef(
@@ -33,7 +28,6 @@ card = PokemonCardDef(
             game_text="Discard a Special Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=discard_opponent_energy_attack(special_only=True),
         ),
         Attack(
@@ -42,7 +36,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(3, per_heads=40),
         ),
     ],

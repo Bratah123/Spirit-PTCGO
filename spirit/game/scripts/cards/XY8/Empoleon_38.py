@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Empoleon (XY8 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.passives_common import team_damage_boost_passive
-from spirit.game.attributes import AttrID, PokemonStage
 
 
 def _is_basic(p):
@@ -33,7 +28,6 @@ card = PokemonCardDef(
         Ability(
             title="Dignified Fighter",
             game_text="Each of your Basic Pok\u00e9mon's attacks does 20 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
             passive=team_damage_boost_passive(20, attacker_pred=_is_basic),
         ),
         Attack(

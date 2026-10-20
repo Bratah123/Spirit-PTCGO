@@ -1,12 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vanilluxe (XY8 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
-from spirit.game.attributes import SpecialConditions
 
 
 def _supporter_or_stadium(card):
@@ -44,7 +38,6 @@ card = PokemonCardDef(
             game_text="Until the end of your next turn, each player can't play any Supporter or Stadium cards from his or her hand.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_frigid_breath,
         ),
         Attack(
@@ -52,7 +45,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed. If tails, your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.PARALYZED, flip=True,
                                     tails_conditions=(SpecialConditions.CONFUSED,)),
         ),

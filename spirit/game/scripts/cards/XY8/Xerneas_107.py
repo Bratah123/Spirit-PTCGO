@@ -1,15 +1,10 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Xerneas (XY8 #107): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import bonus_if
 
 
 def _healed_this_turn(ctx):
     return ctx.attacker.entity_id in ctx.session.turn_state.healed_entities
-from spirit.game.attributes import AttrID
 
 
 async def _rainbow_force(ctx):
@@ -45,7 +40,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_rainbow_force,
         ),
         Attack(
@@ -54,7 +48,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(_healed_this_turn, 80),
         ),
     ],

@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Meloetta (XY8 #85): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 from spirit.game.card_effects.attacks_common import bonus_if
 
@@ -56,7 +51,6 @@ card = PokemonCardDef(
             title="Accelerating Spin",
             game_text="Attach 2 Fighting Energy cards from your discard pile to this Pok\u00e9mon. Then, switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_accelerating_spin,
         ),
         Attack(
@@ -65,7 +59,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(_has_psychic, 50),
         ),
     ],

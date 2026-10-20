@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mismagius (XY8 #66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
-from spirit.game.data_utils import Triggers
 
 
 async def _twisted_incantation(ctx):
@@ -45,7 +40,6 @@ card = PokemonCardDef(
         Ability(
             title="Twisted Incantation",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may have your opponent shuffle his or her hand into his or her deck and draw a card for each of his or her remaining Prize cards.",
-            # STUB: ability effect not implemented
             trigger=Triggers.ON_EVOLVE,
             effect=_twisted_incantation,
         ),
@@ -54,7 +48,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],

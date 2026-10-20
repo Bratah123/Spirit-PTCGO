@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mamoswine (XY8 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.passives_common import takes_less_passive
 
@@ -42,7 +38,6 @@ card = PokemonCardDef(
         Ability(
             title="Thick Fat",
             game_text="Any damage done to this Pok\u00e9mon by attacks from your opponent's Fire or Water Pok\u00e9mon is reduced by 30 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
             passive=takes_less_passive(30, attacker_pred=_fire_or_water),
         ),
         Attack(
@@ -51,7 +46,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_primordial_boom,
         ),
     ],

@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Simisear (XY8 #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import damage_per
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
@@ -45,7 +40,6 @@ card = PokemonCardDef(
             title="Water Fling",
             game_text="Put 3 Water Energy from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_fling,
         ),
         Attack(
@@ -54,7 +48,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=damage_per(lambda ctx: len(ctx.hand()), 10),
         ),
     ],

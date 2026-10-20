@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie (XY8 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
-from spirit.game.attributes import SpecialConditions
 
 
 async def _balance_bind(ctx):
@@ -37,7 +32,6 @@ card = PokemonCardDef(
             title="Deep Sea Swirl",
             game_text="Shuffle your hand into your deck. Then, draw 7 cards.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
             effect=shuffle_hand_into_deck_draw(7),
         ),
         Attack(
@@ -45,7 +39,6 @@ card = PokemonCardDef(
             game_text="If you and your opponent have the same number of Benched Pok\u00e9mon, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_balance_bind,
         ),
     ],
