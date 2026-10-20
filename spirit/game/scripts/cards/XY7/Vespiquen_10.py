@@ -2,8 +2,16 @@
 Vespiquen (XY7 #10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def return_effect(ctx):
+    """30 damage; you may draw cards until you have 6 cards in your hand."""
+    await ctx.deal_damage()
+    if await ctx.ask_yes_no("Draw cards until you have 6 cards in your hand?"):
+        await ctx.draw_until(6)
+
 
 card = PokemonCardDef(
     guid="3405e964-9005-5d8f-a219-84d09660d31c",
@@ -29,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=return_effect,
         ),
         Attack(
             title="Bee Revenge",

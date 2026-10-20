@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vespiquen (XY7 #11): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def gulp_down(ctx):
+    """Heal from this Pokémon the same amount of damage you did to your
+    opponent's Active Pokémon."""
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="e0839530-a6ea-5cab-bb46-f24b58ee7091",
@@ -30,8 +36,7 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gulp_down,
         ),
         Attack(
             title="Fury Swipes",
@@ -39,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=30),
         ),
     ],
 )

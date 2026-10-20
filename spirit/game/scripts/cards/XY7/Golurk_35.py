@@ -5,6 +5,16 @@ Golurk (XY7 #35): one or more attacks/abilities use effect=unimplemented until a
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def _giga_power(ctx):
+    """80; you may do 40 more damage. If you do, 20 damage to itself."""
+    if await ctx.ask_yes_no("Do 40 more damage (this Pokémon does 20 damage to itself)?"):
+        await recoil_attack(20, damage=120)(ctx)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="919ae753-fcb6-5965-b628-3221c3def5b8",
@@ -40,7 +50,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giga_power,
         ),
     ],
 )
