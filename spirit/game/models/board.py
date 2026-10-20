@@ -201,6 +201,20 @@ class CardEntity(BoardEntity):
     # Prize (move_card clears the flag once it leaves the prize pile).
     face_up_prize = False
 
+    # A card attached to the OTHER player's Pokemon (Team Flare Hyper Gear):
+    # the player whose card it is. move_card sends it to that player's
+    # discard pile whenever it leaves play ("When this card is removed from
+    # a Pokemon for any reason, put this card in its owner's discard pile").
+    home_player_id = None
+    # Area id a redirected move_card was asked for; _entity_moved_msg swaps
+    # in the real destination so the client follows the server state.
+    redirected_from = None
+    # A Pokemon card attached AS another card kind (Klefki's Wonder Lock: a
+    # Pokemon Tool; Electrode's Buzzap Thunder: a Special Energy). Holds the
+    # original class/attributes and the passive it contributes while attached;
+    # BoardState.unmask restores the Pokemon card when it leaves (move_card).
+    masquerade = None
+
     # Zones whose cards are public knowledge to BOTH players. During live play a
     # non-owner learns these on sight (EntityIntroduced), but the reconnect SGS
     # is the SOLE source of truth for a fresh client, so they MUST serialize
@@ -427,6 +441,34 @@ class BoardState:
         card_entity.owning_player_id = area.owning_player_id
         self._register_entity(card_entity)
 
+    @staticmethod
+    def masquerade_as(card: 'CardEntity', entity_cls, attrs: Dict[int, Any],
+                      passive: Any = None) -> None:
+        """Turns a card into another card kind while it stays attached
+        ("attach it ... as a Pokemon Tool / Special Energy card"): same entity
+        object and id, new class + overriding attributes. Idempotent."""
+        if card.masquerade is None:
+            card.masquerade = {
+                "cls": card.__class__,
+                "attrs": dict(card.attributes),
+                "originals": dict(card.attribute_originals),
+            }
+        card.masquerade["passive"] = passive
+        card.__class__ = entity_cls
+        for key, value in attrs.items():
+            card.set_attribute(key, value)
+
+    @staticmethod
+    def unmask(card: 'CardEntity') -> None:
+        """Restores a masquerading card to its printed kind (it left play)."""
+        mask = card.masquerade
+        if mask is None:
+            return
+        card.__class__ = mask["cls"]
+        card.attributes = dict(mask["attrs"])
+        card.attribute_originals = dict(mask["originals"])
+        card.masquerade = None
+
     def move_card(self, card_id: str, to_area_id: str, position: Optional[int] = None) -> bool:
         """Moves a card entity to a target play area, handling parent association gracefully."""
         card = self.get_entity(card_id)
@@ -443,6 +485,18 @@ class BoardState:
         # Components leave a composite only through its departure helper.
         if isinstance(card, ComponentCardEntity) and isinstance(card.parent, CompositePokemonEntity):
             return False
+
+        card.redirected_from = None
+        if card.masquerade is not None:
+            self.unmask(card)
+        home = card.home_player_id
+        if home is not None and to_area.get_attribute(AttrID.NAME) not in (
+                "bench", "activePokemonArea"):
+            home_discard = self.find_player_area(home, "discard")
+            if home_discard is not None and home_discard is not to_area:
+                card.redirected_from = to_area.entity_id
+                to_area, position = home_discard, None
+            card.home_player_id = None
 
         if card.parent_id:
             parent = self.get_entity(card.parent_id)

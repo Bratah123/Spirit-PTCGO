@@ -360,6 +360,12 @@ class Passive:
         player-level effects like draws/hand shuffles)."""
         return False
 
+    def blocks_player_attack_effects(self, affected_player_id: str,
+                                     carrier: BoardEntity) -> bool:
+        """True to shield a PLAYER and their hand from the effects of the
+        opponent's Pokemon's attacks (Marowak XY10 Bodyguard)."""
+        return False
+
     def replace_supporter_effect(
         self, card: BoardEntity, player_id: str, carrier: BoardEntity
     ) -> Optional[Any]:
@@ -447,8 +453,13 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
             for attachment in _descendants(pokemon):
                 if isinstance(attachment, PokemonEntity):
                     continue  # tucked pre-evolutions contribute nothing
-                definition = def_for(attachment.archetype_id)
-                passive = getattr(definition, "passive", None)
+                mask = getattr(attachment, "masquerade", None)
+                if mask is not None:
+                    # A Pokemon attached as a Tool/Energy: only the passive
+                    # it carries in that role counts (not its card passive).
+                    passive = mask.get("passive")
+                else:
+                    passive = getattr(def_for(attachment.archetype_id), "passive", None)
                 if passive is not None:
                     triples.append((passive, attachment, False))
     stadium_area = board.find_global_area("activeStadium")
@@ -773,6 +784,13 @@ def trainer_effects_blocked(board: BoardState, affected_player_id: str,
             affected_entity=affected_entity, board=board)
         for passive, carrier in active_passives(board)
     )
+
+
+def player_attack_effects_blocked(board: BoardState, affected_player_id: str) -> bool:
+    """Whether a passive shields `affected_player_id` (and their hand) from
+    the effects of opposing attacks (Bodyguard)."""
+    return any(passive.blocks_player_attack_effects(affected_player_id, carrier)
+               for passive, carrier in active_passives(board))
 
 
 def supporter_effect_replacement(board: BoardState, card: BoardEntity,

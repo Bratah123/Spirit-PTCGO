@@ -125,6 +125,7 @@ from .passives import (
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
     granted_extra_attacks, retreat_energy_destination, tool_slots_free,
     tool_suppressed,
+    stadium_suppressed,
 )
 from .legal_actions import (
     ACTION_ATTACH_TOOL,
@@ -1431,6 +1432,12 @@ class GameSession:
         including intermediate parking and referenced LEGEND component halves.
         """
         entity = self.board_state.get_entity(entity_id)
+        if entity is not None and entity.parent is not None \
+                and getattr(entity, "redirected_from", None) == destination_id:
+            # move_card rerouted a home-owned card (Head Ringer) to its
+            # owner's discard: report where it really went.
+            destination_id = entity.parent.entity_id
+            position = entity.parent.children.index(entity)
         destination = self.board_state.get_entity(destination_id)
         if isinstance(destination, CompositePokemonEntity):
             # Components occupy server child slots, but not client attachment slots.
@@ -4190,6 +4197,8 @@ class GameSession:
         Pokemon are never shielded as opposing effects."""
         area = self.board_state.find_global_area("activeStadium")
         for stadium in list(area.children if area else []):
+            if stadium_suppressed(self.board_state, stadium):
+                continue  # Wicked Wind: the Stadium has no effect
             await self._fire_triggered_abilities(
                 acting_player_id, stadium, trigger, ctx_setup=ctx_setup)
 
@@ -4721,8 +4730,11 @@ class GameSession:
             return
         max_before = effective_max_hp(self.board_state, target)
         position = len(target.children)
+        home = card.owning_player_id
         if not self.board_state.attach_card(card.entity_id, target_id):
             return
+        if home is not None and target.owning_player_id != home:
+            card.home_player_id = home
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
             f"attached tool {card.entity_id} to {target_id}."

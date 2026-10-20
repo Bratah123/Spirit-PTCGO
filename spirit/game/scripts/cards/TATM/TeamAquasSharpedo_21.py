@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Sharpedo (TATM #21): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.content.definitions import def_for
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+def _aqua_search_condition(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children)
+
+
+async def _aqua_search(ctx):
+    """Search your deck for a Team Aqua Pokemon, reveal it, put it into your hand; shuffle."""
+    await search_to_hand(lambda c: is_pokemon_card(c) and _team(c, "Aqua"), count=1, minimum=0,
+                         reveal=True, prompt="Choose a Team Aqua Pokémon")(ctx)
+
 
 card = PokemonCardDef(
     guid="ea310bb7-e045-55c5-a408-d5b37ecfbc02",
@@ -26,8 +42,9 @@ card = PokemonCardDef(
         Ability(
             title="Aqua Search",
             game_text="Once during your turn (before your attack), you may search your deck for a Team Aqua Pok\u00e9mon, reveal it, and put it into your hand. Shuffle your deck afterward.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_aqua_search_condition,
+            effect=_aqua_search,
         ),
         Attack(
             title="Sharp Fang",

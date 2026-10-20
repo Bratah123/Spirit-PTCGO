@@ -1,5 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Jamming Net Team Flare Hyper Gear (XY4 #98): trainer effect stubbed.
+"""Jamming Net Team Flare Hyper Gear (XY4 #98).
 
 Card text:
   - Attach this Pokemon Tool to 1 of your opponent's Pokemon-EX that doesn't already have a Pokemon Tool attached to it.
@@ -8,8 +7,24 @@ Card text:
   - You may play as many Item cards as you like during your turn (before your attack).
 """
 
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+def _is_pokemon_ex(pokemon):
+    return "EX" in (getattr(def_for(pokemon.archetype_id), "subtypes", None) or [])
+
+
+class JammingNetPassive(Passive):
+    """The attacks of the Pokemon this card is attached to do 20 less damage
+    to all Defending Pokemon (before applying Weakness and Resistance)."""
+
+    def modify_damage_dealt(self, calc, carrier):
+        if calc.is_attack and calc.is_opposing and carrier_pokemon(carrier) is calc.attacker:
+            calc.amount = max(0, calc.amount - 20)
+
 
 card = PokemonToolCardDef(
     guid="7aa161b2-aaae-5755-a67a-22aa1a51104b",
@@ -21,6 +36,7 @@ card = PokemonToolCardDef(
     collector_number=98,
     set_code="XY4",
     rarity=Rarities.RareHolo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    attach_to_opponent=True,
+    attach_to=_is_pokemon_ex,
+    passive=JammingNetPassive(),
 )
