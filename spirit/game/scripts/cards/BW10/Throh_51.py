@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="ab3c56d2-0a63-5853-a8e7-47326e1a48d6",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=30),
         ),
         Attack(
             title="Shoulder Throw",

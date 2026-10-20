@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="6343c3c9-8c68-5dc7-a5cd-cffb1406bdc5",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Paralyzing Gaze",
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Dragon Claw",

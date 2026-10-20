@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="6628961e-2c2a-5568-ba79-450a4158439c",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
         Attack(
             title="Swift Dive",

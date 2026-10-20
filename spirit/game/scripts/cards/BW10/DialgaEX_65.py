@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
+
+async def _put_discard_card_in_hand(ctx):
+    discard = ctx.discard_pile()
+    if not discard:
+        return
+    picks = await ctx.choose_cards(
+        discard, 1, minimum=1,
+        prompt="Choose a card from your discard pile to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="7e21be66-22d5-5f76-a4f6-f398976750fb",
@@ -23,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, put a card from your discard pile into your hand.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=flip_or_nothing(then=_put_discard_card_in_hand),
         ),
         Attack(
             title="Fast Forward",

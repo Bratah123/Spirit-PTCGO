@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="adbe0dfc-2783-5ee1-991c-f01c8fbc5674",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for 2 Basic Pok\u00e9mon and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(count=2),
         ),
         Attack(
             title="Comet Punch",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins=4, per_heads=20),
         ),
     ],
 )

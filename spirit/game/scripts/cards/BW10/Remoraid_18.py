@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="27214540-3a78-5430-b598-e3f697b844bc",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 2},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],
 )

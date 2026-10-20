@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+
 
 card = PokemonCardDef(
     guid="1e82c884-6033-5141-a9b6-c6cd8999cf1f",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 10, base=30),
         ),
         Attack(
             title="Giga Frost",

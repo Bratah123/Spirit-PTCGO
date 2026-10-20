@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+
 
 card = PokemonCardDef(
     guid="657e1d81-a675-58e6-96d8-9e552fbd5276",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Double Draw",
             game_text="Draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=draw_attack(2),
         ),
         Attack(
             title="Leaf Wallop",

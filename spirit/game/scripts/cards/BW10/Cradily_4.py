@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="631adac5-0299-5470-80a8-28a34d1af971",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
     ],
 )

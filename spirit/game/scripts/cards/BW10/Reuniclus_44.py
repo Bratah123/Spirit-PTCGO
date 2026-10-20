@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.support_common import switch_self_attack
+
 
 card = PokemonCardDef(
     guid="213df7b4-7738-5982-a045-1148a24c3bda",
@@ -24,14 +27,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 30 (after applying Weakness and Resistance).",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=30),
         ),
         Attack(
             title="Telekinesis of Nobility",
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
     ],
 )

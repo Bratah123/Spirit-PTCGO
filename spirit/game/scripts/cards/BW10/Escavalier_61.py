@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="c96e7a7d-d083-50a6-92e5-590228af3e4a",
@@ -25,14 +27,15 @@ card = PokemonCardDef(
             game_text="Does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
         Attack(
             title="Slashing Strike",
             game_text="This Pok\u00e9mon can't use Slashing Strike during your next turn.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

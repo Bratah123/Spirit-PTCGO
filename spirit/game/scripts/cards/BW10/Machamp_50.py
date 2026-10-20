@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_random_from_hand, bonus_if, has_tool
+
+
+async def knock_off(ctx):
+    """discard a random card from the opponent's hand."""
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, ctx.opponent_id, count=1)
+
 
 card = PokemonCardDef(
     guid="bb956d45-f8a7-528e-8460-56c212d438bb",
@@ -24,7 +32,7 @@ card = PokemonCardDef(
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=knock_off,
         ),
         Attack(
             title="Reinforced Lariat",
@@ -32,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: has_tool(ctx.attacker), 40),
         ),
     ],
 )

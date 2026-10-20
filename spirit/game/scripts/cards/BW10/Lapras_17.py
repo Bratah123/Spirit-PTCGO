@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def sugary_sprinkles(ctx):
+    """Heal 30 damage from each of your Benched Pokemon."""
+    for pokemon in ctx.my_bench():
+        await ctx.heal(30, pokemon)
+
 
 card = PokemonCardDef(
     guid="af8d4c0e-3c41-5d66-9e1d-865d441b0793",
@@ -22,7 +29,7 @@ card = PokemonCardDef(
             title="Cleanse Away",
             game_text="Heal 30 damage from each of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=sugary_sprinkles,
         ),
         Attack(
             title="Surf",

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="f2f4b705-7114-5dc5-83d6-e92bd75e428b",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Psypower",
             game_text="Put 3 damage counters on your opponent's Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(3, 'choose_any_opponent'),
         ),
     ],
 )

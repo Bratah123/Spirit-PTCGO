@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="c041de63-c7dc-5ec6-bb78-7336c618325a",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Yawn",
             game_text="The Defending Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Ram",

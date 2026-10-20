@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="de529887-40f2-5da1-8046-51d5a9d32ec1",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Bubble",
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Water Gun",

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="299ad1d8-de84-56aa-82f7-42d88944f95b",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
         Attack(
             title="Rollout",

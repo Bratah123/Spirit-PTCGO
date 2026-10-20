@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="1769730c-9294-5d22-9066-6be18244f1f5",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Blazing Claws",
