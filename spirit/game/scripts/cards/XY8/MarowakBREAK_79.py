@@ -1,0 +1,35 @@
+"""STUB: effect not implemented — do not guess mechanics.
+Marowak BREAK (XY8 #79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="498101c2-ba80-59d8-aee3-cfb5d8c34c21",
+    key="XY8",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.MarowakBREAK.Name",
+    display_name="Marowak BREAK",
+    searchable_by=["Marowak BREAK", "BREAK", "MarowakBREAK"],
+    subtypes=["BREAK"],
+    collector_number=79,
+    set_code="XY8",
+    rarity=Rarities.Rare,
+    hp=140,
+    elements=[PokemonTypes.FIGHTING],
+    stage=PokemonStage.BREAK,
+    retreat_cost=0,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Marowak.Name",
+    family_id=104,
+    abilities=[
+        Attack(
+            title="Bone Revenge",
+            game_text="This attack does 40 more damage for each Prize card your opponent has taken.",
+            cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
+            damage=20,
+            damage_operator="+",
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+    ],
+)

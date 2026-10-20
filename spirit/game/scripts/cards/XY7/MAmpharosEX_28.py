@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.METAL,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.AmpharosEX.Name",
     family_id=181,
     abilities=[
