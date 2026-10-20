@@ -1,0 +1,45 @@
+"""STUB: effect not implemented — do not guess mechanics.
+Blissey (XY4 #81): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""
+
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="eadae8e0-d1be-5653-9877-91c7f7810a7f",
+    key="XY4",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Blissey.Name",
+    display_name="Blissey",
+    searchable_by=["Blissey", "Stage 1", "Blissey"],
+    subtypes=["Stage 1"],
+    collector_number=81,
+    set_code="XY4",
+    rarity=Rarities.Rare,
+    hp=130,
+    elements=[PokemonTypes.COLORLESS],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.FIGHTING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Chansey.Name",
+    family_id=113,
+    abilities=[
+        Attack(
+            title="Tender Vengeance",
+            game_text="Flip a coin. If heads, this attack does 10 damage times the number of damage counters on each of your Benched Pok\u00e9mon.",
+            cost={PokemonTypes.COLORLESS: 3},
+            damage=10,
+            damage_operator="x",
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Charge Dash",
+            game_text="You may do 20 more damage. If you do, this Pok\u00e9mon does 20 damage to itself.",
+            cost={PokemonTypes.COLORLESS: 4},
+            damage=60,
+            damage_operator="+",
+            # STUB: attack effect not implemented
+            effect=unimplemented,
+        ),
+    ],
+)
