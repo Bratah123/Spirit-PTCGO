@@ -1,5 +1,9 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack, self_energy_discard_attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="a4264302-35ee-5e41-b260-ea060cb112f9",
@@ -23,14 +27,14 @@ card = PokemonCardDef(
             title="Split Bomb",
             game_text="This attack does 40 damage to 2 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=snipe_attack(40, pool='any', count=2),
         ),
         Attack(
             title="Scorching Fire",
             game_text="Discard a Fire Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 4},
             damage=150,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1, energy_type=PokemonTypes.FIRE),
         ),
     ],
 )

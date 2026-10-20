@@ -1,5 +1,8 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, flip_damage
+
 
 card = PokemonCardDef(
     guid="2bd7187d-e1f2-5d62-8dd0-145b394023a9",
@@ -33,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=80),
         ),
     ],
 )

@@ -1,5 +1,18 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+
+async def _gnaw_through(ctx):
+    """Discard a Pokemon Tool card attached to the Defending Pokemon."""
+    d = ctx.defender
+    if d is None or ctx.effects_blocked(d):
+        return
+    tools = [c for c in d.children
+             if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value]
+    if tools:
+        await ctx.discard_cards(tools[:1])
+
 
 card = PokemonCardDef(
     guid="32ff29b7-66cb-5e81-892d-d6b15cb1d232",
@@ -22,7 +35,7 @@ card = PokemonCardDef(
             title="Tool Breaker",
             game_text="Discard a Pok\u00e9mon Tool card attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_gnaw_through,
         ),
         Attack(
             title="Hammer In",

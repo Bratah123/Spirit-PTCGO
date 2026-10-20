@@ -1,5 +1,15 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_random_from_hand
+
+
+async def knock_off(ctx):
+    """Flip; heads discard a random card from opponent's hand."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        await discard_random_from_hand(ctx, player_id=ctx.opponent_id, count=1)
+
 
 card = PokemonCardDef(
     guid="e8a37dca-93f4-552d-875b-34f85303ee9a",
@@ -22,7 +32,7 @@ card = PokemonCardDef(
             title="Shout",
             game_text="Flip a coin. If heads, discard a random card from your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=knock_off,
         ),
         Attack(
             title="Hyper Voice",

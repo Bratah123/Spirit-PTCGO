@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import bonus_if, damage_all_opponents
+
 
 card = PokemonCardDef(
     guid="708b2bb5-1a8f-5ae8-bf2e-2644c26fd7a1",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             title="Smogbank",
             game_text="This attack does 20 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(20),
         ),
     ],
 )

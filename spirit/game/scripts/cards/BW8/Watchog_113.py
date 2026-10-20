@@ -1,5 +1,9 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import (
+    flip_damage, damage_per, damage_counters_on,
+)
+
 
 card = PokemonCardDef(
     guid="4d601c0b-78d8-522b-97dc-fa7dd852fe29",
@@ -25,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('defender'), 10, base=20),
         ),
         Attack(
             title="Low Kick",

@@ -1,5 +1,14 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_random_from_hand, flip_damage
+from spirit.game.card_effects.attacks_common import flip_bonus, recoil_attack
+
+
+async def knock_off(ctx):
+    """discard a random card from the opponent's hand."""
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, ctx.opponent_id, count=1)
+
 
 card = PokemonCardDef(
     guid="ab7e4d53-e91d-5466-bb31-d76936b65429",
@@ -23,7 +32,7 @@ card = PokemonCardDef(
             title="Fast Swipe",
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=knock_off,
         ),
         Attack(
             title="Biting Fang",
@@ -31,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

@@ -1,5 +1,9 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play, damage_counters_on
+from spirit.game.card_effects.attacks_common import flip_damage, mill_attack
+
 
 card = PokemonCardDef(
     guid="1ca957b6-618d-5539-9a0a-57b8f5883575",
@@ -25,14 +29,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 20),
         ),
         Attack(
             title="Glacier Drop",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
     ],
 )

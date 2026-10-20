@@ -1,5 +1,15 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import (
+    AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions,
+)
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _petal_dance(ctx):
+    await flip_damage(coins=3, per_heads=30)(ctx)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="76d4dc43-e286-5bd4-96d1-5c0b33028bc9",
@@ -26,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_petal_dance,
         ),
         Attack(
             title="Drill Peck",

@@ -1,5 +1,18 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def _heavy_bullet(ctx):
+    """Printed damage; flip, heads 20 to 1 of the opponent's Benched Pokémon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, "Heavy Bullet")
+    if results and results[0]:
+        await _bullet_snipe(ctx)
+
+
+_bullet_snipe = snipe_attack(20)
+
 
 card = PokemonCardDef(
     guid="9339bc7d-5a33-5b24-8b21-e4556decd011",
@@ -31,7 +44,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, this attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            effect=unimplemented,
+            effect=_heavy_bullet,
         ),
     ],
 )
