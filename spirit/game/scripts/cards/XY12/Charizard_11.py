@@ -4,6 +4,8 @@ Charizard (XY12 #11): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="b848637c-2a52-5a03-8275-f2dd0638807e",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 4},
             damage=200,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=3),
         ),
     ],
 )

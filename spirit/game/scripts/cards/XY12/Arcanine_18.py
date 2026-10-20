@@ -4,6 +4,14 @@ Arcanine (XY12 #18): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def _freeze_shock(ctx):
+    """Printed damage; this Pokemon can't attack during your next turn."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="8de205ce-7f69-5193-abb9-4747b4aed584",
@@ -35,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 3, PokemonTypes.COLORLESS: 1},
             damage=150,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_freeze_shock,
         ),
     ],
 )

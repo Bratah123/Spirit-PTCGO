@@ -2,8 +2,10 @@
 Mewtwo-EX (XY12 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+
 
 card = PokemonCardDef(
     guid="727a83e6-723a-5668-b890-1437a78e0cf5",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Attach an Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=attach_from_discard(),
         ),
         Attack(
             title="Regeneration",
