@@ -16,7 +16,7 @@ card = SupporterCardDef(
     display_name="Team Flare Grunt",
     searchable_by=["Team Flare Grunt", "Supporter"],
     subtypes=["Supporter"],
-    collector_number=73,
+    collector_number=117,
     set_code="TwentiethAnn",
     rarity=Rarities.RareUltra,
     # STUB: trainer effect not implemented
