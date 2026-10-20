@@ -4832,6 +4832,9 @@ class GameSession:
         pile with the outgoing card and the new Pokemon enters fresh
         (Phantom Transformation). With ctx the choreography is QUEUED on it
         (so the ability announce/orb bracket plays first) instead of sent.
+        destination_name="underneath" (requires transfer=True) tucks the
+        outgoing card under the new Pokemon like a pre-evolution (BW7 Ditto
+        Transform); it then leaves play with that stack.
         Returns `incoming`, or None on failure.
         """
         area = outgoing.parent
@@ -4842,7 +4845,11 @@ class GameSession:
         if isinstance(outgoing, CompositePokemonEntity)                 or isinstance(incoming, (ComponentCardEntity, CompositePokemonEntity)):
             return None
         source_area = incoming._containing_area_name()
-        dest = self.board_state.find_player_area(owner_id, destination_name)
+        underneath = destination_name == "underneath"
+        if underneath and not transfer:
+            return None
+        dest = incoming if underneath else \
+            self.board_state.find_player_area(owner_id, destination_name)
         out_of_play = self.board_state.find_global_area("outOfPlay")
         if dest is None or out_of_play is None or source_area is None:
             return None
@@ -4873,9 +4880,12 @@ class GameSession:
                 self.board_state.move_card(other.entity_id, dest.entity_id)
                 stack_moves.append(self._entity_moved_msg(
                     other.entity_id, dest.entity_id, position))
-        # ...and the old card leaves play.
+        # ...and the old card leaves play (or is tucked under the new one).
         position = len(dest.children)
-        self.board_state.move_card(outgoing.entity_id, dest.entity_id)
+        if underneath:
+            self.board_state.attach_card(outgoing.entity_id, incoming.entity_id)
+        else:
+            self.board_state.move_card(outgoing.entity_id, dest.entity_id)
         outgoing_move = self._entity_moved_msg(
             outgoing.entity_id, dest.entity_id, position)
 
