@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diggersby (XY4 #88): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+
+
+async def _flip_discard_defender_energy(ctx):
+    """Printed damage; flip a coin. If heads, discard an Energy attached to
+    your opponent's Active Pokemon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    target = ctx.opponent_active()
+    if results and results[0] and target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(target, 1, minimum=1,
+                                      prompt="Choose an Energy to discard")
+
 
 card = PokemonCardDef(
     guid="efc03711-5711-5935-95b5-57f663af80ac",
@@ -28,16 +37,14 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_flip_discard_defender_energy,
         ),
         Attack(
             title="Earthquake",
             game_text="This attack does 10 damage to each of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, side='mine', also_base=True),
         ),
     ],
 )

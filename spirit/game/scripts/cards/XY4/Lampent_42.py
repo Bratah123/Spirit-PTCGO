@@ -2,8 +2,10 @@
 Lampent (XY4 #42): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="db469a57-d491-53e7-9e7b-79c75df1dee6",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="Put 3 damage counters on your opponent's Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(3, 'choose_any_opponent'),
         ),
         Attack(
             title="Night March",

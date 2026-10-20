@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Feraligatr (XY4 #17): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
+
+async def _sludge_crash(ctx):
+    """Printed damage; flip until tails, discard an Energy from the Defending
+    Pokemon for each heads."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_until_tails(ctx.ability.title)
+    d = ctx.defender
+    if heads and d is not None and not ctx.effects_blocked(d):
+        n = min(heads, len(ctx.attached_energies(d)))
+        if n:
+            await ctx.discard_energy_from(d, n, minimum=n)
+
 
 card = PokemonCardDef(
     guid="0f677241-a15c-5aca-96aa-6e29db97f604",
@@ -28,8 +38,7 @@ card = PokemonCardDef(
             game_text="Flip a coin until you get tails. For each heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sludge_crash,
         ),
         Attack(
             title="Second Strike",
@@ -37,8 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(has_damage(), 80),
         ),
     ],
 )

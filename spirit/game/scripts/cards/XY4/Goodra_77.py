@@ -4,6 +4,8 @@ Goodra (XY4 #77): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
 
 card = PokemonCardDef(
     guid="f73a0604-adc7-51b1-818f-200e00ed085f",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=130,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1, opponent=False),
         ),
     ],
 )

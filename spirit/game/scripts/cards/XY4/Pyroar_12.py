@@ -4,6 +4,8 @@ Pyroar (XY4 #12): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="86b62ae9-c659-50e2-bd90-bb27f643b63b",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 3, PokemonTypes.COLORLESS: 1},
             damage=110,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(30),
         ),
     ],
 )

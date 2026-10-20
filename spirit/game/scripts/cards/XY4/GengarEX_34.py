@@ -2,8 +2,20 @@
 Gengar-EX (XY4 #34): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def stealth_poison(ctx):
+    """70, opponent's Active becomes Poisoned, then switch this Pokémon with 1 of your Benched."""
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    bench = ctx.my_bench()
+    if bench:
+        target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+        if target is not None:
+            await ctx.switch_active(ctx.player_id, target)
+
 
 card = PokemonCardDef(
     guid="08f12d37-3f2e-528f-8d8d-07ebdf0941e7",
@@ -37,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=stealth_poison,
         ),
     ],
 )

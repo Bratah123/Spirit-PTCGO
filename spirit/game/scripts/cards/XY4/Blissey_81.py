@@ -2,8 +2,20 @@
 Blissey (XY4 #81): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def superpower(ctx):
+    """You may do 20 more damage; if you do, this Pokémon does 20 to itself."""
+    if await ctx.ask_yes_no(
+        "Do 20 more damage? If you do, this Pokémon does 20 damage to itself."
+    ):
+        await ctx.deal_damage(80)
+        await ctx.deal_damage(20, target=ctx.attacker, apply_modifiers=False)
+    else:
+        await ctx.deal_damage(60)
+
 
 card = PokemonCardDef(
     guid="eadae8e0-d1be-5653-9877-91c7f7810a7f",
@@ -39,7 +51,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=superpower,
         ),
     ],
 )

@@ -2,8 +2,11 @@
 Florges-EX (XY4 #116): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_supporter_card
+
 
 card = PokemonCardDef(
     guid="03f7a0e9-3f22-5771-ae19-dbe5c94384cf",
@@ -29,7 +32,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a Supporter card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.FAIRY: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_supporter_card, count=1, reveal=True, prompt='Choose a Supporter card'),
         ),
         Attack(
             title="Bright Garden",

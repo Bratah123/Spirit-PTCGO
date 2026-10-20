@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Whismur (XY4 #83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="f18d2292-427b-5803-b147-0731be9892d2",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Screaming Fit",
             game_text="Both Active Pok\u00e9mon are now Confused.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, both_actives=True),
         ),
     ],
 )
