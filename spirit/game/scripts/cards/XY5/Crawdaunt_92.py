@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Corphish.Name",
     family_id=341,
     abilities=[

@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chesnaught (XY1 #14): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import in_active_spot
+from spirit.game.card_effects.support_common import heal_attack
+
+
+async def counterattack(ctx):
+    """If Active and damaged by an attack (even if KO'd): 3 counters on the attacker."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    await ctx.deal_damage(30, target=attacker, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="f34bbe2e-661f-5d77-a20b-34c30e8d55f1",
@@ -26,16 +35,15 @@ card = PokemonCardDef(
         Ability(
             title="Spiky Shield",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon and is damaged by an opponent's attack (even if this Pok\u00e9mon is Knocked Out), put 3 damage counters on the Attacking Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=counterattack,
         ),
         Attack(
             title="Touchdown",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
     ],
 )

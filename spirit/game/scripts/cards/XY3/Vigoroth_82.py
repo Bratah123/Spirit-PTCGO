@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vigoroth (XY3 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="cc1787a4-d738-5e24-9953-a62f328e4d49",
@@ -33,8 +31,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, this Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(tails_self_damage=20),
         ),
     ],
 )

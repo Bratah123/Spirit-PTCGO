@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heracross-EX (XY3 #4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def _giga_power(ctx):
+    """80; you may do 40 more damage. If you do, 20 damage to itself."""
+    if await ctx.ask_yes_no("Do 40 more damage (this Pokémon does 20 damage to itself)?"):
+        await recoil_attack(20, damage=120)(ctx)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="e25e3160-d54c-561d-821b-2878dd3b15e9",
@@ -27,8 +34,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=20),
         ),
         Attack(
             title="Giga Power",
@@ -36,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giga_power,
         ),
     ],
 )

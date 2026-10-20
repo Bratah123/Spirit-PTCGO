@@ -36,10 +36,12 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    energy_attach_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
     effective_attack_cost,
     effective_bench_capacity,
+    effective_supporter_limit,
     effective_retreat_cost,
     energy_provided_options,
     evolution_blocked,
@@ -99,6 +101,8 @@ class TurnState:
     supporter_played: bool = False
     stadium_played: bool = False
     energy_attached: bool = False
+    # alpha Growth: the Pokemon whose trait allows a 2nd manual attachment this turn.
+    alpha_growth_target: Optional[str] = None
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
     # placed during setup are absent and default to turn 0.
@@ -182,6 +186,7 @@ class TurnState:
         self.supporter_played = False
         self.stadium_played = False
         self.energy_attached = False
+        self.alpha_growth_target = None
         self.retreated = False
         self.used_abilities = set()
         self.used_named_abilities = set()
@@ -454,6 +459,8 @@ def compute_legal_actions(
             continue
         if isinstance(card, PokemonEntity):
             stage = card.get_attribute(AttrID.STAGE)
+            if stage == PokemonStage.RESTORED.value:
+                continue  # Restored Pokemon enter play only via their Fossil Item
             if stage == PokemonStage.BASIC.value:
                 if getattr(def_for(card.archetype_id), "unplayable_from_hand", False):
                     continue  # Shedinja: enters play only via an effect
@@ -475,13 +482,18 @@ def compute_legal_actions(
             evolves_from = card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
             if not evolves_from:
                 continue
+            # delta Evolution: ignores the first-turn / just-played gates
+            # (a Pokemon that already evolved this turn still can't).
+            from spirit.game.card_effects.ancient_traits import DELTA_EVOLUTION, definition_has_trait
+            delta_evolution = definition_has_trait(card.archetype_id, DELTA_EVOLUTION)
             evolve_targets = [
                 p.entity_id for p in in_play
                 if not isinstance(p, CompositePokemonEntity)
                 and p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
-                     or can_evolve_early(board, p))
+                     or can_evolve_early(board, p)
+                     or delta_evolution)
             ]
             if evolve_targets:
                 entries.append(_target_map_entry(
@@ -491,7 +503,9 @@ def compute_legal_actions(
                 ))
 
         elif isinstance(card, EnergyEntity):
-            if state.energy_attached or not in_play_ids:
+            if not in_play_ids:
+                continue
+            if state.energy_attached and state.alpha_growth_target is None:
                 continue
             if state.play_locked(player_id, card):
                 continue
@@ -504,6 +518,8 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and not energy_attach_blocked(board, player_id, card, p)
+                and (not state.energy_attached or p.entity_id == state.alpha_growth_target)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -538,7 +554,11 @@ def compute_legal_actions(
                     target_infos,
                 ))
             elif trainer_type == TrainerType.SUPPORTER.value:
-                if not state.supporter_played and state.turn_number > 1:
+                supporters_played = sum(
+                    1 for r in state.trainers_played
+                    if r[2] == TrainerType.SUPPORTER.value)
+                if state.turn_number > 1 and (not state.supporter_played or
+                        supporters_played < effective_supporter_limit(board, player_id)):
                     entries.append(_target_map_entry(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "supporter"), ACTION_USE_TRAINER,

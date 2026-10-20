@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pangoro (XY3 #68): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import mill_attack, discard_for_bonus
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_item(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.ITEM.value, TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
 
 card = PokemonCardDef(
     guid="ed483bf4-fdaf-5cc9-bbbd-d443286aec69",
@@ -21,6 +24,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Pancham.Name",
     family_id=674,
     abilities=[
@@ -30,16 +34,15 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_for_bonus(source='hand', predicate=_is_item, flat=40,
+                prompt='You may discard an Item card for 40 more damage'),
         ),
         Attack(
             title="Hammer Arm",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
     ],
 )

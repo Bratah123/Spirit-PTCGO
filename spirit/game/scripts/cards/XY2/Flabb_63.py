@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -17,6 +17,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     family_id=669,
     abilities=[
         Attack(

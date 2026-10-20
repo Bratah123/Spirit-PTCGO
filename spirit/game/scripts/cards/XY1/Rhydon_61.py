@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rhydon (XY1 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def _mad_mountain(ctx):
+    """Flip 2 coins. If both are heads, discard the top card of your
+    opponent's deck for each damage counter on this Pokemon."""
+    results = await ctx.flip_coins(2, ctx.ability.title) or []
+    if len(results) < 2 or not all(results):
+        return
+    counters = damage_counters_on('self')(ctx)
+    if counters:
+        cards = ctx.deck_top(counters, player_id=ctx.opponent_id)
+        if cards:
+            await ctx.discard_cards(cards)
+
 
 card = PokemonCardDef(
     guid="530587cf-3ea3-55e6-b9fd-35ca196a2001",
@@ -32,8 +43,7 @@ card = PokemonCardDef(
             title="Mad Mountain",
             game_text="Flip 2 coins. If both of them are heads, discard the top card of your opponent's deck for each damage counter on this Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mad_mountain,
         ),
     ],
 )

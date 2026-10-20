@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Munna (XY4 #39): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="967c15b0-2fa9-5c58-84a9-8eb0c29057e8",
@@ -26,8 +29,7 @@ card = PokemonCardDef(
             title="See Through",
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scout,
         ),
         Attack(
             title="Double Headbutt",
@@ -35,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=20),
         ),
     ],
 )

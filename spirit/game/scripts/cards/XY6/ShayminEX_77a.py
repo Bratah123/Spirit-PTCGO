@@ -12,7 +12,7 @@ card = PokemonCardDef(
     display_name="Shaymin-EX",
     searchable_by=["Shaymin-EX", "Basic", "EX", "ShayminEX"],
     subtypes=["Basic", "EX"],
-    collector_number=77,
+    collector_number=111,
     set_code="XY6",
     rarity=Rarities.RareUltra,
     hp=110,
@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=492,
     abilities=[
         Ability(

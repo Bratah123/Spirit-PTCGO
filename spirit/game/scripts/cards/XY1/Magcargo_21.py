@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magcargo (XY1 #21): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+async def _magma_mantle(ctx):
+    """30; you may discard the top card of your deck. If it is a Fire Energy
+    card, this attack does 50 more damage."""
+    bonus = 0
+    top = ctx.deck_top(1)
+    if top and await ctx.ask_yes_no("Discard the top card of your deck?"):
+        card = top[0]
+        await ctx.discard_cards([card])
+        if is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value):
+            bonus = 50
+    await ctx.deal_damage(30 + bonus)
+
 
 card = PokemonCardDef(
     guid="06d26f02-9385-56ba-900d-af1758c5f8e8",
@@ -29,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magma_mantle,
         ),
         Attack(
             title="Heat Blast",

@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kangaskhan-EX (XY2 #78): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="f69f13ec-266f-5a98-8e3c-4136f5140eb9",
@@ -26,8 +25,7 @@ card = PokemonCardDef(
             title="Triple Draw",
             game_text="Draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=draw_attack(3),
         ),
         Attack(
             title="Kindred Kick",
@@ -35,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )
