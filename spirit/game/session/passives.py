@@ -389,6 +389,12 @@ class Passive:
         (Wyndon Stadium)."""
         return 0
 
+    def trainer_play_flip(self, card: BoardEntity, player_id: str,
+                          carrier: BoardEntity) -> Optional[str]:
+        """A coin title when `player_id` must flip as they play `card` from
+        hand, tails = the card has no effect (Venomoth Dizzying Wind)."""
+        return None
+
     def offers_attack_coin_reroll(self, player_id: str, carrier: BoardEntity) -> bool:
         """True to let `player_id` re-flip an attack's coins once during
         their turn (Glimwood Tangle)."""
@@ -766,6 +772,16 @@ def evolve_heal_amount(board: BoardState, evolved: PokemonEntity,
         passive.heal_on_evolve(evolved, pre_evolution, player_id, carrier)
         for passive, carrier in active_passives(board)
     )
+
+
+def trainer_play_flip_title(board: BoardState, card: BoardEntity,
+                            player_id: str) -> Optional[str]:
+    """First passive demanding a no-effect-on-tails flip for this play."""
+    for passive, carrier in active_passives(board):
+        title = passive.trainer_play_flip(card, player_id, carrier)
+        if title:
+            return title
+    return None
 
 
 def attack_coin_reroll_offered(board: BoardState, player_id: str) -> bool:
