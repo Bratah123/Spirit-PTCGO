@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Darkrai-EX (XY9 #118): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import damage_per, count_energy, condition_bonus_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="cdf89d4e-c282-58b8-9b1f-e971d3dcf595",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=491,
     abilities=[
         Attack(
@@ -29,8 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('mine', energy_type=PokemonTypes.DARKNESS), 20, base=20),
         ),
         Attack(
             title="Dark Head",
@@ -38,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_bonus_attack(80, SpecialConditions.ASLEEP),
         ),
     ],
 )

@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magearna-EX (XY11 #110): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import attack_effect_shield_passive, boost_own_next_turn
+from spirit.game.session.passives import carrier_pokemon
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _metal_charged(target, carrier):
+    me = carrier_pokemon(carrier)
+    return me is not None and target.owning_player_id == me.owning_player_id and any(
+        energy_provides_type(c, PokemonTypes.METAL.value) for c in target.children)
+
 
 card = PokemonCardDef(
     guid="c06daa3c-faf2-5602-b80b-aa2e53c22c0e",
@@ -21,21 +27,20 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=801,
     abilities=[
         Ability(
             title="Mystic Heart",
             game_text="Prevent all effects of your opponent's attacks, except damage, done to each of your Pok\u00e9mon that has any Metal Energy attached to it. (Existing effects are not removed.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=attack_effect_shield_passive(protects=_metal_charged),
         ),
         Attack(
             title="Soul Blaster",
             game_text="During your next turn, this Pok\u00e9mon's Soul Blaster attack's base damage is 60.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(-60, 'Soul Blaster'),
         ),
     ],
 )

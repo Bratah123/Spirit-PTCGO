@@ -53,6 +53,7 @@ STAGE_MAP = {
     "Basic": "PokemonStage.BASIC",
     "Stage 1": "PokemonStage.STAGE1",
     "Stage 2": "PokemonStage.STAGE2",
+    "Restored": "PokemonStage.RESTORED",
     "VMAX": "PokemonStage.VMAX",
     "VSTAR": "PokemonStage.VSTAR",
     "V-UNION": "PokemonStage.VUNION",
@@ -66,9 +67,61 @@ def clean_name(name: str) -> str:
     ascii_only = decomposed.encode("ascii", "ignore").decode("ascii")
     return re.sub(r'[^a-zA-Z0-9]', '', ascii_only)
 
+# Unique int collector numbers. Spirit keys cards (art bundle asset names,
+# "SET/number" deck refs, the starter index) by (set, int number), so every
+# printed number of a set must map to its own int:
+#   "57"   -> 57
+#   "RC3"  -> highest plain number + 3   (prefix subsets: Radiant Collection,
+#             promo "BW04"; a second prefix group continues after the first)
+#   "28a"  -> after everything above, in data order (alternate prints)
+# Any other collision also moves past the top. Set per import by
+# set_numbering(cards); unknown numbers fall back to their digits.
+NUMBER_MAP: Dict[str, int] = {}
+SUBSET_RE = re.compile(r"^([A-Za-z]+)0*(\d+)$")
+
+def assign_collector_numbers(cards: List[Dict[str, Any]]) -> Dict[str, int]:
+    raws = [str(c.get("number", "0")).strip() for c in cards]
+    out: Dict[str, int] = {}
+    taken = set()
+    for raw in raws:
+        if raw.isdigit() and int(raw) not in taken:
+            out[raw] = int(raw)
+            taken.add(int(raw))
+    offset = max(taken, default=0)
+    groups: Dict[str, List[str]] = {}
+    for raw in raws:
+        match = SUBSET_RE.match(raw)
+        if match and raw not in out:
+            groups.setdefault(match[1].upper(), []).append(raw)
+    for prefix, members in groups.items():
+        top = offset
+        for raw in members:
+            value = offset + int(SUBSET_RE.match(raw)[2])
+            if value in taken:
+                continue
+            out[raw] = value
+            taken.add(value)
+            top = max(top, value)
+        offset = top
+    top = max(taken, default=0)
+    for raw in raws:
+        if raw not in out:
+            top += 1
+            out[raw] = top
+            taken.add(top)
+    return out
+
+def set_numbering(cards: List[Dict[str, Any]]) -> Dict[str, int]:
+    global NUMBER_MAP
+    NUMBER_MAP = assign_collector_numbers(cards)
+    return NUMBER_MAP
+
 def collector_number_int(number: Any) -> int:
-    """Spirit collector_number is int; strip letter suffixes (77a -> 77)."""
-    digits = re.sub(r"\D", "", str(number or "0"))
+    """Unique int collector number for a printed number (see NUMBER_MAP)."""
+    raw = str(number or "0").strip()
+    if raw in NUMBER_MAP:
+        return NUMBER_MAP[raw]
+    digits = re.sub(r"\D", "", raw)
     return int(digits) if digits else 0
 
 def stub_header(reason: str, rules: Optional[List[str]] = None) -> str:
@@ -265,6 +318,9 @@ card = PokemonCardDef(
             resist_type = TYPE_MAP.get(resistances[0].get("type"))
             if resist_type:
                 content += f"    resistance_type={resist_type},\n"
+                amount = abs(int(re.sub(r"[^0-9-]", "", str(resistances[0].get("value", "-30"))) or -30))
+                if amount != 30:
+                    content += f"    resistance_amount={amount},\n"
 
         if evolves_from:
             content += f"    evolves_from=\"com.direwolfdigital.cake.data.archetypes.pokemon.{clean_name(evolves_from)}.Name\",\n"
@@ -376,9 +432,10 @@ def main():
 
     JSON_PATH = args.json_path
     
-    # Determine the set code
+    # Determine the set code. Preserve caller casing when --set-code is given
+    # (sets.json uses mixed-case names like TwentiethAnn).
     if args.set_code:
-        SET_CODE = args.set_code.upper()
+        SET_CODE = args.set_code
     else:
         # Get uppercase filename without extension
         SET_CODE = os.path.splitext(os.path.basename(JSON_PATH))[0].upper()
@@ -398,6 +455,12 @@ def main():
     with open(JSON_PATH, "r") as f:
         cards = json.load(f)
     
+    set_numbering(cards)
+    numbers = [collector_number_int(c.get("number", "0")) for c in cards]
+    if len(set(numbers)) != len(numbers):
+        print("Error: collector numbers collide after subset mapping")
+        sys.exit(1)
+
     # Build name map for family resolution
     for card in cards:
         if "Pok" in card.get("supertype", ""):

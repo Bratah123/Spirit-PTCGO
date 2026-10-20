@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dustox (XY6 #8): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="10a61659-80c2-54cc-8f15-c002df2487a2",
@@ -32,8 +30,7 @@ card = PokemonCardDef(
             title="Wind Shard",
             game_text="This attack does 50 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(50, pool='bench', count=1),
         ),
     ],
 )

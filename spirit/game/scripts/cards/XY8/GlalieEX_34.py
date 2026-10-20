@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Glalie-EX (XY8 #34): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _same_hand(ctx):
+    return ctx.hand_size() == ctx.hand_size(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="4ec81b5a-a313-56d3-b66a-ab18c0244793",
@@ -26,8 +28,7 @@ card = PokemonCardDef(
             title="Ice Breath",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Instant Freeze",
@@ -35,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_same_hand, 100),
         ),
     ],
 )

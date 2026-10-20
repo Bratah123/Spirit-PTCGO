@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Braviary (XY11 #93): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _sky_drop(ctx):
+    """120 minus 20 for each Colorless in the opponent's Active's Retreat Cost."""
+    d = ctx.opponent_active()
+    rc = effective_retreat_cost(ctx.board, d) if d is not None else 0
+    await ctx.deal_damage(max(0, 120 - 20 * rc))
+
 
 card = PokemonCardDef(
     guid="185f7e9f-1135-5a0b-ab51-3e579fc65e75",
@@ -21,6 +27,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Rufflet.Name",
     family_id=627,
     abilities=[
@@ -30,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(50),
         ),
         Attack(
             title="Sky Drop",
@@ -39,8 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=120,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sky_drop,
         ),
     ],
 )

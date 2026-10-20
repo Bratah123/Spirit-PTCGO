@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yveltal BREAK (XY11 #66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _unwavering_blade(ctx):
+    """110; 30 to each of your opponent's damaged Benched Pokemon."""
+    await ctx.deal_damage()
+    for p in ctx.opponent_bench():
+        if ctx.max_hp(p) > p.get_attribute(AttrID.HP, 0):
+            await ctx.deal_damage(30, target=p)
+
 
 card = PokemonCardDef(
     guid="c8652a62-42ce-5693-a6f9-f2dae1b2824a",
@@ -27,8 +32,7 @@ card = PokemonCardDef(
             game_text="This attack does 30 damage to each of your opponent's Benched Pok\u00e9mon that has any damage counters on it. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.DARKNESS: 3},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_unwavering_blade,
         ),
     ],
 )

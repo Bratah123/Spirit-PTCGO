@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Machamp-EX (XY7 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import damage_counters_on
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_counters = damage_counters_on('self')
+
+
+async def _steaming_mad(ctx):
+    """20x damage counters on this Pokemon; this Pokemon is now Confused."""
+    await ctx.deal_damage(20 * _counters(ctx))
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+
+
+async def _crazy_hammer(ctx):
+    """80+; +80 if this Pokemon has a Special Condition, then remove them all."""
+    affected = bool(ctx.attacker.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+    await ctx.deal_damage(ctx.ability.damage + (80 if affected else 0))
+    if affected:
+        await ctx.cure_all_conditions(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="2dc8c997-7dd3-5297-a80f-4c7dce6041ca",
@@ -28,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_steaming_mad,
         ),
         Attack(
             title="Crazy Hammer",
@@ -37,8 +51,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_crazy_hammer,
         ),
     ],
 )

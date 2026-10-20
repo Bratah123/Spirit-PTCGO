@@ -1,13 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Reserved Ticket (XY8 #147): trainer effect stubbed.
-
-Card text:
-  - Flip a coin. If heads, search your deck for a card, shuffle your deck, then put that card on top of it.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+
+
+async def reserved_ticket(ctx):
+    """Flip a coin. If heads, search your deck for a card, shuffle, then put it on top."""
+    results = await ctx.flip_coins(1, "Reserved Ticket")
+    if not (results and results[0]):
+        return
+    picks = await ctx.search_deck(None, count=1, minimum=0, prompt="Choose a card to put on top")
+    await ctx.shuffle_deck()
+    if picks:
+        await ctx.put_on_top_of_deck(picks[0])
+
 
 card = ItemCardDef(
     guid="b3f7ca8f-d81a-5893-b7e7-c9e7bc56799a",
@@ -19,6 +23,5 @@ card = ItemCardDef(
     collector_number=147,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=reserved_ticket
 )

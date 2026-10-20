@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Floette (XY8 #102): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
+
+async def _magical_leaf(ctx):
+    """20+; heads: +20 and heal 20 from this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (20 if heads else 0))
+    if heads:
+        await ctx.heal(20, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="9a97fa96-b5b3-500b-912d-9e4065def5d7",
@@ -21,6 +28,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Flabebe.Name",
     family_id=669,
     abilities=[
@@ -28,8 +36,7 @@ card = PokemonCardDef(
             title="Aromatherapy",
             game_text="Heal 30 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(30, 'each_own'),
         ),
         Attack(
             title="Magical Leaf",
@@ -37,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magical_leaf,
         ),
     ],
 )

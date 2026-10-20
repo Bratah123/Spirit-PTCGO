@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Glalie-EX (XY8 #35): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, damage_counters_on
+
+
+def _ten_or_more_counters(ctx):
+    return damage_counters_on("self")(ctx) >= 10
+
 
 card = PokemonCardDef(
     guid="26a9e4aa-68c0-5247-9b09-205c7016d12c",
@@ -29,8 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_ten_or_more_counters, 150),
         ),
     ],
 )

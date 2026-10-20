@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Aggron-EX (XY5 #154): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _megaton_slam(ctx):
+    """120; you may flip: heads +120, tails 20 to each of your Benched Pokemon."""
+    if not await ctx.ask_yes_no("Flip a coin for Megaton Slam?"):
+        await ctx.deal_damage()
+        return
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        await ctx.deal_damage(240)
+        return
+    await ctx.deal_damage()
+    for p in ctx.my_bench():
+        await ctx.deal_damage(20, target=p)
+
 
 card = PokemonCardDef(
     guid="e47e11fb-50bd-58f9-a4d2-d8ceafe635fe",
@@ -21,6 +32,7 @@ card = PokemonCardDef(
     retreat_cost=4,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.AggronEX.Name",
     family_id=306,
     abilities=[
@@ -30,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_megaton_slam,
         ),
     ],
 )

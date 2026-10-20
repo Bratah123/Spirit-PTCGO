@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Samurott (XY11 #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import snipe_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _ultimate_blade(ctx):
+    """40; if the damage reduces the opponent's Active to 60 HP or less, it is Knocked Out."""
+    d = ctx.opponent_active()
+    before = int(d.get_attribute(AttrID.HP) or 0) if d is not None else 0
+    await ctx.deal_damage()
+    if d is None or d is not ctx.opponent_active():
+        return
+    after = int(d.get_attribute(AttrID.HP) or 0)
+    if 0 < after <= 60 and after < before:
+        await ctx.knock_out(d)
+
 
 card = PokemonCardDef(
     guid="d67ed84e-dc0f-5bce-94bb-685a880b3964",
@@ -28,16 +38,14 @@ card = PokemonCardDef(
             game_text="If the damage from this attack reduces your opponent's Active Pok\u00e9mon's HP to 60 or less, that Pok\u00e9mon is Knocked Out.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_ultimate_blade,
         ),
         Attack(
             title="Pike",
             game_text="This attack does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(30, also_base=True),
         ),
     ],
 )

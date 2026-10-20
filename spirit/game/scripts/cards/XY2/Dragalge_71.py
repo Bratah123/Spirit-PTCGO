@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dragalge (XY2 #71): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID, CLIENT_SPECIAL_CONDITION_NAMES
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import no_retreat_passive
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _opposing_poisoned(pokemon, carrier):
+    if pokemon.owning_player_id == carrier.owning_player_id:
+        return False
+    return CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.POISONED] in (
+        pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
 
 card = PokemonCardDef(
     guid="eb6e3716-4b6a-5969-8c87-5c8aa30e34ad",
@@ -26,16 +32,14 @@ card = PokemonCardDef(
         Ability(
             title="Poison Barrier",
             game_text="Your opponent's Poisoned Pok\u00e9mon can't retreat.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=no_retreat_passive(_opposing_poisoned),
         ),
         Attack(
             title="Poison Breath",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED, flip=True),
         ),
     ],
 )

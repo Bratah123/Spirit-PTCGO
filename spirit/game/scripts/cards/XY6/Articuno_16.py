@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Articuno (XY6 #16): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
 
 card = PokemonCardDef(
     guid="f0f3cabd-d9bc-586c-8ad9-bdff999b3f0a",
@@ -21,14 +24,15 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=144,
     abilities=[
         Attack(
             title="Find Ice",
             game_text="Search your deck for up to 3 Water Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(_is_water_energy, count=3, minimum=0, reveal=True,
+                                   prompt='Choose up to 3 Water Energy cards'),
         ),
         Attack(
             title="Freezing Wind",

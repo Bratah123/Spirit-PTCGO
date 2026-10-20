@@ -1,13 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Fossil Researcher (XY3 #110): trainer effect stubbed.
-
-Card text:
-  - Search your deck for up to 2 in any combination of Amaura or Tyrunt and put them onto your bench. Shuffle your deck afterward.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import fossil_search
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _amaura_or_tyrunt(card):
+    return is_pokemon_card(card) and getattr(
+        def_for(card.archetype_id), "display_name", None) in ("Amaura", "Tyrunt")
+
 
 card = SupporterCardDef(
     guid="c51e44de-fa49-56c8-a267-cad4ceeb693a",
@@ -19,6 +20,5 @@ card = SupporterCardDef(
     collector_number=110,
     set_code="XY3",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=fossil_search(_amaura_or_tyrunt, count=2, label='Amaura or Tyrunt')
 )

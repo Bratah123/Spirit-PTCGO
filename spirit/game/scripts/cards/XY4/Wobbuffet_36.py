@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wobbuffet (XY4 #36): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.passives_common import is_in_active_spot
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _BideBarricade(Passive):
+    """While this Pokemon is Active, every non-Psychic Pokemon has no Abilities."""
+    def blocks_abilities(self, pokemon, carrier):
+        me = carrier_pokemon(carrier)
+        if me is None or not is_in_active_spot(me):
+            return False
+        return PokemonTypes.PSYCHIC.value not in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="aae17f34-9cf4-55bf-8b6a-8581e35d8c1a",
@@ -25,8 +34,7 @@ card = PokemonCardDef(
         Ability(
             title="Bide Barricade",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon, each Pok\u00e9mon in play, in each player's hand, and in each player's discard pile has no Abilities (except for Psychic Pok\u00e9mon).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_BideBarricade(),
         ),
         Attack(
             title="Psychic Assault",
@@ -34,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('defender'), 10, base=10),
         ),
     ],
 )

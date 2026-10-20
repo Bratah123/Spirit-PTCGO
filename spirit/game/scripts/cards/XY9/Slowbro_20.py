@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Slowbro (XY9 #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus, count_prizes_remaining
+
+
+_left = count_prizes_remaining('mine')
+
+
+async def _walk_off_homer(ctx):
+    """If you have only 1 Prize card left, you win this game."""
+    if _left(ctx) == 1:
+        await ctx.win_game("Walk-Off Homer")
+
 
 card = PokemonCardDef(
     guid="7edd005c-7b69-5290-93dc-463a99b4721c",
@@ -29,15 +36,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(50),
         ),
         Attack(
             title="Walk-Off Homer",
             game_text="If you use this attack when you have only 1 Prize card left, you win this game.",
             cost={PokemonTypes.COLORLESS: 3},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_walk_off_homer,
         ),
     ],
 )

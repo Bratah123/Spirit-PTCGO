@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Suicune (XY9 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
+
+class _WindCharm(Passive):
+    """While this Pokemon is Active, prevent all effects of the opponent's attacks (except damage) on your Pokemon."""
+    def blocks_attack_effects(self, target, carrier):
+        me = carrier_pokemon(carrier)
+        return me is not None and is_in_active_spot(me) and target.owning_player_id == me.owning_player_id
+
 
 card = PokemonCardDef(
     guid="0962cb18-25b3-524d-b57e-2b3070b87980",
@@ -25,8 +31,7 @@ card = PokemonCardDef(
         Ability(
             title="Wind Charm",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, prevent all effects of your opponent's attacks, except damage, done to each of your Pok\u00e9mon. (Existing effects are not removed.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_WindCharm(),
         ),
         Attack(
             title="Aurora Beam",

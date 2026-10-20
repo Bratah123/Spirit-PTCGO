@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Swampert (XY5 #35): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="d19df7ee-5088-53a6-b19a-fe41f0398b65",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             title="Water Arrow",
             game_text="This attack does 60 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(60, pool='any', count=1),
         ),
         Attack(
             title="Waterfall",
