@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Liepard (XY4 #57): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import debuff_defender_attacks
 
 
 async def feint(ctx):
@@ -36,15 +33,13 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 60 (before applying Weakness and Resistance).",
             cost={PokemonTypes.DARKNESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=debuff_defender_attacks(60),
         ),
         Attack(
             title="Mach Claw",
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.DARKNESS: 2},
             damage=40,
-            # STUB: attack effect not implemented
             effect=feint,
         ),
     ],

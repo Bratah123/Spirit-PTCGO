@@ -1,10 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gliscor (XY4 #47): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _SubmissionHold(Passive):
+    """No Energy from hand can be attached to this Pokemon."""
+    def blocks_energy_attach(self, energy, player_id, target, carrier):
+        return target is carrier_pokemon(carrier)
+
+
+async def _submission_hold(ctx):
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_opponents_turn(d, _SubmissionHold())
 
 
 card = PokemonCardDef(
@@ -30,15 +40,13 @@ card = PokemonCardDef(
             game_text="Your opponent can't attach Energy from his or her hand to the Defending Pok\u00e9mon during his or her next turn.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_submission_hold,
         ),
         Attack(
             title="Poison Jab",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED, flip=True),
         ),
     ],

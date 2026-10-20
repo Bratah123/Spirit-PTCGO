@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Boldore (XY4 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fighting_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIGHTING.value)
+
+
+async def _core_heal(ctx):
+    """Discard a Fighting Energy attached to this Pokemon and heal 50 damage from it."""
+    await ctx.discard_energy_from(ctx.attacker, 1, predicate=_is_fighting_energy,
+                                  minimum=1, prompt="Discard a Fighting Energy")
+    await ctx.heal(50, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="d082fc28-b792-5ada-90c7-8bb2219fccd1",
@@ -27,8 +36,7 @@ card = PokemonCardDef(
             title="Core Heal",
             game_text="Discard a Fighting Energy attached to this Pok\u00e9mon and heal 50 damage from it.",
             cost={PokemonTypes.FIGHTING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_core_heal,
         ),
         Attack(
             title="Power Gem",

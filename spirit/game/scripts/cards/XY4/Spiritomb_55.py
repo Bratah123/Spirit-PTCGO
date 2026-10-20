@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Spiritomb (XY4 #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _BCancel(Passive):
+    """This Pokemon can't be evolved."""
+    def blocks_evolution(self, player_id, target, carrier):
+        return target is carrier_pokemon(carrier)
+
+
+async def _b_cancel(ctx):
+    """10; your opponent can't evolve the Defending Pokemon during their next turn."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_opponents_turn(d, _BCancel())
 
 
 card = PokemonCardDef(
@@ -28,15 +39,13 @@ card = PokemonCardDef(
             game_text="Your opponent can't play any Pok\u00e9mon from his or her hand to evolve the Defending Pok\u00e9mon during his or her next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_b_cancel,
         ),
         Attack(
             title="Confuse Ray",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED, flip=True),
         ),
     ],

@@ -1,10 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Musharna (XY4 #40): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _dream_of_memories(ctx):
+    """Shuffle 3 cards from your discard pile into your deck."""
+    cards = list(ctx.discard_pile())
+    if not cards:
+        return
+    picks = await ctx.choose_cards(cards, 3, minimum=min(3, len(cards)),
+                                   prompt="Choose 3 cards to shuffle into your deck")
+    if picks:
+        await ctx.shuffle_into_deck(picks, ctx.player_id)
 
 
 card = PokemonCardDef(
@@ -29,15 +36,13 @@ card = PokemonCardDef(
             title="Dream of Memories",
             game_text="Shuffle 3 cards from your discard pile into your deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dream_of_memories,
         ),
         Attack(
             title="Dream Dance",
             game_text="Both Active Pok\u00e9mon are now Asleep.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.ASLEEP, both_actives=True),
         ),
     ],

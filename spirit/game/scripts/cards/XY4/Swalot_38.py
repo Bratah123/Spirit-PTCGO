@@ -1,10 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Swalot (XY4 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+
+def _weaker_defender(ctx):
+    d = ctx.defender
+    return d is not None and d.get_attribute(AttrID.HP, 0) < ctx.attacker.get_attribute(AttrID.HP, 0)
 
 
 card = PokemonCardDef(
@@ -30,7 +31,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED),
         ),
         Attack(
@@ -39,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_weaker_defender, 50),
         ),
     ],
 )

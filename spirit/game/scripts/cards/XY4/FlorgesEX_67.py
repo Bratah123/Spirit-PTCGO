@@ -1,11 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Florges-EX (XY4 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import search_to_hand
 from spirit.game.session.effects import is_supporter_card
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+def _grass_fairy(ctx):
+    return sum(1 for p in ctx.my_pokemon_in_play()
+               if {PokemonTypes.GRASS.value, PokemonTypes.FAIRY.value}
+               & set(p.get_attribute(AttrID.POKEMON_TYPES) or []))
 
 
 card = PokemonCardDef(
@@ -31,7 +34,6 @@ card = PokemonCardDef(
             title="Lead",
             game_text="Search your deck for a Supporter card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
             effect=search_to_hand(is_supporter_card, count=1, reveal=True, prompt='Choose a Supporter card'),
         ),
         Attack(
@@ -40,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(_grass_fairy, 20),
         ),
     ],
 )

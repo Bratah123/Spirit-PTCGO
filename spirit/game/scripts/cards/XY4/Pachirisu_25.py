@@ -1,10 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pachirisu (XY4 #25): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _TrickSticker(Passive):
+    """This Pokemon's Weakness is now Lightning (same amount)."""
+    def modify_weakness(self, calc, carrier):
+        if calc.target is carrier_pokemon(carrier) and calc.weak_types:
+            calc.weak_types = [PokemonTypes.LIGHTNING.value]
+
+
+async def _trick_sticker(ctx):
+    """10; the Defending Pokemon's Weakness is Lightning until the end of your next turn."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_own_next_turn(d, _TrickSticker())
 
 
 card = PokemonCardDef(
@@ -31,8 +43,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon's Weakness is now Lightning until the end of your next turn. (The amount of Weakness doesn't change.)",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_trick_sticker,
         ),
         Attack(
             title="Pachi",
@@ -40,7 +51,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
     ],

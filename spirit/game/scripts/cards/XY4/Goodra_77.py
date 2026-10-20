@@ -1,10 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Goodra (XY4 #77): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import mill_attack
+from spirit.game.session.passives import Passive
+
+
+class _SlipTrip(Passive):
+    """Neither player can attach Pokemon Tool cards from hand."""
+    def blocks_trainer_play(self, card, player_id, carrier):
+        return card.get_attribute(AttrID.TRAINER_TYPE) in (
+            TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
 
 
 card = PokemonCardDef(
@@ -28,15 +32,13 @@ card = PokemonCardDef(
         Ability(
             title="Slip Trip",
             game_text="Each player can't attach any Pok\u00e9mon Tool cards from his or her hand to any of his or her Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_SlipTrip(),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top card of your deck.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
             effect=mill_attack(1, opponent=False),
         ),
     ],

@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yanmega (XY4 #4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
+from spirit.game.card_effects.attacks_common import bonus_if
 
 
 card = PokemonCardDef(
@@ -31,7 +28,6 @@ card = PokemonCardDef(
             title="Windfall",
             game_text="Shuffle your hand into your deck. Then, draw 6 cards.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
             effect=shuffle_hand_into_deck_draw(6),
         ),
         Attack(
@@ -40,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.entered_active_this_turn(ctx.attacker), 50),
         ),
     ],
 )

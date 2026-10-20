@@ -1,10 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chansey (XY4 #80): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+
+
+async def _lucky_punch(ctx):
+    """100; does nothing unless you have exactly 7 cards in your hand."""
+    if len(ctx.hand()) == 7:
+        await ctx.deal_damage()
 
 
 card = PokemonCardDef(
@@ -28,7 +30,6 @@ card = PokemonCardDef(
             title="Nap",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=heal_attack(30),
         ),
         Attack(
@@ -36,8 +37,7 @@ card = PokemonCardDef(
             game_text="If you don't have exactly 7 cards in your hand, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_lucky_punch,
         ),
     ],
 )
