@@ -4,6 +4,7 @@ Swampert (XY5 #36): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="bb2a8636-dec1-5754-89da-baa24c43b17e",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Marshtomp.Name",
     family_id=258,
     abilities=[
+        ancient_trait('α Growth'),
         Ability(
             title="Diving Search",
             game_text="Once during your turn (before your attack), you may search your deck for a card. Shuffle your deck, then put that card on top of it.",

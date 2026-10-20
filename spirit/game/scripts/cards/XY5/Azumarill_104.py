@@ -4,6 +4,7 @@ Azumarill (XY5 #104): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="bde49eae-ad30-575b-a96f-cf2d38b00d01",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Marill.Name",
     family_id=183,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Tail Rap",
             game_text="Flip 2 coins. This attack does 30 damage times the number of heads.",

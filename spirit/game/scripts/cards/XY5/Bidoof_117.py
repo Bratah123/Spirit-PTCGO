@@ -4,6 +4,7 @@ Bidoof (XY5 #117): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="971f22bc-2a67-59c4-a08e-cf54638b5e93",
@@ -22,6 +23,7 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.FIGHTING,
     family_id=399,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Drench",
             game_text="If this Pok\u00e9mon has any Water Energy attached to it, this attack does 20 more damage.",

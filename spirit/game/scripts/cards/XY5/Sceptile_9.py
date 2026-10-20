@@ -4,6 +4,7 @@ Sceptile (XY5 #9): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="6ed35fc5-7131-5f97-ac68-91569ecd533b",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Grovyle.Name",
     family_id=252,
     abilities=[
+        ancient_trait('Ω Barrier'),
         Attack(
             title="Leaf Blade",
             game_text="Flip a coin. If heads, this attack does 30 more damage.",

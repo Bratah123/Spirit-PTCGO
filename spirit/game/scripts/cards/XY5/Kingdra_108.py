@@ -4,6 +4,7 @@ Kingdra (XY5 #108): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="b4cd6b8f-707b-5923-a3e2-a09250b27238",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Seadra.Name",
     family_id=116,
     abilities=[
+        ancient_trait('α Growth'),
         Attack(
             title="Gather Strength",
             game_text="Search your deck for up to 4 basic Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",

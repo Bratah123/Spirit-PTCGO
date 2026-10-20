@@ -4,6 +4,7 @@ Gorebyss (XY5 #52): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="0542ecc0-1c54-5a6b-acc6-1352a7f0ebda",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Clamperl.Name",
     family_id=366,
     abilities=[
+        ancient_trait('α Growth'),
         Attack(
             title="Psy Bolt",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",

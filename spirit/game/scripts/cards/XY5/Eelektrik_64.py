@@ -4,6 +4,7 @@ Eelektrik (XY5 #64): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="1d32ec0a-cceb-5a28-96b9-bf4f745c491d",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Tynamo.Name",
     family_id=602,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Thrash",
             game_text="Flip a coin. If heads, this attack does 20 more damage. If tails, this Pok\u00e9mon does 20 damage to itself.",

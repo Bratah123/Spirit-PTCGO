@@ -4,6 +4,7 @@ Excadrill (XY5 #97): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="02194f91-1cf9-5545-a071-4eb0f51d99ca",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Drilbur.Name",
     family_id=529,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Dredge",
             game_text="Search your deck for 2 Energy cards and attach them to this Pok\u00e9mon. Shuffle your deck afterward.",

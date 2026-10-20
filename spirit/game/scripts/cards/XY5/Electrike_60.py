@@ -4,6 +4,7 @@ Electrike (XY5 #60): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="61bfd6f4-407e-5946-8745-7477b67732c9",
@@ -24,6 +25,7 @@ card = PokemonCardDef(
     resistance_amount=20,
     family_id=309,
     abilities=[
+        ancient_trait('Ω Barrier'),
         Attack(
             title="Thunder Fang",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",

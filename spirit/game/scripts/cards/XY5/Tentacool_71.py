@@ -1,5 +1,6 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="fbe527c1-2842-58d9-b17c-73cffa55d9c7",
@@ -18,6 +19,7 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.PSYCHIC,
     family_id=72,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Psyshot",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},

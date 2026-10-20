@@ -4,6 +4,7 @@ Rhyperior (XY5 #77): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="629ec02d-5c47-53e3-88ed-b916d41fc688",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Rhydon.Name",
     family_id=111,
     abilities=[
+        ancient_trait('Ω Barrier'),
         Ability(
             title="Rock Wall",
             game_text="Any damage done to your Pok\u00e9mon by an opponent's attack is reduced by 10 (after applying Weakness and Resistance).",

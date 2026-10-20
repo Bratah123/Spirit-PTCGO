@@ -4,6 +4,7 @@ Whiscash (XY5 #41): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="02029899-2be8-5ee2-aab3-213981185411",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Barboach.Name",
     family_id=339,
     abilities=[
+        ancient_trait('α Growth'),
         Attack(
             title="Water Gun",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},

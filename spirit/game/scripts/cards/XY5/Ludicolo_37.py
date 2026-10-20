@@ -4,6 +4,7 @@ Ludicolo (XY5 #37): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="505dc3a7-af6f-585a-9439-c50342baeb2e",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Lombre.Name",
     family_id=270,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Astonish",
             game_text="Choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into his or her deck.",

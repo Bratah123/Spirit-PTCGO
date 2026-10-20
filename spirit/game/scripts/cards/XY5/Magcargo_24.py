@@ -4,6 +4,7 @@ Magcargo (XY5 #24): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="22367390-1ced-5f74-817d-fd8b68a137c7",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Slugma.Name",
     family_id=218,
     abilities=[
+        ancient_trait('Ω Barrier'),
         Attack(
             title="Ram",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},

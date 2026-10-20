@@ -4,6 +4,7 @@ Nidoqueen (XY5 #69): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="fe105197-0cc1-5f89-8cc3-4f0692f3b68e",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Nidorina.Name",
     family_id=29,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Poison Jab",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",

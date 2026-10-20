@@ -4,6 +4,7 @@ Bunnelby (XY5 #121): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="3c22761e-f127-577f-a8b1-553445779489",
@@ -22,6 +23,7 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.FIGHTING,
     family_id=659,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Burrow",
             game_text="Discard the top card of your opponent's deck.",

@@ -4,6 +4,7 @@ Torchic (XY5 #26): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="f6341a32-dc75-5264-b359-b32e8954db83",
@@ -22,6 +23,7 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.WATER,
     family_id=255,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Flare Bonus",
             game_text="Discard a Fire Energy card from your hand. If you do, draw 2 cards.",

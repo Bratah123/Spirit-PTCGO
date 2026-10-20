@@ -4,6 +4,7 @@ Medicham (XY5 #81): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="e651279d-8a3a-50e6-b9bc-d7418fec9236",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Meditite.Name",
     family_id=307,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Calm Mind",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
