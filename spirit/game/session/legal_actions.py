@@ -36,6 +36,7 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    stadium_suppressed,
     energy_attach_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
@@ -720,6 +721,8 @@ def _stadium_ability_entries(
             continue
         if (stadium.entity_id, ability.ability_id) in state.used_abilities:
             continue
+        if stadium_suppressed(board, stadium):
+            continue  # Wicked Wind: the Stadium has no effect
         if ability.condition and not ability.condition(board, player_id, stadium):
             continue
         entries.append(_target_map_entry(

@@ -255,6 +255,11 @@ class Passive:
         (Tool Jammer); evaluated on the unfiltered set like ability locks."""
         return False
 
+    def suppresses_stadium(self, stadium: BoardEntity, carrier: BoardEntity) -> bool:
+        """True to neutralize a Stadium in play (Wicked Wind): its passive
+        hooks and its once-per-turn abilities are off."""
+        return False
+
     def granted_attacks(
         self, board: BoardState, pokemon: PokemonEntity, carrier: BoardEntity
     ) -> List[Any]:
@@ -501,6 +506,24 @@ def _suppressed_tool(
     return any(p.suppresses_tool(entity, c) for p, c, _ in triples)
 
 
+def _suppressed_stadium(
+    triples: List[Tuple[Passive, BoardEntity, bool]], entity: BoardEntity
+) -> bool:
+    """Whether `entity` is a Stadium in play neutralized by a suppression
+    passive (Wicked Wind), evaluated on the UNFILTERED set."""
+    if entity.get_attribute(AttrID.TRAINER_TYPE) != TrainerType.STADIUM.value:
+        return False
+    parent = getattr(entity, "parent", None)
+    if parent is None or parent.get_attribute(AttrID.NAME) != "activeStadium":
+        return False
+    return any(p.suppresses_stadium(entity, c) for p, c, _ in triples)
+
+
+def stadium_suppressed(board: BoardState, stadium: BoardEntity) -> bool:
+    """Whether the Stadium in play has no effect right now (Wicked Wind)."""
+    return _suppressed_stadium(_collect_passives(board), stadium)
+
+
 def active_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity]]:
     """All (passive, carrier) pairs currently switched on by board position.
 
@@ -518,7 +541,8 @@ def active_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity]]:
     return [(p, c) for p, c, is_ability in triples
             if not (is_ability and blocked(c))
             and not _suppressed_special_energy(triples, c)
-            and not _suppressed_tool(triples, c)]
+            and not _suppressed_tool(triples, c)
+            and not _suppressed_stadium(triples, c)]
 
 
 def tool_suppressed(board: BoardState, tool: BoardEntity) -> bool:
