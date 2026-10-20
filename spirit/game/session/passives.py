@@ -290,6 +290,14 @@ class Passive:
         Brains 2); the highest wins."""
         return 1
 
+    def blocks_energy_attach(
+        self, energy: BoardEntity, player_id: str, target: PokemonEntity,
+        carrier: BoardEntity
+    ) -> bool:
+        """True to forbid `player_id` attaching `energy` from hand to `target`
+        as their manual attachment (Froslass Cursed Glare)."""
+        return False
+
     def forces_coin_tails(self, player_id: str, carrier: BoardEntity) -> bool:
         """True when every coin `player_id` flips comes up tails (Cofagrigus
         Slap of Misfortune); covers effect flips and Checkup/attack flips."""
@@ -687,6 +695,15 @@ def trainer_play_blocked(board: BoardState, player_id: str, card: BoardEntity) -
     """Whether a continuous passive forbids playing `card` from hand."""
     return any(
         passive.blocks_trainer_play(card, player_id, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def energy_attach_blocked(board: BoardState, player_id: str, energy: BoardEntity,
+                          target: PokemonEntity) -> bool:
+    """Whether a continuous passive forbids attaching `energy` from hand to `target`."""
+    return any(
+        passive.blocks_energy_attach(energy, player_id, target, carrier)
         for passive, carrier in active_passives(board)
     )
 
