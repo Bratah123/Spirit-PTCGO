@@ -45,6 +45,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.WATER,
     resistance_type=PokemonTypes.LIGHTNING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Krokorok.Name",
     family_id=551,
     abilities=[

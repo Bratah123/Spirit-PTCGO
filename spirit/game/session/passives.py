@@ -87,6 +87,10 @@ class DamageCalc:
             target.get_attribute(AttrID.WEAKNESS_TYPES) or []
         )
         self.resistance_applies = True
+        # Era-correct Resistance: the target's printed amount (XY/BW -20,
+        # SWSH -30); modify_resistance hooks may rewrite it (Klefki -40).
+        self.resistance_amount = target.get_attribute(AttrID.RESISTANCE_AMOUNT) \
+            or RESISTANCE_REDUCTION
         self.weakness_hit = False
         self.resistance_hit = False
         self.prevented = False
@@ -589,7 +593,7 @@ def compute_damage(
         resist_type = target.get_attribute(AttrID.RESISTANCE_TYPES)
         if calc.resistance_applies and resist_type in attacker_types:
             calc.resistance_hit = True
-            calc.amount = max(0, calc.amount - RESISTANCE_REDUCTION)
+            calc.amount = max(0, calc.amount - calc.resistance_amount)
 
     for passive, carrier in passives:
         if calc.ignore_target_effects and carrier_pokemon(carrier) is calc.target:

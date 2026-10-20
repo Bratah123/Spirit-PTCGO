@@ -26,6 +26,7 @@ card = PokemonCardDef(
     retreat_cost=4,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.WATER,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Ivysaur.Name",
     family_id=1,
     abilities=[
