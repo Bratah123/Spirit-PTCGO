@@ -1,0 +1,36 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+
+card = PokemonCardDef(
+    guid="7cfd6631-793c-5d10-8cc7-ef8bedbf5981",
+    key="BW11",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Cinccino.Name",
+    display_name="Cinccino",
+    searchable_by=["Cinccino", "Stage 1", "Cinccino"],
+    subtypes=["Stage 1"],
+    collector_number=134,
+    set_code="BW11",
+    rarity=Rarities.Uncommon,
+    hp=90,
+    elements=[PokemonTypes.COLORLESS],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=1,
+    weakness_type=PokemonTypes.FIGHTING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Minccino.Name",
+    family_id=572,
+    abilities=[
+        Ability(
+            title="Smooth Coat",
+            game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
+            ability_type=AbilityTypes.POKE_ABILITY,
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Echoed Voice",
+            game_text="During your next turn, this Pok\u00e9mon's Echoed Voice attack does 50 more damage (before applying Weakness and Resistance).",
+            cost={PokemonTypes.COLORLESS: 3},
+            damage=50,
+            effect=unimplemented,
+        ),
+    ],
+)
