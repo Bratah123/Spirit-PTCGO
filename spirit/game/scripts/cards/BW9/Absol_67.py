@@ -1,5 +1,12 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="3f810453-c4a2-51f4-bfad-6f867c029f24",
@@ -25,14 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_bench('opponent'), 20, base=20),
         ),
         Attack(
             title="Fearsome Shadow",
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=_scout,
         ),
     ],
 )

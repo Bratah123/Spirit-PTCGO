@@ -1,5 +1,13 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_trainer_card
+
+
+async def teatime(ctx):
+    """Each player draws 2 cards."""
+    await ctx.draw_cards(2, player_id=ctx.player_id)
+    await ctx.draw_cards(2, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="b96e9f44-118e-5bc5-b8cb-76bcf54c0bf0",
@@ -23,7 +31,7 @@ card = PokemonCardDef(
             title="Dual Draw",
             game_text="Each player draws 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=teatime,
         ),
     ],
 )

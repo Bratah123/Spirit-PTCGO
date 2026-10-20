@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="a6d6af32-d45c-52ce-ad0c-7a3aa20ee9a6",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Shed Skin",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
         Attack(
             title="Tail Smack",

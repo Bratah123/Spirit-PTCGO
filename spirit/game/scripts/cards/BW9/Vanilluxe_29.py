@@ -1,5 +1,10 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy, flip_damage
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import active_is, bonus_if, condition_attack
+
 
 card = PokemonCardDef(
     guid="8ec29741-4d40-5971-b319-df414f489a47",
@@ -25,14 +30,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy('self'), per_heads=60),
         ),
         Attack(
             title="Cold Breath",
             game_text="The Defending Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
     ],
 )

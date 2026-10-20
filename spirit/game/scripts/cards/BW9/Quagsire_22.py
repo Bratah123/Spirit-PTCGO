@@ -1,5 +1,9 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import takes_less_passive
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
 
 card = PokemonCardDef(
     guid="6c70ddc1-425d-5d2c-addb-4d7b2f5e847c",
@@ -23,7 +27,7 @@ card = PokemonCardDef(
             title="Laid-Back",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=takes_less_passive(20),
         ),
         Attack(
             title="Mud Gun",

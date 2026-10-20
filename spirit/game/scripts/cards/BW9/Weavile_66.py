@@ -1,5 +1,8 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+from spirit.game.card_effects.passives_common import debuff_defender_attacks
+
 
 card = PokemonCardDef(
     guid="57a0dbfb-e684-5f72-bfb5-3fb8be03e511",
@@ -24,7 +27,7 @@ card = PokemonCardDef(
             title="Hail",
             game_text="This attack does 10 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=damage_all_opponents(10),
         ),
         Attack(
             title="Vilify",

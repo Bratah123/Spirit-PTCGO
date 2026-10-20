@@ -1,5 +1,17 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.support_common import distribute_energy
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _is_pokemon_ex(pokemon):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return bool(d) and "EX" in (getattr(d, "subtypes", None) or [])
+
 
 card = PokemonCardDef(
     guid="15e420bd-2559-586b-b75e-18d02d213321",
@@ -23,7 +35,7 @@ card = PokemonCardDef(
             title="Refreshing Rain",
             game_text="Heal 30 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_targets(30, 'each_own'),
         ),
         Attack(
             title="Gold Breaker",
@@ -31,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _is_pokemon_ex(ctx.defender), 50),
         ),
     ],
 )

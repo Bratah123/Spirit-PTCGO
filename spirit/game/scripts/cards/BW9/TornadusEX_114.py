@@ -1,5 +1,8 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
 
 card = PokemonCardDef(
     guid="fd958cac-67a7-5241-b0ea-8fb2396b559b",
@@ -23,7 +26,7 @@ card = PokemonCardDef(
             title="Windfall",
             game_text="Shuffle your hand into your deck. Then, draw 6 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=shuffle_hand_into_deck_draw(6),
         ),
         Attack(
             title="Jet Blast",

@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
 
 card = PokemonCardDef(
     guid="e4e8f995-609f-54f6-ba44-f4efbe5b1c62",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon has no damage counters on it, this attack does nothing.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
-            effect=unimplemented,
+            effect=bonus_if(has_damage('self'), 0, else_nothing=True),
         ),
     ],
 )

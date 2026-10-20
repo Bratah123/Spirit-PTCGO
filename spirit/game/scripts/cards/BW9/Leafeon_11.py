@@ -1,5 +1,8 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack, damage_per, count_energy
+from spirit.game.card_effects.attacks_common import flip_bonus, recoil_attack
+
 
 card = PokemonCardDef(
     guid="fe347e43-e60f-5eb2-8e6d-29481e87f9cd",
@@ -26,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy('opponent'), 20),
         ),
         Attack(
             title="Leaf Blade",
@@ -34,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

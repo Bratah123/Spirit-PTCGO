@@ -1,5 +1,10 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_special_energy
+from spirit.game.card_effects.attacks_common import snipe_attack, bonus_if
+from spirit.game.card_effects.attacks_common import discard_for_bonus, flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
 
 card = PokemonCardDef(
     guid="c1b53f0a-4df6-5d74-b6d2-12c226241790",
@@ -23,7 +28,7 @@ card = PokemonCardDef(
             title="Elongating Arms",
             game_text="This attack does 30 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=snipe_attack(30, pool='any', count=1),
         ),
         Attack(
             title="Crazy Slap",
@@ -31,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(4, per_heads=40),
         ),
     ],
 )
