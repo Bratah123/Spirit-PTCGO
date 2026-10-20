@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Altaria (XY6 #53): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _song_of_echoes(ctx):
+    """Shuffle your hand into your deck; draw 1 per Benched Pokemon (both sides)."""
+    n = len(ctx.my_bench()) + len(ctx.opponent_bench())
+    hand = list(ctx.hand())
+    if hand:
+        await ctx.shuffle_into_deck(hand, ctx.player_id)
+    if n:
+        await ctx.draw_cards(n)
 
 
 card = PokemonCardDef(
@@ -29,15 +35,13 @@ card = PokemonCardDef(
             title="Song of Echoes",
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of Benched Pok\u00e9mon (both yours and your opponent's).",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_song_of_echoes,
         ),
         Attack(
             title="Midnight Eyes",
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.METAL: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.ASLEEP),
         ),
     ],

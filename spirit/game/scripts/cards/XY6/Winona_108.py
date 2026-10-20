@@ -1,13 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Winona (XY6 #108): trainer effect stubbed.
+from spirit.game.data_utils import SupporterCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonTypes
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import deck_nonempty
 
-Card text:
-  - Search your deck for up to 3 Colorless Pokémon and put them into your hand. Shuffle your deck afterward.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import SupporterCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _is_colorless_pokemon(card):
+    return is_pokemon_card(card) and PokemonTypes.COLORLESS.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = SupporterCardDef(
     guid="df800b75-141c-52e4-bfb7-039b578a4057",
@@ -19,6 +19,7 @@ card = SupporterCardDef(
     collector_number=108,
     set_code="XY6",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=search_to_hand(_is_colorless_pokemon, count=3, minimum=0, reveal=True,
+                           prompt='Choose up to 3 Colorless Pokémon'),
+    condition=deck_nonempty
 )

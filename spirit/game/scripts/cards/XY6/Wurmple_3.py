@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wurmple (XY6 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.content.definitions import def_for
+
+
+def _is_wurmple(card):
+    return is_pokemon_card(card) and getattr(def_for(card.archetype_id), "display_name", None) == "Wurmple"
+
 
 card = PokemonCardDef(
     guid="dd54191e-cb2f-57cd-8713-b2723ef7e275",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Flock",
             game_text="Search your deck for Wurmple and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(_is_wurmple, count=1, prompt='Choose a Wurmple'),
         ),
         Attack(
             title="Tackle",

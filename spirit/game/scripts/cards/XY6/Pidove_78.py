@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pidove (XY6 #78): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _homing_pidove(ctx):
+    """Look at the top card of your deck. Then, you may shuffle your deck."""
+    top = ctx.deck_top(1)
+    if not top:
+        return
+    await ctx.choose_cards(top, 1, minimum=0, display_cards=top, prompt="The top card of your deck")
+    if await ctx.ask_yes_no("Shuffle your deck?"):
+        await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="f13dc972-4cd2-50a0-9b3b-c41550cc1a9e",
@@ -28,8 +35,7 @@ card = PokemonCardDef(
             title="Homing Pidove",
             game_text="Look at the top card of your deck. Then, you may shuffle your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_homing_pidove,
         ),
         Attack(
             title="Gust",

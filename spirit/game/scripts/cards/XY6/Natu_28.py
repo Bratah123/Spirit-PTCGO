@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Natu (XY6 #28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
 
 card = PokemonCardDef(
     guid="721ef39d-0f49-530e-b963-8dd9c3cf32e9",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('defender'), 10),
         ),
     ],
 )

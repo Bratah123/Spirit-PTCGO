@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Exeggutor (XY6 #2): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_colorless(card):
+    return PokemonTypes.COLORLESS.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="681e96cc-d11c-5ca8-8adb-c0e977398d12",
@@ -29,8 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_in_play('opponent', _is_colorless), 20),
         ),
         Attack(
             title="Seed Bomb",

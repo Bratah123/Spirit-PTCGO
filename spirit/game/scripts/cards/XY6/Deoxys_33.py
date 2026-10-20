@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Deoxys (XY6 #33): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import boost_own_next_turn
+from spirit.game.card_effects.support_common import draw_attack
 
 
 card = PokemonCardDef(
@@ -28,15 +25,14 @@ card = PokemonCardDef(
             title="Close Encounter",
             game_text="If you go first, you can use this attack on your first turn. Draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            usable_first_turn=True,
+            effect=draw_attack(2),
         ),
         Attack(
             title="Overdrive Smash",
             game_text="During your next turn, this Pok\u00e9mon's Overdrive Smash attack does 60 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=boost_own_next_turn(60, attack_title='Overdrive Smash'),
         ),
     ],

@@ -1,10 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hydreigon-EX (XY6 #62): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.pokemon import shred
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.trainers import is_dragon_pokemon
+
+
+class _DragonRoad(Passive):
+    """If any Stadium is in play, your Dragon Pokemon's Retreat Cost is CC less."""
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        me = carrier_pokemon(carrier)
+        stadium = board.find_global_area("activeStadium")
+        if (me is None or pokemon.owning_player_id != me.owning_player_id
+                or not is_dragon_pokemon(pokemon) or not (stadium and stadium.children)):
+            return cost
+        return max(0, cost - 2)
 
 
 card = PokemonCardDef(
@@ -27,15 +36,13 @@ card = PokemonCardDef(
         Ability(
             title="Dragon Road",
             game_text="If there is any Stadium card in play, the Retreat Cost of each of your Dragon Pok\u00e9mon in play is ColorlessColorless less.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_DragonRoad(),
         ),
         Attack(
             title="Shred",
             game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
             effect=shred,
         ),
     ],

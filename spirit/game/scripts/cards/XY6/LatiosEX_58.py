@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Latios-EX (XY6 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import protect_next_turn
 
@@ -29,15 +25,14 @@ card = PokemonCardDef(
             game_text="If you go first, you can use this attack on your first turn.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            usable_first_turn=True,
+            effect=None,
         ),
         Attack(
             title="Light Pulse",
             game_text="Prevent all effects of your opponent's attacks, except damage, done to this Pok\u00e9mon during your opponent's next turn.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=110,
-            # STUB: attack effect not implemented
             effect=protect_next_turn(effects_too=True),
         ),
     ],

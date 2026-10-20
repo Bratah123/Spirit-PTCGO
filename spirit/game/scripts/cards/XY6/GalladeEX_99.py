@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gallade-EX (XY6 #99): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import opponent_switches
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_remaining
 
 
 async def push_down(ctx):
@@ -38,7 +35,6 @@ card = PokemonCardDef(
             game_text="You may have your opponent switch his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=push_down,
         ),
         Attack(
@@ -47,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_prizes_remaining('mine'), 20, base=50),
         ),
     ],
 )
