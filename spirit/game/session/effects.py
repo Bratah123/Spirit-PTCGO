@@ -2277,7 +2277,17 @@ def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
         and card.get_attribute(AttrID.STAGE) not in (
-            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value)
+            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value,
+            PokemonStage.RESTORED.value)
+    )
+
+
+def is_restored_pokemon(card: CardEntity) -> bool:
+    """BW Restored Pokemon (Archen, Tirtouga, Aerodactyl...): neither Basic
+    nor Evolution; they enter play only via their Fossil Item."""
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.RESTORED.value
     )
 
 
