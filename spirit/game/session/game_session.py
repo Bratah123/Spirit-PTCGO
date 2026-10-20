@@ -217,6 +217,23 @@ class GameOptions:
         return serialized
 
 
+
+def mega_evolution_ends_turn(evolution_card) -> bool:
+    """True when `evolution_card` is a Mega Evolution (subtype MEGA) and no
+    Spirit Link tool attached to it names it (the tool's display name is
+    "<Pokemon> Spirit Link", e.g. "Venusaur Spirit Link" for M Venusaur-EX)."""
+    if "MEGA" not in subtypes_for(evolution_card.archetype_id):
+        return False
+    target_def = def_for(evolution_card.archetype_id)
+    name = (getattr(target_def, "display_name", "") or "")
+    base = name.removeprefix("M ").removesuffix("-EX").strip()
+    for child in evolution_card.children:
+        d = def_for(child.archetype_id)
+        dn = getattr(d, "display_name", "") or ""
+        if dn.endswith("Spirit Link") and dn.removesuffix("Spirit Link").strip() == base:
+            return False
+    return True
+
 class GameSession:
     # Pacing sleeps for client choreography; headless harnesses flip this off.
     choreography_pauses: bool = True
@@ -3904,7 +3921,7 @@ class GameSession:
         elif description == ACTION_ATTACH_TOOL:
             await self._execute_attach_tool(player_id, card, entry, target_ids)
         elif description == ACTION_EVOLVE:
-            await self._execute_evolve(player_id, card, entry, target_ids)
+            return bool(await self._execute_evolve(player_id, card, entry, target_ids))
         elif description == ACTION_USE_TRAINER:
             targets = trainer_play_target_ids(self.board_state, player_id, card)
             play_target = None
@@ -4626,8 +4643,12 @@ class GameSession:
                 f"[Session {self.game_id}] Evolve without a valid target "
                 f"({target_ids}); re-offering."
             )
-            return
-        await self.perform_evolution(player_id, card, target)
+            return False
+        if not await self.perform_evolution(player_id, card, target):
+            return False
+        # XY rule: "When 1 of your Pokemon becomes a Mega Evolution Pokemon,
+        # your turn ends" -- unless a matching Spirit Link tool is attached.
+        return mega_evolution_ends_turn(card)
 
     async def perform_evolution(self, player_id, evolution_card, target,
                                 from_zone_intro: bool = False) -> bool:
