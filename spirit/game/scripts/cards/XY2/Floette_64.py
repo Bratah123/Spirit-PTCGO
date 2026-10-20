@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Floette (XY2 #64): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _FlowerVeil(Passive):
+    """Each of your Grass Pokemon in play gets +20 HP."""
+    def max_hp_bonus(self, pokemon, carrier):
+        if pokemon.owning_player_id != carrier.owning_player_id:
+            return 0
+        return 20 if PokemonTypes.GRASS.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or []) else 0
+
 
 card = PokemonCardDef(
     guid="8bb76b9b-52b9-57d0-bd5e-9044cdaf6a20",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
         Ability(
             title="Flower Veil",
             game_text="Each of your Grass Pok\u00e9mon in play gets +20 HP.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_FlowerVeil(),
         ),
         Attack(
             title="Fairy Wind",

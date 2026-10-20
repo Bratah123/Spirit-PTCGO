@@ -1,10 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Goodra (XY2 #74): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+def _gooey_condition(board, player_id, pokemon=None):
+    return pokemon is not None and any(is_energy_card(c) for c in pokemon.children)
+
+
+async def _gooey_regeneration(ctx):
+    """Discard an Energy attached to this Pokemon. If you do, heal 60 damage from it."""
+    discarded = await ctx.discard_energy_from(ctx.source, 1, minimum=1,
+                                              prompt="Choose an Energy to discard")
+    if discarded:
+        await ctx.heal(60, ctx.source)
 
 
 card = PokemonCardDef(
@@ -28,8 +37,9 @@ card = PokemonCardDef(
         Ability(
             title="Gooey Regeneration",
             game_text="As often as you like during your turn (before your attack), you may discard an Energy attached to this Pok\u00e9mon. If you do, heal 60 damage from this Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.UNLIMITED,
+            condition=_gooey_condition,
+            effect=_gooey_regeneration,
         ),
         Attack(
             title="Heavy Whip",
@@ -37,7 +47,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(40),
         ),
     ],

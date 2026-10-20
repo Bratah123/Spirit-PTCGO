@@ -1,10 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heliolisk (XY2 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_energy_card
 
 
 card = PokemonCardDef(
@@ -30,8 +28,8 @@ card = PokemonCardDef(
             title="Parabolic Charge",
             game_text="Search your deck for up to 2 Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_energy_card, count=2, minimum=0, reveal=True,
+                prompt='Choose up to 2 Energy cards'),
         ),
         Attack(
             title="Quick Attack",
@@ -39,7 +37,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
     ],

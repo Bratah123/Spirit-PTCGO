@@ -1,10 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Furret (XY2 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _buried_treasure_hunt(ctx):
+    """Look at the top 4 cards of your deck, put 2 into your hand, discard the rest."""
+    top = ctx.deck_top(4)
+    if not top:
+        return
+    picks = await ctx.choose_cards(top, 2, prompt="Choose 2 cards to put into your hand") or []
+    if picks:
+        await ctx.put_in_hand(picks, reveal=False)
+    rest = [c for c in top if c not in picks]
+    if rest:
+        await ctx.discard_cards(rest)
 
 
 card = PokemonCardDef(
@@ -29,8 +38,7 @@ card = PokemonCardDef(
             title="Buried Treasure Hunt",
             game_text="Look at the top 4 cards of your deck and put 2 of them into your hand. Discard the other cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_buried_treasure_hunt,
         ),
         Attack(
             title="Slam",
@@ -38,7 +46,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=2, per_heads=30),
         ),
     ],

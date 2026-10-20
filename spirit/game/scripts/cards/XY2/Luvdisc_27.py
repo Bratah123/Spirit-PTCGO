@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Luvdisc (XY2 #27): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import draw_attack
+
+
+async def _heart_wink(ctx):
+    """Flip a coin. If heads, your opponent can't draw a card at the
+    beginning of their next turn."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        ctx.session.skip_turn_draw.add(
+            (ctx.opponent_id, ctx.session.turn_state.turn_number + 1))
 
 
 card = PokemonCardDef(
@@ -28,15 +33,13 @@ card = PokemonCardDef(
             title="Heart Wink",
             game_text="Flip a coin. If heads, your opponent can't draw a card at the beginning of his or her next turn.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_heart_wink,
         ),
         Attack(
             title="Spike Draw",
             game_text="Draw a card.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=draw_attack(1),
         ),
     ],

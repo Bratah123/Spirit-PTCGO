@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Carbink (XY2 #68): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import flip_protection
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
 
 
 card = PokemonCardDef(
@@ -29,7 +26,6 @@ card = PokemonCardDef(
             title="Crystal Barrier",
             game_text="Flip a coin. If heads, prevent all effects of attacks, including damage, done to this Pok\u00e9mon during your opponent's next turn.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
             effect=flip_protection(prevent=True, effects_too=True),
         ),
         Attack(
@@ -38,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.FAIRY), 20, base=40),
         ),
     ],
 )

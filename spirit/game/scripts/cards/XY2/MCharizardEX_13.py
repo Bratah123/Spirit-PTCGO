@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Charizard-EX (XY2 #13): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="9e0bdfb7-a8b8-52d4-af36-b30a02829f4c",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 50 damage to itself.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 3},
             damage=300,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(50),
         ),
     ],
 )

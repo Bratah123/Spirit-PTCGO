@@ -1,10 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Walrein (XY2 #26): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import condition_attack, damage_counters_on
+
+
+async def _big_tusk(ctx):
+    """120 minus 10 for each damage counter on this Pokemon."""
+    await ctx.deal_damage(max(0, 120 - 10 * damage_counters_on('self')(ctx)))
 
 
 card = PokemonCardDef(
@@ -30,7 +31,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
@@ -39,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_big_tusk,
         ),
     ],
 )

@@ -1,10 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Durant (XY2 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+import random
+
+
+async def _chip_off(ctx):
+    """Discard cards from your opponent's hand at random until they have 4."""
+    hand = list(ctx.hand(ctx.opponent_id))
+    if len(hand) > 4:
+        await ctx.discard_cards(random.sample(hand, len(hand) - 4))
 
 
 card = PokemonCardDef(
@@ -29,8 +33,7 @@ card = PokemonCardDef(
             title="Chip Off",
             game_text="Discard cards from your opponent's hand at random until he or she has 4 cards in his or her hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_chip_off,
         ),
         Attack(
             title="X-Scissor",
@@ -38,7 +41,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(20),
         ),
     ],
