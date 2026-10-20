@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import hand_size_at_least, ultra_ball
 
 card = ItemCardDef(
     guid="59accf12-b9ad-5869-b8cc-4fe46dc3f3f3",
@@ -11,5 +12,6 @@ card = ItemCardDef(
     collector_number=102,
     set_code="BW5",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=ultra_ball,
+    condition=hand_size_at_least(3)
 )

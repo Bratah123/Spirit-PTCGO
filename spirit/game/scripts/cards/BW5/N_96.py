@@ -1,5 +1,17 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.attacks_common import count_prizes_remaining
+
+
+async def n_effect(ctx):
+    """Each player shuffles their hand into their deck and draws a card for
+    each of their remaining Prize cards."""
+    my_n = count_prizes_remaining("mine")(ctx)
+    opp_n = count_prizes_remaining("opponent")(ctx)
+    for pid, count in ((ctx.player_id, my_n), (ctx.opponent_id, opp_n)):
+        await ctx.shuffle_into_deck(ctx.hand(pid), pid)
+        await ctx.draw_cards(count, pid)
+
 
 card = SupporterCardDef(
     guid="247658b0-6681-579f-9276-f9b4c8afcada",
@@ -11,5 +23,5 @@ card = SupporterCardDef(
     collector_number=96,
     set_code="BW5",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=n_effect
 )

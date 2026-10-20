@@ -1,5 +1,6 @@
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import professors_research
 
 card = SupporterCardDef(
     guid="700c6bb8-8dc1-5c95-b345-86441d8f3fb4",
@@ -11,5 +12,5 @@ card = SupporterCardDef(
     collector_number=98,
     set_code="BW5",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=professors_research
 )
