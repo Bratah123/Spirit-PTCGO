@@ -8,6 +8,7 @@ or max HP, so effects switch on/off purely by board position.
 """
 
 from dataclasses import dataclass
+import random
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from spirit.game.attributes import AttrID, PokemonTypes, TrainerType
@@ -288,6 +289,11 @@ class Passive:
         """Supporter cards `player_id` may play per turn (Magnezone Dual
         Brains 2); the highest wins."""
         return 1
+
+    def forces_coin_tails(self, player_id: str, carrier: BoardEntity) -> bool:
+        """True when every coin `player_id` flips comes up tails (Cofagrigus
+        Slap of Misfortune); covers effect flips and Checkup/attack flips."""
+        return False
 
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
@@ -840,6 +846,22 @@ def effective_supporter_limit(board: BoardState, player_id: str) -> int:
     """Supporters `player_id` may play this turn (default 1; highest wins)."""
     return max([1] + [passive.supporter_limit(player_id, carrier)
                       for passive, carrier in active_passives(board)])
+
+
+def coin_forced_tails(board: Optional[BoardState], player_id: Optional[str]) -> bool:
+    """Whether a forces_coin_tails passive applies to `player_id`'s flips."""
+    if board is None or player_id is None:
+        return False
+    return any(passive.forces_coin_tails(player_id, carrier)
+               for passive, carrier in active_passives(board))
+
+
+def flip_coin_for(board: Optional[BoardState], player_id: Optional[str]) -> int:
+    """One coin flip in wire form (0 = heads, 1 = tails), honouring
+    forces_coin_tails."""
+    if coin_forced_tails(board, player_id):
+        return 1
+    return random.choice([0, 1])
 
 
 def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:

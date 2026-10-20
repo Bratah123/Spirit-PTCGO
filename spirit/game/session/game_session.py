@@ -118,6 +118,7 @@ from .effects import (
     resolve_triggered_ability,
 )
 from .passives import (
+    flip_coin_for,
     ability_locked, active_passives, active_to_bench_counters,
     burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
@@ -3276,7 +3277,7 @@ class GameSession:
             return
         if burn_recovery_blocked(self.board_state, active):
             return
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -3305,7 +3306,7 @@ class GameSession:
     async def _checkup_sleep(self, player_id: str, active):
         """Sleep flip: all heads wakes (Thumping Snore's rider flips 2 coins)."""
         coins = self.sleep_checkup_coins.get(active.entity_id, 1)
-        flips = [random.choice([0, 1]) for _ in range(coins)]
+        flips = [flip_coin_for(self.board_state, player_id) for _ in range(coins)]
         woke = all(f == 0 for f in flips)
         self.stat_add(player_id, "headsflipped", flips.count(0))
         self.stat_add(player_id, "tailsflipped", flips.count(1))
@@ -4156,7 +4157,7 @@ class GameSession:
     async def _resolve_attach_tax_flip(self, player_id: str, energy, taxer) -> bool:
         """Slimy Room flip on a manual energy attach: heads (True) proceeds;
         tails discards the energy from hand (revealed) and returns False."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -5235,7 +5236,7 @@ class GameSession:
         not happen (no damage, no lock/VSTAR bookkeeping; the turn still
         ends). PokeAbility bracket: M.s runs the L.x flip with no condition
         pop-in (FlipToWakeUp would stamp the Asleep pop-in)."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -5260,7 +5261,7 @@ class GameSession:
     async def _resolve_confusion_flip(self, player_id: str, attacker) -> bool:
         """Confused Pokemon flip before attacking: heads proceeds into the
         normal attack; tails hurts the attacker for 30 raw damage instead."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
