@@ -43,6 +43,26 @@ def norm(text) -> str:
     return re.sub(r"\W+", "", str(text).lower().replace("\u00e9", "e"))
 
 
+# --loose: wording that changed between eras without changing the effect
+# (BW "the Defending Pokemon" vs XY+ "your opponent's Active Pokemon", the
+# gender-neutral rewrite, "Active Spot"). Numbers stay in the text, so a loose
+# match still requires identical damage/counter/card counts.
+LOOSE = [
+    (r"your opponent's active pok\u00e9mon", "the defending pok\u00e9mon"),
+    (r"your opponent's active pokemon", "the defending pok\u00e9mon"),
+    (r"\bhis or her\b", "their"), (r"\bhe or she\b", "they"), (r"\bhim or her\b", "them"),
+    (r"active spot", "active pok\u00e9mon"),
+    (r"\bthat pok\u00e9mon\b", "the defending pok\u00e9mon"),
+]
+
+
+def loose_norm(text) -> str:
+    t = str(text).lower()
+    for pat, rep in LOOSE:
+        t = re.sub(pat, rep, t)
+    return norm(t)
+
+
 def _lit(node, default=None):
     try:
         return ast.literal_eval(node) if node is not None else default
@@ -258,6 +278,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--no-whole-card", action="store_true", help="Skip the whole-card reprint pass.")
     parser.add_argument("--allow-mismatch", action="store_true",
                         help="Apply text matches even when the source hard-codes a different damage.")
+    parser.add_argument("--loose", action="store_true",
+                        help="Also match across era wording changes (Defending Pokemon / opponent's "
+                             "Active Pokemon, his or her / their); matches are tagged LOOSE.")
     parser.add_argument("--ref-root", action="append", default=[], metavar="DIR",
                         help="Extra card-script tree to use as reference (repeatable), e.g. "
                              "../other-worktree/spirit/game/scripts/cards. Folders already present "
@@ -300,6 +323,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         targets = remaining
 
     index: Dict[str, List[Tuple[Script, ast.Call]]] = {}
+    loose_index: Dict[str, List[Tuple[Script, ast.Call]]] = {}
     for ref in refs:
         for call in _ability_calls(ref.tree):
             kw = {k.arg: k.value for k in call.keywords}
@@ -309,6 +333,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             text = _lit(kw["game_text"])
             if text:
                 index.setdefault(norm(text), []).append((ref, call))
+                if args.loose:
+                    loose_index.setdefault(loose_norm(text), []).append((ref, call))
 
     for stub in targets:
         plans = []
@@ -320,6 +346,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             text = _lit(kw.get("game_text").value if "game_text" in kw else None, "")
             candidates = [(r, c) for r, c in index.get(norm(text), [])
                           if getattr(c.func, "id", None) == call.func.id]
+            tag = ""
+            if not candidates and args.loose:
+                candidates = [(r, c) for r, c in loose_index.get(loose_norm(text), [])
+                              if getattr(c.func, "id", None) == call.func.id]
+                tag = " LOOSE"
             if not candidates:
                 misses += 1
                 print(f"MISS     {stub.stem} | {title} | {text[:90]}")
@@ -337,7 +368,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 continue
             note = f" (damage {plan.damage} -> {mine})" if mine != plan.damage else ""
             print(f"TEXT     {stub.stem} | {title} <- {ref.set_code}/{ref.stem}: "
-                  f"{plan.keyword_text(' ').replace(chr(10), ' ')[:110]}{note}")
+                  f"{plan.keyword_text(' ').replace(chr(10), ' ')[:110]}{note}{tag}")
             plans.append((kw["effect"], plan))
             text_hits += 1
         if plans and not args.dry_run:
