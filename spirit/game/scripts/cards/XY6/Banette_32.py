@@ -1,9 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Banette (XY6 #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+from spirit.game.card_effects.attacks_common import place_counters
+
+
+class _NoEvolveFromHand(Passive):
+    def __init__(self, player_id):
+        self.player_id = player_id
+
+    def blocks_evolution(self, player_id, target, carrier):
+        return player_id == self.player_id
+
+
+async def _evolution_jammer(ctx):
+    """20; your opponent can't evolve from hand during their next turn."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _NoEvolveFromHand(ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="88dbf48a-508d-5ecf-ae9d-cf645b859f7f",
@@ -30,15 +43,13 @@ card = PokemonCardDef(
             game_text="Your opponent can't play any Pok\u00e9mon from his or her hand to evolve his or her Pok\u00e9mon during his or her next turn.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_evolution_jammer,
         ),
         Attack(
             title="Curse Deeply",
             game_text="Put 5 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(5),
         ),
     ],
 )
