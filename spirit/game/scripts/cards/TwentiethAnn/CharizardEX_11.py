@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Charizard-EX (TwentiethAnn #11): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+def _is_fire_energy(card):
+    return energy_provides_type(card, PokemonTypes.FIRE.value)
+
 
 card = PokemonCardDef(
     guid="d3739a5b-de0a-565f-8c91-714d293da945",
@@ -27,8 +31,7 @@ card = PokemonCardDef(
             game_text="Attach a Fire Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=_is_fire_energy),
         ),
         Attack(
             title="Burning Breath",
@@ -36,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=40),
         ),
     ],
 )

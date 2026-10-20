@@ -1,14 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Floral Crown (TwentiethAnn #RC26): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - At the end of your opponent's turn, heal 20 damage from the Basic Pokémon this card is attached to.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef, Ability, Triggers
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def _floral_crown(ctx):
+    """At the end of your opponent's turn, heal 20 damage from the Basic Pokemon this card is attached to."""
+    pokemon = ctx.source
+    if ctx.session.turn_state.active_player_id in (None, pokemon.owning_player_id):
+        return
+    if is_basic_pokemon(pokemon):
+        await ctx.heal(20, pokemon)
+
 
 card = PokemonToolCardDef(
     guid="9ab49a52-5b8a-5019-9d63-c5e6a7855dd3",
@@ -20,6 +22,12 @@ card = PokemonToolCardDef(
     collector_number=109,
     set_code="TwentiethAnn",
     rarity=Rarities.Common,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    granted_abilities=[
+        Ability(
+            title="Floral Crown",
+            game_text="At the end of your opponent's turn, heal 20 damage from the Basic Pok\u00e9mon this card is attached to.",
+            trigger=Triggers.BETWEEN_TURNS,
+            effect=_floral_crown,
+        ),
+    ]
 )
