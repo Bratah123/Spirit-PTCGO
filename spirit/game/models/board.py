@@ -197,6 +197,10 @@ class CardEntity(BoardEntity):
     # on draw); prize cards are never introduced until taken.
     HIDDEN_FROM_OWNER_AREAS = ("deck", "prizePile")
 
+    # Town Map: a Prize card turned face up stays public while it remains a
+    # Prize (move_card clears the flag once it leaves the prize pile).
+    face_up_prize = False
+
     # Zones whose cards are public knowledge to BOTH players. During live play a
     # non-owner learns these on sight (EntityIntroduced), but the reconnect SGS
     # is the SOLE source of truth for a fresh client, so they MUST serialize
@@ -220,6 +224,8 @@ class CardEntity(BoardEntity):
         if viewer_id is None:
             return False
         area_name = self._containing_area_name()
+        if self.face_up_prize and area_name == "prizePile":
+            return False
         if viewer_id != self.owning_player_id:
             return area_name not in self.PUBLIC_AREAS
         return area_name in self.HIDDEN_FROM_OWNER_AREAS
@@ -445,6 +451,8 @@ class BoardState:
 
         to_area.add_child(card, position)
         card.owning_player_id = to_area.owning_player_id
+        if card.face_up_prize and to_area.get_attribute(AttrID.NAME) != "prizePile":
+            card.face_up_prize = False
         return True
 
     def attach_card(self, card_id: str, to_entity_id: str) -> bool:
