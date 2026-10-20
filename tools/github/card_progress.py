@@ -292,8 +292,12 @@ def list_issues() -> List[dict]:
                          "--limit", "1000", "--json", "number,title,body,state,labels"))
 
 
+def normalize_newlines(body) -> str:
+    return re.sub(r"\r+\n?", "\n", body)
+
+
 def edit_body(number, body):
-    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8", newline="\n") as f:
         f.write(body)
     try:
         gh("issue", "edit", str(number), "--repo", REPO, "--body-file", f.name)
@@ -320,7 +324,7 @@ def sync_issues(eras, progress, sha, dry_run, close_complete):
         issue = by_set.get(p.meta["id"])
         if issue is None:
             continue
-        body = replace_block(issue["body"], "progress", set_progress_block(p, sha))
+        body = replace_block(normalize_newlines(issue["body"]), "progress", set_progress_block(p, sha))
         body = replace_block(body, "cards", card_checklist_block(p))
         if strip_sha(body) != strip_sha(issue["body"]):
             actions.append(("edit", issue["number"], body))
@@ -331,7 +335,7 @@ def sync_issues(eras, progress, sha, dry_run, close_complete):
         if issue is None:
             continue
         members = [p for p in progress if p.era["key"] == era["key"]]
-        body = replace_block(issue["body"], "progress", epic_progress_block(era, members, sha, numbers))
+        body = replace_block(normalize_newlines(issue["body"]), "progress", epic_progress_block(era, members, sha, numbers))
         if strip_sha(body) != strip_sha(issue["body"]):
             actions.append(("edit", issue["number"], body))
     for kind, number, body in actions:
