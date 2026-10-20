@@ -74,6 +74,28 @@ STAGE_MAP = {
 def clean_name(name: str) -> str:
     return re.sub(r'[^a-zA-Z0-9]', '', name)
 
+# Subset numbers (Radiant Collection "RC1"...) map past the set's highest
+# numeric collector number so they never share a number (and art bundle
+# asset name) with a main-set card. Set per import in main().
+SUBSET_NUMBER_BASE = 0
+SUBSET_RE = re.compile(r"^([A-Za-z]+)(\d+)$")
+
+def collector_number_int(number: Any) -> int:
+    """Unique int collector number: '57' -> 57, 'RC3' -> SUBSET_NUMBER_BASE + 3."""
+    raw = str(number or "0").strip()
+    if raw.isdigit():
+        return int(raw)
+    match = SUBSET_RE.match(raw)
+    if match:
+        return SUBSET_NUMBER_BASE + int(match[2])
+    digits = re.sub(r"\D", "", raw)
+    return int(digits) if digits else 0
+
+def subset_number_base(cards: List[Dict[str, Any]]) -> int:
+    """Highest plain-numeric collector number in the set (0 if none)."""
+    nums = [int(c["number"]) for c in cards if str(c.get("number", "")).isdigit()]
+    return max(nums, default=0)
+
 def get_guid(card_id: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"spirit.ptcgo.{card_id}"))
 
@@ -216,7 +238,7 @@ def render_script(card: Dict[str, Any]) -> Optional[str]:
     """Renders the card definition script source for one API card dict."""
     supertype = card.get("supertype", "")
     name = card.get("name", "Unknown")
-    number = card.get("number", "0")
+    number = collector_number_int(card.get("number", "0"))
     safe_name = clean_name(name)
 
     # Prepare script content
@@ -421,6 +443,13 @@ def main():
     with open(JSON_PATH, "r") as f:
         cards = json.load(f)
     
+    global SUBSET_NUMBER_BASE
+    SUBSET_NUMBER_BASE = subset_number_base(cards)
+    numbers = [collector_number_int(c.get("number", "0")) for c in cards]
+    if len(set(numbers)) != len(numbers):
+        print("Error: collector numbers collide after subset mapping")
+        sys.exit(1)
+
     # Build name map for family resolution
     for card in cards:
         if "Pok" in card.get("supertype", ""):
