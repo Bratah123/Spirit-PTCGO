@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Talonflame (XY11 #96): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -34,19 +30,17 @@ card = PokemonCardDef(
     resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Fletchinder.Name",
     family_id=661,
+    setup_as_active=True,
     abilities=[
         Ability(
             title="Gale Wings",
             game_text="If this Pok\u00e9mon is in your hand when you are setting up to play, you may put it face down as your Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
         ),
         Attack(
             title="Aero Blitz",
             game_text="Search your deck for up to 2 cards and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
             effect=_aero_blitz,
         ),
     ],
