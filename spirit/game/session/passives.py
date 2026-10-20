@@ -315,6 +315,11 @@ class Passive:
         Slap of Misfortune); covers effect flips and Checkup/attack flips."""
         return False
 
+    def forces_coin_tails_during_own_turn(self, player_id: str, carrier: BoardEntity) -> bool:
+        """True when every coin `player_id` flips DURING THEIR OWN TURN comes
+        up tails (Malamar Contrary); Checkup flips are between turns."""
+        return False
+
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
         return False
@@ -948,8 +953,15 @@ def coin_forced_tails(board: Optional[BoardState], player_id: Optional[str]) -> 
     """Whether a forces_coin_tails passive applies to `player_id`'s flips."""
     if board is None or player_id is None:
         return False
-    return any(passive.forces_coin_tails(player_id, carrier)
-               for passive, carrier in active_passives(board))
+    pairs = active_passives(board)
+    if any(passive.forces_coin_tails(player_id, carrier) for passive, carrier in pairs):
+        return True
+    state = getattr(board, "turn_state", None)
+    if state is None or state.active_player_id != player_id \
+            or getattr(state, "in_checkup", False):
+        return False
+    return any(passive.forces_coin_tails_during_own_turn(player_id, carrier)
+               for passive, carrier in pairs)
 
 
 def flip_coin_for(board: Optional[BoardState], player_id: Optional[str]) -> int:

@@ -140,6 +140,9 @@ class TurnState:
     retreated_entities: Set[str] = field(default_factory=set)
     healed_entities: Set[str] = field(default_factory=set)
     turn_draw_entity_ids: Set[str] = field(default_factory=set)
+    # True while the between-turns Pokemon Checkup runs (not "during"
+    # either player's turn).
+    in_checkup: bool = False
     trainers_played_last_turn: List[Tuple[str, str, int]] = field(default_factory=list)
     attacks_used_last_turn: List[Tuple[str, str, str]] = field(default_factory=list)
     kos_by_attack_last_turn: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
