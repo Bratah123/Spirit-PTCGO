@@ -1,15 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magmortar (XY3 #11): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.pokemon import energy_provides_type
 from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
 
 
 def _is_fire_energy(card):
     return energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+def _named(card, *names):
+    d = def_for(card.archetype_id)
+    return getattr(d, "display_name", None) in names
 
 
 card = PokemonCardDef(
@@ -35,7 +38,6 @@ card = PokemonCardDef(
             game_text="Search your deck for a Fire Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.FIRE: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=search_attach_energy(predicate=_is_fire_energy, count=1, to_self=True),
         ),
         Attack(
@@ -44,8 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: any(_named(p, "Electivire") for p in ctx.my_bench()), 80),
         ),
     ],
 )

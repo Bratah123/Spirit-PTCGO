@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tyrantrum (XY3 #62): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import lock_all_attacks
+from spirit.game.card_effects.attacks_common import lock_all_attacks, bonus_if
+from spirit.game.session.effects import is_special_energy
 
 
 async def _freeze_shock(ctx):
@@ -37,15 +34,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.defender is not None and any(is_special_energy(e) for e in ctx.attached_energies(ctx.defender)), 90),
         ),
         Attack(
             title="Giga Impact",
             game_text="This Pok\u00e9mon can't attack during your next turn.",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            # STUB: attack effect not implemented
             effect=_freeze_shock,
         ),
     ],

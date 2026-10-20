@@ -1,9 +1,28 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Electivire (XY3 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _named(card, *names):
+    d = def_for(card.archetype_id)
+    return getattr(d, "display_name", None) in names
+
+
+async def _tag_team_spark(ctx):
+    """20 more for each Energy attached to your Magmortar."""
+    counts = [len(ctx.attached_energies(p)) for p in ctx.my_pokemon_in_play()
+              if _named(p, "Magmortar")]
+    await ctx.deal_damage(20 + 20 * (max(counts) if counts else 0))
+
+
+async def _gigavolt(ctx):
+    """60; heads +30, tails the opponent's Active is now Paralyzed."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(90 if heads else 60)
+    if not heads and ctx.defender is not None:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="4a7715e0-3b88-57d1-922c-286d5a6df451",
@@ -31,8 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_tag_team_spark,
         ),
         Attack(
             title="Gigavolt",
@@ -40,8 +58,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gigavolt,
         ),
     ],
 )

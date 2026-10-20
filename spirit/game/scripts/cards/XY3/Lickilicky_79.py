@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lickilicky (XY3 #79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_random_from_hand, flip_damage
 
@@ -35,7 +31,6 @@ card = PokemonCardDef(
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
-            # STUB: attack effect not implemented
             effect=knock_off,
         ),
         Attack(
@@ -44,7 +39,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_damage(until_tails=True, bonus_per_heads=30),
         ),
     ],

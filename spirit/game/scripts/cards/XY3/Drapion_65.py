@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Drapion (XY3 #65): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import bonus_if, defender_has_condition, condition_attack
-from spirit.game.attributes import SpecialConditions
 
 
 card = PokemonCardDef(
@@ -34,7 +29,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(defender_has_condition(SpecialConditions.POISONED), 40),
         ),
         Attack(
@@ -42,7 +36,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],

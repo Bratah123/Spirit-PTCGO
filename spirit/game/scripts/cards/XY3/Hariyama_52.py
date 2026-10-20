@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hariyama (XY3 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import takes_less_passive
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _fire_or_water(pokemon):
+    types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.FIRE.value in types or PokemonTypes.WATER.value in types
+
 
 card = PokemonCardDef(
     guid="8d06e0be-4251-5a0f-a7d0-271ee1eccb89",
@@ -26,8 +29,7 @@ card = PokemonCardDef(
         Ability(
             title="Thick Fat",
             game_text="Any damage done to this Pok\u00e9mon by attacks from your opponent's Fire or Water Pok\u00e9mon is reduced by 30 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(30, attacker_pred=_fire_or_water),
         ),
         Attack(
             title="Rocket Slap",

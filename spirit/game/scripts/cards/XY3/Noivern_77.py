@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Noivern (XY3 #77): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
 from spirit.game.card_effects.attacks_common import damage_all_opponents
@@ -31,14 +27,12 @@ card = PokemonCardDef(
         Ability(
             title="Echolocation",
             game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
-            # STUB: ability effect not implemented
             passive=flip_prevent_damage_passive('Echolocation'),
         ),
         Attack(
             title="Boomburst",
             game_text="This attack does 30 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=damage_all_opponents(30),
         ),
     ],

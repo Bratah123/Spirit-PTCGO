@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bellsprout (XY3 #1): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_random_from_hand
 
@@ -38,7 +34,6 @@ card = PokemonCardDef(
             title="Knock Off",
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=knock_off,
         ),
     ],

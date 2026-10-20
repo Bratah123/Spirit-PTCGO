@@ -1,10 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Glaceon (XY3 #19): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.attacks_common import flip_bonus, spread_damage
 
 
 card = PokemonCardDef(
@@ -30,8 +26,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 10 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, also_base=True),
         ),
         Attack(
             title="Ice Edge",
@@ -39,7 +34,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
     ],
