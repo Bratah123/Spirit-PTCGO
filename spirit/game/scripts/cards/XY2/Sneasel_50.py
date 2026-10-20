@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sneasel (XY2 #50): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _flash_claw(ctx):
+    """Your opponent discards a card from their hand."""
+    if ctx.hand(ctx.opponent_id):
+        await ctx.discard_from_hand(1, minimum=1, player_id=ctx.opponent_id,
+                                    prompt="Choose a card to discard")
+
 
 card = PokemonCardDef(
     guid="6f2860af-3ec0-5796-9f67-db5c1ca8f9bd",
@@ -32,8 +36,7 @@ card = PokemonCardDef(
             title="Flash Claw",
             game_text="Your opponent discards a card from his or her hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_flash_claw,
         ),
     ],
 )

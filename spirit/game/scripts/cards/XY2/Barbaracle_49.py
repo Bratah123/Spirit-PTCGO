@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Barbaracle (XY2 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fighting_energy_card(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIGHTING.value)
+
+
+async def _rock_rush(ctx):
+    """Discard any number of Fighting Energy cards from your hand: 30 damage
+    times the number discarded."""
+    n = sum(1 for c in ctx.hand() if _is_fighting_energy_card(c))
+    picked = await ctx.discard_from_hand(n, minimum=0, predicate=_is_fighting_energy_card,
+                                         prompt="Discard any number of Fighting Energy cards") if n else []
+    await ctx.deal_damage(30 * len(picked or []))
+
 
 card = PokemonCardDef(
     guid="374729a7-d56c-580f-9f5d-38daf420f121",
@@ -29,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rock_rush,
         ),
         Attack(
             title="Boulder Crush",

@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Forretress (XY2 #60): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _thorn_tempest(ctx):
+    """When played from hand to evolve: you may put 1 damage counter on each
+    of your opponent's Pokemon."""
+    if not await ctx.ask_yes_no("Put 1 damage counter on each of your opponent's Pokémon?"):
+        return
+    for p in ctx.opponent_pokemon_in_play():
+        await ctx.deal_damage(10, target=p, apply_modifiers=False, is_attack=False,
+                              as_counters=True)
+
+
+async def _iron_crash(ctx):
+    """20 more damage for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(20 + 20 * cost)
+
 
 card = PokemonCardDef(
     guid="b397933b-333b-5f98-b58f-57e7610732cd",
@@ -27,8 +42,8 @@ card = PokemonCardDef(
         Ability(
             title="Thorn Tempest",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may put 1 damage counter on each of your opponent's Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_thorn_tempest,
         ),
         Attack(
             title="Iron Crash",
@@ -36,8 +51,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_crash,
         ),
     ],
 )

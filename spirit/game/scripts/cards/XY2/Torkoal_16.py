@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Torkoal (XY2 #16): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def ember(ctx):
+    """20 damage. Flip a coin. If tails, discard an Energy from this Pokémon."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, "Ember"))[0]
+    if not heads:
+        await ctx.discard_energy_from(
+            ctx.attacker, 1,
+            prompt="Discard an Energy attached to this Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="1aed4883-5b9d-5891-b80a-c6c609e2a155",
@@ -32,8 +40,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=ember,
         ),
     ],
 )

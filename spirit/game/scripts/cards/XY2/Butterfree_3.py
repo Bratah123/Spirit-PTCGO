@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Butterfree (XY2 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _quiver_dance(ctx):
+    """Search your deck for a basic Energy card and attach it to this Pokemon;
+    shuffle. If you attached Energy this way, heal 40 damage from it."""
+    picks = await ctx.search_deck(is_basic_energy_card, count=1, minimum=0,
+                                  prompt="Choose a basic Energy card")
+    attached = False
+    for card in picks or []:
+        await ctx.attach_energy(card, ctx.attacker)
+        attached = True
+    await ctx.shuffle_deck()
+    if attached:
+        await ctx.heal(40, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="a8e0688d-3290-5557-afe4-e5c7fe98178b",
@@ -28,8 +40,7 @@ card = PokemonCardDef(
             title="Quiver Dance",
             game_text="Search your deck for a basic Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward. If you attached Energy in this way, heal 40 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_quiver_dance,
         ),
         Attack(
             title="Gust",

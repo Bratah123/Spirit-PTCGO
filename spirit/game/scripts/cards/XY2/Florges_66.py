@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Florges (XY2 #66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_all_opponents
+from spirit.game.card_effects.support_common import search_to_hand
+
 
 card = PokemonCardDef(
     guid="8d7d23ab-f175-548a-97f7-5a8ef710ccbc",
@@ -28,15 +27,14 @@ card = PokemonCardDef(
             title="Brilliant Search",
             game_text="Search your deck for up to 3 cards and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(None, count=3, minimum=0, reveal=False,
+                prompt='Choose up to 3 cards'),
         ),
         Attack(
             title="Petal Blizzard",
             game_text="This attack does 20 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_all_opponents(20),
         ),
     ],
 )
