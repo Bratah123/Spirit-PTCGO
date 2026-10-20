@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="16f492ca-589f-5744-a665-3c725958974d",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Quick Turn",
             game_text="Flip 2 coins. This attack does 20 damage times the number of heads.",
             cost={PokemonTypes.LIGHTNING: 1},
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=20),
         ),
         Attack(
             title="Electrisilk",

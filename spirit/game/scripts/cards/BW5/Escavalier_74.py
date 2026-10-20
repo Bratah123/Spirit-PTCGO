@@ -1,5 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+
+
+async def incinerate(ctx):
+    """Before damage, discard a Tool attached to the Defending Pokémon."""
+    defender = ctx.defender
+    if defender is not None and not ctx.effects_blocked(defender):
+        tools = [c for c in defender.children
+                 if c.get_attribute(AttrID.TRAINER_TYPE) in _TOOL_TYPES]
+        if tools:
+            picks = await ctx.choose_cards(
+                tools, 1,
+                prompt="Choose a Pokémon Tool to discard",
+            ) if len(tools) > 1 else tools
+            if picks:
+                await ctx.discard_cards(picks[:1])
+    await ctx.deal_damage()
+
+
+_TOOL_TYPES = (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
 
 card = PokemonCardDef(
     guid="0a70b62e-2d2e-5903-8e07-025ef1f46eb8",
@@ -25,7 +45,7 @@ card = PokemonCardDef(
             game_text="Before doing damage, discard a Pok\u00e9mon Tool card attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1},
             damage=30,
-            effect=unimplemented,
+            effect=incinerate,
         ),
         Attack(
             title="Cavalry Lance",

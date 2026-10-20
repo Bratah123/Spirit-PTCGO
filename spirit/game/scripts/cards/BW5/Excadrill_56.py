@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import recover_from_discard
+
 
 card = PokemonCardDef(
     guid="1a4d8cc8-9918-56fb-9ecc-ffd58c696845",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             game_text="Put a card from your discard pile into your hand.",
             cost={PokemonTypes.FIGHTING: 2},
             damage=50,
-            effect=unimplemented,
+            effect=recover_from_discard(),
         ),
     ],
 )

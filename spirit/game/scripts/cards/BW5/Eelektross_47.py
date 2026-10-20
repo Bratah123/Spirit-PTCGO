@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _giga_drain(ctx):
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt)
+
 
 card = PokemonCardDef(
     guid="df64e77b-ed33-56b2-8f61-d3138b0302cb",
@@ -24,7 +31,7 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=_giga_drain,
         ),
         Attack(
             title="Slurp Shakedown",

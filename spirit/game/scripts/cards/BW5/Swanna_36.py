@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="0f84020f-c14e-5800-a59f-35112f495a02",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             title="Healing Dance",
             game_text="Heal 30 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=heal_targets(30, 'each_own'),
         ),
         Attack(
             title="Incessant Peck",

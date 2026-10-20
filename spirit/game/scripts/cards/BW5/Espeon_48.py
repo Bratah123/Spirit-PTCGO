@@ -1,6 +1,13 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 
+
+async def psy_report(ctx):
+    """Printed damage; your opponent reveals their hand."""
+    await ctx.deal_damage()
+    await ctx.reveal_hand(ctx.opponent_id)
+
+
 card = PokemonCardDef(
     guid="c9c8ba61-5776-5c09-b93c-f48a8e43eb41",
     key="BW5",
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=psy_report,
         ),
     ],
 )
