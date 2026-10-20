@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.attacks_common import flip_damage, bonus_if
+from spirit.game.session.passives import effective_retreat_cost
+
+
+def _no_retreat_cost(ctx):
+    defender = ctx.defender
+    return defender is not None and effective_retreat_cost(ctx.board, defender) == 0
 
 
 card = PokemonCardDef(
@@ -33,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_no_retreat_cost, 40),
         ),
     ],
 )

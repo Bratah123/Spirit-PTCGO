@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_bonus, bonus_if, active_is
 
 
 card = PokemonCardDef(
@@ -25,7 +25,7 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon is Durant, this attack does 50 more damage.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            effect=unimplemented,
+            effect=bonus_if(active_is(lambda p: p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == 'Durant'), 50),
         ),
         Attack(
             title="Firebreathing",

@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_for_bonus, flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
 
 card = PokemonCardDef(
     guid="717fd228-2b05-5c0c-a1b3-31513b4746ba",
@@ -25,7 +32,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=discard_for_bonus(source='self-energy', predicate=_is_lightning_energy, max_count=1, flat=40,
+                                     prompt='You may discard a Lightning Energy for 40 more damage'),
         ),
         Attack(
             title="Pin Missile",
@@ -33,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(4, per_heads=40),
         ),
     ],
 )

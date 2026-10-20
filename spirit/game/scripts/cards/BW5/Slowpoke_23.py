@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_or_nothing
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_or_nothing, condition_attack
 
 
 card = PokemonCardDef(
@@ -24,7 +24,7 @@ card = PokemonCardDef(
             title="Big Yawn",
             game_text="Both this Pok\u00e9mon and the Defending Pok\u00e9mon are now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, self_conditions=(SpecialConditions.ASLEEP,)),
         ),
         Attack(
             title="Shot in the Dark",

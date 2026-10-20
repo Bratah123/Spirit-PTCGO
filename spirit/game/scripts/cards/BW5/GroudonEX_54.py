@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import spread_damage
+from spirit.game.card_effects.attacks_common import spread_damage, bonus_if, damage_counters_on
+
+
+_defender_counters = damage_counters_on('defender')
+
+
+def _two_counters(ctx):
+    return _defender_counters(ctx) >= 2
 
 
 card = PokemonCardDef(
@@ -34,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_two_counters, 40),
         ),
     ],
 )

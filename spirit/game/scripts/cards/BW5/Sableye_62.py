@@ -1,6 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_item_card
 
 
 card = PokemonCardDef(
@@ -30,7 +32,8 @@ card = PokemonCardDef(
             title="Junk Hunt",
             game_text="Put 2 Item cards from your discard pile into your hand.",
             cost={PokemonTypes.DARKNESS: 1},
-            effect=unimplemented,
+            effect=recover_from_discard(is_item_card, count=2, minimum=1,
+                                        prompt='Choose 2 Item cards to put into your hand'),
         ),
     ],
 )

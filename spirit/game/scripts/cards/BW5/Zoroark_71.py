@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play, damage_counters_on
+
+
+def _is_darkness_pokemon(pokemon):
+    return PokemonTypes.DARKNESS.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="cf4fe2e9-e1bf-5880-bcfb-bb2336527157",
@@ -26,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play('mine', _is_darkness_pokemon), 20),
         ),
         Attack(
             title="Dark Rush",
@@ -34,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 20),
         ),
     ],
 )

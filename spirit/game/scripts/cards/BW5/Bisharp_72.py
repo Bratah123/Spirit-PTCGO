@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _fury_cutter(ctx):
+    """Flip 3 coins: +10 / +30 / +60 for 1 / 2 / 3 heads."""
+    results = await ctx.flip_coins(3, "Fury Cutter")
+    heads = sum(1 for r in results if r)
+    await ctx.deal_damage(30 + {1: 10, 2: 30, 3: 60}.get(heads, 0))
+
 
 card = PokemonCardDef(
     guid="4650a72f-62b7-53ce-a8f2-6ab460afca74",
@@ -31,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_fury_cutter,
         ),
     ],
 )

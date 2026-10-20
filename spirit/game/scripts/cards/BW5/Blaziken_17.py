@@ -1,6 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+async def _blaze_kick(ctx):
+    """Flip: heads +30 damage; tails the Defending Pokémon is now Burned."""
+    results = await ctx.flip_coins(1, "Blaze Kick")
+    heads = bool(results and results[0])
+    await ctx.deal_damage(70 if heads else 40)
+    if not heads and ctx.defender is not None and not ctx.effects_blocked(ctx.defender):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
 
 
 card = PokemonCardDef(
@@ -27,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_blaze_kick,
         ),
         Attack(
             title="Flamethrower",

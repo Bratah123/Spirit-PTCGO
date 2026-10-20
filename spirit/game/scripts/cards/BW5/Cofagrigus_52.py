@@ -1,6 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import condition_attack, discard_for_bonus
+
+
+def _is_tool_card(card) -> bool:
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
 
 
 card = PokemonCardDef(
@@ -27,7 +32,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=discard_for_bonus(source='hand', predicate=_is_tool_card, max_count=60, per=40, base=0,
+                                     prompt='Discard any number of Pokémon Tool cards'),
         ),
         Attack(
             title="Lock Up",

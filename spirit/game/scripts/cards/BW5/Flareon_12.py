@@ -1,6 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import smokescreen_attack
+from spirit.game.card_effects.attacks_common import smokescreen_attack, discard_for_bonus
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
 
 
 card = PokemonCardDef(
@@ -34,7 +39,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=discard_for_bonus(source='self-energy', predicate=_is_fire_energy, max_count=1, flat=30,
+                                     prompt='You may discard a Fire Energy for 30 more damage'),
         ),
     ],
 )

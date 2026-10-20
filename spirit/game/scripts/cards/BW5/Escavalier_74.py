@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.passives_common import no_weakness_passive
 
 
 async def incinerate(ctx):
@@ -19,6 +20,12 @@ async def incinerate(ctx):
 
 
 _TOOL_TYPES = (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+async def _cavalry_lance(ctx):
+    """Printed damage; during your opponent's next turn this Pokémon has no Weakness."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, no_weakness_passive())
 
 
 card = PokemonCardDef(
@@ -52,7 +59,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon has no Weakness.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            effect=unimplemented,
+            effect=_cavalry_lance,
         ),
     ],
 )

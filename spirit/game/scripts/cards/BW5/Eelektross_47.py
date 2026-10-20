@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import gust_attack
 
 
 async def _giga_drain(ctx):
@@ -37,7 +38,7 @@ card = PokemonCardDef(
             title="Slurp Shakedown",
             game_text="Switch the Defending Pok\u00e9mon with 1 of your opponent's Benched Pok\u00e9mon. This attack does 60 damage to the new Defending Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=gust_attack(damage_to_new_active=60),
         ),
     ],
 )

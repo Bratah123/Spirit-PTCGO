@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -39,7 +39,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon can't use Slashing Strike during your next turn.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

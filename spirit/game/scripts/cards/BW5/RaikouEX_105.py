@@ -1,6 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import condition_attack, snipe_attack
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+_volt_snipe = snipe_attack(100, pool='any')
+
+
+async def _volt_bolt(ctx):
+    """Discard all Lightning Energy from this Pokémon, then 100 to 1 of the
+    opponent's Pokémon."""
+    lightning = [e for e in ctx.attached_energies(ctx.attacker)
+                 if energy_provides_type(e, PokemonTypes.LIGHTNING.value)]
+    if lightning:
+        await ctx.discard_cards(lightning)
+    await _volt_snipe(ctx)
 
 
 card = PokemonCardDef(
@@ -31,7 +45,7 @@ card = PokemonCardDef(
             title="Volt Bolt",
             game_text="Discard all Lightning Energy attached to this Pok\u00e9mon. This attack does 100 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness or Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_volt_bolt,
         ),
     ],
 )
