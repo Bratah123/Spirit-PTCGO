@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="76" viewBox="0 0 640 76" role="img" aria-label="Sandstorm: 0 of 100 cards implemented">
+<style>
+.t{fill:#1f2328}.m{fill:#59636e}.trk{fill:#eaeef2}.bd{stroke:#d1d9e0}.bg{fill:#ffffff}
+@media (prefers-color-scheme:dark){.t{fill:#f0f6fc}.m{fill:#9198a1}.trk{fill:#262c36}.bd{stroke:#3d444d}.bg{fill:#0d1117}}
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}
+</style>
+<rect class="bg bd" x="0.5" y="0.5" width="639" height="75" rx="8" stroke-width="1"/>
+<text class="t" x="16" y="28" font-size="15" font-weight="600">Sandstorm</text>
+<text class="m" x="624" y="28" font-size="13" text-anchor="end"><tspan class="t" font-weight="600">0</tspan> / 100 cards (0.0%)</text>
+<rect class="trk" x="16" y="44" width="608" height="14" rx="7"/>
+
+<rect x="76.8" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="137.6" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="198.4" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="259.2" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="320.0" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="380.8" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="441.6" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="502.4" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+<rect x="563.2" y="44" width="1" height="14" class="bg" opacity="0.55"/>
+</svg>

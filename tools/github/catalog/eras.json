@@ -1,0 +1,12 @@
+[
+  {"key": "wotc", "name": "Wizards of the Coast Era", "years": "1999–2003", "color": "#c9a227", "mechanics": "Pokémon Powers, Dark & Light Pokémon, Owner's Pokémon, Shining Pokémon, e-Card Poké-Powers/Bodies"},
+  {"key": "ex", "name": "EX Era", "years": "2003–2007", "color": "#d9534f", "mechanics": "Pokémon-ex, Pokémon ★ (Star), δ Delta Species, Team Magma/Aqua, Holon energies"},
+  {"key": "dp", "name": "Diamond & Pearl / Platinum Era", "years": "2007–2010", "color": "#5b7bd5", "mechanics": "Pokémon LV.X, SP Pokémon (G, GL, C, FB, 4, M), Poké-Powers/Bodies"},
+  {"key": "hgss", "name": "HeartGold & SoulSilver Era", "years": "2010–2011", "color": "#c8a24a", "mechanics": "Pokémon LEGEND (engine done), Pokémon Prime"},
+  {"key": "bw", "name": "Black & White Era", "years": "2011–2013", "color": "#6c6f7a", "mechanics": "Pokémon-EX (2 prizes), ACE SPEC Trainers, Team Plasma, Abilities replacing Powers/Bodies"},
+  {"key": "xy", "name": "XY Era", "years": "2013–2016", "color": "#3a8fd0", "mechanics": "Mega Evolution, Pokémon BREAK, Ancient Traits (Ω/α/θ/Δ), Spirit Links, Team Flare"},
+  {"key": "sm", "name": "Sun & Moon Era", "years": "2017–2019", "color": "#e8873a", "mechanics": "Pokémon-GX & GX attacks, TAG TEAM, Prism Star, Ultra Beasts"},
+  {"key": "swsh", "name": "Sword & Shield Era", "years": "2019–2023", "color": "#2fa8a0", "mechanics": "V / VMAX / VSTAR / V-UNION / Radiant, Rapid & Single Strike, Fusion Strike (engine done)"},
+  {"key": "sv", "name": "Scarlet & Violet Era", "years": "2023–2025", "color": "#b0408f", "mechanics": "Pokémon ex, Tera, ACE SPEC returns, Ancient/Future tags, Stellar type"},
+  {"key": "me", "name": "Mega Evolution Era", "years": "2025–present", "color": "#7a5ad8", "mechanics": "Mega Evolution Pokémon ex"}
+]

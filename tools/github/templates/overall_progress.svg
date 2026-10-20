@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="$height" viewBox="0 0 840 $height" role="img" aria-label="Spirit-PTCGO card support: $done of $total cards implemented">
+<style>
+.t{fill:#1f2328}.m{fill:#59636e}.trk{fill:#eaeef2}.bd{stroke:#d1d9e0}.bg{fill:#ffffff}
+@media (prefers-color-scheme:dark){.t{fill:#f0f6fc}.m{fill:#9198a1}.trk{fill:#262c36}.bd{stroke:#3d444d}.bg{fill:#0d1117}}
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}
+</style>
+<rect class="bg bd" x="0.5" y="0.5" width="839" height="$inner_height" rx="10" stroke-width="1"/>
+<text class="m" x="24" y="34" font-size="12" font-weight="600" letter-spacing="1.2">SPIRIT-PTCGO CARD SUPPORT</text>
+<text class="m" x="816" y="34" font-size="12" text-anchor="end">$complete_count of $set_count sets complete</text>
+<text class="t" x="24" y="72" font-size="30" font-weight="700">$done_fmt<tspan class="m" font-size="18" font-weight="400"> / $total_fmt cards</tspan></text>
+<text class="t" x="816" y="72" font-size="30" font-weight="700" text-anchor="end">$percent</text>
+<clipPath id="strip"><rect x="24" y="92" width="792" height="20" rx="10"/></clipPath>
+<g clip-path="url(#strip)">
+$segments
+</g>
+<text class="m" x="24" y="132" font-size="11">Each segment is one era, sized by its card count. Solid fill = implemented.</text>
+$rows
+</svg>

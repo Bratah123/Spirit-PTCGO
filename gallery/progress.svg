@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="428" viewBox="0 0 840 428" role="img" aria-label="Spirit-PTCGO card support: 3032 of 20635 cards implemented">
+<style>
+.t{fill:#1f2328}.m{fill:#59636e}.trk{fill:#eaeef2}.bd{stroke:#d1d9e0}.bg{fill:#ffffff}
+@media (prefers-color-scheme:dark){.t{fill:#f0f6fc}.m{fill:#9198a1}.trk{fill:#262c36}.bd{stroke:#3d444d}.bg{fill:#0d1117}}
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}
+</style>
+<rect class="bg bd" x="0.5" y="0.5" width="839" height="427" rx="10" stroke-width="1"/>
+<text class="m" x="24" y="34" font-size="12" font-weight="600" letter-spacing="1.2">SPIRIT-PTCGO CARD SUPPORT</text>
+<text class="m" x="816" y="34" font-size="12" text-anchor="end">10 of 167 sets complete</text>
+<text class="t" x="24" y="72" font-size="30" font-weight="700">3,032<tspan class="m" font-size="18" font-weight="400"> / 20,635 cards</tspan></text>
+<text class="t" x="816" y="72" font-size="30" font-weight="700" text-anchor="end">14.7%</text>
+<clipPath id="strip"><rect x="24" y="92" width="792" height="20" rx="10"/></clipPath>
+<g clip-path="url(#strip)">
+<rect x="24.0" y="92" width="68.7" height="20" fill="#c9a227" opacity="0.18"/>
+<rect x="91.7" y="92" width="2" height="20" class="bg"/>
+<rect x="92.7" y="92" width="72.6" height="20" fill="#d9534f" opacity="0.18"/>
+<rect x="164.2" y="92" width="2" height="20" class="bg"/>
+<rect x="165.2" y="92" width="57.6" height="20" fill="#5b7bd5" opacity="0.18"/>
+<rect x="221.9" y="92" width="2" height="20" class="bg"/>
+<rect x="222.9" y="92" width="20.9" height="20" fill="#c8a24a" opacity="0.18"/>
+<rect x="242.8" y="92" width="2" height="20" class="bg"/>
+<rect x="243.8" y="92" width="56.1" height="20" fill="#6c6f7a" opacity="0.18"/>
+<rect x="243.8" y="92" width="0.1" height="20" fill="#6c6f7a"/>
+<rect x="298.8" y="92" width="2" height="20" class="bg"/>
+<rect x="299.8" y="92" width="75.3" height="20" fill="#3a8fd0" opacity="0.18"/>
+<rect x="374.2" y="92" width="2" height="20" class="bg"/>
+<rect x="375.2" y="92" width="115.5" height="20" fill="#e8873a" opacity="0.18"/>
+<rect x="489.6" y="92" width="2" height="20" class="bg"/>
+<rect x="490.6" y="92" width="142.5" height="20" fill="#2fa8a0" opacity="0.18"/>
+<rect x="490.6" y="92" width="116.3" height="20" fill="#2fa8a0"/>
+<rect x="632.1" y="92" width="2" height="20" class="bg"/>
+<rect x="633.1" y="92" width="138.0" height="20" fill="#b0408f" opacity="0.18"/>
+<rect x="770.1" y="92" width="2" height="20" class="bg"/>
+<rect x="771.1" y="92" width="44.9" height="20" fill="#7a5ad8" opacity="0.18"/>
+<rect x="815.0" y="92" width="2" height="20" class="bg"/>
+</g>
+<text class="m" x="24" y="132" font-size="11">Each segment is one era, sized by its card count. Solid fill = implemented.</text>
+<circle cx="30" cy="159" r="5" fill="#c9a227"/>
+<text class="t" x="44" y="163" font-size="13">Wizards of the Coast Era</text>
+<text class="m" x="288" y="163" font-size="11" text-anchor="end">1999–2003</text>
+<rect class="trk" x="300" y="154" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="163" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 1,789 (0.0%)</text>
+<circle cx="30" cy="185" r="5" fill="#d9534f"/>
+<text class="t" x="44" y="189" font-size="13">EX Era</text>
+<text class="m" x="288" y="189" font-size="11" text-anchor="end">2003–2007</text>
+<rect class="trk" x="300" y="180" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="189" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 1,891 (0.0%)</text>
+<circle cx="30" cy="211" r="5" fill="#5b7bd5"/>
+<text class="t" x="44" y="215" font-size="13">Diamond &amp; Pearl / Platinum Era</text>
+<text class="m" x="288" y="215" font-size="11" text-anchor="end">2007–2010</text>
+<rect class="trk" x="300" y="206" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="215" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 1,501 (0.0%)</text>
+<circle cx="30" cy="237" r="5" fill="#c8a24a"/>
+<text class="t" x="44" y="241" font-size="13">HeartGold &amp; SoulSilver Era</text>
+<text class="m" x="288" y="241" font-size="11" text-anchor="end">2010–2011</text>
+<rect class="trk" x="300" y="232" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="241" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 545 (0.0%)</text>
+<circle cx="30" cy="263" r="5" fill="#6c6f7a"/>
+<text class="t" x="44" y="267" font-size="13">Black &amp; White Era</text>
+<text class="m" x="288" y="267" font-size="11" text-anchor="end">2011–2013</text>
+<rect class="trk" x="300" y="258" width="366" height="10" rx="5"/>
+<rect x="300" y="258" width="10.0" height="10" rx="5" fill="#6c6f7a"/>
+<text class="m" x="816" y="267" font-size="12" text-anchor="end"><tspan class="t">2</tspan> / 1,461 (0.1%)</text>
+<circle cx="30" cy="289" r="5" fill="#3a8fd0"/>
+<text class="t" x="44" y="293" font-size="13">XY Era</text>
+<text class="m" x="288" y="293" font-size="11" text-anchor="end">2013–2016</text>
+<rect class="trk" x="300" y="284" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="293" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 1,962 (0.0%)</text>
+<circle cx="30" cy="315" r="5" fill="#e8873a"/>
+<text class="t" x="44" y="319" font-size="13">Sun &amp; Moon Era</text>
+<text class="m" x="288" y="319" font-size="11" text-anchor="end">2017–2019</text>
+<rect class="trk" x="300" y="310" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="319" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 3,009 (0.0%)</text>
+<circle cx="30" cy="341" r="5" fill="#2fa8a0"/>
+<text class="t" x="44" y="345" font-size="13">Sword &amp; Shield Era</text>
+<text class="m" x="288" y="345" font-size="11" text-anchor="end">2019–2023</text>
+<rect class="trk" x="300" y="336" width="366" height="10" rx="5"/>
+<rect x="300" y="336" width="298.8" height="10" rx="5" fill="#2fa8a0"/>
+<text class="m" x="816" y="345" font-size="12" text-anchor="end"><tspan class="t">3,030</tspan> / 3,712 (81.6%)</text>
+<circle cx="30" cy="367" r="5" fill="#b0408f"/>
+<text class="t" x="44" y="371" font-size="13">Scarlet &amp; Violet Era</text>
+<text class="m" x="288" y="371" font-size="11" text-anchor="end">2023–2025</text>
+<rect class="trk" x="300" y="362" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="371" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 3,595 (0.0%)</text>
+<circle cx="30" cy="393" r="5" fill="#7a5ad8"/>
+<text class="t" x="44" y="397" font-size="13">Mega Evolution Era</text>
+<text class="m" x="288" y="397" font-size="11" text-anchor="end">2025–present</text>
+<rect class="trk" x="300" y="388" width="366" height="10" rx="5"/>
+<text class="m" x="816" y="397" font-size="12" text-anchor="end"><tspan class="t">0</tspan> / 1,170 (0.0%)</text>
+</svg>

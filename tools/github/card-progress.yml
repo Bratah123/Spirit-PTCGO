@@ -1,0 +1,47 @@
+name: Card progress
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "spirit/game/scripts/cards/**"
+      - "tools/github/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: card-progress
+  cancel-in-progress: false
+
+jobs:
+  progress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render progress SVGs
+        run: python tools/github/card_progress.py render
+
+      - name: Commit gallery changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery
+          if git diff --cached --quiet; then
+            echo "No SVG changes"
+          else
+            git commit -m "CHORE: update card progress images"
+            git push
+          fi
+
+      - name: Sync card-support issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/github/card_progress.py sync-issues
