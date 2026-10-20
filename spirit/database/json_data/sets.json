@@ -344,7 +344,7 @@
     "name": "XY9",
     "externalId": "BKP",
     "number": 690,
-    "count": 122,
+    "count": 126,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -411,7 +411,7 @@
     "name": "TwentiethAnn",
     "externalId": "GEN",
     "number": 700,
-    "count": 83,
+    "count": 117,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -679,7 +679,7 @@
     "name": "XY5",
     "externalId": "PRC",
     "number": 640,
-    "count": 160,
+    "count": 164,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -715,7 +715,7 @@
     "name": "XY8",
     "externalId": "BKT",
     "number": 680,
-    "count": 162,
+    "count": 165,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -795,7 +795,7 @@
     "name": "XY12",
     "externalId": "EVO",
     "number": 730,
-    "count": 108,
+    "count": 113,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -1029,7 +1029,7 @@
     "name": "XY4",
     "externalId": "PHF",
     "number": 630,
-    "count": 119,
+    "count": 124,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -1179,7 +1179,7 @@
     "name": "XY11",
     "externalId": "STS",
     "number": 720,
-    "count": 114,
+    "count": 116,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -1344,7 +1344,7 @@
     "name": "XY3",
     "externalId": "FFI",
     "number": 610,
-    "count": 111,
+    "count": 114,
     "filter": true,
     "block": "XY",
     "legalFormats": [
@@ -1441,7 +1441,7 @@
     "name": "XY10",
     "externalId": "FCO",
     "number": 710,
-    "count": 124,
+    "count": 129,
     "filter": true,
     "block": "XY",
     "legalFormats": [

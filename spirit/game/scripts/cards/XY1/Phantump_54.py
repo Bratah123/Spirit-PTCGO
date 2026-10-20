@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Phantump (XY1 #54): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _astonish(ctx):
+    """Choose a random card from your opponent's hand; they reveal it and
+    shuffle it into their deck."""
+    import random
+    hand = ctx.hand(ctx.opponent_id)
+    if not hand:
+        return
+    card = random.choice(hand)
+    await ctx.reveal_cards([card])
+    await ctx.shuffle_into_deck([card], ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="59f52276-0520-55e7-b058-eff8261b43d8",
@@ -27,8 +36,7 @@ card = PokemonCardDef(
             title="Astonish",
             game_text="Choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into his or her deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_astonish,
         ),
         Attack(
             title="Hook",

@@ -1,5 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dangerous Energy (XY7 #82): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
+"""Dangerous Energy (XY7 #82): scripted (spirit.game.card_effects.xy_energies).
 
 Card text:
   - This card can only be attached to Darkness Pokémon. This card provides Darkness Energy only while this card is attached to a Darkness Pokémon.
@@ -7,6 +6,7 @@ Card text:
   - (If this card is attached to anything other than a Darkness Pokémon, discard this card.)
 """
 
+from spirit.game.card_effects.xy_energies import only_type, dangerous_energy_damaged
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -22,5 +22,8 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
+    attach_to=only_type(PokemonTypes.DARKNESS),
+    provides=[[PokemonTypes.DARKNESS]],
+    discard_unless_attach_to=True,
+    on_carrier_damaged_by_attack=dangerous_energy_damaged,
 )

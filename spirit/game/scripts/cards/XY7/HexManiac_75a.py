@@ -16,7 +16,7 @@ card = SupporterCardDef(
     display_name="Hex Maniac",
     searchable_by=["Hex Maniac", "Supporter"],
     subtypes=["Supporter"],
-    collector_number=75,
+    collector_number=101,
     set_code="XY7",
     rarity=Rarities.RareUltra,
     # STUB: trainer effect not implemented

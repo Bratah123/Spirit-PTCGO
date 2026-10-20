@@ -1,9 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vivillon (XY1 #17): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_POWDER = [("Asleep", SpecialConditions.ASLEEP), ("Poisoned", SpecialConditions.POISONED)]
+
+
+async def _conversion_powder(ctx):
+    """Choose Asleep or Poisoned for the opponent's Active Pokemon."""
+    target = ctx.defender
+    if target is None:
+        return
+    idx = await ctx.choose("Choose a Special Condition", [n for n, _ in _POWDER])
+    await ctx.apply_special_condition(target, _POWDER[idx or 0][1])
+
+
+def _basic_energy_types_count(ctx):
+    types = set()
+    for e in ctx.attached_energies(ctx.attacker):
+        if is_basic_energy_card(e):
+            for t in (e.get_attribute(AttrID.POKEMON_TYPES) or []):
+                types.add(t)
+    return len(types)
+
 
 card = PokemonCardDef(
     guid="1b59be4a-942e-5ada-b337-23941a77fce0",
@@ -27,8 +47,7 @@ card = PokemonCardDef(
             title="Conversion Powder",
             game_text="Choose either Asleep or Poisoned. Your opponent's Active Pok\u00e9mon is now affected by that Special Condition.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_conversion_powder,
         ),
         Attack(
             title="Colorful Wind",
@@ -36,8 +55,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(_basic_energy_types_count, 30, base=30),
         ),
     ],
 )
