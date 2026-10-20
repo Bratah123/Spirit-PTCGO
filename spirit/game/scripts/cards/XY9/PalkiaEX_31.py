@@ -2,8 +2,10 @@
 Palkia-EX (XY9 #31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="d891a91d-0f55-577b-94c7-f3414805cf62",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 4},
             damage=120,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(30, also_base=True),
         ),
     ],
 )

@@ -2,8 +2,10 @@
 Darkrai-EX (XY9 #74): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
 
 card = PokemonCardDef(
     guid="a3fcc9f0-e1c7-5521-87e8-c0eaef560158",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('mine', energy_type=PokemonTypes.DARKNESS), 20, base=20),
         ),
         Attack(
             title="Dark Head",

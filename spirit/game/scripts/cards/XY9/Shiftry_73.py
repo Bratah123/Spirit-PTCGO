@@ -2,8 +2,10 @@
 Shiftry (XY9 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import electromagnetic_sonar
+
 
 card = PokemonCardDef(
     guid="6e5b96c8-b6a0-55de-a1f6-bf9cfcb1c659",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=electromagnetic_sonar,
         ),
     ],
 )

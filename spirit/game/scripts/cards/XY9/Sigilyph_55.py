@@ -2,8 +2,15 @@
 Sigilyph (XY9 #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _scout(ctx):
+    """Printed damage; your opponent reveals their hand."""
+    await ctx.deal_damage()
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="0f36dd67-7c1d-5aa2-96e1-16db5548fd03",
@@ -37,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scout,
         ),
     ],
 )

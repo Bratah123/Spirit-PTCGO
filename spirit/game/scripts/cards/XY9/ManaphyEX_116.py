@@ -5,6 +5,13 @@ Manaphy-EX (XY9 #116): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def sugary_sprinkles(ctx):
+    """Heal 30 damage from each of your Benched Pokemon."""
+    for pokemon in ctx.my_bench():
+        await ctx.heal(30, pokemon)
+
+
 card = PokemonCardDef(
     guid="f50b42b6-18f1-57b1-a439-654d0ec62f41",
     key="XY9",
@@ -34,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=sugary_sprinkles,
         ),
     ],
 )

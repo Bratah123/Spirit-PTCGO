@@ -2,8 +2,17 @@
 Aegislash (XY9 #62): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def lunar_pain(ctx):
+    """Double the number of damage counters on each of your opponent's Pokemon."""
+    for pokemon in ctx.opponent_pokemon_in_play():
+        current = (ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)) // 10
+        if current > 0:
+            await ctx.deal_damage(current * 10, target=pokemon, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="40b36eb4-1085-56b7-8142-cb32d5c10d14",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             game_text="Double the number of damage counters on each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=lunar_pain,
         ),
         Attack(
             title="Megaton Slash",

@@ -3,7 +3,15 @@ Zebstrika (XY9 #49): one or more attacks/abilities use effect=unimplemented unti
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _has_fighting_resistance(ctx) -> bool:
+    defender = ctx.defender
+    return defender is not None and \
+        defender.get_attribute(AttrID.RESISTANCE_TYPES) == PokemonTypes.FIGHTING.value
+
 
 card = PokemonCardDef(
     guid="18d45e1c-a8b1-5888-8a77-8c96b75405b3",
@@ -38,7 +46,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_has_fighting_resistance, 60),
         ),
     ],
 )
