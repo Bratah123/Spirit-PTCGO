@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Porygon-Z (XY7 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.attacks_common import condition_attack
@@ -45,7 +41,6 @@ card = PokemonCardDef(
             title="Digital Reboot",
             game_text="Devolve as many of your Benched Pok\u00e9mon as many times as you like. Put each Evolution card removed this way into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_digital_reboot,
         ),
         Attack(
@@ -53,7 +48,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],

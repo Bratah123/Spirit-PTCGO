@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gyarados (XY7 #21): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.content.definitions import def_for
-from spirit.game.attributes import AttrID
 
 
 async def _full_retaliation(ctx):
@@ -51,7 +46,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_full_retaliation,
         ),
         Attack(
@@ -60,7 +54,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_thrash,
         ),
     ],

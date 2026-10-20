@@ -1,14 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ariados (XY7 #6): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
-from spirit.game.data_utils import Activations
-from spirit.game.attributes import PokemonTypes
-from spirit.game.attributes import AttrID
-from spirit.game.attributes import SpecialConditions
 
 
 def _non_grass(p):
@@ -43,7 +35,6 @@ card = PokemonCardDef(
         Ability(
             title="Poisonous Nest",
             game_text="Once during your turn (before your attack), you may use this Ability. Both Active Pok\u00e9mon (except for Grass Pok\u00e9mon) are now Poisoned.",
-            # STUB: ability effect not implemented
             activation=Activations.ONCE_PER_TURN,
             effect=_poisonous_nest,
         ),
@@ -52,7 +43,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(no_retreat=True),
         ),
     ],

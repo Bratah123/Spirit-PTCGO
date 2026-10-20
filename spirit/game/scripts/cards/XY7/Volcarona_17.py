@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Volcarona (XY7 #17): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 from spirit.game.card_effects.support_common import search_to_bench
@@ -43,7 +39,6 @@ card = PokemonCardDef(
             title="Solar Birth",
             game_text="Search your deck for a Basic Pok\u00e9mon and put it onto your Bench. Then, search your deck for up to 2 basic Energy cards and attach them to that Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=search_to_bench(is_basic_pokemon, count=1, then=_solar_birth_then,
                                    prompt="Choose a Basic Pokémon"),
         ),
@@ -52,7 +47,6 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
             effect=self_energy_discard_attack(count=1),
         ),
     ],

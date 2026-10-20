@@ -1,12 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Machamp-EX (XY7 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
 from spirit.game.card_effects.attacks_common import damage_counters_on
-from spirit.game.attributes import SpecialConditions
-from spirit.game.attributes import AttrID
 
 
 _counters = damage_counters_on('self')
@@ -49,7 +43,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=_steaming_mad,
         ),
         Attack(
@@ -58,7 +51,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_crazy_hammer,
         ),
     ],

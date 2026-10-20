@@ -1,14 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flareon (XY7 #13): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_bonus
-from spirit.game.session.passives import Passive
-from spirit.game.attributes import PokemonTypes
-from spirit.game.attributes import AttrID, PokemonStage
-from spirit.game.session.passives import carrier_pokemon
+from spirit.game.session.passives import Passive, carrier_pokemon
 
 
 class _StageOneType(Passive):
@@ -43,7 +36,6 @@ card = PokemonCardDef(
         Ability(
             title="Flare Effect",
             game_text="Each of your Stage 1 Pok\u00e9mon in play is now a Fire Pok\u00e9mon in addition to its existing types.",
-            # STUB: ability effect not implemented
             passive=_StageOneType(),
         ),
         Attack(
@@ -52,7 +44,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(20),
         ),
     ],

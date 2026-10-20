@@ -1,11 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Goomy (XY7 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.data_utils import Triggers
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 from spirit.game.content.definitions import def_for
 from spirit.game.session.passives import effective_bench_capacity
@@ -52,7 +46,6 @@ card = PokemonCardDef(
         Ability(
             title="Water Down",
             game_text="Whenever you attach a Water Energy card from your hand to this Pok\u00e9mon, you may search your deck for Goomy and put it onto your Bench. Shuffle your deck afterward.",
-            # STUB: ability effect not implemented
             trigger=Triggers.ON_ENERGY_ATTACHED,
             effect=_water_down,
         ),

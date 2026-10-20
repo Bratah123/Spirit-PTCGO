@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Unown (XY7 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.data_utils import Activations
 from spirit.game.session.effects import full_stack
 
 
@@ -39,7 +34,6 @@ card = PokemonCardDef(
         Ability(
             title="Farewell Letter",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is on your Bench, you may discard this Pok\u00e9mon and all cards attached to it (this does not count as a Knock Out). If you do, draw a card.",
-            # STUB: ability effect not implemented
             activation=Activations.ONCE_PER_TURN,
             condition=_farewell_condition,
             effect=_farewell_letter,

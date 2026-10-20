@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Ampharos-EX (XY7 #28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 
 async def _exavolt(ctx):
@@ -43,7 +38,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_exavolt,
         ),
     ],

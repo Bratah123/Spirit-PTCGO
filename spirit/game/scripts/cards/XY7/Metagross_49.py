@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Metagross (XY7 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Activations
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 async def _slippery_soles(ctx):
@@ -27,8 +24,6 @@ async def _slippery_soles(ctx):
 def _slippery_soles_condition(board, player_id, pokemon=None):
     bench = board.find_player_area(player_id, "bench")
     return bool(bench and bench.children)
-from spirit.game.attributes import PokemonTypes
-from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 def _is_metal_energy(card):
@@ -68,7 +63,6 @@ card = PokemonCardDef(
         Ability(
             title="Magnetic Warp",
             game_text="Once during your turn (before your attack), you may switch your Active Pok\u00e9mon with 1 of your Benched Pok\u00e9mon. If you do, your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
-            # STUB: ability effect not implemented
             activation=Activations.ONCE_PER_TURN,
             condition=_slippery_soles_condition,
             effect=_slippery_soles,
@@ -79,7 +73,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_iron_cannon,
         ),
     ],

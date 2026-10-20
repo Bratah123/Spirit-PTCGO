@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ampharos-EX (XY7 #87): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import ignore_effects_attack
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
@@ -47,7 +42,6 @@ card = PokemonCardDef(
             title="Thunder Rod",
             game_text="Look at the top 4 cards of your deck and attach as many Lightning Energy cards you find there as you like to this Pok\u00e9mon. Shuffle the other cards back into your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_thunder_rod,
         ),
         Attack(
@@ -55,7 +49,6 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness, Resistance, or any other effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
-            # STUB: attack effect not implemented
             effect=ignore_effects_attack(ignore_weakness=True, ignore_resistance=True),
         ),
     ],

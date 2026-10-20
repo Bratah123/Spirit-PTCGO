@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lugia-EX (XY7 #94): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import count_energy
 
@@ -50,7 +46,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=_aero_ball,
         ),
         Attack(
@@ -59,7 +54,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_deep_hurricane,
         ),
     ],

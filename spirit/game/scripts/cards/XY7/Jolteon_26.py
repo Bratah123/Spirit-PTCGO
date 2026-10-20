@@ -1,14 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Jolteon (XY7 #26): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
-from spirit.game.session.passives import Passive
-from spirit.game.attributes import PokemonTypes
-from spirit.game.attributes import AttrID, PokemonStage
-from spirit.game.session.passives import carrier_pokemon
+from spirit.game.session.passives import Passive, carrier_pokemon
 
 
 class _StageOneType(Passive):
@@ -45,7 +38,6 @@ card = PokemonCardDef(
         Ability(
             title="Electric Effect",
             game_text="Each of your Stage 1 Pok\u00e9mon in play is now a Lightning Pok\u00e9mon in addition to its existing types.",
-            # STUB: ability effect not implemented
             passive=_StageOneType(),
         ),
         Attack(
@@ -53,7 +45,6 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
             effect=self_energy_discard_attack(count=1),
         ),
     ],

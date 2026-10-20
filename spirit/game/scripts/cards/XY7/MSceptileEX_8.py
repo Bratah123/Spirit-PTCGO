@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Sceptile-EX (XY7 #8): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.ancient_traits import ancient_trait
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
-from spirit.game.attributes import AttrID
 
 
 def _is_grass_energy(card):
@@ -59,7 +53,6 @@ card = PokemonCardDef(
             game_text="You may attach up to 2 Grass Energy cards from your hand to your Benched Pok\u00e9mon in any way you like. If you attached Energy to a Pok\u00e9mon in this way, heal all damage from that Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
-            # STUB: attack effect not implemented
             effect=_jagged_saber,
         ),
     ],

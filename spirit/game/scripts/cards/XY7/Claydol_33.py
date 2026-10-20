@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Claydol (XY7 #33): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import devolve_depth
 
 
 async def _flip_discard_defender_energy(ctx):
@@ -15,7 +12,6 @@ async def _flip_discard_defender_energy(ctx):
     if results and results[0] and target is not None and not ctx.effects_blocked(target):
         await ctx.discard_energy_from(target, 1, minimum=1,
                                       prompt="Choose an Energy to discard")
-from spirit.game.card_effects.pokemon import devolve_depth
 
 
 async def _rewind(ctx):
@@ -48,7 +44,6 @@ card = PokemonCardDef(
             title="Rewind",
             game_text="Devolve each of your opponent's evolved Pok\u00e9mon and put the highest Stage Evolution card on it into your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
             effect=_rewind,
         ),
         Attack(
@@ -56,7 +51,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_flip_discard_defender_energy,
         ),
     ],

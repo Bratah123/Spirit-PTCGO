@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Porygon (XY7 #64): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -35,7 +31,6 @@ card = PokemonCardDef(
             title="Data Check",
             game_text="Look through your deck. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_data_check,
         ),
         Attack(

@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Porygon-Z (XY7 #66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.effects import is_special_energy
 from spirit.game.card_effects.passives_common import raise_defender_attack_cost_next_turn
@@ -39,7 +35,6 @@ card = PokemonCardDef(
             title="Cyber Crush",
             game_text="Discard all Special Energy attached to each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_cyber_crush,
         ),
         Attack(
@@ -47,7 +42,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, the Defending Pok\u00e9mon's attacks cost Colorless more.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=70,
-            # STUB: attack effect not implemented
             effect=raise_defender_attack_cost_next_turn(1),
         ),
     ],

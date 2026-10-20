@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Entei (XY7 #14): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 from spirit.game.card_effects.attacks_common import damage_per, count_bench
 
@@ -48,7 +43,6 @@ card = PokemonCardDef(
             title="Burning Roar",
             game_text="Discard the top 4 cards of your deck. If any of those cards are Fire Energy cards, attach them to your Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_burning_roar,
         ),
         Attack(
@@ -57,7 +51,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=damage_per(count_bench('opponent'), 20, base=20),
         ),
     ],

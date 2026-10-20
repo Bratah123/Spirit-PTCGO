@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hoopa-EX (XY7 #89): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.data_utils import Triggers
 from spirit.game.session.effects import is_pokemon_card
 from spirit.game.content.definitions import def_for
 from spirit.game.card_effects.attacks_common import snipe_attack
@@ -56,7 +51,6 @@ card = PokemonCardDef(
         Ability(
             title="Scoundrel Ring",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench, you may search your deck for up to 3 Pok\u00e9mon-EX (except for Hoopa-EX), reveal them, and put them into your hand. Shuffle your deck afterward.",
-            # STUB: ability effect not implemented
             trigger=Triggers.ON_PLAY,
             effect=_scoundrel_ring,
         ),
@@ -64,7 +58,6 @@ card = PokemonCardDef(
             title="Hyperspace Fury",
             game_text="Discard 2 Energy attached to this Pok\u00e9mon. This attack does 100 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 3},
-            # STUB: attack effect not implemented
             effect=_hyperspace_fury,
         ),
     ],

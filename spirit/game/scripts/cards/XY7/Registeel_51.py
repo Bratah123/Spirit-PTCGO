@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Registeel (XY7 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
 from spirit.game.content.definitions import def_for
@@ -45,7 +41,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(until_tails=True, per_heads=30),
         ),
         Attack(
@@ -53,7 +48,6 @@ card = PokemonCardDef(
             game_text="If your opponent's Active Pok\u00e9mon is a Pok\u00e9mon-EX, discard an Energy attached to that Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
             effect=_iron_hammer,
         ),
     ],

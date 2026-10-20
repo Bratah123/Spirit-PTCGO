@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sableye (XY7 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.effects import is_supporter_card
 from spirit.game.content.definitions import def_for
@@ -49,14 +45,12 @@ card = PokemonCardDef(
             title="Bewitching Eyes",
             game_text="Choose a Supporter card from your opponent's discard pile and use it as the effect of this attack.",
             cost={PokemonTypes.DARKNESS: 1},
-            # STUB: attack effect not implemented
             effect=_bewitching_eyes,
         ),
         Attack(
             title="Furtive Drop",
             game_text="Put 3 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=place_counters(3),
         ),
     ],

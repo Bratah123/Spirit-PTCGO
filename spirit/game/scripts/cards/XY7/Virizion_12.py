@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Virizion (XY7 #12): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.effects import is_pokemon_card
 from spirit.game.card_effects.attacks_common import bonus_if, count_prizes_remaining
@@ -48,7 +44,6 @@ card = PokemonCardDef(
             title="Bail Out",
             game_text="Put 2 Pok\u00e9mon from your discard pile into your hand.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
             effect=_bail_out,
         ),
         Attack(
@@ -57,7 +52,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=bonus_if(_behind, 80),
         ),
     ],

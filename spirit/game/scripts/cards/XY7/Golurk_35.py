@@ -1,11 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Golurk (XY7 #35): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
 
 
 async def _giga_power(ctx):
@@ -14,9 +11,6 @@ async def _giga_power(ctx):
         await recoil_attack(20, damage=120)(ctx)
     else:
         await ctx.deal_damage()
-from spirit.game.session.passives import Passive
-from spirit.game.attributes import PokemonTypes
-from spirit.game.session.passives import carrier_pokemon
 
 
 class _DoubleType(Passive):
@@ -51,7 +45,6 @@ card = PokemonCardDef(
         Ability(
             title="Double Type",
             game_text="As long as this Pok\u00e9mon is in play, it is Psychic and Fighting type.",
-            # STUB: ability effect not implemented
             passive=_DoubleType(),
         ),
         Attack(
@@ -60,7 +53,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=_giga_power,
         ),
     ],

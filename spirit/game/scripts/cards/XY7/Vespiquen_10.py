@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vespiquen (XY7 #10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+from spirit.game.session.effects import is_pokemon_card
 
 
 async def return_effect(ctx):
@@ -11,8 +9,6 @@ async def return_effect(ctx):
     await ctx.deal_damage()
     if await ctx.ask_yes_no("Draw cards until you have 6 cards in your hand?"):
         await ctx.draw_until(6)
-from spirit.game.card_effects.attacks_common import damage_per, count_discard
-from spirit.game.session.effects import is_pokemon_card
 
 
 card = PokemonCardDef(
@@ -38,7 +34,6 @@ card = PokemonCardDef(
             game_text="You may draw cards until you have 6 cards in your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
             effect=return_effect,
         ),
         Attack(
@@ -47,7 +42,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=damage_per(count_discard('mine', is_pokemon_card), 10, base=20),
         ),
     ],

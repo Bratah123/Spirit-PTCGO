@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Goodra (XY7 #60): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.passives import effective_retreat_cost
 from spirit.game.card_effects.passives_common import condition_immunity_passive
@@ -48,7 +44,6 @@ card = PokemonCardDef(
             title="Liquid Blow",
             game_text="This attack does 20 damage to 1 of your opponent's Pok\u00e9mon for each Colorless in its Retreat Cost. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
             effect=_liquid_blow,
         ),
         Attack(
@@ -56,7 +51,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon can't be affected by any Special Conditions.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=110,
-            # STUB: attack effect not implemented
             effect=_shining_breath,
         ),
     ],

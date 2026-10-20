@@ -1,11 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Golurk (XY7 #41): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
-from spirit.game.attributes import PokemonTypes
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
@@ -47,7 +42,6 @@ card = PokemonCardDef(
             game_text="Discard the top card of your deck. If that card is a Fighting Energy card, attach it to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=_dig_out,
         ),
         Attack(
@@ -56,7 +50,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=90,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=2, per_heads=90),
         ),
     ],
