@@ -2,8 +2,10 @@
 Thundurus-EX (XY6 #98): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="d8b30e90-3ee9-5656-8bf3-c41dc019e9dd",
@@ -39,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 3},
             damage=150,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(50),
         ),
     ],
 )

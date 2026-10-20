@@ -4,6 +4,17 @@ Beautifly (XY6 #5): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
+
+
+async def push_down(ctx):
+    await ctx.deal_damage()
+    opp_active = ctx.opponent_active()
+    if opp_active is None or not ctx.opponent_bench() or ctx.effects_blocked(opp_active):
+        return
+    if await ctx.ask_yes_no("Have your opponent switch their Active Pokémon with 1 of their Benched Pokémon?"):
+        await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="89f53a55-ce14-5739-a560-c45f609b0163",
@@ -35,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=push_down,
         ),
     ],
 )

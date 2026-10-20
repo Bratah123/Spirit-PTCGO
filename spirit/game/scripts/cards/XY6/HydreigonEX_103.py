@@ -4,6 +4,8 @@ Hydreigon-EX (XY6 #103): one or more attacks/abilities use effect=unimplemented 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import shred
+
 
 card = PokemonCardDef(
     guid="b44b3267-1fea-5e7a-9874-7253586cbca3",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shred,
         ),
     ],
 )

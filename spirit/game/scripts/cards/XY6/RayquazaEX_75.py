@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rayquaza-EX (XY6 #75): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, mill_attack
+from spirit.game.content.definitions import def_for
+
+
+def _is_pokemon_ex(pokemon):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return bool(d) and "EX" in (getattr(d, "subtypes", None) or [])
+
 
 card = PokemonCardDef(
     guid="5d8a4d79-2dea-59e4-a6c2-a27d7cb9dacd",
@@ -30,16 +34,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _is_pokemon_ex(ctx.defender), 50),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top 3 cards of your deck.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(3, opponent=False),
         ),
     ],
 )
