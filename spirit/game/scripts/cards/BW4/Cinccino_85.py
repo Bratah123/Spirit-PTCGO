@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
+
 
 card = PokemonCardDef(
     guid="3a013297-84ba-53df-9241-56b7f4dbaca1",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Smooth Coat",
             game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=flip_prevent_damage_passive('Smooth Coat'),
         ),
         Attack(
             title="Echoed Voice",

@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on, damage_per
+
+
+async def superpower(ctx):
+    """You may do 20 more damage; if you do, this Pokémon does 20 to itself."""
+    if await ctx.ask_yes_no(
+        "Do 20 more damage? If you do, this Pokémon does 20 damage to itself."
+    ):
+        await ctx.deal_damage(80)
+        await ctx.deal_damage(20, target=ctx.attacker, apply_modifiers=False)
+    else:
+        await ctx.deal_damage(60)
+
 
 card = PokemonCardDef(
     guid="9f4abc6a-87ae-5fee-b40a-9d8f0fae55c0",
@@ -24,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=superpower,
         ),
         Attack(
             title="Raging Hammer",
@@ -32,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 10, base=50),
         ),
     ],
 )

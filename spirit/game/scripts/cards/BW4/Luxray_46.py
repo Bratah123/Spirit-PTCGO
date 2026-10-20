@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def crunch(ctx):
+    """Flip a coin. If heads, discard an Energy from the Defending Pokémon."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if not heads:
+        return
+    target = ctx.opponent_active()
+    if target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(
+            target, 1, prompt="Choose Energy to discard from the Defending Pokémon")
+
 
 card = PokemonCardDef(
     guid="4731f014-4c31-51ce-8884-de9471aa5441",
@@ -31,7 +44,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=crunch,
         ),
     ],
 )

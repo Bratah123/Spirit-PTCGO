@@ -1,6 +1,12 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 
+
+async def mind_shock(ctx):
+    """Printed damage, not affected by Weakness or Resistance."""
+    await ctx.deal_damage(apply_modifiers=False)
+
+
 card = PokemonCardDef(
     guid="5c800c2d-0e09-5dac-b484-6b95f969393f",
     key="BW4",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness or Resistance.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=mind_shock,
         ),
     ],
 )

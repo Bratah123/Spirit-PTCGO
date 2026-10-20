@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="cffe3790-3728-5bca-9741-f80e7581ca0b",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Water Arrow",
             game_text="This attack does 20 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=snipe_attack(20, pool='any', count=1),
         ),
         Attack(
             title="Surf",

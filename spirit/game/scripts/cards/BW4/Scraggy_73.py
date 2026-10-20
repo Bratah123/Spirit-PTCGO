@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
 
 card = PokemonCardDef(
     guid="436e755f-25ab-5def-8b76-440e37349c36",
@@ -23,14 +26,14 @@ card = PokemonCardDef(
             title="Shed Skin",
             game_text="Heal 40 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_attack(40),
         ),
         Attack(
             title="Lunge",
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.DARKNESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def rough_skin(ctx):
+    """Active only: put 2 damage counters on Attacking Pokemon."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    await ctx.deal_damage(20, target=attacker, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="c66c54e9-81f7-5e0a-81f5-634bf601757d",
@@ -23,7 +35,8 @@ card = PokemonCardDef(
             title="Reflexive Retaliation",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon and is damaged by an opponent's attack (even if this Pok\u00e9mon is Knocked Out), put 2 damage counters on the Attacking Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=rough_skin,
         ),
         Attack(
             title="Aura Sphere",
