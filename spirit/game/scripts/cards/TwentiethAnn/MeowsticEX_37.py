@@ -5,6 +5,12 @@ Meowstic-EX (TwentiethAnn #37): one or more attacks/abilities use effect=unimple
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def sonic_boom(ctx):
+    """40. This attack's damage isn't affected by Weakness or Resistance."""
+    await ctx.deal_damage(apply_modifiers=False)
+
+
 card = PokemonCardDef(
     guid="74e60f4b-6ca9-5826-85e6-f254bdd5368a",
     key="TwentiethAnn",
@@ -34,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=sonic_boom,
         ),
     ],
 )

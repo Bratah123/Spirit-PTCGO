@@ -2,8 +2,16 @@
 Slowpoke (TwentiethAnn #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def spacing_out(ctx):
+    """Flip a coin. If heads, heal 10 damage from this Pokémon."""
+    heads = (await ctx.flip_coins(1, ctx.ability.title))[0]
+    if heads:
+        await ctx.heal(10, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="39c432ae-497f-5878-a493-bffedc5920b2",
@@ -27,7 +35,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, heal 10 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spacing_out,
         ),
         Attack(
             title="Scavenge",

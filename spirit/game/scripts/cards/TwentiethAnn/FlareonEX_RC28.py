@@ -4,6 +4,8 @@ Flareon-EX (TwentiethAnn #RC28): one or more attacks/abilities use effect=unimpl
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
 
 card = PokemonCardDef(
     guid="7f4bf79e-ae01-5e9e-8a66-069052fa94fc",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.FIRE), 20, base=50),
         ),
     ],
 )

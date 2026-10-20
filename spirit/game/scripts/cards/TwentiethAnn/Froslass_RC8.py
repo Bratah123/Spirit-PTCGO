@@ -4,6 +4,8 @@ Froslass (TwentiethAnn #RC8): one or more attacks/abilities use effect=unimpleme
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="fbf9fe63-7f35-5ec5-851d-9df4a02f6707",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             game_text="Put 4 damage counters on your opponent's Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.COLORLESS: 3},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(4, 'choose_any_opponent'),
         ),
     ],
 )

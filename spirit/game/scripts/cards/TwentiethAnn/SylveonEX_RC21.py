@@ -2,8 +2,10 @@
 Sylveon-EX (TwentiethAnn #RC21): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_tool
+
 
 card = PokemonCardDef(
     guid="0af78f68-3867-5101-abce-eba0426f37ab",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             damage=30,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: has_tool(ctx.attacker), 30),
         ),
         Attack(
             title="Precious Ribbon",
