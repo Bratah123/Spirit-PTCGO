@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gourgeist (XY1 #57): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import place_counters
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _spirit_scream(ctx):
+    """Put damage counters on both Active Pokemon until each has 10 HP left."""
+    for target in (ctx.defender, ctx.attacker):
+        if target is None:
+            continue
+        hp = target.get_attribute(AttrID.HP, 0)
+        if hp > 10:
+            await ctx.deal_damage(hp - 10, target=target, apply_modifiers=False,
+                                  as_counters=True)
+
 
 card = PokemonCardDef(
     guid="8a9449fd-5c18-56c6-9b33-40ec24371d04",
@@ -28,15 +37,13 @@ card = PokemonCardDef(
             title="Eerie Voice",
             game_text="Put 2 damage counters each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(2, 'each_opponent'),
         ),
         Attack(
             title="Spirit Scream",
             game_text="Put damage counters on both Active Pok\u00e9mon until the remaining HP of each Pok\u00e9mon is 10.",
             cost={PokemonTypes.PSYCHIC: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_spirit_scream,
         ),
     ],
 )

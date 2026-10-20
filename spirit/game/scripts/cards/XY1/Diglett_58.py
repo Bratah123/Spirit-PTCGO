@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diglett (XY1 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _mine(ctx):
+    """Look at the top card of your opponent's deck; you may have them shuffle."""
+    top = ctx.deck_top(1, player_id=ctx.opponent_id)
+    if top:
+        await ctx.session.prompt_view_cards(
+            ctx.player_id, ctx.source.entity_id, top,
+            prompt="Top card of your opponent's deck",
+        )
+    if await ctx.ask_yes_no("Have your opponent shuffle their deck?"):
+        await ctx.shuffle_deck(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="69167ea7-b5cc-5c28-8809-c8b1e50242f5",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
             title="Mine",
             game_text="Look at the top card of your opponent's deck. Then, you may have your opponent shuffle his or her deck.",
             cost={PokemonTypes.FIGHTING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mine,
         ),
         Attack(
             title="Mud-Slap",
