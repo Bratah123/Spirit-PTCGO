@@ -32,6 +32,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.WATER,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Cacnea.Name",
     family_id=331,
     abilities=[

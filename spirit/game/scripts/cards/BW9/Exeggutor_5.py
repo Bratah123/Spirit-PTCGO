@@ -26,6 +26,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.WATER,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Exeggcute.Name",
     family_id=102,
     abilities=[
