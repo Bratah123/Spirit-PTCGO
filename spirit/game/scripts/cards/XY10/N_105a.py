@@ -16,7 +16,7 @@ card = SupporterCardDef(
     display_name="N",
     searchable_by=["N", "Supporter"],
     subtypes=["Supporter"],
-    collector_number=105,
+    collector_number=128,
     set_code="XY10",
     rarity=Rarities.RareUltra,
     # STUB: trainer effect not implemented
