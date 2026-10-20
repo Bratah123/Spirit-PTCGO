@@ -1,9 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Carbink BREAK (XY10 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.pokemon import is_energy_card
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _diamond_gift(ctx):
+    """20; attach 2 Energy cards from your discard pile to 1 of your Fighting Pokemon."""
+    await ctx.deal_damage()
+    pool = [c for c in ctx.discard_pile() if is_energy_card(c)]
+    targets = [p for p in ctx.my_pokemon_in_play()
+               if PokemonTypes.FIGHTING.value in (p.get_attribute(AttrID.POKEMON_TYPES) or [])]
+    if not pool or not targets:
+        return
+    target = targets[0] if len(targets) == 1 else await ctx.choose_pokemon(targets, "Attach to which Fighting Pokémon?")
+    n = min(2, len(pool))
+    picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 2 Energy cards")
+    for e in picks or []:
+        await ctx.attach_energy(e, target or targets[0])
+
 
 card = PokemonCardDef(
     guid="3e8b309d-5687-553e-bb7b-d1f7d55149fa",
@@ -27,8 +40,7 @@ card = PokemonCardDef(
             game_text="Attach 2 Energy cards from your discard pile to 1 of your Fighting Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_diamond_gift,
         ),
     ],
 )

@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Omastar (XY10 #18): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_restored_pokemon, effective_bench_capacity
+
+
+def _beam_condition(board, player_id, pokemon=None):
+    bench = board.find_player_area(player_id, "bench")
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children) and (bench is None or len(bench.children) < effective_bench_capacity(board, player_id))
+
 
 card = PokemonCardDef(
     guid="c70b49f7-5ea2-51ff-ac54-854a2822e57e",
@@ -26,8 +31,9 @@ card = PokemonCardDef(
         Ability(
             title="Restoring Beam",
             game_text="Once during your turn (before your attack), you may search your deck for a Restored Pok\u00e9mon and put it onto your Bench. Shuffle your deck afterward.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_beam_condition,
+            effect=search_to_bench(is_restored_pokemon, 1, prompt="Choose a Restored Pokémon"),
         ),
         Attack(
             title="Spinning Attack",

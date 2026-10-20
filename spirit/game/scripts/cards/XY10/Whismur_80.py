@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Whismur (XY10 #80): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.content.definitions import def_for
+
+
+def _has_round(p):
+    return any(getattr(a, "title", None) == "Round" for a in (getattr(def_for(p.archetype_id), "abilities", None) or []))
+
+
+async def _round(ctx):
+    """10x the number of your Pokemon that have the Round attack."""
+    await ctx.deal_damage(10 * sum(1 for p in ctx.my_pokemon_in_play() if _has_round(p)))
+
 
 card = PokemonCardDef(
     guid="5388fd26-c3fd-580b-b3c6-62c25f5903b5",
@@ -33,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_round,
         ),
     ],
 )

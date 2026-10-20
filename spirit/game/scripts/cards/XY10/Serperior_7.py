@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Serperior (XY10 #7): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 
 card = PokemonCardDef(
@@ -29,15 +26,13 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's attacks do 60 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(60),
         ),
         Attack(
             title="Slashing Strike",
             game_text="This Pok\u00e9mon can't use Slashing Strike during your next turn.",
             cost={PokemonTypes.GRASS: 1},
             damage=80,
-            # STUB: attack effect not implemented
             effect=None,
             locks_next_turn=True,
         ),

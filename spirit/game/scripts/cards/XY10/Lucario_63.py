@@ -1,14 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lucario (XY10 #63): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
 async def sonic_boom(ctx):
     """40. This attack's damage isn't affected by Weakness or Resistance."""
     await ctx.deal_damage(apply_modifiers=False)
+
+
+async def _fight_alone(ctx):
+    """30+; 60 more for each Pokemon fewer you have in play than your opponent."""
+    diff = len(ctx.opponent_pokemon_in_play()) - len(ctx.my_pokemon_in_play())
+    await ctx.deal_damage(ctx.ability.damage + 60 * max(0, diff))
 
 
 card = PokemonCardDef(
@@ -36,7 +38,6 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Weakness or Resistance.",
             cost={PokemonTypes.METAL: 1},
             damage=50,
-            # STUB: attack effect not implemented
             effect=sonic_boom,
         ),
         Attack(
@@ -45,8 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fight_alone,
         ),
     ],
 )

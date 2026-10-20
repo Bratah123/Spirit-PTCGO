@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zygarde (XY10 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def _aura_break(ctx):
+    """70; if the Defending Pokemon is Darkness or Fairy, it can't attack next turn."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    types = (d.get_attribute(AttrID.POKEMON_TYPES) or []) if d is not None else []
+    if PokemonTypes.DARKNESS.value in types or PokemonTypes.FAIRY.value in types:
+        lock_defender_attacks(ctx, d)
 
 
 card = PokemonCardDef(
@@ -28,7 +34,6 @@ card = PokemonCardDef(
             title="Lookout",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with his or her Active Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1},
-            # STUB: attack effect not implemented
             effect=gust_attack(),
         ),
         Attack(
@@ -36,8 +41,7 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon is a Darkness or Fairy Pok\u00e9mon, it can't attack during your opponent's next turn.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_aura_break,
         ),
     ],
 )

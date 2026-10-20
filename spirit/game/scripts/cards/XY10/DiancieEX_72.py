@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diancie-EX (XY10 #72): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import takes_less_passive, is_in_active_spot
+from spirit.game.card_effects.attacks_common import bonus_if
 
 
 def _sparkle_veil_protects(target, carrier):
@@ -33,7 +30,6 @@ card = PokemonCardDef(
         Ability(
             title="Sparkle Veil",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, any damage done to your Pok\u00e9mon by an opponent's attack is reduced by 30 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
             passive=takes_less_passive(30, protects=_sparkle_veil_protects),
         ),
         Attack(
@@ -42,8 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.stadium_in_play() is not None, 50),
         ),
     ],
 )

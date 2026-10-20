@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rotom (XY10 #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _plasmagic(ctx):
+    """Move 2 damage counters from each of your Pokemon to your opponent's Active Pokemon."""
+    d = ctx.opponent_active()
+    if d is None:
+        return
+    for p in list(ctx.my_pokemon_in_play()):
+        await ctx.move_damage_counters(p, [d], max_count=2)
+
 
 card = PokemonCardDef(
     guid="2a4c4ff5-8418-5ae3-b87e-549db55cfd91",
@@ -28,15 +36,13 @@ card = PokemonCardDef(
             title="Energy Extract",
             game_text="Search your deck for a basic Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.LIGHTNING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_attach_energy(is_basic_energy_card, 1, to_self=True, prompt="Choose a basic Energy card"),
         ),
         Attack(
             title="Plasmagic",
             game_text="Move 2 damage counters from each of your Pok\u00e9mon to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_plasmagic,
         ),
     ],
 )

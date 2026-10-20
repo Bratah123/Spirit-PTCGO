@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Audino-EX (XY10 #84): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
 
 
 card = PokemonCardDef(
@@ -29,7 +26,6 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=heal_attack(20),
         ),
         Attack(
@@ -38,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_bench('mine'), 10, base=60),
         ),
     ],
 )
