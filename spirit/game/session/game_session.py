@@ -222,10 +222,28 @@ class GameOptions:
 def break_previous_evolution(pokemon):
     """For a Pokemon BREAK in play, the previous Evolution it BREAK-evolved
     from (last-tucked Pokemon card); None for anything else."""
-    if pokemon is None or pokemon.get_attribute(AttrID.STAGE) != PokemonStage.BREAK.value:
+    if pokemon is None or not is_break_card(pokemon):
         return None
     tucked = [c for c in pokemon.children if isinstance(c, PokemonEntity)]
     return tucked[-1] if tucked else None
+
+
+def is_break_card(pokemon) -> bool:
+    """A Pokemon BREAK card, by printed subtype (its live STAGE attribute
+    takes on the previous Evolution's Stage while in play)."""
+    return pokemon.get_attribute(AttrID.STAGE) == PokemonStage.BREAK.value \
+        or "BREAK" in subtypes_for(pokemon.archetype_id)
+
+
+def restore_break_printed(pokemon) -> None:
+    """A Pokemon BREAK leaving play becomes a fresh card again: put back the
+    printed Stage/Weakness/Resistance/Retreat it overrode while in play."""
+    printed = getattr(pokemon, "_break_printed", None)
+    if not printed:
+        return
+    for attr, value in printed.items():
+        pokemon.set_attribute(attr, value)
+    pokemon._break_printed = None
 
 
 def mega_evolution_ends_turn(evolution_card) -> bool:
@@ -1515,6 +1533,7 @@ class GameSession:
         )
         pokemon.set_attribute(AttrID.HP, printed_max)
         self._effective_max_seen.pop(pokemon.entity_id, None)
+        restore_break_printed(pokemon)
 
     def reset_ability_usage(self, pokemon) -> None:
         """A Pokemon leaving PLAY becomes a fresh card: its once-per-turn
@@ -2343,6 +2362,7 @@ class GameSession:
                 )
                 member.set_attribute(AttrID.HP, printed_max)
                 self._effective_max_seen.pop(member.entity_id, None)
+                restore_break_printed(member)
                 hp_resets.append(self._build_msg(
                     OutboundMsg.ATTRIBUTE_MODIFIED.value,
                     {
@@ -4402,10 +4422,16 @@ class GameSession:
     async def _apply_break_inheritance(self, card, previous):
         """BREAK Evolution rule: the Pokemon BREAK keeps the attacks, Abilities,
         Weakness, Resistance, and Retreat Cost of its previous Evolution (its
-        own HP and type apply)."""
-        for attr in (AttrID.WEAKNESS_TYPES, AttrID.RESISTANCE_TYPES,
-                     AttrID.RESISTANCE_AMOUNT, AttrID.RETREAT_COST):
+        own HP and type apply), and counts as the same Stage for Stage checks.
+        The Stage is set server-side only (the client keys the sideways BREAK
+        layout off the printed Stage); printed values return on leaving play."""
+        attrs = (AttrID.WEAKNESS_TYPES, AttrID.RESISTANCE_TYPES,
+                 AttrID.RESISTANCE_AMOUNT, AttrID.RETREAT_COST)
+        if getattr(card, "_break_printed", None) is None:
+            card._break_printed = {a: card.get_attribute(a) for a in attrs + (AttrID.STAGE,)}
+        for attr in attrs:
             await self._broadcast_entity_attribute(card, attr, previous.get_attribute(attr))
+        card.set_attribute(AttrID.STAGE, previous.get_attribute(AttrID.STAGE))
         await self.refresh_granted_abilities(card)
 
     async def refresh_granted_abilities(self, pokemon: PokemonEntity):
