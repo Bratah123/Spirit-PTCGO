@@ -27,7 +27,7 @@ card = PokemonCardDef(
             game_text="Does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
-            effect=snipe_attack(20),
+            effect=snipe_attack(20, also_base=True),
         ),
         Attack(
             title="Rumble",
