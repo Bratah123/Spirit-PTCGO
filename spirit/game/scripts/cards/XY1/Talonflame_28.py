@@ -5,6 +5,13 @@ Talonflame (XY1 #28): one or more attacks/abilities use effect=unimplemented unt
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _reverse_spin(ctx):
+    """Your opponent shuffles their hand into their deck and draws 4 cards."""
+    await ctx.shuffle_into_deck(ctx.hand(ctx.opponent_id), ctx.opponent_id)
+    await ctx.draw_cards(4, ctx.opponent_id)
+
+
 card = PokemonCardDef(
     guid="f7e38224-bb82-5ac6-9637-2da585292109",
     key="XY1",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             game_text="Your opponent shuffles his or her hand into his or her deck and draws 4 cards.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_reverse_spin,
         ),
         Attack(
             title="Flare Blitz",

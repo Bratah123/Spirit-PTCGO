@@ -4,6 +4,13 @@ Fletchinder (XY1 #27): one or more attacks/abilities use effect=unimplemented un
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import search_attach_energy
+
+
+def _is_fire_energy(card):
+    return energy_provides_type(card, PokemonTypes.FIRE.value)
+
 
 card = PokemonCardDef(
     guid="a4e42d09-854e-5a43-85fa-3107ee2da79f",
@@ -29,7 +36,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a Fire Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_attach_energy(predicate=_is_fire_energy, count=1, to_self=True),
         ),
         Attack(
             title="Fire Wing",

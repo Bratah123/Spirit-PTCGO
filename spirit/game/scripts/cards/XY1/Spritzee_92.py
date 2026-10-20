@@ -4,6 +4,8 @@ Spritzee (XY1 #92): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="ec5ea4a5-0072-5c08-a98a-b5bd8746ed99",
@@ -28,7 +30,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(20, 'choice'),
         ),
         Attack(
             title="Flop",

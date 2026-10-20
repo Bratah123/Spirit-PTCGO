@@ -5,6 +5,17 @@ Zorua (XY1 #72): one or more attacks/abilities use effect=unimplemented until a 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def nasty_plot(ctx):
+    """Search deck for a card and put it into your hand."""
+    picks = await ctx.search_deck(
+        count=1, minimum=1,
+        prompt="Choose a card to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+    await ctx.shuffle_deck()
+
+
 card = PokemonCardDef(
     guid="1e3aba23-2d6d-57e0-994b-5bdcb2ebc8cd",
     key="XY1",
@@ -33,7 +44,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a card and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=nasty_plot,
         ),
     ],
 )

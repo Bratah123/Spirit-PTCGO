@@ -4,6 +4,10 @@ Dodrio (XY1 #99): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import subtypes_for
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, flip_damage
+
+
 
 card = PokemonCardDef(
     guid="3d823c6c-71b4-5627-8adc-3ebb5ad00c87",
@@ -31,7 +35,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 10, base=20),
         ),
         Attack(
             title="Endeavor",
@@ -40,7 +44,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
     ],
 )

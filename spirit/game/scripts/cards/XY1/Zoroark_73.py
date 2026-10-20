@@ -4,6 +4,16 @@ Zoroark (XY1 #73): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _fire_spin(ctx):
+    """Printed damage. Flip a coin. If tails, discard 2 Energy from this Pokémon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, "Fire Spin")
+    if results and not results[0]:
+        await ctx.discard_energy_from(ctx.attacker, 2)
+
 
 card = PokemonCardDef(
     guid="288f0410-9b74-5d31-847f-72d1fcb3dd7c",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Night Claw",
@@ -38,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fire_spin,
         ),
     ],
 )

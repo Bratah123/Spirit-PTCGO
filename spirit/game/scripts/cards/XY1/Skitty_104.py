@@ -4,6 +4,8 @@ Skitty (XY1 #104): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="175cff49-08a4-559c-82ed-c86d3a3f4dd4",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Heal 10 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(10, 'each_own'),
         ),
         Attack(
             title="Tail Whap",

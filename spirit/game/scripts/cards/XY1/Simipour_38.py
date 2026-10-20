@@ -5,6 +5,18 @@ Simipour (XY1 #38): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def garbage_collection(ctx):
+    """Put a card from your discard pile on top of your deck."""
+    pile = list(ctx.discard_pile())
+    if not pile:
+        return
+    picks = await ctx.choose_cards(
+        pile, 1, prompt="Choose a card to put on top of your deck")
+    if picks:
+        await ctx.put_on_top_of_deck(picks[0])
+
+
 card = PokemonCardDef(
     guid="d6395e33-bed5-53ab-baf7-a2c1b89e6a4e",
     key="XY1",
@@ -28,7 +40,7 @@ card = PokemonCardDef(
             game_text="Put a card from your discard pile on top of your deck.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=garbage_collection,
         ),
         Attack(
             title="Surf",

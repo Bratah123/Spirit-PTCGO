@@ -5,6 +5,12 @@ Yveltal-EX (XY1 #79): one or more attacks/abilities use effect=unimplemented unt
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def shadow_cyclone(ctx):
+    await ctx.deal_damage()
+    await ctx.move_energy_freely([ctx.attacker], ctx.my_bench(), max_count=1)
+
+
 card = PokemonCardDef(
     guid="70ca16fb-b31d-5913-8a29-a2957bd86b4e",
     key="XY1",
@@ -38,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shadow_cyclone,
         ),
     ],
 )

@@ -4,6 +4,8 @@ Slurpuff (XY1 #95): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="f891eabf-094e-5418-9f15-16735bcc9c9c",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
     ],
 )

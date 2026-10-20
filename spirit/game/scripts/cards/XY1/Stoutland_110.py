@@ -4,6 +4,8 @@ Stoutland (XY1 #110): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="1029a7d6-1112-5e80-9114-ae41298b2876",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
     ],
 )

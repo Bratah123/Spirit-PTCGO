@@ -4,6 +4,13 @@ Braixen (XY1 #25): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+async def _patrol(ctx):
+    """Look at the top 3 cards of your deck and put them back in any order."""
+    await ctx.reorder_deck_top(3)
+
 
 card = PokemonCardDef(
     guid="9ff3711c-412c-5a2a-a2c0-394a3d362caa",
@@ -28,7 +35,7 @@ card = PokemonCardDef(
             game_text="Look at the top 3 cards of your deck and put them back on top of your deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_patrol,
         ),
         Attack(
             title="Fire Tail Slap",
@@ -36,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1, energy_type=PokemonTypes.FIRE),
         ),
     ],
 )
