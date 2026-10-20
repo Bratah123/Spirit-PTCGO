@@ -4,6 +4,18 @@ Team Magma's Camerupt (TATM #2): one or more attacks/abilities use effect=unimpl
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _hurricane(ctx):
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    if bench:
+        await ctx.move_energy_freely(
+            [ctx.attacker], bench, predicate=is_basic_energy_card, max_count=1,
+            prompt="Choose a basic Energy to move to a Benched Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="2a196ea2-1d25-5a3a-a9a5-d18bc8146e2d",
@@ -35,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_hurricane,
         ),
     ],
 )

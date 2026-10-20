@@ -4,6 +4,8 @@ Team Magma's Groudon-EX (TATM #15): one or more attacks/abilities use effect=uni
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
 
 card = PokemonCardDef(
     guid="660d49ae-3d1c-57a8-805f-86d8f891499e",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(has_damage(), 80),
         ),
     ],
 )

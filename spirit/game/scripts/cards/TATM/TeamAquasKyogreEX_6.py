@@ -4,6 +4,15 @@ Team Aqua's Kyogre-EX (TATM #6): one or more attacks/abilities use effect=unimpl
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _iron_crash(ctx):
+    """20 more damage for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(ctx.ability.damage + 20 * cost)
+
 
 card = PokemonCardDef(
     guid="723cda7f-48c1-5abe-a843-987110011893",
@@ -35,7 +44,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_crash,
         ),
     ],
 )

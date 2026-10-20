@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Magma's Poochyena (TATM #17): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="2f9e240f-bce6-5374-8735-78a6832d3e91",
@@ -28,8 +30,7 @@ card = PokemonCardDef(
             title="Infiltrate",
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scout,
         ),
         Attack(
             title="Bite",
