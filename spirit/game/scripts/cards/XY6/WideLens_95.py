@@ -1,14 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wide Lens (XY6 #95): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - Damage from the attacks of the Pokémon this card is attached to is affected by Weakness and Resistance for your opponent's Benched Pokémon.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _WideLens(Passive):
+    """Damage from this Pokemon's attacks is affected by Weakness and
+    Resistance for your opponent's Benched Pokemon."""
+    def modify_damage_dealt(self, calc, carrier):
+        if (calc.is_attack and calc.is_opposing and not calc.to_active
+                and carrier_pokemon(carrier) is calc.attacker):
+            calc.apply_modifiers = True
+
 
 card = PokemonToolCardDef(
     guid="3fc2f08d-eca4-5445-917f-671123b7bfda",
@@ -20,6 +22,5 @@ card = PokemonToolCardDef(
     collector_number=95,
     set_code="XY6",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_WideLens()
 )

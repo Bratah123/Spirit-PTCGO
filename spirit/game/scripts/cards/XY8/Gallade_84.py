@@ -1,9 +1,27 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gallade (XY8 #84): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _supporter_played_this_turn(ctx):
+    return ctx.supporters_played_this_turn() > 0
+
+
+def _premonition_condition(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children)
+
+
+async def _premonition(ctx):
+    """Look at the top 5 cards of your deck and put them back in any order."""
+    top = ctx.deck_top(5)
+    if not top:
+        return
+    order = await ctx.choose_cards(top, len(top), minimum=len(top), ordered=True, display_cards=top,
+                                   prompt="Choose the order (first = top)") or top
+    for card in reversed(list(order)):
+        await ctx.put_on_top_of_deck(card)
+
 
 card = PokemonCardDef(
     guid="ba2c578b-b8c8-52ce-8bd9-23f717ff7ab3",
@@ -26,8 +44,9 @@ card = PokemonCardDef(
         Ability(
             title="Premonition",
             game_text="Once during your turn (before your attack), you may look at the top 5 cards of your deck and put them back on top of your deck in any order.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_premonition_condition,
+            effect=_premonition,
         ),
         Attack(
             title="Sensitive Blade",
@@ -35,8 +54,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_supporter_played_this_turn, 70),
         ),
     ],
 )

@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Registeel (XY7 #51): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+
+
+def _is_ex(p):
+    return "EX" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+async def _iron_hammer(ctx):
+    """70; if the opponent's Active is a Pokemon-EX, discard an Energy attached to it."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    if d is not None and _is_ex(d) and ctx.attached_energies(d) and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, minimum=1, prompt="Choose an Energy to discard")
+
 
 card = PokemonCardDef(
     guid="f83f7a9a-6c52-5e7f-8bf0-d9808fd7dd3a",
@@ -21,6 +32,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=379,
     abilities=[
         Attack(
@@ -29,16 +41,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
         Attack(
             title="Forbidden Iron Hammer",
             game_text="If your opponent's Active Pok\u00e9mon is a Pok\u00e9mon-EX, discard an Energy attached to that Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_hammer,
         ),
     ],
 )

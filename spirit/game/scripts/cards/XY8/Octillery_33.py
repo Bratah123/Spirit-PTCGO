@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Octillery (XY8 #33): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+def _abyssal_condition(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    deck = board.find_player_area(player_id, "deck")
+    return hand is not None and len(hand.children) < 5 and bool(deck and deck.children)
+
+
+async def _abyssal_hand(ctx):
+    """Draw cards until you have 5 cards in your hand."""
+    await ctx.draw_until(5)
+
 
 card = PokemonCardDef(
     guid="2aae843e-e0e7-50c3-b3be-a20f008dac41",
@@ -26,16 +35,16 @@ card = PokemonCardDef(
         Ability(
             title="Abyssal Hand",
             game_text="Once during your turn (before your attack), you may draw cards until you have 5 cards in your hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_abyssal_condition,
+            effect=_abyssal_hand,
         ),
         Attack(
             title="Hug",
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

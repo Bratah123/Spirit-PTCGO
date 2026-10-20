@@ -1,9 +1,34 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Xatu (XY6 #29): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_trainer_card
+
+
+async def fang_snipe(ctx):
+    """30 damage. Opponent reveals their hand; discard a Trainer card found there."""
+    await ctx.deal_damage()
+    hand = await ctx.reveal_hand(of_player=ctx.opponent_id)
+    matches = [c for c in hand if is_trainer_card(c)]
+    if not matches:
+        return
+    picks = await ctx.choose_cards(
+        matches, 1, minimum=1,
+        prompt="Choose a Trainer card to discard from your opponent's hand.",
+        display_cards=hand,
+    )
+    await ctx.discard_cards(picks)
+
+
+async def _future_sight(ctx):
+    """Look at the top 5 cards of either player's deck and put them back in any order."""
+    pid = ctx.opponent_id if await ctx.ask_yes_no("Look at your opponent's deck? (No = your own)") else ctx.player_id
+    top = ctx.deck_top(5, pid)
+    if not top:
+        return
+    order = await ctx.choose_cards(top, len(top), minimum=len(top), ordered=True, display_cards=top,
+                                   prompt="Choose the order (first = top)") or top
+    for card in reversed(list(order)):
+        await ctx.put_on_top_of_deck(card)
+
 
 card = PokemonCardDef(
     guid="f868d04d-e989-5dc5-bbf7-bb2d6d5603aa",
@@ -27,16 +52,14 @@ card = PokemonCardDef(
             title="Future Sight",
             game_text="Look at the top 5 cards of either player's deck and put them back on top of that player's deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_future_sight,
         ),
         Attack(
             title="Stressful Eye",
             game_text="Your opponent reveals his or her hand. Discard a Trainer card you find there.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=fang_snipe,
         ),
     ],
 )

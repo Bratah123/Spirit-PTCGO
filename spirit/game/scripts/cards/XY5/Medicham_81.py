@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Medicham (XY5 #81): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.support_common import heal_attack
+
+
+async def sonic_boom(ctx):
+    """40. This attack's damage isn't affected by Weakness or Resistance."""
+    await ctx.deal_damage(apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="e651279d-8a3a-50e6-b9bc-d7418fec9236",
@@ -23,20 +27,19 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Meditite.Name",
     family_id=307,
     abilities=[
+        ancient_trait('Ω Barrage'),
         Attack(
             title="Calm Mind",
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Yoga Kick",
             game_text="This attack's damage isn't affected by Weakness or Resistance.",
             cost={PokemonTypes.FIGHTING: 2},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=sonic_boom,
         ),
     ],
 )

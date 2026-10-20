@@ -1,13 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tierno (XY0 #39): trainer effect stubbed.
-
-Card text:
-  - Draw 3 cards.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import deck_nonempty
+
+
+async def tierno(ctx):
+    """Draw 3 cards."""
+    await ctx.draw_cards(3)
+
 
 card = SupporterCardDef(
     guid="7a08de01-1838-54b5-9af3-1231a99e11b2",
@@ -19,6 +18,6 @@ card = SupporterCardDef(
     collector_number=39,
     set_code="XY0",
     rarity=Rarities.Common,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=tierno,
+    condition=deck_nonempty
 )

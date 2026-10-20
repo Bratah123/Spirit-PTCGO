@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shelgon (XY6 #56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import takes_less_passive
+
 
 card = PokemonCardDef(
     guid="0e63f78d-37c7-5f65-9671-aba85c7bcf13",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Exoskeleton",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 10 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(10),
         ),
         Attack(
             title="Rolling Tackle",

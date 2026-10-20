@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Florges (XY8 #103): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _CalmingAroma(Passive):
+    """Each of your Pokemon's attacks costs Fairy less."""
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon.owning_player_id != carrier.owning_player_id or cost.get("Fairy", 0) <= 0:
+            return cost
+        cost["Fairy"] -= 1
+        if cost["Fairy"] <= 0:
+            del cost["Fairy"]
+        return cost
+
 
 card = PokemonCardDef(
     guid="287a701b-8d36-53bf-a705-b7f8f060a745",
@@ -21,22 +31,21 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Floette.Name",
     family_id=669,
     abilities=[
         Ability(
             title="Calming Aroma",
             game_text="Each of your Pok\u00e9mon's attacks costs Fairy less.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_CalmingAroma(),
         ),
         Attack(
             title="Wonder Shine",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.FAIRY: 3},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

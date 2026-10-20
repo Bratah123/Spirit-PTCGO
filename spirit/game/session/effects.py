@@ -43,6 +43,8 @@ from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
+    special_energy_suppressed,
+    flip_coin_for,
     TempPassive,
     ability_effects_blocked,
     ability_locked,
@@ -507,6 +509,9 @@ class EffectContext:
                 f"prevented by a passive effect."
             )
             return 0
+        from spirit.game.card_effects.ancient_traits import ALPHA_RECOVERY, has_ancient_trait
+        if has_ancient_trait(target, ALPHA_RECOVERY):
+            amount *= 2  # alpha Recovery: "double the amount healed"
         current = target.get_attribute(AttrID.HP, 0)
         healed = min(self.max_hp(target), current + amount) - current
         if healed <= 0:
@@ -548,8 +553,12 @@ class EffectContext:
         condition: SpecialConditions,
         checkup_coins: int = 1,
         poison_counters: int = 1,
+        confusion_damage: int = 30,
     ) -> bool:
         """Applies a Special Condition (Asleep etc.); returns False if shielded.
+
+        confusion_damage: self-damage when a Confused attack flip is tails
+        (Aromatisse's Heavy Perfume: 6 counters instead of 3).
 
         checkup_coins: coins flipped at Pokemon Checkup for Asleep -- waking
         requires ALL heads (Snorlax's Thumping Snore flips 2).
@@ -599,6 +608,11 @@ class EffectContext:
             self.session.sleep_checkup_coins[target.entity_id] = checkup_coins
         elif condition == SpecialConditions.POISONED:
             self.session.poison_counters[target.entity_id] = poison_counters
+        elif condition == SpecialConditions.CONFUSED:
+            if confusion_damage != 30:
+                self.session.confusion_damage[target.entity_id] = confusion_damage
+            else:
+                self.session.confusion_damage.pop(target.entity_id, None)
         elif condition == SpecialConditions.PARALYZED:
             self.session.paralyzed_since[target.entity_id] = self.session.turn_state.turn_number
         # The executor diffs the full new array; its ctor requires a "Target" data effect.
@@ -670,6 +684,17 @@ class EffectContext:
         None = until it leaves the Active spot / play)."""
         self.board.temporary_passives.append(
             TempPassive(passive, target.entity_id, expires_after_turn)
+        )
+
+    def add_global_passive(self, passive, expires_after_turn: int) -> None:
+        """A player-level passive not tied to any Pokemon ("until the end of
+        your opponent's next turn, each Pokemon ... has no Abilities" -- Hex
+        Maniac); carried by the acting player's hand area until it expires."""
+        hand = self.board.find_player_area(self.player_id, "hand")
+        if hand is None:
+            return
+        self.board.temporary_passives.append(
+            TempPassive(passive, hand.entity_id, expires_after_turn, global_scope=True)
         )
 
     def add_passive_through_opponents_turn(self, target, passive) -> None:
@@ -929,10 +954,12 @@ class EffectContext:
         the results, True = heads. `source` re-anchors the flip visual."""
         if count <= 0:
             return []
-        results = [random.choice([0, 1]) for _ in range(count)]
+        def _flip() -> int:
+            return flip_coin_for(self.board, self.player_id)
+        results = [_flip() for _ in range(count)]
         final = await self._maybe_reroll_attack_coins(
             results, title, source,
-            lambda: [random.choice([0, 1]) for _ in range(count)])
+            lambda: [_flip() for _ in range(count)])
         if final is None:
             await self._queue_coin_results(results, title, source)
         else:
@@ -943,9 +970,9 @@ class EffectContext:
         """"Flip a coin until you get tails": one coin screen shows the whole
         run; returns the heads count."""
         def _run() -> List[int]:
-            run = [random.choice([0, 1])]
+            run = [flip_coin_for(self.board, self.player_id)]
             while run[-1] == 0:
-                run.append(random.choice([0, 1]))
+                run.append(flip_coin_for(self.board, self.player_id))
             return run
         results = _run()
         final = await self._maybe_reroll_attack_coins(results, title, None, _run)
@@ -1888,7 +1915,8 @@ class EffectContext:
                             destination: str = "discard",
                             transfer: bool = True) -> bool:
         """Switches an in-play Pokemon with a hand/discard card; see
-        GameSession.perform_identity_swap. transfer=True carries attachments/
+        GameSession.perform_identity_swap (destination="underneath" tucks the
+        outgoing card under the new one). transfer=True carries attachments/
         damage/conditions/turn stamps onto the new Pokemon; a transferred
         damage total covering its HP queues a knockout. The TransformSwap
         choreography queues on this ctx so the announce/orb bracket (aimed at
@@ -1908,6 +1936,13 @@ class EffectContext:
             self.knockouts.append(incoming)
         return True
 
+    async def attach_tool(self, tool: CardEntity, pokemon: PokemonEntity) -> bool:
+        """Attaches a Pokemon Tool card to `pokemon` by effect (from deck,
+        hand or discard); False when it has no free Tool slot."""
+        await self.flush_choreography()
+        owner = tool.owning_player_id or self.player_id
+        return await self.session.attach_tool_from_effect(owner, tool, pokemon)
+
     async def attach_energy(self, energy: CardEntity, pokemon: PokemonEntity,
                             counts_as_attachment: bool = False) -> bool:
         """Attaches an energy card from any zone underneath a Pokemon
@@ -1922,6 +1957,7 @@ class EffectContext:
         position = len(pokemon.children)
         if not self.board.attach_card(energy.entity_id, pokemon.entity_id):
             return False
+        energy.attached_on_turn = self.session.turn_state.turn_number
         self._queue_intro_and_move(energy, pokemon.entity_id, position)
         if counts_as_attachment:
             self.deferred_actions.append(
@@ -2259,11 +2295,35 @@ def is_basic_pokemon(card: CardEntity) -> bool:
     )
 
 
+def is_stage1_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE1.value
+    )
+
+
+def is_stage2_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value
+    )
+
+
 def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
         and card.get_attribute(AttrID.STAGE) not in (
-            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value)
+            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value,
+            PokemonStage.RESTORED.value)
+    )
+
+
+def is_restored_pokemon(card: CardEntity) -> bool:
+    """BW Restored Pokemon (Archen, Tirtouga, Aerodactyl...): neither Basic
+    nor Evolution; they enter play only via their Fossil Item."""
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.RESTORED.value
     )
 
 
@@ -2286,6 +2346,49 @@ def is_supporter_card(card: CardEntity) -> bool:
 
 def is_special_energy(card: CardEntity) -> bool:
     return bool(card.get_attribute(AttrID.IS_SPECIAL_ENERGY))
+
+
+TEAM_PLASMA_SUBTYPE = "Team Plasma"
+
+
+def _has_subtype(card: Optional[CardEntity], subtype: str) -> bool:
+    if card is None:
+        return False
+    from spirit.game.content.definitions import subtypes_for
+    return subtype in (subtypes_for(card.archetype_id) or [])
+
+
+def is_team_plasma_card(card: CardEntity) -> bool:
+    """Any card printed as Team Plasma (Pokemon, Trainer or Plasma Energy)."""
+    return _has_subtype(card, TEAM_PLASMA_SUBTYPE)
+
+
+def is_team_plasma_pokemon(card: CardEntity) -> bool:
+    """A Team Plasma Pokemon. In play, an attached card whose definition sets
+    grants_team_plasma=True (BW9 Team Plasma Badge) also makes it one; tucked
+    pre-evolutions are ignored."""
+    if not is_pokemon_card(card):
+        return False
+    if is_team_plasma_card(card):
+        return True
+    from spirit.game.content.definitions import def_for
+    for child in getattr(card, "children", None) or []:
+        if isinstance(child, PokemonEntity):
+            continue
+        if getattr(def_for(getattr(child, "archetype_id", None)), "grants_team_plasma", False):
+            return True
+    return False
+
+
+def is_plasma_energy(card: CardEntity) -> bool:
+    """Plasma Energy: the Team Plasma Special Energy (BW8-BW10)."""
+    return is_special_energy(card) and is_team_plasma_card(card)
+
+
+def plasma_energy_attached(pokemon: PokemonEntity) -> List[CardEntity]:
+    return [c for c in (getattr(pokemon, "children", None) or [])
+            if isinstance(c, CardEntity) and not isinstance(c, PokemonEntity)
+            and is_plasma_energy(c)]
 
 
 def full_stack(pokemon: PokemonEntity) -> List[CardEntity]:
@@ -2326,6 +2429,11 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     ctx = AttackContext(session, player_id, attacker, ability)
     effect = ability.effect if ability else None
     title = ability.title if ability else action_id
+    # Burning Energy: energies that return to the attacker if this attack
+    # discards them (snapshot while still attached and not suppressed).
+    returning = [e for e in session.board_state.attached_energies(attacker)
+                 if getattr(def_for(e.archetype_id), "reattach_after_own_attack", False)
+                 and not special_energy_suppressed(session.board_state, e)]
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
@@ -2352,7 +2460,30 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     # A KO'd/removed carrier may have shrunk a bench (Eternatus VMAX leaving).
     await session.enforce_bench_capacity()
     await _run_attack_followups(session, ctx)
+    if returning:
+        await _reattach_discarded_energy(session, ctx, attacker, returning)
     return ctx
+
+
+async def _reattach_discarded_energy(session, ctx, attacker, energies):
+    """After attacking: energies the attack discarded from the attacker go
+    back onto it (Burning Energy), if it is still in play and may hold them."""
+    board = session.board_state
+    owner = attacker.owning_player_id
+    discard = board.find_player_area(owner, "discard") if owner else None
+    if discard is None or attacker not in board.pokemon_in_play(owner):
+        return
+    back = []
+    for energy in energies:
+        attach_to = getattr(def_for(energy.archetype_id), "attach_to", None)
+        if energy in discard.children and (attach_to is None or attach_to(attacker)):
+            back.append(energy)
+    if not back:
+        return
+    ctx._messages.clear()
+    for energy in back:
+        await ctx.attach_energy(energy, attacker)
+    await session._flush_effect_runs(ctx)
 
 
 async def _run_attack_followups(session, ctx: EffectContext):
@@ -2394,6 +2525,20 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
             if locked and not ability.is_granted:
                 continue
             snapshot.append((pokemon, owner_id, ability, dealt, pre_hit))
+    # Special Energy "whenever the Pokemon this card is attached to is damaged
+    # by an attack" hooks (Dangerous Energy); opponent attacks only, snapshot
+    # before any hook runs, suppressed Special Energy (Temple) excluded.
+    energy_hooks = []
+    for entity_id, (dealt, pre_hit) in ctx.attack_damage.items():
+        pokemon = board.get_entity(entity_id)
+        if not isinstance(pokemon, PokemonEntity) or pokemon.owning_player_id is None \
+                or ctx.attacker is None or ctx.attacker.owning_player_id == pokemon.owning_player_id:
+            continue
+        for energy in board.attached_energies(pokemon):
+            hook = getattr(def_for(energy.archetype_id), "on_carrier_damaged_by_attack", None)
+            if hook is None or hook is unimplemented or special_energy_suppressed(board, energy):
+                continue
+            energy_hooks.append((pokemon, energy, hook, dealt, pre_hit))
     for pokemon, owner_id, ability, dealt, pre_hit in snapshot:
         def _setup(c, _dealt=dealt, _pre=pre_hit):
             c.damaged_by = ctx.attacker
@@ -2401,6 +2546,14 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
             c.pre_hit_hp = _pre
         await resolve_triggered_ability(session, owner_id, pokemon, ability,
                                         ctx_setup=_setup)
+    for pokemon, energy, hook, dealt, pre_hit in energy_hooks:
+        hook_ctx = EffectContext(session, pokemon.owning_player_id, energy, None,
+                                 attached_to=pokemon)
+        hook_ctx.damaged_by = ctx.attacker
+        hook_ctx.damage_amount = dealt
+        hook_ctx.pre_hit_hp = pre_hit
+        await hook(hook_ctx)
+        await session._flush_effect_runs(hook_ctx)
 
 
 async def resolve_triggered_ability(
@@ -2411,7 +2564,8 @@ async def resolve_triggered_ability(
     """Runs a triggered ability (on-play/on-evolve/on-knocked-out/between-turns)
     with the full activation choreography; returns its ctx, or None when the
     ability didn't run (locked, or no scripted effect)."""
-    if ability_locked(session.board_state, pokemon) and not ability.is_granted:
+    if ability_locked(session.board_state, pokemon) and not ability.is_granted \
+            and ability.ability_type != AbilityTypes.ANCIENT_TRAIT:
         return None
     if ability.effect is None or ability.effect is unimplemented:
         if ability.effect is unimplemented:

@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cloyster (XY1 #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_damage
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _wring_out(ctx):
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    await ctx.deal_damage()
+    if not results or not results[0]:
+        return
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+    target = ctx.opponent_active()
+    if target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(
+            target, 1,
+            prompt="Choose Energy to discard from the Defending Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="1311e61f-4974-5f9b-b166-9776748d90c7",
@@ -28,8 +40,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed and discard an Energy attached to that Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wring_out,
         ),
         Attack(
             title="Spike Cannon",
@@ -37,8 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(5, per_heads=30),
         ),
     ],
 )
