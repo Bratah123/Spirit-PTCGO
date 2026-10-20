@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gliscor (XY6 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="9c6c2ff0-b02b-513a-9e00-3ca07662b616",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, count=2, also_base=True),
         ),
         Attack(
             title="Slash",

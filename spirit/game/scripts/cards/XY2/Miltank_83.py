@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Miltank (XY2 #83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _stage2_on_bench(ctx):
+    return any(p.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value for p in ctx.my_bench())
+
 
 card = PokemonCardDef(
     guid="93228f57-5824-5efa-9b01-f0cc92b805be",
@@ -28,8 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_stage2_on_bench, 70, base=10),
         ),
         Attack(
             title="Hammer In",

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Emboar-EX (XY9 #14): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="3adff194-a0a5-5445-a67b-67a031d05544",
@@ -28,16 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, bonus_per_heads=20),
         ),
         Attack(
             title="Strong Flare",
             game_text="Discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

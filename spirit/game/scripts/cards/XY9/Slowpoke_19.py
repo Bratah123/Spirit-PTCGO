@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Slowpoke (XY9 #19): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+
 
 card = PokemonCardDef(
     guid="8c1eddcf-1111-5efa-9dc5-8e6d07b72fdc",
@@ -31,8 +30,7 @@ card = PokemonCardDef(
             title="Tail Lure",
             game_text="Search your deck for a Pok\u00e9mon, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_pokemon_card, count=1, minimum=0, reveal=True, prompt='Choose a Pokémon'),
         ),
     ],
 )

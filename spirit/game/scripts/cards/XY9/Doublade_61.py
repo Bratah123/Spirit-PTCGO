@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Doublade (XY9 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="aa419251-5ff6-5257-ade2-6d4d2060c143",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Honedge.Name",
     family_id=679,
     abilities=[
@@ -28,8 +27,7 @@ card = PokemonCardDef(
             title="Stab Deeply",
             game_text="Put 3 damage counters on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(3),
         ),
     ],
 )

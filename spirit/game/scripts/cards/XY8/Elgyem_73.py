@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Elgyem (XY8 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="efd8c7aa-05b8-5bd4-be06-03bb2b2724a1",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Psych Up attack does 20 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(20, attack_title='Psych Up'),
         ),
     ],
 )

@@ -1,5 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Double Aqua Energy (TATM #33): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
+"""Double Aqua Energy (TATM #33): scripted (spirit.game.card_effects.xy_energies).
 
 Card text:
   - This card can only be attached to Team Aqua Pokémon. Discard this card at the end of the turn you attached it.
@@ -7,6 +6,7 @@ Card text:
   - (If this card is attached to anything other than a Team Aqua Pokémon, discard this card.)
 """
 
+from spirit.game.card_effects.xy_energies import only_named
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -22,5 +22,8 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
+    attach_to=only_named("Team Aqua's"),
+    provides=[[PokemonTypes.WATER, PokemonTypes.WATER]],
+    discard_unless_attach_to=True,
+    discard_end_of_attach_turn=True,
 )

@@ -1,14 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Protection Cube (XY2 #95): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - Prevent all damage done to the Pokémon this card is attached to by attacks it uses.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+from spirit.game.session.passives import carrier_pokemon
+
+
+def _own_attack_on_holder(calc, carrier):
+    """Damage the holder's own attacks do to it (recoil)."""
+    holder = carrier_pokemon(carrier)
+    return calc.is_attack and calc.target is holder and calc.attacker is holder
+
 
 card = PokemonToolCardDef(
     guid="460abd81-5454-5c75-9c5b-c6e4abc88cf3",
@@ -20,6 +20,5 @@ card = PokemonToolCardDef(
     collector_number=95,
     set_code="XY2",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=prevent_damage_when(_own_attack_on_holder, attacks_only=False)
 )

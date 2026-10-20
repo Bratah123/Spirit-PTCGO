@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Camerupt (XY9 #13): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _eruption(ctx):
+    """80+; each player discards their top card; 60 more per Energy card discarded."""
+    n = 0
+    for pid in (ctx.player_id, ctx.opponent_id):
+        top = ctx.deck_top(1, player_id=pid)
+        if top:
+            n += sum(1 for c in top if is_energy_card(c))
+            await ctx.discard_cards(top)
+    await ctx.deal_damage(ctx.ability.damage + 60 * n)
+
 
 card = PokemonCardDef(
     guid="713a2b9c-e416-51e1-b7cd-394f21bcc65e",
@@ -34,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_eruption,
         ),
     ],
 )

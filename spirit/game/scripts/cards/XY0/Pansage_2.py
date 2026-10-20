@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pansage (XY0 #2): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="98631b55-5b99-50f4-a534-1af79e9689ea",
@@ -26,8 +25,7 @@ card = PokemonCardDef(
             title="Collect",
             game_text="Draw a card.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=draw_attack(1),
         ),
         Attack(
             title="Fury Swipes",
@@ -35,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(3, per_heads=10),
         ),
     ],
 )

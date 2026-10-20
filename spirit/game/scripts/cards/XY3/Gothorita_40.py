@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gothorita (XY3 #40): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def watcheck(ctx):
+    """Look at top 5 of opponent's deck; put back in any order."""
+    await ctx.reorder_deck_top(
+        5,
+        player_id=ctx.opponent_id,
+        prompt="Rearrange the top cards of your opponent's deck",
+    )
+
 
 card = PokemonCardDef(
     guid="e9086356-8b36-5a01-89e0-eda094726cd0",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
             title="Fortunate Eye",
             game_text="Look at the top 5 cards of your opponent's deck and put them back on top of his or her deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=watcheck,
         ),
         Attack(
             title="Smack",

@@ -1,9 +1,28 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gyarados-EX (XY9 #123): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _stormy_seas(ctx):
+    """Flip until tails; for each heads attach a Water Energy card from your deck to this Pokemon."""
+    heads = 0
+    while True:
+        results = await ctx.flip_coins(1, ctx.ability.title)
+        if not (results and results[0]):
+            break
+        heads += 1
+    if heads:
+        picks = await ctx.search_deck(lambda c: is_energy_card(c) and _is_water_energy(c), count=heads,
+                                      minimum=0, prompt="Choose Water Energy cards to attach")
+        for energy in picks or []:
+            await ctx.attach_energy(energy, ctx.attacker)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="54ed1484-3877-5761-81a1-05ae766d0c16",
@@ -26,16 +45,14 @@ card = PokemonCardDef(
             title="Stormy Seas",
             game_text="Flip a coin until you get tails. For each heads, search your deck for a Water Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_stormy_seas,
         ),
         Attack(
             title="Splash Burn",
             game_text="This attack does 10 damage to each of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, side='mine', also_base=True),
         ),
     ],
 )

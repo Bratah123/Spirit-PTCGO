@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dunsparce (XY6 #68): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
 
 card = PokemonCardDef(
     guid="ad59da46-6a65-5214-a230-35150f962774",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Burrow",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Rollout",

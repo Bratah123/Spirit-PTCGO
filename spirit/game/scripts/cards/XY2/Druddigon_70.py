@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Druddigon (XY2 #70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _kos_suffered_last_turn(ctx):
+    return ctx.kos_suffered_last_turn() > 0
+
 
 card = PokemonCardDef(
     guid="4b379270-3ae1-518d-b83c-359125949371",
@@ -28,8 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_kos_suffered_last_turn, 70),
         ),
         Attack(
             title="Dragon Claw",

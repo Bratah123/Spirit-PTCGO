@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gourgeist (XY4 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import damage_per
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _Gourgantic(Passive):
+    """With any Grass Energy attached, this Pokemon's maximum HP is 200."""
+    def max_hp_bonus(self, pokemon, carrier):
+        if pokemon is not carrier_pokemon(carrier):
+            return 0
+        if not any(is_energy_card(c) and energy_provides_type(c, PokemonTypes.GRASS.value)
+                   for c in pokemon.children):
+            return 0
+        printed = pokemon.attribute_originals.get(AttrID.HP.value, 0) or 0
+        return max(0, 200 - printed)
+
 
 card = PokemonCardDef(
     guid="a1301206-89f2-5bf1-bc77-1b8b4b15d88a",
@@ -21,14 +33,14 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Pumpkaboo.Name",
     family_id=710,
     abilities=[
         Ability(
             title="Gourgantic",
             game_text="If this Pok\u00e9mon has any Grass Energy attached to it, its maximum HP is 200.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_Gourgantic(),
         ),
         Attack(
             title="Horror Note",
@@ -36,8 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(ctx.hand()), 10),
         ),
     ],
 )

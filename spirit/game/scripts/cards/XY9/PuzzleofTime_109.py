@@ -1,15 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Puzzle of Time (XY9 #109): trainer effect stubbed.
-
-Card text:
-  - You may play 2 Puzzle of Time cards at once.
-• If you played 1 card, look at the top 3 cards of your deck and put them back in any order.
-• If you played 2 cards, put 2 cards from your discard pile into your hand.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+
+
+async def puzzle_of_time(ctx):
+    """Play 2 at once to put 2 cards from your discard pile into your hand;
+    1 alone: look at the top 3 cards and put them back in any order."""
+    other = next((c for c in ctx.hand() if c is not ctx.source and c.archetype_id == card.guid), None)
+    discard = [c for c in ctx.discard_pile() if c is not ctx.source]
+    if other is not None and discard and await ctx.ask_yes_no("Play 2 Puzzle of Time cards at once?"):
+        await ctx.discard_cards([other])
+        pool = [c for c in ctx.discard_pile() if c is not ctx.source and c is not other]
+        n = min(2, len(pool))
+        if n:
+            picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 2 cards to put into your hand")
+            if picks:
+                await ctx.put_in_hand(picks, reveal=True)
+        return
+    top = ctx.deck_top(3)
+    if not top:
+        return
+    order = await ctx.choose_cards(top, len(top), minimum=len(top), ordered=True, display_cards=top,
+                                   prompt="Choose the order (first = top)") or top
+    for c in reversed(list(order)):
+        await ctx.put_on_top_of_deck(c)
+
 
 card = ItemCardDef(
     guid="28440831-0696-58c2-acd5-1ba1ea9f1721",
@@ -21,6 +35,5 @@ card = ItemCardDef(
     collector_number=109,
     set_code="XY9",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=puzzle_of_time
 )

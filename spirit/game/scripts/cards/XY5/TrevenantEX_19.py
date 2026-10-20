@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trevenant-EX (XY5 #19): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack, damage_per, count_energy
+
 
 card = PokemonCardDef(
     guid="cb644f4c-9f1b-5031-ab93-fbc85bc5767c",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Wood Blast",
@@ -36,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.GRASS), 20, base=50),
         ),
     ],
 )

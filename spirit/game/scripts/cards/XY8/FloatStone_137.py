@@ -1,14 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Float Stone (XY8 #137): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - The Pokémon this card is attached to has no Retreat Cost.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.passives_common import retreat_free_when
+from spirit.game.session.passives import carrier_pokemon
+
+
+def _holder(pokemon, carrier):
+    """The Pokemon this card is attached to has no Retreat Cost."""
+    return pokemon is carrier_pokemon(carrier)
+
 
 card = PokemonToolCardDef(
     guid="5d073628-31df-5dd0-91f1-df851a226be7",
@@ -20,6 +19,5 @@ card = PokemonToolCardDef(
     collector_number=137,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=retreat_free_when(_holder)
 )

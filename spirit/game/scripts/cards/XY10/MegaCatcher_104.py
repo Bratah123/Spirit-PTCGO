@@ -1,13 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mega Catcher (XY10 #104): trainer effect stubbed.
-
-Card text:
-  - Switch 1 of your opponent's Benched Mega Evolution Pokémon with his or her Active Pokémon.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import _other_player
+
+
+def _megas(board, player_id):
+    bench = board.find_player_area(_other_player(board, player_id), "bench")
+    return [p for p in (bench.children if bench else [])
+            if "MEGA" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])]
+
+
+def mega_catcher_condition(board, player_id):
+    return bool(_megas(board, player_id))
+
+
+async def mega_catcher(ctx):
+    """Switch 1 of your opponent's Benched Mega Evolution Pokemon with his or her Active Pokemon."""
+    target = await ctx.choose_pokemon(_megas(ctx.board, ctx.player_id), "Choose the opponent's new Active Pok\u00e9mon")
+    if target is not None:
+        await ctx.switch_active(ctx.opponent_id, target)
+
 
 card = ItemCardDef(
     guid="c102cb21-1255-5094-95c7-7525ec80e694",
@@ -19,6 +31,6 @@ card = ItemCardDef(
     collector_number=104,
     set_code="XY10",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    condition=mega_catcher_condition,
+    effect=mega_catcher
 )

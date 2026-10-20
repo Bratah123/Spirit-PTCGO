@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Skiddo (XY1 #18): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_supporter_card
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+async def _lead(ctx):
+    """Flip a coin. If heads, search your deck for a Supporter card, reveal
+    it and put it into your hand; shuffle."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if not results or not results[0]:
+        return
+    await search_to_hand(is_supporter_card, count=1, minimum=0, reveal=True,
+                         prompt="Choose a Supporter card")(ctx)
+
 
 card = PokemonCardDef(
     guid="70121d04-e299-5b3e-9ea8-547140e82dd0",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
             title="Lead",
             game_text="Flip a coin. If heads, search your deck for a Supporter card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_lead,
         ),
         Attack(
             title="Tackle",

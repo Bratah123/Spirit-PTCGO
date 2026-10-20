@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Remoraid (XY8 #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _gaia_crush(ctx):
+    """Printed damage; discard any Stadium card in play."""
+    await ctx.deal_damage()
+    if ctx.stadium_in_play() is not None:
+        await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="ccb08162-d7c9-5cf6-964b-cbf0c796c0cb",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Ion Pool",
             game_text="Discard any Stadium card in play.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gaia_crush,
         ),
         Attack(
             title="Water Gun",

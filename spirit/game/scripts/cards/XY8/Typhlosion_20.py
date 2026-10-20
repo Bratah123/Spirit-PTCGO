@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Typhlosion (XY8 #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _jagged_fang(ctx):
+    """100; discard an Energy from this Pokemon, then one from the opponent's Active."""
+    await ctx.deal_damage()
+    if ctx.attached_energies(ctx.attacker):
+        await ctx.discard_energy_from(ctx.attacker, 1, minimum=1, prompt="Discard an Energy from this Pokémon")
+    d = ctx.defender
+    if d is not None and ctx.attached_energies(d) and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, minimum=1, prompt="Discard an Energy from the Defending Pokémon")
+
+
+async def _massive_eruption(ctx):
+    """Discard the top 5 cards of your deck; 80x the Energy cards discarded."""
+    top = ctx.deck_top(5)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(80 * sum(1 for c in top if is_energy_card(c)))
+
 
 card = PokemonCardDef(
     guid="5d4709c1-33b1-512e-b34c-c48ab8dea9e7",
@@ -29,16 +45,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1},
             damage=80,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_massive_eruption,
         ),
         Attack(
             title="Flare Destroy",
             game_text="Discard an Energy attached to this Pok\u00e9mon. Then, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_jagged_fang,
         ),
     ],
 )

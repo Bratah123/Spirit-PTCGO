@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lapras (XY9 #28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_trainer_card
+
 
 card = PokemonCardDef(
     guid="8970c1d7-d2f5-5cc7-8f56-511c1cd2d5e3",
@@ -26,8 +26,8 @@ card = PokemonCardDef(
             title="Errand-Running",
             game_text="Search your deck for a Trainer card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_trainer_card, count=1, minimum=0, reveal=True,
+                                   prompt='Choose a Trainer card'),
         ),
         Attack(
             title="Water Splash",
@@ -35,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

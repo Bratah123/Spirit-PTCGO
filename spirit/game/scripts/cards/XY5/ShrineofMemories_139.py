@@ -1,13 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shrine of Memories (XY5 #139): trainer effect stubbed.
-
-Card text:
-  - Each player's evolved Pokémon can use any attack from its previous Evolutions. (That player still needs the necessary Energy to use each attack.)
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
-
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.data_utils import StadiumCardDef, Attack, def_for
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive
+from spirit.game.models.board import PokemonEntity
+
+
+class _ShrineOfMemories(Passive):
+    """Each evolved Pokemon can use any attack from its previous Evolutions."""
+    def granted_attacks(self, board, pokemon, carrier):
+        out, stack = [], [c for c in pokemon.children if isinstance(c, PokemonEntity)]
+        while stack:
+            pre = stack.pop()
+            for a in getattr(def_for(pre.archetype_id), "abilities", None) or []:
+                if isinstance(a, Attack):
+                    out.append(a)
+            stack.extend(c for c in pre.children if isinstance(c, PokemonEntity))
+        return out
+
 
 card = StadiumCardDef(
     guid="23a9102a-c29c-510f-a38e-8d8488f7a361",
@@ -19,6 +27,5 @@ card = StadiumCardDef(
     collector_number=139,
     set_code="XY5",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_ShrineOfMemories()
 )
