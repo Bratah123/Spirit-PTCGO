@@ -1,5 +1,33 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import Rarities, AttrID
+from spirit.game.models.board import PokemonEntity
+from spirit.game.card_effects.pokemon import devolvable
+
+
+def _my_evolved(board, player_id):
+    return [p for p in board.pokemon_in_play(player_id) if devolvable(p)]
+
+
+def _devolution_spray_condition(board, player_id, card=None):
+    return bool(_my_evolved(board, player_id))
+
+
+async def devolution_spray(ctx):
+    """Devolve 1 of your evolved Pok\u00e9mon; the highest Stage card goes to
+    your hand and the remaining Pok\u00e9mon can't evolve this turn."""
+    candidates = _my_evolved(ctx.board, ctx.player_id)
+    if not candidates:
+        return
+    target = await ctx.choose_pokemon(candidates, "Choose 1 of your evolved Pok\u00e9mon to devolve")
+    if target is None:
+        return
+    evolves_from = target.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
+    below = next((c for c in target.children if isinstance(c, PokemonEntity)
+                  and c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from), None)
+    await ctx.devolve_pokemon(target, steps=1, destination="hand")
+    if below is not None:
+        ctx.session.turn_state.mark_entered_play(below.entity_id)
+
 
 card = ItemCardDef(
     guid="1a5fbe37-c9db-5a94-b2f6-c0aebd8bafa1",
@@ -11,5 +39,6 @@ card = ItemCardDef(
     collector_number=113,
     set_code="BW6",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=devolution_spray,
+    condition=_devolution_spray_condition
 )

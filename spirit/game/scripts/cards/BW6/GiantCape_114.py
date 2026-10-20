@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.passives_common import hp_bonus_tool
 
 card = PokemonToolCardDef(
     guid="de2772ee-ed13-56d2-a2b3-b8dc1e726c47",
@@ -11,5 +12,5 @@ card = PokemonToolCardDef(
     collector_number=114,
     set_code="BW6",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    passive=hp_bonus_tool(20)
 )
