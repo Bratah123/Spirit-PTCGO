@@ -307,6 +307,11 @@ class Passive:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
         return False
 
+    def sleep_checkup_coins(self, pokemon: PokemonEntity, carrier: BoardEntity) -> int:
+        """Coins `pokemon` flips to wake up between turns (Snorlax Stir and
+        Snooze: 2, all heads wakes); 0 = no opinion. Highest wins."""
+        return 0
+
     def tool_capacity(self, pokemon: PokemonEntity, carrier: BoardEntity) -> int:
         """Pokemon Tools `pokemon` may hold (GarbodorVMAX 2); highest wins."""
         return 1
@@ -801,6 +806,12 @@ def can_evolve_early(board: BoardState, pokemon: PokemonEntity) -> bool:
         passive.may_evolve_early(pokemon, carrier)
         for passive, carrier in active_passives(board)
     )
+
+
+def passive_sleep_coins(board: BoardState, pokemon: PokemonEntity) -> int:
+    """Highest Sleep-checkup coin count any passive asks for (0 = none)."""
+    return max((passive.sleep_checkup_coins(pokemon, carrier)
+                for passive, carrier in active_passives(board)), default=0)
 
 
 def burn_recovery_blocked(board: BoardState, pokemon: PokemonEntity) -> bool:

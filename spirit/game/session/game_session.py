@@ -120,7 +120,7 @@ from .effects import (
 from .passives import (
     flip_coin_for,
     ability_locked, active_passives, active_to_bench_counters,
-    burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
+    burn_recovery_blocked, passive_sleep_coins, effective_bench_capacity, effective_max_hp,
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
     granted_extra_attacks, retreat_energy_destination, tool_slots_free,
     tool_suppressed,
@@ -294,6 +294,7 @@ class GameSession:
         # entity_id -> coins flipped at Pokemon Checkup while Asleep (waking
         # needs ALL heads; Snorlax's Thumping Snore sets 2).
         self.sleep_checkup_coins: Dict[str, int] = {}
+        self.skip_turn_draw: set = set()
         # entity_id -> damage-counter multiplier while Poisoned (10 * count
         # dealt each checkup; default 1).
         self.poison_counters: Dict[str, int] = {}
@@ -3327,7 +3328,8 @@ class GameSession:
 
     async def _checkup_sleep(self, player_id: str, active):
         """Sleep flip: all heads wakes (Thumping Snore's rider flips 2 coins)."""
-        coins = self.sleep_checkup_coins.get(active.entity_id, 1)
+        coins = max(self.sleep_checkup_coins.get(active.entity_id, 1),
+                    passive_sleep_coins(self.board_state, active))
         flips = [flip_coin_for(self.board_state, player_id) for _ in range(coins)]
         woke = all(f == 0 for f in flips)
         self.stat_add(player_id, "headsflipped", flips.count(0))
@@ -3730,8 +3732,11 @@ class GameSession:
             f"begins for {player.screen_name}."
         )
 
-        drawn = self.board_state.draw_cards(active_id, 1)
-        if not drawn:
+        # "Your opponent can't draw a card at the beginning of their next
+        # turn" (Luvdisc Heart Wink) -- keyed by (player, turn number).
+        skip = (active_id, self.turn_state.turn_number) in self.skip_turn_draw
+        drawn = [] if skip else self.board_state.draw_cards(active_id, 1)
+        if not drawn and not skip:
             # Failing the mandatory turn draw loses the game (deck out).
             await self.end_game(
                 self._opponent_id(active_id),
