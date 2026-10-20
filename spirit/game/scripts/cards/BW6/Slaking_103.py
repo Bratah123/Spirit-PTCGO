@@ -1,6 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.session.passives import Passive, ability_locked
+from spirit.game.session.effects import is_basic_pokemon
+
+
+class UnobservantPassive(Passive):
+    """Marker for Unobservant; the restriction itself lives in
+    _unobservant_allows, the condition= gate on this card's attacks."""
+
+
+def _unobservant_allows(board, player_id, pokemon):
+    """Unobservant: if the opponent's Active is a Basic Pokemon this Pokemon
+    can't attack (unless its Ability is turned off)."""
+    if ability_locked(board, pokemon):
+        return True
+    for pid in board.player_ids:
+        if pid != player_id:
+            active = board.active_pokemon(pid)
+            return active is None or not is_basic_pokemon(active)
+    return True
 
 
 card = PokemonCardDef(
@@ -25,7 +44,7 @@ card = PokemonCardDef(
             title="Unobservant",
             game_text="If your opponent's Active Pok\u00e9mon is a Basic Pok\u00e9mon, this Pok\u00e9mon can't attack.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=UnobservantPassive(),
         ),
         Attack(
             title="Crushing Blow",
@@ -33,6 +52,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=100,
             effect=discard_opponent_energy_attack(),
+            condition=_unobservant_allows,
         ),
     ],
 )

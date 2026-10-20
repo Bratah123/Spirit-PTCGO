@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.pokemon import energy_provides_type
 
@@ -14,6 +14,12 @@ async def leaf_tornado(ctx):
         predicate=lambda e: energy_provides_type(e, PokemonTypes.GRASS.value),
         prompt="Choose a Grass Energy to move",
     )
+
+
+async def _royal_heal(ctx):
+    """Between turns: heal 10 damage from each of your Pokemon."""
+    for pokemon in ctx.my_pokemon_in_play():
+        await ctx.heal(10, pokemon)
 
 
 card = PokemonCardDef(
@@ -39,7 +45,8 @@ card = PokemonCardDef(
             title="Royal Heal",
             game_text="At any times between turns, heal 10 damage from each of your Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.BETWEEN_TURNS,
+            effect=_royal_heal,
         ),
         Attack(
             title="Leaf Tornado",

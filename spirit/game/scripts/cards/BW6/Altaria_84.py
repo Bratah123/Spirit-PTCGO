@@ -1,5 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID
+from spirit.game.session.passives import Passive
+
+
+class _FightSongPassive(Passive):
+    """Your Dragon Pokemon's attacks do 20 more damage to the opponent's
+    Active (before Weakness and Resistance)."""
+
+    def modify_damage_dealt(self, calc, carrier):
+        attacker = calc.attacker
+        if (calc.is_attack and calc.is_opposing and calc.to_active
+                and attacker is not None
+                and attacker.owning_player_id == carrier.owning_player_id
+                and PokemonTypes.DRAGON.value in (attacker.get_attribute(AttrID.POKEMON_TYPES) or [])
+                and calc.amount > 0):
+            calc.amount += 20
+
 
 card = PokemonCardDef(
     guid="68628e5b-da2d-518d-a85d-d792d0326160",
@@ -23,7 +39,7 @@ card = PokemonCardDef(
             title="Fight Song",
             game_text="Your Dragon Pok\u00e9mon's attacks do 20 more damage to the Active Pok\u00e9mon (before applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_FightSongPassive(),
         ),
         Attack(
             title="Glide",

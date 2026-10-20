@@ -1,12 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_random_from_hand
+from spirit.game.card_effects.support_common import opponent_switches
 
 
 async def knock_off(ctx):
     """discard a random card from the opponent's hand."""
     await ctx.deal_damage()
     await discard_random_from_hand(ctx, ctx.opponent_id, count=1)
+
+
+async def _whirlwind(ctx):
+    """Printed damage; you may have your opponent switch their Active."""
+    await ctx.deal_damage()
+    if ctx.opponent_bench() and await ctx.ask_yes_no(
+            "Have your opponent switch the Defending Pok\u00e9mon?"):
+        await opponent_switches(ctx)
 
 
 card = PokemonCardDef(
@@ -33,7 +42,7 @@ card = PokemonCardDef(
             game_text="You may have your opponent switch the Defending Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=_whirlwind,
         ),
         Attack(
             title="Diving Swipe",

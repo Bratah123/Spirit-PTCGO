@@ -1,6 +1,5 @@
 from spirit.game.data_utils import ItemCardDef
-from spirit.game.attributes import Rarities
-from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.attributes import Rarities, AttrID, TrainerType
 
 
 def _any_tool_in_play(board, player_id, card=None):

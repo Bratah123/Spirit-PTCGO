@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 card = PokemonCardDef(
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             title="Triple Laser",
             game_text="This attack does 30 damage to 3 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon).",
             cost={PokemonTypes.COLORLESS: 3},
-            effect=unimplemented,
+            effect=snipe_attack(30, pool='any', count=3),
         ),
         Attack(
             title="Protect Charge",

@@ -1,5 +1,24 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+def _is_darkness_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.DARKNESS.value)
+
+
+def _dark_trance_condition(board, player_id, pokemon=None):
+    mine = board.pokemon_in_play(player_id)
+    return len(mine) >= 2 and any(_is_darkness_energy(c) for p in mine for c in p.children)
+
+
+async def _dark_trance(ctx):
+    """Move a Darkness Energy attached to 1 of your Pokemon to another of your Pokemon."""
+    mine = ctx.my_pokemon_in_play()
+    await ctx.move_energy_freely(mine, mine, predicate=_is_darkness_energy, max_count=1,
+                                 prompt="Choose a Darkness Energy to move")
+
 
 card = PokemonCardDef(
     guid="20f4457b-d63c-59f4-987e-b9ce2946ae72",
@@ -23,14 +42,16 @@ card = PokemonCardDef(
             title="Dark Trance",
             game_text="As often as you like during your turn (before your attack), you may move a Darkness Energy attached to 1 of your Pok\u00e9mon to another of your Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.UNLIMITED,
+            condition=_dark_trance_condition,
+            effect=_dark_trance,
         ),
         Attack(
             title="Dragonblast",
             game_text="Discard 2 Darkness Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=140,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2, energy_type=PokemonTypes.DARKNESS),
         ),
     ],
 )

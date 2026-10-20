@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+
+
+async def _wake_up_beam(ctx):
+    """Printed damage; remove all Special Conditions from the Defending Pokemon."""
+    await ctx.deal_damage()
+    if ctx.defender is not None and not ctx.effects_blocked(ctx.defender):
+        await ctx.cure_all_conditions(ctx.defender)
 
 
 card = PokemonCardDef(
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             game_text="Remove all Special Conditions from the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=_wake_up_beam,
         ),
         Attack(
             title="Drain Slap",

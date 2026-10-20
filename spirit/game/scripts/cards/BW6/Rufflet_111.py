@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _has_fighting_resistance(card):
+    return (is_pokemon_card(card)
+            and card.get_attribute(AttrID.RESISTANCE_TYPES) == PokemonTypes.FIGHTING.value)
 
 
 card = PokemonCardDef(
@@ -25,7 +32,8 @@ card = PokemonCardDef(
             title="Chirp",
             game_text="Search your deck for 2 Pok\u00e9mon with Fighting Resistance, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(_has_fighting_resistance, count=2, minimum=0, reveal=True,
+                                  prompt='Choose up to 2 Pok\u00e9mon with Fighting Resistance.'),
         ),
         Attack(
             title="Sharp Beak",

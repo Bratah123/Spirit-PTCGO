@@ -1,6 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+
+
+async def _magnetic_lines(ctx):
+    """Printed damage; you may move an Energy from the Defending Pokemon to
+    1 of your opponent's Benched Pokemon."""
+    await ctx.deal_damage()
+    defender, bench = ctx.defender, ctx.opponent_bench()
+    if defender is None or not bench or ctx.effects_blocked(defender):
+        return
+    energies = ctx.attached_energies(defender)
+    if not energies:
+        return
+    picks = await ctx.choose_cards(energies, 1, minimum=0,
+                                   prompt="You may choose an Energy to move")
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose a Benched Pok\u00e9mon to move it to")
+    if target is not None:
+        await ctx.move_energy(picks[0], target)
 
 
 card = PokemonCardDef(
@@ -27,7 +46,7 @@ card = PokemonCardDef(
             game_text="You may move an Energy attached to the Defending Pok\u00e9mon to 1 of your opponent's Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=_magnetic_lines,
         ),
         Attack(
             title="Heavy Nose",
