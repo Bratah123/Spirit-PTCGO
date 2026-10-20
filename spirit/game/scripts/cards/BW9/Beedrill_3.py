@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID
+
+
+async def _swift_sting(ctx):
+    """If this Pokemon has full HP, 40 more damage and the Defending Pokemon
+    is now Confused and Poisoned."""
+    me = ctx.attacker
+    full = me.get_attribute(AttrID.HP, 0) >= ctx.max_hp(me)
+    await ctx.deal_damage(ctx.ability.damage + (40 if full else 0))
+    d = ctx.defender
+    if full and d is not None and not ctx.effects_blocked(d):
+        await ctx.apply_special_condition(d, SpecialConditions.CONFUSED)
+        await ctx.apply_special_condition(d, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="2b6898e5-038f-589c-8ddc-0e0868d6678a",
@@ -25,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_swift_sting,
         ),
         Attack(
             title="Pierce",

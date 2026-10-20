@@ -1,6 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _energy_bloom(ctx):
+    """Printed damage; heal 20 from each of your Pokemon with any Energy attached."""
+    await ctx.deal_damage()
+    for p in ctx.my_pokemon_in_play():
+        if ctx.attached_energies(p):
+            await ctx.heal(20, p)
 
 
 card = PokemonCardDef(
@@ -35,7 +43,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from each of your Pok\u00e9mon that has any Energy attached to it.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=_energy_bloom,
         ),
     ],
 )

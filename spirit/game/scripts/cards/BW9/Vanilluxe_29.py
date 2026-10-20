@@ -1,9 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import count_energy, flip_damage
-from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
-from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import active_is, bonus_if, condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import count_energy, flip_damage, condition_attack
 
 
 card = PokemonCardDef(

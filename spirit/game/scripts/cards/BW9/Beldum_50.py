@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _calculate(ctx):
+    """Look at the top 4 cards of your deck and put them back in any order."""
+    await ctx.reorder_deck_top(4)
+
 
 card = PokemonCardDef(
     guid="11cca9f3-29ea-5187-932e-1386669eb05b",
@@ -22,7 +28,7 @@ card = PokemonCardDef(
             title="Calculate",
             game_text="Look at the top 4 cards of your deck and put them back on top of your deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_calculate,
         ),
         Attack(
             title="Psypunch",

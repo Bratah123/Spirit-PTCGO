@@ -1,7 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_team_plasma_card
+
+
+def _deck_not_empty(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children)
 
 
 card = PokemonCardDef(
@@ -26,7 +32,10 @@ card = PokemonCardDef(
             title="Plasma Search",
             game_text="Once during your turn (before your attack), you may search your deck for a Team Plasma card, reveal it, and put it in your hand. Shuffle your deck afterward. You may not use an Ability with the same name during your turn.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            shared_once_per_turn="Plasma Search",
+            condition=_deck_not_empty,
+            effect=search_to_hand(is_team_plasma_card, count=1, minimum=0, reveal=True, prompt="Choose a Team Plasma card"),
         ),
         Attack(
             title="Mind Bend",

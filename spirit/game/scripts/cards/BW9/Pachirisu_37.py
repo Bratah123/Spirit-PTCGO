@@ -1,7 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
 
 card = PokemonCardDef(
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             title="Minor Errand-Running",
             game_text="Search your deck for 2 basic Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(is_basic_energy_card, count=2, minimum=0, reveal=True, prompt="Choose 2 basic Energy cards"),
         ),
         Attack(
             title="Electric Tail",

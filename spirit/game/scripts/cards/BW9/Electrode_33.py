@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+
+
+def _magnetic_condition(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    deck = board.find_player_area(player_id, "deck")
+    return len(hand.children if hand else []) < 4 and bool(deck and deck.children)
+
+
+async def _magnetic_draw(ctx):
+    """Once during your turn, draw cards until you have 4 cards in your hand."""
+    await ctx.draw_until(4)
+
 
 card = PokemonCardDef(
     guid="e1724a8e-4883-5e2f-9205-af508320b209",
@@ -23,7 +35,9 @@ card = PokemonCardDef(
             title="Magnetic Draw",
             game_text="Once during your turn (before your attack), you may draw cards until you have 4 cards in your hand.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_magnetic_condition,
+            effect=_magnetic_draw,
         ),
         Attack(
             title="Electro Ball",

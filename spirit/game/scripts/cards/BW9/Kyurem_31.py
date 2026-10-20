@@ -1,8 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import snipe_attack
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack, lock_all_attacks
+from spirit.game.card_effects.attacks_common import snipe_attack, lock_all_attacks
 
 
 async def _freeze_shock(ctx):

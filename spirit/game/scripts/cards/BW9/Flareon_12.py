@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.attacks_common import recoil_attack, damage_per, count_discard
+from spirit.game.session.effects import is_pokemon_card
 
 
 card = PokemonCardDef(
@@ -27,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_discard('mine', is_pokemon_card), 10, base=20),
         ),
         Attack(
             title="Heat Tackle",

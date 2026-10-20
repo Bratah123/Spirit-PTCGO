@@ -1,7 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import active_is, bonus_if, condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import retreat_discount
+from spirit.game.session.effects import is_team_plasma_pokemon
+
+
+def _own_plasma(pokemon, carrier):
+    """Each of your Team Plasma Pokemon in play."""
+    return pokemon.owning_player_id == carrier.owning_player_id and is_team_plasma_pokemon(pokemon)
 
 
 card = PokemonCardDef(
@@ -26,7 +32,7 @@ card = PokemonCardDef(
             title="Freeze Zone",
             game_text="The Retreat Cost of each of your Team Plasma Pok\u00e9mon in play is ColorlessColorless less.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=retreat_discount(2, _own_plasma),
         ),
         Attack(
             title="Icy Wind",

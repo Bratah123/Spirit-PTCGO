@@ -1,7 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import prevent_damage_when, is_in_active_spot
+
+
+def _bench_barrier(calc, carrier):
+    """Prevent all damage done to your Benched Pokemon by attacks (either
+    player's attacks)."""
+    target = calc.target
+    return bool(calc.is_attack and target is not None
+                and target.owning_player_id == carrier.owning_player_id
+                and not is_in_active_spot(target))
 
 
 card = PokemonCardDef(
@@ -25,7 +34,7 @@ card = PokemonCardDef(
             title="Bench Barrier",
             game_text="Prevent all damage done to your Benched Pok\u00e9mon by attacks.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=prevent_damage_when(_bench_barrier, attacks_only=False),
         ),
         Attack(
             title="Psy Bolt",

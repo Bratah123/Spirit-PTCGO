@@ -1,10 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
 
 
 async def feint(ctx):
     """30. This attack's damage isn't affected by Resistance."""
     await ctx.deal_damage(ignore_resistance=True)
+
+
+def _named(pokemon, name):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return getattr(d, "display_name", "") == name
 
 
 card = PokemonCardDef(
@@ -37,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 3},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: any(_named(p, "Reshiram") for p in ctx.my_bench()), 40),
         ),
     ],
 )

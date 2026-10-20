@@ -1,8 +1,10 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.passives_common import takes_less_passive
-from spirit.game.card_effects.attacks_common import bonus_if
-from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
+
+_fighting_energy = count_energy("self", energy_type=PokemonTypes.FIGHTING)
 
 
 card = PokemonCardDef(
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _fighting_energy(ctx) > 0, 30),
         ),
     ],
 )

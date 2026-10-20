@@ -1,7 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_damage
-from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import flip_damage, lock_defender_attacks
+from spirit.game.content.definitions import def_for
+
+
+def _is_pokemon_ex(pokemon):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return bool(d) and "EX" in (getattr(d, "subtypes", None) or [])
+
+
+async def _electri_defuse(ctx):
+    """Printed damage; if the Defending Pokemon is a Pokemon-EX, it can't
+    attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    if _is_pokemon_ex(ctx.defender):
+        lock_defender_attacks(ctx)
 
 
 card = PokemonCardDef(
@@ -35,7 +48,7 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon is a Pok\u00e9mon-EX, that Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=_electri_defuse,
         ),
     ],
 )

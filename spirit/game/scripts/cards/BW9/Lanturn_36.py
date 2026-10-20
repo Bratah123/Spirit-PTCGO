@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack, bonus_if
+from spirit.game.session.effects import is_special_energy
 
 
 card = PokemonCardDef(
@@ -27,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: any(is_special_energy(e) for e in ctx.attached_energies(ctx.attacker)), 30),
         ),
         Attack(
             title="Extreme Current",

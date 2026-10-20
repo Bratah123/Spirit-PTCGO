@@ -1,7 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.attacks_common import spread_damage
 
 
 card = PokemonCardDef(
@@ -27,7 +27,7 @@ card = PokemonCardDef(
             game_text="Does 30 damage to each Benched Pok\u00e9mon (both yours and your opponent's). (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=spread_damage(30, side='both', also_base=True),
         ),
         Attack(
             title="Splashing Turn",
