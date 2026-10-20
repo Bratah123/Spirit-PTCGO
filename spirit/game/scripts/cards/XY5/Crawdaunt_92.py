@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Crawdaunt (XY5 #92): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _unruly_claw(ctx):
+    """When played from hand to evolve: you may discard an Energy from the opponent's Active."""
+    d = ctx.opponent_active()
+    if d is None or not ctx.attached_energies(d) or not await ctx.ask_yes_no(
+            "Discard an Energy attached to your opponent's Active Pokémon?"):
+        return
+    await ctx.discard_energy_from(d, 1, minimum=1, prompt="Choose an Energy to discard")
+
 
 card = PokemonCardDef(
     guid="ee940f97-1bfd-55f8-ac29-694e97b1bcef",
@@ -28,8 +34,8 @@ card = PokemonCardDef(
         Ability(
             title="Unruly Claw",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may discard an Energy attached to your opponent's Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_unruly_claw,
         ),
         Attack(
             title="Crabhammer",

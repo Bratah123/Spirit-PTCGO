@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Azumarill (XY5 #104): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import flip_damage, damage_counters_on
+
+
+async def _dwindling_wave(ctx):
+    """100 minus 10 for each damage counter on this Pokemon."""
+    await ctx.deal_damage(max(0, 100 - 10 * damage_counters_on('self')(ctx)))
+
 
 card = PokemonCardDef(
     guid="bde49eae-ad30-575b-a96f-cf2d38b00d01",
@@ -25,14 +29,14 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Marill.Name",
     family_id=183,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Tail Rap",
             game_text="Flip 2 coins. This attack does 30 damage times the number of heads.",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=30),
         ),
         Attack(
             title="Dwindling Wave",
@@ -40,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dwindling_wave,
         ),
     ],
 )
