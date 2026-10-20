@@ -5,6 +5,7 @@ from spirit.game.content.definitions import def_for
 
 async def _scout(ctx):
     """Your opponent reveals their hand."""
+    await ctx.deal_damage()
     await ctx.reveal_hand(ctx.opponent_id)
 
 
