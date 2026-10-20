@@ -4,6 +4,8 @@ Greninja (XY1 #41): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import ignore_effects_attack
+
 
 card = PokemonCardDef(
     guid="e215f0a9-9f63-55b1-b6bd-246039c95d10",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=50,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=ignore_effects_attack(ignore_weakness=True, ignore_resistance=True),
         ),
     ],
 )

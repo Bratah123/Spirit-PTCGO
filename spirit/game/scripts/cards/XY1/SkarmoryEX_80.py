@@ -4,6 +4,20 @@ Skarmory-EX (XY1 #80): one or more attacks/abilities use effect=unimplemented un
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import AttrID, TrainerType
+
+
+async def _obsidian_fang(ctx):
+    """Before doing damage, discard all Pokemon Tool cards attached to the
+    Defending Pokemon."""
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        tools = [c for c in d.children
+                 if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value]
+        if tools:
+            await ctx.discard_cards(tools)
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="70ef0839-fc4e-5798-b068-4f8593cdde94",
@@ -29,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_obsidian_fang,
         ),
         Attack(
             title="Tailspin Piledriver",

@@ -4,6 +4,22 @@ Cloyster (XY1 #32): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+
+
+async def _wring_out(ctx):
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    await ctx.deal_damage()
+    if not results or not results[0]:
+        return
+    await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+    target = ctx.opponent_active()
+    if target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(
+            target, 1,
+            prompt="Choose Energy to discard from the Defending Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="1311e61f-4974-5f9b-b166-9776748d90c7",
@@ -29,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wring_out,
         ),
         Attack(
             title="Spike Cannon",

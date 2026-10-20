@@ -8,6 +8,25 @@ from spirit.game.attributes import SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
 
 
+async def _magnetic_lines(ctx):
+    """Printed damage; you may move an Energy from the Defending Pokemon to
+    1 of your opponent's Benched Pokemon."""
+    await ctx.deal_damage()
+    defender, bench = ctx.defender, ctx.opponent_bench()
+    if defender is None or not bench or ctx.effects_blocked(defender):
+        return
+    energies = ctx.attached_energies(defender)
+    if not energies:
+        return
+    picks = await ctx.choose_cards(energies, 1, minimum=0,
+                                   prompt="You may choose an Energy to move")
+    if not picks:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose a Benched Pok\u00e9mon to move it to")
+    if target is not None:
+        await ctx.move_energy(picks[0], target)
+
+
 card = PokemonCardDef(
     guid="6e03e962-4370-56e9-b557-4962cddaeadc",
     key="XY1",
@@ -32,7 +51,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magnetic_lines,
         ),
         Attack(
             title="Psybeam",
