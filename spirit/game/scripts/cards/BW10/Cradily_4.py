@@ -1,6 +1,25 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.session.passives import effective_bench_capacity
+
+
+def _is_stage2(card):
+    return is_pokemon_card(card) and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value
+
+
+async def _lifesplosion(ctx):
+    """For each Energy attached to this Pokemon, search your deck for a Stage 2
+    Pokemon and put it onto your Bench. Shuffle."""
+    space = effective_bench_capacity(ctx.board, ctx.player_id) - len(ctx.my_bench())
+    n = min(len(ctx.attached_energies(ctx.attacker)), max(0, space))
+    if n > 0:
+        picks = await ctx.search_deck(_is_stage2, count=n, minimum=0,
+                                      prompt=f"Choose up to {n} Stage 2 Pokémon to put onto your Bench")
+        for card in picks or []:
+            await ctx.bench_pokemon(card)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -26,7 +45,7 @@ card = PokemonCardDef(
             title="Lifesplosion",
             game_text="For each Energy attached to this Pok\u00e9mon, search your deck for a Stage 2 Pok\u00e9mon and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=_lifesplosion,
         ),
         Attack(
             title="Spiral Drain",

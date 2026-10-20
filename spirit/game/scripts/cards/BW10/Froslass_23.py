@@ -1,6 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import spread_damage
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.passives_common import is_in_active_spot
+from spirit.game.session.effects import is_special_energy
+
+
+class _CursedGlarePassive(Passive):
+    """As long as this Pokemon is your Active, your opponent can't attach
+    Special Energy cards from their hand to their Pokemon."""
+
+    def blocks_energy_attach(self, energy, player_id, target, carrier):
+        me = carrier_pokemon(carrier)
+        return (me is not None and player_id != me.owning_player_id
+                and is_in_active_spot(me) and is_special_energy(energy))
 
 
 card = PokemonCardDef(
@@ -25,7 +38,7 @@ card = PokemonCardDef(
             title="Cursed Glare",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, your opponent can't attach any Special Energy cards from his or her hand to his or her Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_CursedGlarePassive(),
         ),
         Attack(
             title="Blizzard",

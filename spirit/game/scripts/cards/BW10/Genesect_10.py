@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_basic_pokemon
+
+
+def _grass_basic(card):
+    return is_basic_pokemon(card) and PokemonTypes.GRASS.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
 
 
 card = PokemonCardDef(
@@ -24,7 +30,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for 2 Grass Basic Pok\u00e9mon and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(_grass_basic, count=2, prompt="Choose up to 2 Grass Basic Pokémon"),
         ),
         Attack(
             title="Jet Impact",

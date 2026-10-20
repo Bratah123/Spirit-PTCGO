@@ -1,6 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _crush_and_burn(ctx):
+    """Discard as many Energy attached to your Pokemon as you like; 30 damage
+    times the number of Energy cards discarded."""
+    pool = [e for p in ctx.my_pokemon_in_play() for e in ctx.attached_energies(p)]
+    picks = []
+    if pool:
+        picks = await ctx.choose_cards(pool, len(pool), minimum=0,
+                                       prompt="Discard any number of Energy from your Pokémon") or []
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.deal_damage(30 * len(picks))
 
 
 card = PokemonCardDef(
@@ -27,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_crush_and_burn,
         ),
         Attack(
             title="Thunder Tempest",

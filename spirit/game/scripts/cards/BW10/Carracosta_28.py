@@ -1,5 +1,23 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+from spirit.game.content.definitions import def_for
+
+
+def _is_fossil_item(card):
+    return is_item_card(card) and "Fossil" in getattr(def_for(card.archetype_id), "display_name", "")
+
+
+async def _fossil_clutch(ctx):
+    """You may discard a Fossil Item from your hand; if you do, 50 more damage."""
+    bonus = 0
+    if any(_is_fossil_item(c) for c in ctx.hand()):
+        gone = await ctx.discard_from_hand(1, minimum=0, predicate=_is_fossil_item,
+                                           prompt="You may discard a Fossil Item card for 50 more damage")
+        if gone:
+            bonus = 50
+    await ctx.deal_damage(ctx.ability.damage + bonus)
+
 
 card = PokemonCardDef(
     guid="b2aaabac-5980-5492-9f79-9da2927e9180",
@@ -25,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_fossil_clutch,
         ),
         Attack(
             title="Waterfall",

@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on, self_energy_discard_attack
 
 
 card = PokemonCardDef(
@@ -33,7 +33,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Water Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2, energy_type=PokemonTypes.WATER),
         ),
     ],
 )

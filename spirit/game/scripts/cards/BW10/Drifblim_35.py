@@ -1,6 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.session.effects import is_team_plasma_pokemon
+
+
+class _DriftingBalloonPassive(Passive):
+    """This Pokemon's attacks cost [C] less for each of your opponent's Team
+    Plasma Pokemon in play."""
+
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon is not carrier_pokemon(carrier) or board is None:
+            return cost
+        n = sum(1 for pid in board.player_ids if pid != pokemon.owning_player_id
+                for p in board.pokemon_in_play(pid) if is_team_plasma_pokemon(p))
+        if n <= 0 or not cost.get("Colorless"):
+            return cost
+        out = dict(cost)
+        out["Colorless"] = max(0, out["Colorless"] - n)
+        if out["Colorless"] == 0:
+            del out["Colorless"]
+        return out
 
 
 card = PokemonCardDef(
@@ -25,7 +45,7 @@ card = PokemonCardDef(
             title="Drifting Balloon",
             game_text="This Pok\u00e9mon's attacks cost Colorless less for each of your opponent's Team Plasma Pok\u00e9mon in play.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_DriftingBalloonPassive(),
         ),
         Attack(
             title="Derail",

@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.session.effects import is_special_energy
+
+
+async def _psyjamming(ctx):
+    """Move as many Special Energy attached to your opponent's Pokemon to their
+    other Pokemon as you like."""
+    pokemon = [p for p in ctx.opponent_pokemon_in_play() if not ctx.effects_blocked(p)]
+    if len(pokemon) >= 2:
+        await ctx.move_energy_freely(pokemon, pokemon, predicate=is_special_energy,
+                                     prompt="Choose a Special Energy to move")
 
 
 card = PokemonCardDef(
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             title="Psyjamming",
             game_text="Move as many Special Energy attached to your opponent's Pok\u00e9mon to your opponent's other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_psyjamming,
         ),
     ],
 )

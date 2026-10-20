@@ -1,6 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.content.definitions import def_for
+
+
+def _escavalier_kod_last_turn(ctx):
+    ledger = ctx.session.turn_state.kos_by_attack_last_turn.get(ctx.player_id, [])
+    return any(getattr(def_for(e.get("archetype_id")), "display_name", "") == "Escavalier"
+               for e in ledger)
+
+
+async def _retribution(ctx):
+    """Printed damage; if an Escavalier you had in play was Knocked Out by
+    damage from an opponent's attack during their last turn, put all Energy
+    attached to the Defending Pokemon into your opponent's hand."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is None or ctx.effects_blocked(d) or not _escavalier_kod_last_turn(ctx):
+        return
+    energies = ctx.attached_energies(d)
+    if energies:
+        await ctx.put_in_hand(energies, reveal=False)
 
 
 card = PokemonCardDef(
@@ -26,7 +46,7 @@ card = PokemonCardDef(
             game_text="If an Escavalier you had in play was Knocked Out by damage from an opponent's attack during his or her last turn, put all Energy attached to the Defending Pok\u00e9mon into your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=_retribution,
         ),
         Attack(
             title="Signal Beam",

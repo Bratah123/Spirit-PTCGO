@@ -1,11 +1,27 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_team_plasma_card
 
 
 async def _giga_drain(ctx):
     dealt = await ctx.deal_damage()
     if dealt > 0:
         await ctx.heal(dealt)
+
+
+async def _solar_transporter(ctx):
+    """Reveal the top 5 cards of your deck; put all Team Plasma cards there into
+    your hand and discard the others."""
+    top = ctx.deck_top(5)
+    if not top:
+        return
+    await ctx.reveal_cards(top)
+    keep = [c for c in top if is_team_plasma_card(c)]
+    rest = [c for c in top if c not in keep]
+    if keep:
+        await ctx.put_in_hand(keep, reveal=False)
+    if rest:
+        await ctx.discard_cards(rest)
 
 
 card = PokemonCardDef(
@@ -30,7 +46,7 @@ card = PokemonCardDef(
             title="Solar Transporter",
             game_text="Reveal the top 5 cards of your deck and put all Team Plasma cards you find there into your hand. Discard the other cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_solar_transporter,
         ),
         Attack(
             title="Leech Life",

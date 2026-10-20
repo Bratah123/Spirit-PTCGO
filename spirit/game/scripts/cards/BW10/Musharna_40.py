@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _precognitive_dream(ctx):
+    """Draw 3 cards. This Pokemon is now Asleep."""
+    await ctx.draw_cards(3)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
 
 
 card = PokemonCardDef(
@@ -25,7 +31,7 @@ card = PokemonCardDef(
             title="Precognitive Dream",
             game_text="Draw 3 cards. This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_precognitive_dream,
         ),
         Attack(
             title="Psybeam",

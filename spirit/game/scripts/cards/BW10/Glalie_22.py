@@ -1,6 +1,22 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _reflect_energy(ctx):
+    """Printed damage; move a Water Energy from this Pokemon to 1 of your Benched Pokemon."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    pool = [e for e in ctx.attached_energies(ctx.attacker) if _is_water_energy(e)]
+    if not bench or not pool:
+        return
+    target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Choose a Benched Pokémon")
+    await ctx.move_energy(pool[0], target or bench[0])
 
 
 card = PokemonCardDef(
@@ -33,7 +49,7 @@ card = PokemonCardDef(
             game_text="Move a Water Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=_reflect_energy,
         ),
     ],
 )

@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import condition_attack, snipe_attack
 
 
 card = PokemonCardDef(
@@ -30,7 +30,7 @@ card = PokemonCardDef(
             title="Wind Blast",
             game_text="This attack does 40 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 3},
-            effect=unimplemented,
+            effect=snipe_attack(40, pool='bench'),
         ),
     ],
 )
