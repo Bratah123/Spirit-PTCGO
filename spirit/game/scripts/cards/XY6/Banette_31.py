@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Shuppet.Name",
     family_id=353,
     abilities=[
