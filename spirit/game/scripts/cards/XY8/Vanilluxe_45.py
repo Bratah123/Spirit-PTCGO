@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vanilluxe (XY8 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _supporter_or_stadium(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (TrainerType.SUPPORTER.value, TrainerType.STADIUM.value)
+
+
+async def _frigid_breath(ctx):
+    """30; until the end of your next turn, each player can't play Supporter or Stadium cards."""
+    await ctx.deal_damage()
+    through = ctx.session.turn_state.turn_number + 2
+    ctx.lock_plays(ctx.player_id, _supporter_or_stadium, through)
+    ctx.lock_plays(ctx.opponent_id, _supporter_or_stadium, through)
+
 
 card = PokemonCardDef(
     guid="e54de397-71d5-56c7-9fd7-95ad6ad97d66",
@@ -28,16 +38,15 @@ card = PokemonCardDef(
             game_text="Until the end of your next turn, each player can't play any Supporter or Stadium cards from his or her hand.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_frigid_breath,
         ),
         Attack(
             title="Deep Freeze",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed. If tails, your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True,
+                                    tails_conditions=(SpecialConditions.CONFUSED,)),
         ),
     ],
 )

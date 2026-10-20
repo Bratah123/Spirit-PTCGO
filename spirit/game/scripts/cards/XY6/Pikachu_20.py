@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pikachu (XY6 #20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_defender_attacks
+
+
+async def scarf_hold(ctx):
+    """30 damage. Flip: heads, Defending Pokémon can't attack next turn."""
+    await ctx.deal_damage()
+    if (await ctx.flip_coins(1, ctx.ability.title))[0]:
+        lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="e2ab9da6-3311-5002-bcb0-b2d029f755a8",
@@ -21,14 +26,14 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.METAL,
+    resistance_amount=20,
     family_id=25,
     abilities=[
         Attack(
             title="Tail Whip",
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=scarf_hold,
         ),
         Attack(
             title="Electro Ball",

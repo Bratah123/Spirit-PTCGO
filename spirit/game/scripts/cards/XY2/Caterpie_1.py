@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Caterpie (XY2 #1): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class AdaptiveEvolutionPassive(Passive):
+    def may_evolve_early(self, pokemon, carrier):
+        return carrier_pokemon(carrier) is pokemon
+
 
 card = PokemonCardDef(
     guid="ed979b4d-96e0-5563-9ddf-7511de4b931a",
@@ -25,8 +28,7 @@ card = PokemonCardDef(
         Ability(
             title="Adaptive Evolution",
             game_text="This Pok\u00e9mon can evolve during your first turn or the turn you play it.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=AdaptiveEvolutionPassive(),
         ),
         Attack(
             title="Bug Bite",

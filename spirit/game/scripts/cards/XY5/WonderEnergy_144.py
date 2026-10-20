@@ -1,5 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wonder Energy (XY5 #144): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
+"""Wonder Energy (XY5 #144): scripted (spirit.game.card_effects.xy_energies).
 
 Card text:
   - This card can only be attached to Fairy Pokémon. This card provides Fairy Energy only while this card is attached to a Fairy Pokémon.
@@ -7,6 +6,7 @@ Card text:
   - (If this card is attached to anything other than a Fairy Pokémon, discard this card.)
 """
 
+from spirit.game.card_effects.xy_energies import only_type, WonderEnergyPassive
 from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
@@ -22,5 +22,8 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
+    attach_to=only_type(PokemonTypes.FAIRY),
+    provides=[[PokemonTypes.FAIRY]],
+    discard_unless_attach_to=True,
+    passive=WonderEnergyPassive(),
 )

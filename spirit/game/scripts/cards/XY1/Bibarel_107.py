@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bibarel (XY1 #107): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_damage
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _hypno_headbutt(ctx):
+    """60; you may do 30 more damage. If you do, this Pokemon is now Asleep."""
+    if await ctx.ask_yes_no("Do 30 more damage? If you do, this Pokémon is now Asleep."):
+        await ctx.deal_damage(90)
+        await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+    else:
+        await ctx.deal_damage(60)
+
 
 card = PokemonCardDef(
     guid="3f0e703b-e730-595d-97a6-e82c46e11947",
@@ -29,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=30),
         ),
         Attack(
             title="Hypno Headbutt",
@@ -38,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_hypno_headbutt,
         ),
     ],
 )

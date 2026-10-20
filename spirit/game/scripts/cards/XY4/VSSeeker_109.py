@@ -1,13 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-VS Seeker (XY4 #109): trainer effect stubbed.
-
-Card text:
-  - Put a Supporter card from your discard pile into your hand.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_supporter_card
+
+
+def vs_seeker_condition(board, player_id):
+    discard = board.find_player_area(player_id, "discard")
+    return bool(discard and any(is_supporter_card(c) for c in discard.children))
+
+
+async def vs_seeker(ctx):
+    """Put a Supporter card from your discard pile into your hand."""
+    cards = [c for c in ctx.discard_pile() if is_supporter_card(c)]
+    if not cards:
+        return
+    picks = await ctx.choose_cards(cards, 1, minimum=1, prompt="Choose a Supporter card")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=True)
+
 
 card = ItemCardDef(
     guid="f8bef826-caea-5575-926e-0ffca16f2c5e",
@@ -19,6 +28,6 @@ card = ItemCardDef(
     collector_number=109,
     set_code="XY4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=vs_seeker,
+    condition=vs_seeker_condition
 )

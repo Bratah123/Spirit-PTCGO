@@ -1,13 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pokémon Fan Club (XY2 #106): trainer effect stubbed.
-
-Card text:
-  - Search your deck for up to 2 Basic Pokémon, reveal them, and put them into your hand. Shuffle your deck afterward.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_basic_pokemon
+from spirit.game.card_effects.trainers import deck_nonempty
 
 card = SupporterCardDef(
     guid="f24d926d-83b8-5432-9ddd-0eb92c281771",
@@ -19,6 +14,7 @@ card = SupporterCardDef(
     collector_number=106,
     set_code="XY2",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=search_to_hand(is_basic_pokemon, count=2, minimum=0, reveal=True,
+                           prompt='Choose up to 2 Basic Pokémon'),
+    condition=deck_nonempty
 )

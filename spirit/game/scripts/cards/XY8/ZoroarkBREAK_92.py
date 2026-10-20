@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zoroark BREAK (XY8 #92): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def nine_tailed_shapeshifter(ctx):
+    """Choose 1 of the opponent's Active Pokemon's attacks and use it."""
+    defender = ctx.defender
+    if defender is None:
+        return
+    definition = def_for(defender.archetype_id)
+    attacks = [a for a in getattr(definition, "abilities", []) if isinstance(a, Attack)]
+    if not attacks:
+        return
+    candidates = [(defender, atk) for atk in attacks]
+    picked = await ctx.choose_attack_to_copy(candidates, "Choose an attack to copy")
+    if picked is None:
+        return
+    _, chosen = picked
+    await ctx.use_attack(chosen)
+
 
 card = PokemonCardDef(
     guid="de2cdf48-d739-5183-b3fd-2ee9c600fb56",
@@ -26,8 +40,7 @@ card = PokemonCardDef(
             title="Foul Play",
             game_text="Choose 1 of your opponent's Active Pok\u00e9mon's attacks and use it as this attack.",
             cost={PokemonTypes.DARKNESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=nine_tailed_shapeshifter,
         ),
     ],
 )

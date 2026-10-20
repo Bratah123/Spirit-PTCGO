@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gallade-EX (XY6 #100): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _unwavering_blade(ctx):
+    """110; 30 to each of your opponent's damaged Benched Pokemon."""
+    await ctx.deal_damage()
+    for p in ctx.opponent_bench():
+        if ctx.max_hp(p) > p.get_attribute(AttrID.HP, 0):
+            await ctx.deal_damage(30, target=p)
+
 
 card = PokemonCardDef(
     guid="292edadf-df9c-5b5a-9c54-b337552af3a4",
@@ -28,8 +33,7 @@ card = PokemonCardDef(
             game_text="This attack does 30 damage to each of your opponent's Benched Pok\u00e9mon that has any damage counters on it. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=110,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_unwavering_blade,
         ),
     ],
 )

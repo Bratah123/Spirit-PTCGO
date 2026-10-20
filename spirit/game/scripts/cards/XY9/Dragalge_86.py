@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dragalge (XY9 #86): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, mill_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="e8ddf9ad-dd09-56f0-bc7d-4f76ef3a17d5",
@@ -27,16 +25,14 @@ card = PokemonCardDef(
             title="Severe Poison",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned. Put 4 damage counters instead of 1 on that Pok\u00e9mon between turns.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED, counters=4),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top card of your deck.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.PSYCHIC: 1},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1, opponent=False),
         ),
     ],
 )

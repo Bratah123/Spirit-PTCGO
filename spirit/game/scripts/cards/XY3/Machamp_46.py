@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Machamp (XY3 #46): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import team_damage_boost_passive, debuff_defender_attacks
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_fighting(card):
+    return PokemonTypes.FIGHTING.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = PokemonCardDef(
     guid="8247fbbf-75f3-5528-9d8e-4fdfb9a626c0",
@@ -26,16 +28,14 @@ card = PokemonCardDef(
         Ability(
             title="Fighting Fury",
             game_text="Each of your Fighting Pok\u00e9mon's attacks do 20 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=team_damage_boost_passive(20, attacker_pred=_is_fighting),
         ),
         Attack(
             title="Machamp Crush",
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 40 (before applying Weakness and Resistance).",
             cost={PokemonTypes.FIGHTING: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=debuff_defender_attacks(40),
         ),
     ],
 )

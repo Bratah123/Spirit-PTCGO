@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hoothoot (XY8 #119): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+
+
+async def _lock_item(ctx):
+    """Printed damage; your opponent can't play item cards from their hand during their next turn."""
+    await ctx.deal_damage()
+    ctx.lock_plays(ctx.opponent_id, is_item_card)
+
 
 card = PokemonCardDef(
     guid="9ad8ccf6-e440-516f-b152-d019d4b8261d",
@@ -21,14 +25,14 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=163,
     abilities=[
         Attack(
             title="Proclaim the Night",
             game_text="Your opponent can't play any Item cards from his or her hand during his or her next turn.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_lock_item,
         ),
     ],
 )
