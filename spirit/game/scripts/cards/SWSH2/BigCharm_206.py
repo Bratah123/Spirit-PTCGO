@@ -1,16 +1,12 @@
-from spirit.game.data_utils import PokemonToolCardDef
+from spirit.game.data_utils import TrainerReprintCardDef
 from spirit.game.attributes import Rarities
-from spirit.game.card_effects.passives_common import hp_bonus_tool
 
-card = PokemonToolCardDef(
+
+card = TrainerReprintCardDef(
+    inherits="SWSH1/BigCharm_158",
     guid="54c8f905-d509-52ca-b0b7-03fadfacd82d",
     key="SWSH2",
-    name="com.direwolfdigital.cake.data.archetypes.trainer.BigCharm.Name",
-    display_name="Big Charm",
-    searchable_by=["Big Charm", "Pok\u00c3\u00a9mon Tool"],
-    subtypes=["Pok\u00e9mon Tool"],
-    collector_number=206,
     set_code="SWSH2",
+    collector_number=206,
     rarity=Rarities.RareSecret,
-    passive=hp_bonus_tool(30)
 )
