@@ -3706,6 +3706,7 @@ class GameSession:
             await self._run_player_turn(active_id)
             await self._wait_for_connection_resume()
             await self._run_state_unit(self.enforce_energy_attach_rules())
+            await self._run_state_unit(self.enforce_condition_immunity())
             await self._run_state_unit(self._fire_end_of_turn_triggers(active_id))
             await self._run_state_unit(self._expire_visualizations(
                 "end", active_id, self.turn_state.turn_number))
@@ -3784,6 +3785,7 @@ class GameSession:
         for _ in range(MAX_ACTIONS_PER_TURN):
             await self._wait_for_connection_resume()
             await self._run_state_unit(self.enforce_energy_attach_rules())
+            await self._run_state_unit(self.enforce_condition_immunity())
             await self._run_state_unit(self._refresh_dynamic_attacks(active_id))
             target_map = compute_legal_actions(
                 self.board_state, self.turn_state, active_id, self.game_id
@@ -4100,6 +4102,25 @@ class GameSession:
             ctx = EffectContext(self, pid, energy, None)
             await ctx.discard_cards([energy])
             await self._flush_effect_runs(ctx)
+
+    async def enforce_condition_immunity(self):
+        """"Can't be affected by Special Conditions. (Remove any Special
+        Conditions affecting it.)" -- Sparkling Robe, Sweet Veil: a Pokemon
+        that a passive now shields drops the shielded conditions. Checked
+        before each action offer and at the end of the turn."""
+        from spirit.game.session.passives import conditions_blocked
+        by_name = {v: k for k, v in CLIENT_SPECIAL_CONDITION_NAMES.items()}
+        for pid in self.players:
+            for pokemon in list(self.board_state.pokemon_in_play(pid)):
+                names = list(pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+                drop = [by_name[n] for n in names if n in by_name
+                        and conditions_blocked(self.board_state, pokemon, by_name[n])]
+                if not drop:
+                    continue
+                ctx = EffectContext(self, pid, pokemon, None)
+                for cond in drop:
+                    await ctx.cure_condition(pokemon, cond)
+                await self._flush_effect_runs(ctx)
 
     async def enforce_energy_attach_rules(self):
         """XY type-locked Special Energy: "(If this card is attached to anything
