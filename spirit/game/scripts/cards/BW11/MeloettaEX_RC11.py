@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play, has_attack_titled, condition_attack
+
 
 card = PokemonCardDef(
     guid="44b739e6-dd45-5375-9e2d-7862c8860f12",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Asleep. If tails, the Defending Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, flip=True, tails_conditions=(SpecialConditions.CONFUSED,)),
         ),
         Attack(
             title="Round",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 3},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play('mine', has_attack_titled('Round')), 30),
         ),
     ],
 )

@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _fewer_hp(ctx):
+    """This Pokemon has fewer remaining HP than the Defending Pokemon."""
+    d = ctx.defender
+    return d is not None and ctx.attacker.get_attribute(AttrID.HP, 0) < d.get_attribute(AttrID.HP, 0)
+
 
 card = PokemonCardDef(
     guid="eeaee165-a025-55e4-ab9c-b6133dd0d3f4",
@@ -30,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_fewer_hp, 60),
         ),
     ],
 )

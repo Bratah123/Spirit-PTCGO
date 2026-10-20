@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import retreat_free_when
+from spirit.game.session.passives import carrier_pokemon
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _has_grass(pokemon, carrier):
+    """If this Pokemon has any Grass Energy attached, it has no Retreat Cost."""
+    return pokemon is carrier_pokemon(carrier) and any(
+        energy_provides_type(c, PokemonTypes.GRASS.value) for c in pokemon.children)
+
 
 card = PokemonCardDef(
     guid="8a2c8cea-36c4-5b14-b7f3-9470a41f2c77",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Royal Garden",
             game_text="If this Pok\u00e9mon has any Grass Energy attached to it, this Pok\u00e9mon has no Retreat Cost.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=retreat_free_when(_has_grass),
         ),
         Attack(
             title="Solar Beam",

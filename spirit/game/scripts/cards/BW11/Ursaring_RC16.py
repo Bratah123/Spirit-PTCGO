@@ -1,5 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _picnic_weather(ctx):
+    """Put a Teddiursa from your discard pile onto your Bench. Then, attach an
+    Energy card from your discard pile to that Pokemon."""
+    teddy = [c for c in ctx.discard_pile()
+             if getattr(def_for(c.archetype_id), "display_name", "") == "Teddiursa"]
+    if not teddy:
+        return
+    picks = await ctx.choose_cards(teddy, 1, minimum=1, prompt="Choose a Teddiursa to bench")
+    if not picks or not await ctx.bench_pokemon(picks[0]):
+        return
+    benched = next((p for p in ctx.my_bench() if p.entity_id == picks[0].entity_id or picks[0] in p.children), None)
+    energy = [c for c in ctx.discard_pile() if is_energy_card(c)]
+    if benched is None or not energy:
+        return
+    e = await ctx.choose_cards(energy, 1, minimum=1, prompt="Choose an Energy card to attach")
+    if e:
+        await ctx.attach_energy(e[0], benched)
+
 
 card = PokemonCardDef(
     guid="34a0aa9e-6194-5859-90bd-6843797ddf42",
@@ -23,7 +46,7 @@ card = PokemonCardDef(
             title="Picnic Weather",
             game_text="Put a Teddiursa from your discard pile onto your Bench. Then, attach an Energy card from your discard pile to that Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_picnic_weather,
         ),
         Attack(
             title="Fury Swipes",
@@ -31,7 +54,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(3, per_heads=50),
         ),
     ],
 )

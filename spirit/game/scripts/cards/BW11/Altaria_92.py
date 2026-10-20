@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _shadow_shutdown(ctx):
+    """Printed damage; flip 2, both heads discard all Energy from the Defending Pokémon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(2, ctx.ability.title)
+    defender = ctx.defender
+    if len(results) == 2 and all(results) and defender is not None \
+            and not ctx.effects_blocked(defender):
+        energies = ctx.attached_energies(defender)
+        if energies:
+            await ctx.discard_cards(energies)
+
 
 card = PokemonCardDef(
     guid="a0c61450-64a3-5631-9fde-144c52900306",
@@ -29,7 +42,7 @@ card = PokemonCardDef(
             game_text="Flip 2 coins. If both of them are heads, discard all Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=_shadow_shutdown,
         ),
     ],
 )

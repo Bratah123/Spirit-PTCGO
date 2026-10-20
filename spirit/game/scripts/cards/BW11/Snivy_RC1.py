@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_grass_energy_card
+
+
+async def _growth(ctx):
+    """Attach a Grass Energy from your hand to this Pokemon."""
+    pool = [c for c in ctx.hand() if is_grass_energy_card(c)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(pool, 1, minimum=1, prompt="Choose a Grass Energy to attach")
+    if picks:
+        await ctx.attach_energy(picks[0], ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="810263e7-4950-558d-b82d-75a10f17f0a3",
@@ -22,7 +34,7 @@ card = PokemonCardDef(
             title="Growth",
             game_text="Attach a Grass Energy from your hand to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_growth,
         ),
         Attack(
             title="Razor Leaf",

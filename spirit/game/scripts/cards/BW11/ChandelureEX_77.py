@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, place_counters
+
 
 card = PokemonCardDef(
     guid="45732293-ce7a-535d-8272-718247a77104",
@@ -22,14 +24,14 @@ card = PokemonCardDef(
             title="Cursed Drop",
             game_text="Put 4 damage counters on your opponent's Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=place_counters(4, 'choose_any_opponent'),
         ),
         Attack(
             title="Eerie Glow",
             game_text="The Defending Pok\u00e9mon is now Burned and Confused.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED, SpecialConditions.CONFUSED),
         ),
     ],
 )

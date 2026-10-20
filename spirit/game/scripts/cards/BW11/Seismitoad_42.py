@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play, has_attack_titled
 
 card = PokemonCardDef(
     guid="cf82f10d-e6d1-5912-88d5-865a5e74f3bd",
@@ -25,7 +26,9 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(
+                count_in_play("mine", has_attack_titled("Round")), 30,
+            ),
         ),
         Attack(
             title="Hyper Voice",
