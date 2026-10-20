@@ -125,6 +125,7 @@ from .passives import (
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
     granted_extra_attacks, retreat_energy_destination, tool_slots_free,
     tool_suppressed,
+    stadium_suppressed,
 )
 from .legal_actions import (
     ACTION_ATTACH_TOOL,
@@ -4190,6 +4191,8 @@ class GameSession:
         Pokemon are never shielded as opposing effects."""
         area = self.board_state.find_global_area("activeStadium")
         for stadium in list(area.children if area else []):
+            if stadium_suppressed(self.board_state, stadium):
+                continue  # Wicked Wind: the Stadium has no effect
             await self._fire_triggered_abilities(
                 acting_player_id, stadium, trigger, ctx_setup=ctx_setup)
 
