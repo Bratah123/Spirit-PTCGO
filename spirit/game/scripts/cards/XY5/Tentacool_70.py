@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tentacool (XY5 #70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+
 
 card = PokemonCardDef(
     guid="b766a345-e0da-52fd-8436-79b9acf45485",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             game_text="Return this Pok\u00e9mon and all cards attached to it to your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=remove_self_from_play('hand'),
         ),
     ],
 )

@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Relicanth (XY7 #23): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.support_common import search_to_hand
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_tool(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
 
 card = PokemonCardDef(
     guid="508b7adf-030b-559e-8c46-d981d8e2cbd0",
@@ -26,16 +29,15 @@ card = PokemonCardDef(
             title="Deep Sea Search",
             game_text="Search your deck for up to 2 Pok\u00e9mon Tool cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(_is_tool, count=2, minimum=0, reveal=True,
+                                       prompt='Choose up to 2 Pokémon Tool cards'),
         ),
         Attack(
             title="Take Down",
             game_text="This Pok\u00e9mon does 10 damage to itself.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(10),
         ),
     ],
 )

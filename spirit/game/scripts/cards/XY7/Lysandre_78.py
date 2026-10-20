@@ -1,13 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lysandre (XY7 #78): trainer effect stubbed.
-
-Card text:
-  - Switch 1 of your opponent's Benched Pokémon with his or her Active Pokémon.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import bosss_orders, opponent_has_bench, opponent_play_targets
 
 card = SupporterCardDef(
     guid="a1dcc4ec-3463-5c03-a295-68f0dada2c25",
@@ -19,6 +12,8 @@ card = SupporterCardDef(
     collector_number=78,
     set_code="XY7",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=bosss_orders,
+    play_targets=opponent_play_targets(bench_only=True),
+    play_target_prompt="Choose the opponent's new Active Pokémon",
+    condition=opponent_has_bench
 )

@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie (XY1 #34): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+def _has_psychic_energy(ctx):
+    return any(energy_provides_type(e, PokemonTypes.PSYCHIC.value)
+               for e in ctx.attached_energies(ctx.attacker))
+
 
 card = PokemonCardDef(
     guid="e7532c9b-05d1-5242-b6cf-16f9c363bf81",
@@ -27,8 +32,7 @@ card = PokemonCardDef(
             title="Recover",
             game_text="Discard an Energy attached to this Pok\u00e9mon and heal all damage from it.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(all_damage=True, discard_energy=1),
         ),
         Attack(
             title="Core Splash",
@@ -36,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_has_psychic_energy, 30, base=60),
         ),
     ],
 )

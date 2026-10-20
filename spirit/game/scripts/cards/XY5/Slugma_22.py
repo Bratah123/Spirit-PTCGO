@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Slugma (XY5 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+async def _grass_fire(ctx):
+    """Discard a Grass Energy attached to your opponent's Active Pokemon."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d) and any(
+            _is_grass_energy(e) for e in ctx.attached_energies(d)):
+        await ctx.discard_energy_from(d, 1, predicate=_is_grass_energy, minimum=1,
+                                      prompt="Discard a Grass Energy")
+
 
 card = PokemonCardDef(
     guid="add8a5fb-2bf2-580c-a167-7bc2687f2448",
@@ -26,8 +38,7 @@ card = PokemonCardDef(
             title="Grass Fire",
             game_text="Discard a Grass Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_grass_fire,
         ),
         Attack(
             title="Ram",

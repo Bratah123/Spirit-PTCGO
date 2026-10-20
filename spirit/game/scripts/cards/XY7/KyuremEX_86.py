@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kyurem-EX (XY7 #86): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_all_opponents, lock_defender_attacks
+
+
+async def _cryofreeze(ctx):
+    """Printed damage; discard an Energy from this Pokemon. The Defending
+    Pokemon can't attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    if ctx.attached_energies(ctx.attacker):
+        await ctx.discard_energy_from(ctx.attacker, 1, minimum=1)
+    lock_defender_attacks(ctx)
+
 
 card = PokemonCardDef(
     guid="7cab08a9-6ccf-5cbd-9010-2fcd3dd937f7",
@@ -26,16 +33,14 @@ card = PokemonCardDef(
             title="Glaciate",
             game_text="This attack does 30 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_all_opponents(30),
         ),
         Attack(
             title="Icecalibur",
             game_text="Discard an Energy attached to this Pok\u00e9mon. The Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_cryofreeze,
         ),
     ],
 )

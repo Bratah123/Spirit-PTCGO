@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Conkeldurr (XY1 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _wake_up_slap(ctx):
+    """30, +60 if the opponent's Active has a Special Condition; then remove
+    all Special Conditions from it."""
+    defender = ctx.defender
+    affected = defender is not None and bool(defender.get_attribute(AttrID.SPECIAL_CONDITIONS))
+    await ctx.deal_damage(30 + (60 if affected else 0))
+    if affected:
+        await ctx.cure_all_conditions(defender)
+
 
 card = PokemonCardDef(
     guid="430a6089-e42e-5b49-abdd-a43555c0d5ec",
@@ -29,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wake_up_slap,
         ),
         Attack(
             title="Dynamic Punch",
@@ -38,8 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, flip=True, heads_bonus_damage=40),
         ),
     ],
 )

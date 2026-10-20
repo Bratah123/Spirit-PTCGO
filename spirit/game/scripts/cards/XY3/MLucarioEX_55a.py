@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Lucario-EX (XY3 #55a): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+
 
 card = PokemonCardDef(
     guid="0899d29e-8c88-5777-813f-53097a0041a2",
@@ -12,7 +10,7 @@ card = PokemonCardDef(
     display_name="M Lucario-EX",
     searchable_by=["M Lucario-EX", "MEGA", "EX", "MLucarioEX"],
     subtypes=["MEGA", "EX"],
-    collector_number=55,
+    collector_number=114,
     set_code="XY3",
     rarity=Rarities.RareUltra,
     hp=220,
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 3},
             damage=140,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(),
         ),
     ],
 )

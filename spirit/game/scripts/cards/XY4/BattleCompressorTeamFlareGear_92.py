@@ -1,13 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Battle Compressor Team Flare Gear (XY4 #92): trainer effect stubbed.
-
-Card text:
-  - Search your deck for up to 3 cards and discard them. Shuffle your deck afterward.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import deck_nonempty
+
+
+async def battle_compressor(ctx):
+    """Search your deck for up to 3 cards and discard them. Shuffle."""
+    picks = await ctx.search_deck(lambda c: True, count=3, minimum=0,
+                                  prompt="Choose up to 3 cards to discard")
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.shuffle_deck()
+
 
 card = ItemCardDef(
     guid="2af80aaa-b14a-5472-8a4f-6906f780a5a7",
@@ -19,6 +22,6 @@ card = ItemCardDef(
     collector_number=92,
     set_code="XY4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=battle_compressor,
+    condition=deck_nonempty
 )

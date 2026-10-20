@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Regirock (XY7 #40): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _is_pokemon_ex(pokemon):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return bool(d) and "EX" in (getattr(d, "subtypes", None) or [])
+
 
 card = PokemonCardDef(
     guid="e1d2f9d6-eb05-5c24-bf4b-6ae18522c02d",
@@ -33,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _is_pokemon_ex(ctx.defender), 60),
         ),
     ],
 )

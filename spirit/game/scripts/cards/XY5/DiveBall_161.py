@@ -1,13 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dive Ball (XY5 #161): trainer effect stubbed.
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonTypes
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import deck_nonempty
 
-Card text:
-  - Search your deck for a Water Pokémon, reveal it, and put it into your hand. Shuffle your deck afterward.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _is_water_pokemon(card):
+    return is_pokemon_card(card) and PokemonTypes.WATER.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
+
 
 card = ItemCardDef(
     guid="6adcfc8e-7875-5de9-b36d-8f7b2ea10fb6",
@@ -19,6 +19,7 @@ card = ItemCardDef(
     collector_number=161,
     set_code="XY5",
     rarity=Rarities.RareSecret,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=search_to_hand(_is_water_pokemon, count=1, minimum=0, reveal=True,
+                           prompt='Choose a Water Pokémon'),
+    condition=deck_nonempty
 )

@@ -1,13 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Professor Sycamore (XY1 #122): trainer effect stubbed.
-
-Card text:
-  - Discard your hand and draw 7 cards.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import professors_research
 
 card = SupporterCardDef(
     guid="0eec28a7-2241-57ec-87ca-469cac9aa9db",
@@ -19,6 +12,5 @@ card = SupporterCardDef(
     collector_number=122,
     set_code="XY1",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=professors_research
 )
