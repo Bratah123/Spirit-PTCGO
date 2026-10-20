@@ -1,0 +1,37 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+card = PokemonCardDef(
+    guid="fd958cac-67a7-5241-b0ea-8fb2396b559b",
+    key="BW9",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.TornadusEX.Name",
+    display_name="Tornadus-EX",
+    searchable_by=["Tornadus-EX", "Basic", "EX", "Team Plasma", "TornadusEX"],
+    subtypes=["Basic", "EX", "Team Plasma"],
+    collector_number=114,
+    set_code="BW9",
+    rarity=Rarities.RareUltra,
+    hp=180,
+    elements=[PokemonTypes.COLORLESS],
+    stage=PokemonStage.BASIC,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.LIGHTNING,
+    resistance_type=PokemonTypes.FIGHTING,
+    family_id=641,
+    abilities=[
+        Attack(
+            title="Windfall",
+            game_text="Shuffle your hand into your deck. Then, draw 6 cards.",
+            cost={PokemonTypes.COLORLESS: 1},
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Jet Blast",
+            game_text="This attack does 30 more damage for each Plasma Energy attached to this Pok\u00e9mon.",
+            cost={PokemonTypes.COLORLESS: 4},
+            damage=60,
+            damage_operator="+",
+            effect=unimplemented,
+        ),
+    ],
+)
