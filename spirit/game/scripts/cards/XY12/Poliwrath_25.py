@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Poliwrath (XY12 #25): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, discard_opponent_energy_attack
+
 
 card = PokemonCardDef(
     guid="beaa41bd-f8a1-5325-9618-1d638cdf4d4b",
@@ -29,16 +27,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.entered_active_this_turn(ctx.attacker), 50),
         ),
         Attack(
             title="Whirlpool",
             game_text="Discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(),
         ),
     ],
 )

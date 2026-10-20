@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Charmeleon (TwentiethAnn #RC4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_supporter_card
+
 
 card = PokemonCardDef(
     guid="5aa4c006-3580-5044-b837-21eb2cdfeebb",
@@ -27,8 +26,7 @@ card = PokemonCardDef(
             title="Call for Support",
             game_text="Search your deck for a Supporter card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_supporter_card, count=1, reveal=True, prompt='Choose a Supporter card'),
         ),
         Attack(
             title="Slash",

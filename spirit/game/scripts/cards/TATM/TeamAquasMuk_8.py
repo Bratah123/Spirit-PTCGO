@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Muk (TATM #8): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+class _SludgeFestival(Passive):
+    """The Retreat Cost of each Pokemon in play (except Team Aqua Pokemon) is Colorless more."""
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        return cost if _team(pokemon, "Aqua") else cost + 1
+
+
+def _affected(p):
+    return p is not None and bool(p.get_attribute(AttrID.SPECIAL_CONDITIONS))
+
 
 card = PokemonCardDef(
     guid="bb708c3d-9b16-5e11-ab22-da791206dcde",
@@ -26,8 +41,7 @@ card = PokemonCardDef(
         Ability(
             title="Sludge Festival",
             game_text="The Retreat Cost of each Pok\u00e9mon in play (except for Team Aqua Pok\u00e9mon) is Colorless more.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_SludgeFestival(),
         ),
         Attack(
             title="Pester",
@@ -35,8 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(active_is(_affected), 60),
         ),
     ],
 )

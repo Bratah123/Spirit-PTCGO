@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shiftry (XY11 #11): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.session.passives import Passive
+
+
+class _WickedWind(Passive):
+    """Each Stadium or Pokemon Tool card in play has no effect."""
+    def suppresses_tool(self, tool, carrier):
+        return True
+
+    def suppresses_stadium(self, stadium, carrier):
+        return True
+
+
+async def _wicked_wind(ctx):
+    """40; until the end of the opponent's next turn, Stadiums and Tools in play have no effect."""
+    await ctx.deal_damage()
+    ctx.add_global_passive(_WickedWind(), ctx.session.turn_state.turn_number + 1)
+
 
 card = PokemonCardDef(
     guid="809eec17-47eb-503a-8016-84934c956595",
@@ -28,8 +42,7 @@ card = PokemonCardDef(
             game_text="Until the end of your opponent's next turn, each Stadium or Pok\u00e9mon Tool card in play has no effect. (This includes cards that come into play on that turn.)",
             cost={PokemonTypes.GRASS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wicked_wind,
         ),
         Attack(
             title="Extrasensory",
@@ -37,8 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: len(ctx.hand()) == len(ctx.hand(ctx.opponent_id)), 60),
         ),
     ],
 )

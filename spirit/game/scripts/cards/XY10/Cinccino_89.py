@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cinccino (XY10 #89): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _sweeping_cure(ctx):
+    """Heal 90 damage from 1 of your Benched Pokemon."""
+    bench = ctx.my_bench()
+    if bench:
+        target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Heal which Benched Pokémon?")
+        if target is not None:
+            await ctx.heal(90, target)
+
 
 card = PokemonCardDef(
     guid="55a8b93a-de28-5849-a9c1-6e4d9dc03fb8",
@@ -27,8 +34,7 @@ card = PokemonCardDef(
             title="Sweeping Cure",
             game_text="Heal 90 damage from 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sweeping_cure,
         ),
         Attack(
             title="Knock Away",
@@ -36,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

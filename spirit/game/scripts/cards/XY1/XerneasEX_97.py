@@ -27,7 +27,7 @@ card = PokemonCardDef(
             game_text="This attack does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=snipe_attack(30),
+            effect=snipe_attack(30, also_base=True),
         ),
         Attack(
             title="X Blast",

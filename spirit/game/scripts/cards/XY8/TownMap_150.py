@@ -2,13 +2,15 @@ from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 
+def town_map_condition(board, player_id):
+    """Playable only with a face-down Prize card left to turn."""
+    area = board.find_player_area(player_id, "prizePile")
+    return bool(area) and any(not getattr(c, "face_up_prize", False) for c in area.children)
+
+
 async def town_map(ctx):
-    """Turn all of your Prize cards face up (approximation: you look at them;
-    the engine has no persistent face-up Prize state)."""
-    area = ctx.board.find_player_area(ctx.player_id, "prizePile")
-    prizes = list(area.children) if area else []
-    if prizes:
-        await ctx.choose_cards(prizes, 0, minimum=0, display_cards=prizes, prompt="Your Prize cards")
+    """Turn all of your Prize cards face up (they remain face up for the rest of the game)."""
+    await ctx.turn_prizes_face_up()
 
 
 card = ItemCardDef(
@@ -21,5 +23,6 @@ card = ItemCardDef(
     collector_number=150,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    effect=town_map
+    effect=town_map,
+    condition=town_map_condition
 )

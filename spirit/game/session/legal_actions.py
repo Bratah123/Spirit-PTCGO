@@ -36,6 +36,7 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    stadium_suppressed,
     energy_attach_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
@@ -139,6 +140,9 @@ class TurnState:
     retreated_entities: Set[str] = field(default_factory=set)
     healed_entities: Set[str] = field(default_factory=set)
     turn_draw_entity_ids: Set[str] = field(default_factory=set)
+    # True while the between-turns Pokemon Checkup runs (not "during"
+    # either player's turn).
+    in_checkup: bool = False
     trainers_played_last_turn: List[Tuple[str, str, int]] = field(default_factory=list)
     attacks_used_last_turn: List[Tuple[str, str, str]] = field(default_factory=list)
     kos_by_attack_last_turn: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
@@ -572,8 +576,12 @@ def compute_legal_actions(
                     ))
             elif trainer_type == TrainerType.POKEMON_TOOL.value:
                 tool_attach_to = getattr(definition, "attach_to", None)
+                tool_pool = in_play
+                if getattr(definition, "attach_to_opponent", False):
+                    tool_pool = [p for pid in board.player_ids if pid != player_id
+                                 for p in board.pokemon_in_play(pid)]
                 tool_targets = [
-                    p.entity_id for p in in_play
+                    p.entity_id for p in tool_pool
                     if tool_slots_free(board, p) > 0
                     and (tool_attach_to is None or tool_attach_to(p))
                 ]
@@ -720,6 +728,8 @@ def _stadium_ability_entries(
             continue
         if (stadium.entity_id, ability.ability_id) in state.used_abilities:
             continue
+        if stadium_suppressed(board, stadium):
+            continue  # Wicked Wind: the Stadium has no effect
         if ability.condition and not ability.condition(board, player_id, stadium):
             continue
         entries.append(_target_map_entry(

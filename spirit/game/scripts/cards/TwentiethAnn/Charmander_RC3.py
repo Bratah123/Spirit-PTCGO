@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Charmander (TwentiethAnn #RC3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def _playful(ctx):
+    """Flip a coin. If heads, 20 damage times the number of damage counters on this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        n = damage_counters_on('self')(ctx)
+        if n:
+            await ctx.deal_damage(20 * n)
+
 
 card = PokemonCardDef(
     guid="4bf9341a-4a67-5618-b9a7-0e17b6b9e5d2",
@@ -28,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_playful,
         ),
     ],
 )

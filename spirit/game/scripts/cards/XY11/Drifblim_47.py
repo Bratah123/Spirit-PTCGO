@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Drifblim (XY11 #47): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _burst_curse(ctx):
+    """Discard 2 Energy attached to this Pokemon; put 8 damage counters on your
+    opponent's Pokemon in any way you like."""
+    n = min(2, len(ctx.attached_energies(ctx.attacker)))
+    if n:
+        await ctx.discard_energy_from(ctx.attacker, n, minimum=n)
+    await ctx.place_damage_counters(8)
+
 
 card = PokemonCardDef(
     guid="69de54df-c55c-528e-b885-ba6e0f2a6cdf",
@@ -30,15 +37,13 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Burst Curse",
             game_text="Discard 2 Energy attached to this Pok\u00e9mon. Put 8 damage counters on your opponent's Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_burst_curse,
         ),
     ],
 )
