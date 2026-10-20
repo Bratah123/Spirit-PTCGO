@@ -5,7 +5,8 @@ from spirit.game.card_effects.passives_common import apply_own_next_turn_boost
 
 
 async def hone_claws(ctx):
-    """No damage. During your next turn, this Pokémon's attacks do 30 more."""
+    """60; during your next turn, this Pokémon's attacks do 30 more."""
+    await ctx.deal_damage()
     await apply_own_next_turn_boost(ctx, 30)
 
 
