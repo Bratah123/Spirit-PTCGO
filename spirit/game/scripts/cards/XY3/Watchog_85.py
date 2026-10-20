@@ -4,6 +4,7 @@ from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID,
 
 async def _power_pinch(ctx):
     """Flip 2 coins. For each heads, discard an Energy from the Defending Pokémon."""
+    await ctx.deal_damage()
     results = await ctx.flip_coins(2, "Power Pinch")
     heads = sum(1 for r in results if r)
     defender = ctx.defender
