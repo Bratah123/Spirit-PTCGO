@@ -1913,6 +1913,13 @@ class EffectContext:
             self.knockouts.append(incoming)
         return True
 
+    async def attach_tool(self, tool: CardEntity, pokemon: PokemonEntity) -> bool:
+        """Attaches a Pokemon Tool card to `pokemon` by effect (from deck,
+        hand or discard); False when it has no free Tool slot."""
+        await self.flush_choreography()
+        owner = tool.owning_player_id or self.player_id
+        return await self.session.attach_tool_from_effect(owner, tool, pokemon)
+
     async def attach_energy(self, energy: CardEntity, pokemon: PokemonEntity,
                             counts_as_attachment: bool = False) -> bool:
         """Attaches an energy card from any zone underneath a Pokemon

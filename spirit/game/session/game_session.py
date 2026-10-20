@@ -105,7 +105,7 @@ def _persist_match_result(account_id: str, coins: int, is_winner: bool):
     grant_coins(account_id, coins)
     award_match_points(account_id, is_winner)
 from spirit.game.models.board import (
-    BoardEntity, BoardState, EnergyEntity, PokemonEntity,
+    BoardEntity, BoardState, CardEntity, EnergyEntity, PokemonEntity,
     ComponentCardEntity, CompositePokemonEntity,
 )
 from .effects import (
@@ -4606,6 +4606,33 @@ class GameSession:
             player_id, source, titles, choices, prompt, len(options)
         )
         return idx if idx is not None else 0
+
+    async def attach_tool_from_effect(self, player_id, card, target) -> bool:
+        """Effect-driven Pokemon Tool attach (Leavanny's Coordinate: from the
+        deck). Deck-sourced tools are introduced to the blind owner first."""
+        if target is None or tool_slots_free(self.board_state, target) <= 0:
+            return False
+        area_name = card._containing_area_name() if isinstance(card, CardEntity) else None
+        from_hidden = area_name in CardEntity.HIDDEN_FROM_OWNER_AREAS
+        max_before = effective_max_hp(self.board_state, target)
+        position = len(target.children)
+        if not self.board_state.attach_card(card.entity_id, target.entity_id):
+            return False
+        if from_hidden:
+            owner_viewer = self.players.get(player_id)
+            if owner_viewer is not None:
+                await self.send_game_sequence(
+                    [owner_viewer], GameSequence.SERIAL_SEQUENCE,
+                    [self._entity_introduced_msg(card)],
+                )
+        await self._send_play_sequence(
+            player_id, GameSequence.PLAY_CARD,
+            [self._entity_moved_msg(card.entity_id, target.entity_id, position)],
+            [card],
+        )
+        await self._refresh_max_hp(target, max_before)
+        await self.refresh_granted_abilities(target)
+        return True
 
     async def _execute_attach_tool(self, player_id, card, entry, target_ids):
         """Attaches a Pokemon Tool underneath the chosen Pokemon (one each)."""
