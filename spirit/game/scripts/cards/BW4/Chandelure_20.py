@@ -31,7 +31,7 @@ card = PokemonCardDef(
             game_text="Does 30 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIRE: 1},
             damage=30,
-            effect=snipe_attack(30, pool='bench', count=2),
+            effect=snipe_attack(30, pool='bench', count=2, also_base=True),
         ),
         Attack(
             title="Inferno",
