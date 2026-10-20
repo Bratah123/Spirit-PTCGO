@@ -40,6 +40,7 @@ from .passives import (
     can_evolve_early,
     effective_attack_cost,
     effective_bench_capacity,
+    effective_supporter_limit,
     effective_retreat_cost,
     energy_provided_options,
     evolution_blocked,
@@ -540,7 +541,11 @@ def compute_legal_actions(
                     target_infos,
                 ))
             elif trainer_type == TrainerType.SUPPORTER.value:
-                if not state.supporter_played and state.turn_number > 1:
+                supporters_played = sum(
+                    1 for r in state.trainers_played
+                    if r[2] == TrainerType.SUPPORTER.value)
+                if state.turn_number > 1 and (not state.supporter_played or
+                        supporters_played < effective_supporter_limit(board, player_id)):
                     entries.append(_target_map_entry(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "supporter"), ACTION_USE_TRAINER,
