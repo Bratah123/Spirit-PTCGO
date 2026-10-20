@@ -20,6 +20,7 @@ card = PokemonCardDef(
     stage=PokemonStage.BASIC,
     retreat_cost=2,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=145,
     abilities=[
         Attack(

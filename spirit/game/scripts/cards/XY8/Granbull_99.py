@@ -21,6 +21,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Snubbull.Name",
     family_id=209,
     abilities=[

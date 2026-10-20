@@ -35,6 +35,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Spritzee.Name",
     family_id=682,
     abilities=[
