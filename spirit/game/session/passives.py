@@ -277,6 +277,18 @@ class Passive:
         """Damage counters the Burn checkup tick places (default 2)."""
         return counters
 
+    def modify_poison_counters(
+        self, counters: int, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> int:
+        """Damage counters the Poison checkup tick places (Virbank City Gym +2);
+        `counters` starts at the Pokemon's recorded poison multiplier."""
+        return counters
+
+    def supporter_limit(self, player_id: str, carrier: BoardEntity) -> int:
+        """Supporter cards `player_id` may play per turn (Magnezone Dual
+        Brains 2); the highest wins."""
+        return 1
+
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
         return False
@@ -822,6 +834,12 @@ def effective_bench_capacity(board: BoardState, player_id: str) -> int:
         for v in [passive.bench_capacity(player_id, carrier)] if v is not None
     ]
     return max(1, min(values)) if values else BENCH_SLOT_COUNT
+
+
+def effective_supporter_limit(board: BoardState, player_id: str) -> int:
+    """Supporters `player_id` may play this turn (default 1; highest wins)."""
+    return max([1] + [passive.supporter_limit(player_id, carrier)
+                      for passive, carrier in active_passives(board)])
 
 
 def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
