@@ -1,11 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Arbok (XY1 #48): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class _NoAbilities(Passive):
+    """The carrier (the Defending Pokemon) has no Abilities."""
+    def blocks_abilities(self, pokemon, carrier):
+        return pokemon is carrier
+
+
+async def _gastro_acid(ctx):
+    """20; the Defending Pokemon has no Abilities until the end of your next turn."""
+    await ctx.deal_damage()
+    target = ctx.defender
+    if target is not None and not ctx.effects_blocked(target):
+        ctx.add_passive_through_own_next_turn(target, _NoAbilities())
 
 
 card = PokemonCardDef(
@@ -31,15 +41,13 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon has no Abilities until the end of your next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gastro_acid,
         ),
         Attack(
             title="Poison Jab",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],

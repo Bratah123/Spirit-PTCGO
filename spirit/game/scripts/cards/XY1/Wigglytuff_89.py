@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wigglytuff (XY1 #89): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.trainers import is_basic_energy_card
 from spirit.game.card_effects.attacks_common import lock_defender_attacks
@@ -49,7 +45,6 @@ card = PokemonCardDef(
             title="Gather Energy",
             game_text="Search your deck for a basic Energy card and attach it to 1 of your Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_gather_energy,
         ),
         Attack(
@@ -57,7 +52,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=iron_breaker,
         ),
     ],

@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Grumpig (XY1 #50): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
 
 
@@ -50,7 +45,6 @@ card = PokemonCardDef(
             game_text="You may move an Energy attached to your opponent's Active Pok\u00e9mon to 1 of your opponent's Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_magnetic_lines,
         ),
         Attack(
@@ -58,7 +52,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],

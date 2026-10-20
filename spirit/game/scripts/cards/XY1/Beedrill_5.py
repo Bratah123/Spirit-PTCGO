@@ -1,11 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Beedrill (XY1 #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import apply_protection
+
+
+async def _flash_needle(ctx):
+    """Flip 3 coins: 40 per heads; all heads -> prevent all effects of attacks,
+    including damage, done to this Pokemon during the opponent's next turn."""
+    results = await ctx.flip_coins(3, ctx.ability.title) or []
+    heads = sum(1 for r in results if r)
+    await ctx.deal_damage(40 * heads)
+    if results and heads == len(results) == 3:
+        await apply_protection(ctx, target=ctx.attacker, prevent=True, effects_too=True)
 
 
 card = PokemonCardDef(
@@ -31,7 +37,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED),
         ),
         Attack(
@@ -40,8 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2},
             damage=40,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_flash_needle,
         ),
     ],
 )

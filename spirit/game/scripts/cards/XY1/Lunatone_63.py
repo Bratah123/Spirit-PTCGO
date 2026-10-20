@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lunatone (XY1 #63): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import draw_attack
 from spirit.game.card_effects.passives_common import debuff_defender_attacks
@@ -29,7 +25,6 @@ card = PokemonCardDef(
             title="Double Draw",
             game_text="Draw 2 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=draw_attack(2),
         ),
         Attack(
@@ -37,7 +32,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 20 (before applying Weakness and Resistance).",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=debuff_defender_attacks(20),
         ),
     ],

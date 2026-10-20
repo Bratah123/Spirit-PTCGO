@@ -1,11 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bisharp (XY1 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 
 card = PokemonCardDef(
@@ -31,7 +27,6 @@ card = PokemonCardDef(
             title="Metal Sound",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.METAL: 1},
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
@@ -39,8 +34,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Metal Wallop attack does 40 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(40, attack_title='Metal Wallop'),
         ),
     ],
 )

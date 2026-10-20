@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Talonflame (XY1 #28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
 
 async def _reverse_spin(ctx):
@@ -35,7 +32,6 @@ card = PokemonCardDef(
             title="Devastating Wind",
             game_text="Your opponent shuffles his or her hand into his or her deck and draws 4 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_reverse_spin,
         ),
         Attack(
@@ -43,8 +39,7 @@ card = PokemonCardDef(
             game_text="Discard all Fire Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(all_energy=True, energy_type=PokemonTypes.FIRE),
         ),
     ],
 )

@@ -1,13 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Flare Grunt (XY1 #129): trainer effect stubbed.
-
-Card text:
-  - Discard an Energy attached to your opponent's Active Pokémon.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+def team_flare_grunt_condition(board, player_id):
+    """Your opponent's Active Pokemon has Energy attached."""
+    opp = next((p for p in board.player_ids if p != player_id), None)
+    area = board.find_player_area(opp, "activePokemonArea") if opp else None
+    active = area.children[0] if area is not None and area.children else None
+    return active is not None and any(is_energy_card(c) for c in active.children)
+
+
+async def team_flare_grunt(ctx):
+    """Discard an Energy attached to your opponent's Active Pokemon."""
+    target = ctx.opponent_active()
+    if target is None or not ctx.attached_energies(target):
+        return
+    await ctx.discard_energy_from(target, 1, minimum=1, prompt="Choose an Energy to discard")
+
 
 card = SupporterCardDef(
     guid="c91261c9-93cc-515f-990f-575006157dfc",
@@ -19,6 +29,6 @@ card = SupporterCardDef(
     collector_number=129,
     set_code="XY1",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=team_flare_grunt,
+    condition=team_flare_grunt_condition
 )

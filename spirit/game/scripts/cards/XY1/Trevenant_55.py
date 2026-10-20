@@ -1,12 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trevenant (XY1 #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.passives_common import is_in_active_spot
 from spirit.game.session.passives import Passive
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 class MagicRoomPassive(Passive):
@@ -40,7 +36,6 @@ card = PokemonCardDef(
         Ability(
             title="Forest's Curse",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, your opponent can't play any Item cards from his or her hand.",
-            # STUB: ability effect not implemented
             passive=MagicRoomPassive(),
         ),
         Attack(
@@ -48,8 +43,7 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, count=2, also_base=True),
         ),
     ],
 )

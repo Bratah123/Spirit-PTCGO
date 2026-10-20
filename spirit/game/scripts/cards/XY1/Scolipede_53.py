@@ -1,12 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Scolipede (XY1 #53): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_damage
-from spirit.game.attributes import SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_damage, condition_attack
 
 
 card = PokemonCardDef(
@@ -33,7 +27,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
         Attack(
@@ -41,7 +34,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned. That Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 3},
             damage=70,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED, no_retreat=True),
         ),
     ],

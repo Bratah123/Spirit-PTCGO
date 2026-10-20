@@ -1,9 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Emolga-EX (XY1 #46): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import discard_for_bonus
+
+
+def _is_lightning_energy_card(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _energy_glide(ctx):
+    """Search your deck for a Lightning Energy card and attach it to this
+    Pokemon; shuffle. If you attached Energy this way, switch this Pokemon
+    with 1 of your Benched Pokemon."""
+    picks = await ctx.search_deck(_is_lightning_energy_card, count=1, minimum=0,
+                                  prompt="Choose a Lightning Energy card")
+    attached = False
+    for card in picks or []:
+        await ctx.attach_energy(card, ctx.attacker)
+        attached = True
+    await ctx.shuffle_deck()
+    bench = ctx.my_bench()
+    if attached and bench:
+        target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+        await ctx.switch_active(ctx.player_id, target or bench[0])
+
 
 card = PokemonCardDef(
     guid="256fe356-5a0a-5782-b2ae-f06a273ab98c",
@@ -27,8 +47,7 @@ card = PokemonCardDef(
             title="Energy Glide",
             game_text="Search your deck for a Lightning Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward. If you attached Energy in this way, switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_energy_glide,
         ),
         Attack(
             title="Electron Crush",
@@ -36,8 +55,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_for_bonus(source='self-energy', max_count=1, flat=30,
+                prompt='Discard an Energy for 30 more damage?'),
         ),
     ],
 )

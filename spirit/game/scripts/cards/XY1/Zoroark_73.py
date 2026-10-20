@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zoroark (XY1 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
 
@@ -39,7 +35,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(no_retreat=True),
         ),
         Attack(
@@ -47,7 +42,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
-            # STUB: attack effect not implemented
             effect=_fire_spin,
         ),
     ],

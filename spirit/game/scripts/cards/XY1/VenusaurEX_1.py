@@ -1,10 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Venusaur-EX (XY1 #1): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
 from spirit.game.card_effects.support_common import heal_attack
 
@@ -31,7 +26,6 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.POISONED),
         ),
         Attack(
@@ -39,7 +33,6 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
             effect=heal_attack(30),
         ),
     ],

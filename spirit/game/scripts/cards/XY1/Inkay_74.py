@@ -1,9 +1,35 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Inkay (XY1 #74): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, SpecialConditions, CLIENT_SPECIAL_CONDITION_NAMES
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.session.passives import evolution_blocked
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_confused(pokemon):
+    conds = pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or []
+    return CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.CONFUSED] in conds
+
+
+def _upside_down_condition(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return (pokemon is not None and _is_confused(pokemon) and bool(deck and deck.children)
+            and not evolution_blocked(board, player_id, pokemon))
+
+
+async def _upside_down_evolution(ctx):
+    """If this Pokemon is Confused, search your deck for a card that evolves
+    from it and put it onto it (counts as evolving); shuffle."""
+    me = ctx.source
+    name = me.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+
+    def _fits(card):
+        return is_pokemon_card(card) and card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM) == name
+
+    picks = await ctx.search_deck(_fits, count=1, minimum=0, prompt="Choose a card that evolves from this Pokémon")
+    if picks:
+        await ctx.evolve_pokemon(me, picks[0])
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="ed0be64c-c5c0-58ef-8f90-847e563c0c78",
@@ -26,15 +52,15 @@ card = PokemonCardDef(
         Ability(
             title="Upside-Down Evolution",
             game_text="Once during your turn, (before your attack), if this Pok\u00e9mon is Confused, you may search your deck for a card that evolves from this Pok\u00e9mon and put it onto this Pok\u00e9mon. (This counts as evolving this Pok\u00e9mon.) Shuffle your deck afterward.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_upside_down_condition,
+            effect=_upside_down_evolution,
         ),
         Attack(
             title="Confusion Wave",
             game_text="Both Active Pok\u00e9mon are now Confused.",
             cost={PokemonTypes.DARKNESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, both_actives=True),
         ),
     ],
 )

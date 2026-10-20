@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Electrode (XY1 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
@@ -49,7 +45,6 @@ card = PokemonCardDef(
             title="Eerie Impulse",
             game_text="Flip a coin. If heads, discard an Energy attached to 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
-            # STUB: attack effect not implemented
             effect=deleting_glare,
         ),
         Attack(

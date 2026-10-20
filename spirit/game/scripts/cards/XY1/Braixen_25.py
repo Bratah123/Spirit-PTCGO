@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Braixen (XY1 #25): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
 
@@ -34,7 +30,6 @@ card = PokemonCardDef(
             title="Clairvoyant Eye",
             game_text="Look at the top 3 cards of your deck and put them back on top of your deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=_patrol,
         ),
         Attack(
@@ -42,7 +37,6 @@ card = PokemonCardDef(
             game_text="Discard a Fire Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
             effect=self_energy_discard_attack(count=1, energy_type=PokemonTypes.FIRE),
         ),
     ],

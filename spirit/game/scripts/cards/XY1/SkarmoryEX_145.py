@@ -1,10 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Skarmory-EX (XY1 #145): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
 
 
 async def _obsidian_fang(ctx):
@@ -42,7 +38,6 @@ card = PokemonCardDef(
             game_text="Before doing damage, discard all Pok\u00e9mon Tool cards attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_obsidian_fang,
         ),
         Attack(
@@ -51,8 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(has_damage('defender'), 40, base=80),
         ),
     ],
 )

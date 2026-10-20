@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Furfrou (XY1 #114): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import takes_less_passive
 
@@ -38,7 +34,6 @@ card = PokemonCardDef(
         Ability(
             title="Fur Coat",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
             passive=takes_less_passive(20),
         ),
         Attack(
@@ -46,7 +41,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
             effect=_flip_discard_defender_energy,
         ),
     ],
