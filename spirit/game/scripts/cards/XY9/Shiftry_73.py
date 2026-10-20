@@ -1,6 +1,6 @@
 from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.pokemon import electromagnetic_sonar
+from spirit.game.session.effects import is_trainer_card
 
 
 async def _roll_up(ctx):
@@ -15,6 +15,17 @@ async def _roll_up(ctx):
     picks = await ctx.choose_cards(hand, n, minimum=n, display_cards=hand, prompt=f"Discard {n} card(s)")
     if picks:
         await ctx.discard_cards(picks)
+
+
+async def _otherworldly_return(ctx):
+    """60; put a Trainer card from your discard pile into your hand."""
+    await ctx.deal_damage()
+    trainers = [c for c in ctx.discard_pile() if is_trainer_card(c)]
+    if not trainers:
+        return
+    picks = await ctx.choose_cards(trainers, 1, minimum=1,
+                                   prompt="Choose a Trainer card to put into your hand")
+    await ctx.put_in_hand(picks, reveal=False)
 
 
 card = PokemonCardDef(
@@ -48,7 +59,7 @@ card = PokemonCardDef(
             game_text="Put a Trainer card from your discard pile into your hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=electromagnetic_sonar,
+            effect=_otherworldly_return,
         ),
     ],
 )
