@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
 
 card = PokemonToolCardDef(
@@ -11,5 +11,7 @@ card = PokemonToolCardDef(
     collector_number=104,
     set_code="BW9",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    # The holder is a Team Plasma Pokemon: is_team_plasma_pokemon reads the
+    # grants_team_plasma flag off attached cards' definitions.
 )
+card.grants_team_plasma = True
