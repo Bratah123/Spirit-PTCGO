@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nidoran ♂ (XY11 #43): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.content.definitions import def_for
+
 
 card = PokemonCardDef(
     guid="31b7ba7e-67d4-517f-94f4-e04aa9233ff0",
@@ -26,8 +25,7 @@ card = PokemonCardDef(
             title="Come Along",
             game_text="Search your deck for Nidoran \u2640 and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(lambda c: getattr(def_for(c.archetype_id), "display_name", "") == "Nidoran \u2640", 1, prompt="Choose Nidoran \u2640"),
         ),
         Attack(
             title="Peck",
