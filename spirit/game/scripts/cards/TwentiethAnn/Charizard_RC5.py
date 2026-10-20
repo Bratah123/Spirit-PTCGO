@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Charizard (TwentiethAnn #RC5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.session.effects import is_pokemon_card
+
+
+async def _recall(ctx):
+    """Choose 1 of this Pokemon's attacks from its previous Evolutions and use it as this attack."""
+    seen, candidates = set(), []
+    for c in ctx.attacker.children:
+        if not is_pokemon_card(c):
+            continue
+        for a in getattr(def_for(c.archetype_id), "abilities", None) or []:
+            if isinstance(a, Attack) and a.title not in seen:
+                seen.add(a.title)
+                candidates.append((c, a))
+    if not candidates:
+        return
+    picked = await ctx.choose_attack_to_copy(candidates, "Choose an attack to use")
+    if picked is not None:
+        await ctx.use_attack(picked[1])
+
 
 card = PokemonCardDef(
     guid="531bd232-1509-589e-9c78-268e42227539",
@@ -27,16 +43,15 @@ card = PokemonCardDef(
             title="Recall",
             game_text="Choose 1 of this Pok\u00e9mon's attacks from its previous Evolutions and use it as this attack.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_recall,
         ),
         Attack(
             title="Combustion Blast",
             game_text="This Pok\u00e9mon can't use Combustion Blast during your next turn.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

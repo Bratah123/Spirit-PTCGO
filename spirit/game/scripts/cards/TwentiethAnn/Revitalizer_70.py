@@ -1,13 +1,26 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Revitalizer (TwentiethAnn #70): trainer effect stubbed.
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import Rarities, PokemonTypes, AttrID
+from spirit.game.session.effects import is_pokemon_card
 
-Card text:
-  - Put 2 Grass Pokémon from your discard pile into your hand.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _pool(board, player_id):
+    discard = board.find_player_area(player_id, "discard")
+    return [c for c in (discard.children if discard else [])
+            if is_pokemon_card(c) and PokemonTypes.GRASS.value in (c.get_attribute(AttrID.POKEMON_TYPES) or [])]
+
+
+def revitalizer_condition(board, player_id):
+    return bool(_pool(board, player_id))
+
+
+async def revitalizer(ctx):
+    """Put 2 Grass Pokemon from your discard pile into your hand."""
+    pool = _pool(ctx.board, ctx.player_id)
+    n = min(2, len(pool))
+    picked = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 2 Grass Pokémon")
+    if picked:
+        await ctx.put_in_hand(picked)
+
 
 card = ItemCardDef(
     guid="973254e4-58c2-502b-96d2-2ce49008a4bb",
@@ -19,6 +32,6 @@ card = ItemCardDef(
     collector_number=70,
     set_code="TwentiethAnn",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    condition=revitalizer_condition,
+    effect=revitalizer
 )

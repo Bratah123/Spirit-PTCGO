@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Grumpig (XY10 #31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def _head_walking(ctx):
+    """Put a Basic Pokemon from your opponent's discard pile onto their Bench; 3 counters on it."""
+    pool = [c for c in ctx.discard_pile(ctx.opponent_id) if is_basic_pokemon(c)]
+    if not pool:
+        return
+    pick = await ctx.choose_cards(pool, 1, minimum=1, prompt="Choose a Basic Pokémon")
+    if pick and await ctx.bench_pokemon(pick[0]):
+        await ctx.place_damage_counters(3, [pick[0]])
+
 
 card = PokemonCardDef(
     guid="aee6d470-2aa7-52b0-bcb3-7bea61321ffb",
@@ -27,16 +36,14 @@ card = PokemonCardDef(
             title="Head Walking",
             game_text="Put a Basic Pok\u00e9mon from your opponent's discard pile onto his or her Bench. Then, put 3 damage counters on that Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_head_walking,
         ),
         Attack(
             title="Knock Back",
             game_text="Your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 2},
             damage=50,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gust_attack(opponent_chooses=True),
         ),
     ],
 )

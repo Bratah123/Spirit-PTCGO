@@ -1,13 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Training Center (XY3 #102): trainer effect stubbed.
+from spirit.game.data_utils import StadiumCardDef
+from spirit.game.attributes import Rarities, AttrID, PokemonStage
+from spirit.game.session.passives import Passive
 
-Card text:
-  - Each Stage 1 and Stage 2 Pokémon in play (both yours and your opponent's) gets +30 HP.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
 
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+class _TrainingCenter(Passive):
+    """Each Stage 1 and Stage 2 Pokemon in play (both players) gets +30 HP."""
+    def max_hp_bonus(self, pokemon, carrier):
+        return 30 if pokemon.get_attribute(AttrID.STAGE) in (
+            PokemonStage.STAGE1.value, PokemonStage.STAGE2.value) else 0
+
 
 card = StadiumCardDef(
     guid="9f716805-d6d8-5400-bd3a-d295e751aacd",
@@ -19,6 +20,5 @@ card = StadiumCardDef(
     collector_number=102,
     set_code="XY3",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_TrainingCenter()
 )

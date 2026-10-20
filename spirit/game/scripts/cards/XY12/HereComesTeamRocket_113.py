@@ -1,13 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Here Comes Team Rocket! (XY12 #113): trainer effect stubbed.
-
-Card text:
-  - Each player turns all of his or her Prize cards face up. (Those Prize cards remain face up for the rest of the game.)
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def here_comes_team_rocket(ctx):
+    """Each player turns all of their Prize cards face up for the rest of the game."""
+    await ctx.turn_prizes_face_up(ctx.player_id)
+    await ctx.turn_prizes_face_up(ctx.opponent_id)
+
 
 card = SupporterCardDef(
     guid="f7f04d60-e7bd-5505-afa0-fa7a659625b4",
@@ -19,6 +18,5 @@ card = SupporterCardDef(
     collector_number=113,
     set_code="XY12",
     rarity=Rarities.RareSecret,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=here_comes_team_rocket
 )

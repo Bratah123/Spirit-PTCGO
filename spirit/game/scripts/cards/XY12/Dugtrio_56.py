@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dugtrio (XY12 #56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+
 
 card = PokemonCardDef(
     guid="a4ce74b2-5f4c-587e-8558-18ed6ef56ba7",
@@ -33,8 +31,7 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to each of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 3},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(20, side='mine', also_base=True),
         ),
     ],
 )

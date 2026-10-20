@@ -187,7 +187,10 @@ class Transplant:
 
     def __init__(self, ref: Script, call: ast.Call):
         self.ref = ref
-        self.extra = [k for k in call.keywords if k.arg not in CORE]
+        self.extra = [k for k in call.keywords if k.arg not in CORE
+                      # An Attack's condition= gates the SOURCE card's
+                      # context (Rapid/Single Strike, tool-granted attacks).
+                      and not (k.arg == "condition" and getattr(call.func, "id", "") == "Attack")]
         used: Set[str] = set()
         for k in self.extra:
             used |= _names(k.value)

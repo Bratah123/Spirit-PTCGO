@@ -30,6 +30,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Phantump.Name",
     family_id=708,
     abilities=[

@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mewtwo-EX (XY8 #158): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on, damage_per, count_energy
+
+
+async def gritty_comeback(ctx):
+    """Switch all damage counters on this Pokemon with those on the opponent's Active."""
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    self_counters = damage_counters_on("self")(ctx)
+    opp_counters = damage_counters_on("defender")(ctx)
+    await ctx.set_damage_counters(ctx.source, opp_counters)
+    await ctx.set_damage_counters(defender, self_counters)
+
 
 card = PokemonCardDef(
     guid="cc120e0c-a621-57ad-9793-0990d3684b9e",
@@ -28,15 +37,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.PSYCHIC), 30),
         ),
         Attack(
             title="Damage Change",
             game_text="Switch all damage counters on this Pok\u00e9mon with those on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gritty_comeback,
         ),
     ],
 )

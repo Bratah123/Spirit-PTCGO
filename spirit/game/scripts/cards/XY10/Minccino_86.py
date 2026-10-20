@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Minccino (XY10 #86): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _tools(p):
+    return [c for c in p.children if c.get_attribute(AttrID.TRAINER_TYPE) in
+            (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)]
+
+
+async def _cleaning_up(ctx):
+    """Discard a Pokemon Tool card attached to 1 of your opponent's Pokemon."""
+    pool = [p for p in ctx.opponent_pokemon_in_play() if _tools(p) and not ctx.effects_blocked(p)]
+    if not pool:
+        return
+    target = pool[0] if len(pool) == 1 else await ctx.choose_pokemon(pool, "Discard a Tool from which Pokémon?")
+    tools = _tools(target) if target is not None else []
+    if tools:
+        pick = tools if len(tools) == 1 else await ctx.choose_cards(tools, 1, minimum=1, prompt="Choose a Tool")
+        if pick:
+            await ctx.discard_cards(pick[:1])
+
 
 card = PokemonCardDef(
     guid="ba9bd381-05db-5a6a-b366-4c494d7887cd",
@@ -26,8 +41,7 @@ card = PokemonCardDef(
             title="Cleaning Up",
             game_text="Discard a Pok\u00e9mon Tool card attached to 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_cleaning_up,
         ),
     ],
 )

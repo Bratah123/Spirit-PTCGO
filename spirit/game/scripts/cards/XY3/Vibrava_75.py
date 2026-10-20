@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vibrava (XY3 #75): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
 
 card = PokemonCardDef(
     guid="c11f11d5-e3dc-50bd-ab7d-35e265f9feb6",
@@ -27,8 +26,8 @@ card = PokemonCardDef(
             title="Charge Energy",
             game_text="Search your deck for up to 2 basic Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_basic_energy_card, count=2, minimum=0, reveal=True,
+                prompt='Choose up to 2 basic Energy cards'),
         ),
         Attack(
             title="Vibration",

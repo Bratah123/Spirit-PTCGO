@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tangrowth (XY11 #2): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_bonus
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _leaf_storm(ctx):
+    """80; heal 40 damage from each of your Grass Pokemon."""
+    await ctx.deal_damage()
+    for p in ctx.my_pokemon_in_play():
+        if PokemonTypes.GRASS.value in (p.get_attribute(AttrID.POKEMON_TYPES) or []):
+            await ctx.heal(40, p)
+
 
 card = PokemonCardDef(
     guid="1fdaf0d7-a7bf-5576-978e-a6c10b994df2",
@@ -28,8 +34,7 @@ card = PokemonCardDef(
             game_text="Heal 40 damage from each of your Grass Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_leaf_storm,
         ),
         Attack(
             title="Flog",
@@ -37,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 3, PokemonTypes.COLORLESS: 1},
             damage=110,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

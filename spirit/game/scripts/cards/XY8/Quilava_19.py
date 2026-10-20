@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Quilava (XY8 #19): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _mini_eruption(ctx):
+    """30+; discard the top card of your deck; +30 if it's an Energy card."""
+    top = ctx.deck_top(1)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(ctx.ability.damage + (30 if top and is_energy_card(top[0]) else 0))
+
 
 card = PokemonCardDef(
     guid="bdd098ab-3300-53f9-9630-1d80bd32955f",
@@ -29,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mini_eruption,
         ),
     ],
 )

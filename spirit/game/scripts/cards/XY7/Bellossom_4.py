@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bellossom (XY7 #4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def leaf_tornado(ctx):
+    """60 damage, then move Grass Energy freely among your Pokémon."""
+    await ctx.deal_damage()
+    mine = ctx.my_pokemon_in_play()
+    if len(mine) < 2:
+        return
+    await ctx.move_energy_freely(
+        mine, mine,
+        predicate=lambda e: energy_provides_type(e, PokemonTypes.GRASS.value),
+        prompt="Choose a Grass Energy to move",
+    )
+
 
 card = PokemonCardDef(
     guid="5dca825b-872d-52e4-b840-ce040e058afc",
@@ -28,16 +40,14 @@ card = PokemonCardDef(
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
         Attack(
             title="Flower Tornado",
             game_text="Move as many Grass Energy attached to your Pok\u00e9mon to your other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=leaf_tornado,
         ),
     ],
 )

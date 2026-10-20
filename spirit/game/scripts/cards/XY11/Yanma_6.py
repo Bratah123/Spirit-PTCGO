@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yanma (XY11 #6): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="0ceabf29-5d1f-54e1-a9fb-6b9dfa616ee4",
@@ -21,14 +23,14 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=193,
     abilities=[
         Attack(
             title="Scout",
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scout,
         ),
         Attack(
             title="Speed Dive",

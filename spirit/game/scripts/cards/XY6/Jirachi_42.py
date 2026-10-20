@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Jirachi (XY6 #42): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import look_at_top
+from spirit.game.card_effects.pokemon import delayed_knockout
+
+
+async def _doom_desire(ctx):
+    """Discard all Energy attached to this Pokemon; the Defending Pokemon is
+    Knocked Out at the end of your opponent's next turn."""
+    energies = list(ctx.attached_energies(ctx.attacker))
+    if energies:
+        await ctx.discard_cards(energies)
+    await delayed_knockout(ctx)
+
 
 card = PokemonCardDef(
     guid="b76e43f3-e67b-5c13-accc-66ea2d0839a3",
@@ -21,21 +29,20 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=385,
     abilities=[
         Attack(
             title="Diminutive Desire",
             game_text="Look at the top 7 cards of your deck and put 1 of them into your hand. Shuffle the other cards back into your deck.",
             cost={PokemonTypes.METAL: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=look_at_top(7, take=1, rest='shuffle'),
         ),
         Attack(
             title="Doom Desire",
             game_text="Discard all Energy attached to this Pok\u00e9mon. The Defending Pok\u00e9mon is Knocked Out at the end of your opponent's next turn.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_doom_desire,
         ),
     ],
 )
