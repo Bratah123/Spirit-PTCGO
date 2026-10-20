@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="67aa242b-6556-5b28-86c4-4841cbd6536c",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Swords Dance",
             game_text="During your next turn, this Pok\u00e9mon's Aqua Blade attack's base damage is 120.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=boost_own_next_turn(60, attack_title='Aqua Blade'),
         ),
         Attack(
             title="Aqua Blade",

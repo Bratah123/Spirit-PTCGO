@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _giga_drain(ctx):
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt)
+
 
 card = PokemonCardDef(
     guid="e2234c68-8d01-5d4a-a8da-7863c5b7036f",
@@ -25,14 +32,14 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon the same amount of damage you did to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=_giga_drain,
         ),
         Attack(
             title="Slashing Strike",
             game_text="This Pok\u00e9mon can't use Slashing Strike during your next turn.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

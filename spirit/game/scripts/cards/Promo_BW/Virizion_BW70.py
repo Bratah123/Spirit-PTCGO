@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import TypedDamageBoostPassive
+
 
 card = PokemonCardDef(
     guid="2c5a5858-6077-53b0-9c04-1b7be4856ce6",
@@ -23,7 +26,7 @@ card = PokemonCardDef(
             title="Justified",
             game_text="Each of this Pok\u00e9mon's attacks does 50 more damage to Darkness Pok\u00e9mon (before applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=TypedDamageBoostPassive(PokemonTypes.DARKNESS, 50, to_active_only=False),
         ),
         Attack(
             title="Leaf Blade",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

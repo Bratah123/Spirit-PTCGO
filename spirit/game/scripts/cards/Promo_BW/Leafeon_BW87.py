@@ -1,5 +1,10 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
 
 card = PokemonCardDef(
     guid="f0a30c4d-ed93-5149-bedb-0997da3b7bf2",
@@ -26,14 +31,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
         Attack(
             title="Energy Assist",
             game_text="Attach a basic Energy card from your discard pile to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=is_basic_energy_card, count=1, target=lambda p: not is_in_active_spot(p), prompt='Choose a basic Energy card to attach to a Benched Pokémon'),
         ),
     ],
 )

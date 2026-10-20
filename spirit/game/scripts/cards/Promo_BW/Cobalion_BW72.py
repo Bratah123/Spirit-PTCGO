@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.passives_common import TypedDamageBoostPassive
+
 
 card = PokemonCardDef(
     guid="4f80276f-90fc-5ce7-a0bd-afeac357f198",
@@ -23,7 +26,7 @@ card = PokemonCardDef(
             title="Justified",
             game_text="Each of this Pok\u00e9mon's attack does 50 more damage to Darkness Pok\u00e9mon (before applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=TypedDamageBoostPassive(PokemonTypes.DARKNESS, 50, to_active_only=False),
         ),
         Attack(
             title="Iron Head",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, bonus_per_heads=20),
         ),
     ],
 )

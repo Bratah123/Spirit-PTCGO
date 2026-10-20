@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on, damage_per, recoil_attack
+
 
 card = PokemonCardDef(
     guid="46ec25f4-93b4-52ed-8c43-94b913f19c13",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('self'), 10, base=20),
         ),
         Attack(
             title="Bolt Strike",
             game_text="This Pok\u00e9mon does 40 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=recoil_attack(40),
         ),
     ],
 )

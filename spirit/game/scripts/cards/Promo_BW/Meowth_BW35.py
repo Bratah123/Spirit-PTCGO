@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="9fe247bd-ba1c-52e7-bfb3-4dd1e4a11b6f",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Nap",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
         Attack(
             title="Jump On",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(10),
         ),
     ],
 )

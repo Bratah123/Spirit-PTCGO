@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import discard_random_from_hand, bonus_if
+
+
+async def knock_off(ctx):
+    """discard a random card from the opponent's hand."""
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, ctx.opponent_id, count=1)
+
+
+def _defender_has_condition(ctx):
+    d = ctx.defender
+    return d is not None and bool(d.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
 
 card = PokemonCardDef(
     guid="5510d775-740a-5d6d-9be8-dbf19b72307e",
@@ -24,14 +37,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(_defender_has_condition, 50),
         ),
         Attack(
             title="Shadow Claw",
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=knock_off,
         ),
     ],
 )

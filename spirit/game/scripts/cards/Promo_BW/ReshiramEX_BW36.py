@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus, flip_damage
+
 
 card = PokemonCardDef(
     guid="0d5fbb5a-0cad-59d7-a2a4-5725a4f6dd56",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
         Attack(
             title="Brave Fire",
             game_text="Flip a coin. If tails, this Pok\u00e9mon does 50 damage to itself.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=150,
-            effect=unimplemented,
+            effect=flip_damage(tails_self_damage=50),
         ),
     ],
 )

@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+async def ember(ctx):
+    """20 damage. Flip a coin. If tails, discard an Energy from this Pokémon."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, "Ember"))[0]
+    if not heads:
+        await ctx.discard_energy_from(
+            ctx.attacker, 1,
+            prompt="Discard an Energy attached to this Pokémon",
+        )
+
 
 card = PokemonCardDef(
     guid="8896dccd-a58b-572f-9d97-f60971220d7a",
@@ -25,14 +38,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.stadium_in_play() is not None, 30),
         ),
         Attack(
             title="Power Blast",
             game_text="Flip a coin. If tails, discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=100,
-            effect=unimplemented,
+            effect=ember,
         ),
     ],
 )
