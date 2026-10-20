@@ -4,6 +4,12 @@ Gallade (XY8 #84): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _supporter_played_this_turn(ctx):
+    return ctx.supporters_played_this_turn() > 0
+
 
 card = PokemonCardDef(
     guid="ba2c578b-b8c8-52ce-8bd9-23f717ff7ab3",
@@ -36,7 +42,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_supporter_played_this_turn, 70),
         ),
     ],
 )

@@ -3,7 +3,9 @@ Florges (XY8 #103): one or more attacks/abilities use effect=unimplemented until
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="287a701b-8d36-53bf-a705-b7f8f060a745",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 3},
             damage=70,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )

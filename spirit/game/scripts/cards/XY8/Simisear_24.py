@@ -2,8 +2,10 @@
 Simisear (XY8 #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+
 
 card = PokemonCardDef(
     guid="cb9f855c-bdb4-5dd0-86fb-4482054a9df4",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(ctx.hand()), 10),
         ),
     ],
 )

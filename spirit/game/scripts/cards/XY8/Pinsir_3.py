@@ -2,8 +2,17 @@
 Pinsir (XY8 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _iron_crash(ctx):
+    """20 more damage for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(ctx.ability.damage + 20 * cost)
+
 
 card = PokemonCardDef(
     guid="48cc0d19-2615-564e-91a7-5860dfc7fe90",
@@ -37,7 +46,7 @@ card = PokemonCardDef(
             damage=40,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_crash,
         ),
     ],
 )

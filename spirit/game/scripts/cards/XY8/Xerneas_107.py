@@ -2,8 +2,14 @@
 Xerneas (XY8 #107): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _healed_this_turn(ctx):
+    return ctx.attacker.entity_id in ctx.session.turn_state.healed_entities
+
 
 card = PokemonCardDef(
     guid="36915c51-45df-59d5-ad00-d3e59eead2c0",
@@ -40,7 +46,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_healed_this_turn, 80),
         ),
     ],
 )

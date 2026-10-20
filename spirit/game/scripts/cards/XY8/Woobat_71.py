@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Woobat (XY8 #71): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
+
+async def _put_discard_card_in_hand(ctx):
+    discard = ctx.discard_pile()
+    if not discard:
+        return
+    picks = await ctx.choose_cards(
+        discard, 1, minimum=1,
+        prompt="Choose a card from your discard pile to put into your hand.",
+    )
+    await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="bb19e3a7-3bf2-5422-ba81-5abd8adb81c9",
@@ -28,8 +37,7 @@ card = PokemonCardDef(
             title="Odor Sleuth",
             game_text="Flip a coin. If heads, put a card from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_or_nothing(then=_put_discard_card_in_hand),
         ),
         Attack(
             title="Psyshot",

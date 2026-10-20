@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bronzong (XY8 #96): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import effective_max_hp
+from spirit.game.card_effects.attacks_common import flip_bonus
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _eerie_cry(ctx):
+    for pokemon in ctx.opponent_pokemon_in_play():
+        if pokemon.get_attribute(AttrID.HP, 0) < effective_max_hp(ctx.board, pokemon):
+            await ctx.deal_damage(30, target=pokemon, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="20684e47-f0d0-543a-b4ce-83a8465ee351",
@@ -29,8 +34,7 @@ card = PokemonCardDef(
             title="Pain Amplifier",
             game_text="Put 3 damage counters on each of your opponent's Pok\u00e9mon that has any damage counters on it.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_eerie_cry,
         ),
         Attack(
             title="Knock Away",
@@ -38,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

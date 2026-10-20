@@ -3,7 +3,14 @@ Mamoswine (XY8 #82): one or more attacks/abilities use effect=unimplemented unti
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import takes_less_passive
+
+
+def _fire_or_water(pokemon):
+    types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.FIRE.value in types or PokemonTypes.WATER.value in types
+
 
 card = PokemonCardDef(
     guid="6988e9da-fd28-5a5f-aae6-26263ed0d768",
@@ -27,7 +34,7 @@ card = PokemonCardDef(
             title="Thick Fat",
             game_text="Any damage done to this Pok\u00e9mon by attacks from your opponent's Fire or Water Pok\u00e9mon is reduced by 30 (after applying Weakness and Resistance).",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(30, attacker_pred=_fire_or_water),
         ),
         Attack(
             title="Primordial Boom",

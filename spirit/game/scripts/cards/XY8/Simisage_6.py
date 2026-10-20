@@ -2,8 +2,10 @@
 Simisage (XY8 #6): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+
 
 card = PokemonCardDef(
     guid="0825d732-7ca9-51a1-8fdb-797fecb108e6",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(ctx.hand()), 10),
         ),
     ],
 )
