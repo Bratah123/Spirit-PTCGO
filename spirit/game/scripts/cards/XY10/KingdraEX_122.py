@@ -2,8 +2,16 @@
 Kingdra-EX (XY10 #122): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _gaia_crush(ctx):
+    """Printed damage; discard any Stadium card in play."""
+    await ctx.deal_damage()
+    if ctx.stadium_in_play() is not None:
+        await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="c8d0af95-dc7e-5b2a-9516-5a21ebe4d585",
@@ -28,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gaia_crush,
         ),
         Attack(
             title="Dragon Trail",

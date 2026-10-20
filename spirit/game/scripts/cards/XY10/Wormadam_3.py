@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wormadam (XY10 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="651919cd-d1e2-53cd-9219-6f69a1997b0d",
@@ -28,8 +27,7 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(20, scope='each_own'),
         ),
         Attack(
             title="Leaf Cutter",
@@ -37,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

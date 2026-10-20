@@ -2,8 +2,9 @@
 Serperior (XY10 #7): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
 
 card = PokemonCardDef(
     guid="90bf96b4-79f2-5099-8a53-d8d4660bb411",
@@ -37,7 +38,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

@@ -4,6 +4,14 @@ Lugia (XY10 #78): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _is_pokemon_ex(pokemon):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return bool(d) and "EX" in (getattr(d, "subtypes", None) or [])
+
 
 card = PokemonCardDef(
     guid="afd5b1be-e4db-5a50-bc6f-c70778a9503a",
@@ -37,7 +45,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: _is_pokemon_ex(ctx.defender), 60),
         ),
     ],
 )

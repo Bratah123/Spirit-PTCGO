@@ -2,8 +2,17 @@
 Snorlax (XY10 #77): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def gulp_down(ctx):
+    """Heal from this Pokémon the same amount of damage you did to your
+    opponent's Active Pokémon."""
+    dealt = await ctx.deal_damage()
+    if dealt > 0:
+        await ctx.heal(dealt, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="5dd75985-1ff9-5bd8-a8c2-e61a59845cef",
@@ -37,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=50,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gulp_down,
         ),
     ],
 )
