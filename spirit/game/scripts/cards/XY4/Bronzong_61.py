@@ -1,9 +1,32 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bronzong (XY4 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_metal_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.METAL.value)
+
+
+def _metal_links_condition(board, player_id, pokemon=None):
+    discard = board.find_player_area(player_id, "discard")
+    bench = board.find_player_area(player_id, "bench")
+    return bool(discard and any(_is_metal_energy(c) for c in discard.children)) and \
+        bool(bench and bench.children)
+
+
+async def _metal_links(ctx):
+    """Attach a Metal Energy card from your discard pile to 1 of your Benched Pokemon."""
+    cards = [c for c in ctx.discard_pile() if _is_metal_energy(c)]
+    bench = ctx.my_bench()
+    if not cards or not bench:
+        return
+    picks = await ctx.choose_cards(cards, 1, minimum=1, prompt="Choose a Metal Energy card")
+    if not picks:
+        return
+    target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(
+        bench, "Attach it to which Benched Pokémon?")
+    await ctx.attach_energy(picks[0], target or bench[0])
+
 
 card = PokemonCardDef(
     guid="bcb6dfe0-c1ab-54aa-8115-65b2b8df976c",
@@ -28,8 +51,9 @@ card = PokemonCardDef(
         Ability(
             title="Metal Links",
             game_text="Once during your turn (before your attack), you may attach a Metal Energy card from your discard pile to 1 of your Benched Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_metal_links_condition,
+            effect=_metal_links,
         ),
         Attack(
             title="Hammer In",

@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heliolisk (XY4 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _parabolic_spark(ctx):
+    """Discard any number of Lightning Energy from your Pokemon: 30 times the
+    number of Energy cards discarded."""
+    pool = [e for p in ctx.my_pokemon_in_play() for e in ctx.attached_energies(p)
+            if _is_lightning_energy(e)]
+    picks = await ctx.choose_cards(pool, len(pool), minimum=0,
+                                   prompt="Discard any number of Lightning Energy") if pool else []
+    if picks:
+        await ctx.discard_cards(picks)
+    await ctx.deal_damage(30 * len(picks or []))
+
 
 card = PokemonCardDef(
     guid="cfa7d0a2-4c25-5e81-9f0a-3b6c9381ef6e",
@@ -36,8 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_parabolic_spark,
         ),
     ],
 )

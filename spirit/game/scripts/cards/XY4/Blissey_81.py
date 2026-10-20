@@ -1,9 +1,27 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Blissey (XY4 #81): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def superpower(ctx):
+    """You may do 20 more damage; if you do, this Pokémon does 20 to itself."""
+    if await ctx.ask_yes_no(
+        "Do 20 more damage? If you do, this Pokémon does 20 damage to itself."
+    ):
+        await ctx.deal_damage(80)
+        await ctx.deal_damage(20, target=ctx.attacker, apply_modifiers=False)
+    else:
+        await ctx.deal_damage(60)
+
+
+async def _tender_vengeance(ctx):
+    """Flip a coin; heads: 10 times the damage counters on your Benched Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if not (results and results[0]):
+        return
+    n = sum(damage_counters_on(lambda c, p=p: p)(ctx) for p in ctx.my_bench())
+    await ctx.deal_damage(10 * n)
+
 
 card = PokemonCardDef(
     guid="eadae8e0-d1be-5653-9877-91c7f7810a7f",
@@ -29,8 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_tender_vengeance,
         ),
         Attack(
             title="Charge Dash",
@@ -38,8 +55,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=superpower,
         ),
     ],
 )

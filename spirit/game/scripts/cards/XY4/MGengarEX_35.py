@@ -1,9 +1,26 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gengar-EX (XY4 #35): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _phantom_gate(ctx):
+    """Choose 1 of your opponent's Pokemon's attacks and use it as this attack."""
+    candidates = [(p, a) for p in ctx.opponent_pokemon_in_play()
+                  for a in getattr(def_for(p.archetype_id), "abilities", []) or []
+                  if isinstance(a, Attack)]
+    if not candidates:
+        return
+    picked = await ctx.choose_attack_to_copy(candidates, "Choose an attack to use")
+    if picked is None:
+        return
+    _, chosen = picked
+    if not await ctx.use_attack(chosen):
+        return
+    if getattr(chosen, "locks_next_turn", False):
+        for entry in ctx.attacker.get_attribute(AttrID.PIE_ABILITIES) or []:
+            if isinstance(entry, dict) and entry.get("abilityType") == "Attack":
+                ctx.session.turn_state.lock_attack(ctx.attacker.entity_id, entry["abilityID"])
+
 
 card = PokemonCardDef(
     guid="81202dc4-d550-5d47-9c6d-47688020b93f",
@@ -29,8 +46,7 @@ card = PokemonCardDef(
             title="Phantom Gate",
             game_text="Choose 1 of your opponent's Pok\u00e9mon's attacks and use it as this attack.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_phantom_gate,
         ),
     ],
 )
