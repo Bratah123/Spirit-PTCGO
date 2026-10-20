@@ -20,6 +20,7 @@ card = PokemonCardDef(
     retreat_cost=4,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=379,
     abilities=[
         Attack(
