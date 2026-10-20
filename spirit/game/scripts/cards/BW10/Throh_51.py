@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _shoulder_throw(ctx):
+    """80 damage minus 20 for each Colorless in the Defending Pokemon's Retreat Cost."""
+    d = ctx.defender
+    cost = effective_retreat_cost(ctx.board, d) if d is not None else 0
+    amount = 80 - 20 * cost
+    if amount > 0:
+        await ctx.deal_damage(amount)
 
 
 card = PokemonCardDef(
@@ -34,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="-",
-            effect=unimplemented,
+            effect=_shoulder_throw,
         ),
     ],
 )

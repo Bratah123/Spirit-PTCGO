@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.session.effects import is_team_plasma_pokemon
+
 
 card = PokemonCardDef(
     guid="9c2679ea-c58b-549e-891f-e766f2108cc7",
@@ -24,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_team_plasma_pokemon), 40),
         ),
         Attack(
             title="Low Sweep",

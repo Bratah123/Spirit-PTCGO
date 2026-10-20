@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_or_nothing
+from spirit.game.session.effects import plasma_energy_attached
 
 
 async def _put_discard_card_in_hand(ctx):
@@ -12,6 +13,16 @@ async def _put_discard_card_in_hand(ctx):
         prompt="Choose a card from your discard pile to put into your hand.",
     )
     await ctx.put_in_hand(picks, reveal=False)
+
+
+async def _fast_forward(ctx):
+    """Printed damage; for each Plasma Energy attached to this Pokemon, discard
+    the top card of your opponent's deck."""
+    await ctx.deal_damage()
+    n = len(plasma_energy_attached(ctx.attacker))
+    top = ctx.deck_top(n, player_id=ctx.opponent_id) if n else []
+    if top:
+        await ctx.discard_cards(top)
 
 
 card = PokemonCardDef(
@@ -43,7 +54,7 @@ card = PokemonCardDef(
             game_text="For each Plasma Energy attached to this Pok\u00e9mon, discard the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=90,
-            effect=unimplemented,
+            effect=_fast_forward,
         ),
     ],
 )

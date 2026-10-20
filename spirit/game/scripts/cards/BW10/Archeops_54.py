@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _swift_dive(ctx):
+    """If this Pokemon's remaining HP is 50 or less, base damage is 50."""
+    low = ctx.attacker.get_attribute(AttrID.HP, 0) <= 50
+    await ctx.deal_damage(50 if low else ctx.ability.damage)
 
 
 card = PokemonCardDef(
@@ -34,7 +40,7 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon's remaining HP is 50 or less, this attack's base damage is 50.",
             cost={PokemonTypes.FIGHTING: 2},
             damage=100,
-            effect=unimplemented,
+            effect=_swift_dive,
         ),
     ],
 )

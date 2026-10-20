@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+
+
+async def _prehistoric_call(ctx):
+    """Once during your turn, if this Pokemon is in your discard pile, you may
+    put it on the bottom of your deck."""
+    await ctx.put_on_bottom_of_deck(ctx.source)
+
 
 card = PokemonCardDef(
     guid="140b4aa8-4420-5d84-8bdf-4699910a2063",
@@ -23,7 +30,9 @@ card = PokemonCardDef(
             title="Prehistoric Call",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is in your discard pile, you may put this Pok\u00e9mon on the bottom of your deck.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            usable_from="discard",
+            effect=_prehistoric_call,
         ),
         Attack(
             title="Wing Attack",

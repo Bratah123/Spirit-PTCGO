@@ -1,5 +1,26 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID, TrainerType
+
+
+def _tools_on(pokemon):
+    return [c for c in pokemon.children
+            if c.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value]
+
+
+async def _breakwing(ctx):
+    """When you play this Pokemon from your hand to evolve 1 of your Pokemon,
+    you may discard all Pokemon Tool cards attached to each of your opponent's Pokemon."""
+    tools = [t for p in ctx.opponent_pokemon_in_play() for t in _tools_on(p)]
+    if tools and await ctx.ask_yes_no("Discard all Pokémon Tools attached to your opponent's Pokémon?"):
+        await ctx.discard_cards(tools)
+
+
+async def _gaia_crush(ctx):
+    """Printed damage; discard any Stadium card in play."""
+    await ctx.deal_damage()
+    if ctx.stadium_in_play() is not None:
+        await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="7439e91f-6929-55ff-888c-3b255d54f126",
@@ -23,14 +44,15 @@ card = PokemonCardDef(
             title="Breakwing",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may discard all Pok\u00e9mon Tool cards attached to each of your opponent's Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_breakwing,
         ),
         Attack(
             title="Gaia Crush",
             game_text="Discard any Stadium card in play.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
-            effect=unimplemented,
+            effect=_gaia_crush,
         ),
     ],
 )

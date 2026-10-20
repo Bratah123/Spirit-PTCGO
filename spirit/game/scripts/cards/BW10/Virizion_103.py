@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
 
 card = PokemonCardDef(
@@ -32,7 +33,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Leaf Wallop does 40 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            effect=unimplemented,
+            effect=boost_own_next_turn(40, attack_title="Leaf Wallop"),
         ),
     ],
 )

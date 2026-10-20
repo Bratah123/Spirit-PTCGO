@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="4fcea7cf-69a2-5819-baa6-90c9c16f257c",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             game_text="During your next turn, each of this Pok\u00e9mon's attacks does 50 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
-            effect=unimplemented,
+            effect=boost_own_next_turn(50),
         ),
         Attack(
             title="Strength",

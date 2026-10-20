@@ -1,6 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_team_plasma_pokemon
+
+
+async def _blazing_claws(ctx):
+    """If the Defending Pokemon is a Team Plasma Pokemon, 60 more damage and
+    the Defending Pokemon is now Burned."""
+    d = ctx.defender
+    plasma = d is not None and is_team_plasma_pokemon(d)
+    await ctx.deal_damage(ctx.ability.damage + (60 if plasma else 0))
+    if plasma and not ctx.effects_blocked(d):
+        await ctx.apply_special_condition(d, SpecialConditions.BURNED)
 
 
 card = PokemonCardDef(
@@ -35,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_blazing_claws,
         ),
     ],
 )

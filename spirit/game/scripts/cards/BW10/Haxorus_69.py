@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.session.effects import is_team_plasma_pokemon
+
+
+async def _strike_of_the_champion(ctx):
+    """If the Defending Pokemon is a Team Plasma Pokemon, it is Knocked Out;
+    otherwise this attack does nothing."""
+    d = ctx.defender
+    if d is not None and is_team_plasma_pokemon(d):
+        await ctx.knock_out(d)
+
 
 card = PokemonCardDef(
     guid="9bd76d12-74e3-5f5f-aafe-61ddb7dd2f52",
@@ -25,13 +36,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.METAL), 40),
         ),
         Attack(
             title="Strike of the Champion",
             game_text="If the Defending Pok\u00e9mon is a Team Plasma Pok\u00e9mon, it is Knocked Out. (If the Defending Pok\u00e9mon is not a Team Plasma Pok\u00e9mon, this attack does nothing.)",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.METAL: 1},
-            effect=unimplemented,
+            effect=_strike_of_the_champion,
         ),
     ],
 )

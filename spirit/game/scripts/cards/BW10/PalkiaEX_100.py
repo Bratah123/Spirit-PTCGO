@@ -1,6 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.session.effects import plasma_energy_attached
+
+
+async def _dimension_heal(ctx):
+    """Printed damage; heal 20 from this Pokemon for each Plasma Energy attached to it."""
+    await ctx.deal_damage()
+    n = len(plasma_energy_attached(ctx.attacker))
+    if n:
+        await ctx.heal(20 * n, ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -32,7 +41,7 @@ card = PokemonCardDef(
             game_text="Heal from this Pok\u00e9mon 20 damage for each Plasma Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=_dimension_heal,
         ),
     ],
 )

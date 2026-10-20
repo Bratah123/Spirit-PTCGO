@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.pokemon import energy_provides_type, is_energy_card
 from spirit.game.card_effects.passives_common import condition_immunity_passive
 from spirit.game.models.board import BoardState
 
@@ -21,6 +21,27 @@ def _grass_energy_immune(target, carrier):
         return False
     return any(energy_provides_type(e, PokemonTypes.GRASS.value)
                for e in BoardState.attached_energies(target))
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+async def _emerald_slash(ctx):
+    """Printed damage; you may search your deck for 2 Grass Energy cards and
+    attach them to 1 of your Benched Pokemon. Shuffle."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    if not bench or not await ctx.ask_yes_no("Search your deck for 2 Grass Energy cards?"):
+        return
+    picks = await ctx.search_deck(_is_grass_energy, count=2, minimum=0,
+                                  prompt="Choose up to 2 Grass Energy cards")
+    if picks:
+        target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(
+            bench, "Choose a Benched Pokémon to attach them to")
+        for card in picks:
+            await ctx.attach_energy(card, target or bench[0])
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -54,7 +75,7 @@ card = PokemonCardDef(
             game_text="You may search your deck for 2 Grass Energy cards and attach them to 1 of your Benched Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
-            effect=unimplemented,
+            effect=_emerald_slash,
         ),
     ],
 )

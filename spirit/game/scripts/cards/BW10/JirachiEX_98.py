@@ -1,6 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_supporter_card
+
+
+async def _stellar_guidance(ctx):
+    """When you play this Pokemon from your hand onto your Bench, you may
+    search your deck for a Supporter card, reveal it, and put it into your hand."""
+    if not ctx.deck() or not await ctx.ask_yes_no("Search your deck for a Supporter card?"):
+        return
+    picks = await ctx.search_deck(is_supporter_card, count=1, minimum=0, prompt="Choose a Supporter card")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -25,7 +37,8 @@ card = PokemonCardDef(
             title="Stellar Guidance",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench, you may search your deck for a Supporter card, reveal it, and put it into your hand. Shuffle your deck afterward.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=_stellar_guidance,
         ),
         Attack(
             title="Hypnostrike",

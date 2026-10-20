@@ -1,10 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_team_plasma_pokemon
 
 
 async def feint(ctx):
     """30. This attack's damage isn't affected by Resistance."""
     await ctx.deal_damage(ignore_resistance=True)
+
+
+async def _iron_fist(ctx):
+    """If you have any Team Plasma Pokemon in play, this attack does nothing."""
+    if any(is_team_plasma_pokemon(p) for p in ctx.my_pokemon_in_play()):
+        return
+    await ctx.deal_damage()
 
 
 card = PokemonCardDef(
@@ -30,7 +38,7 @@ card = PokemonCardDef(
             game_text="If you have any Team Plasma Pok\u00e9mon in play, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=_iron_fist,
         ),
         Attack(
             title="Shadow Punch",
