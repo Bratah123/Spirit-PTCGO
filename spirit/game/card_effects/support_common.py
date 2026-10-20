@@ -624,8 +624,13 @@ def requires_hand(predicate=None, n=1, exclude_self=True):
         matches = [c for c in (hand.children if hand else [])
                    if predicate is None or predicate(c)]
         discount = 0
-        if exclude_self and pokemon is None:
-            if predicate is None or any(is_trainer_card(c) for c in matches):
+        if exclude_self:
+            if pokemon is not None:
+                # Trainer play conditions get the played copy itself as the
+                # third argument (trainer_condition_met): drop exactly it.
+                # Ability conditions pass the in-play Pokemon, never in hand.
+                matches = [c for c in matches if c is not pokemon]
+            elif predicate is None or any(is_trainer_card(c) for c in matches):
                 discount = 1
         return len(matches) - discount >= n
     return check
