@@ -1,10 +1,27 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hypno (XY3 #36): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+def _is_supporter(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.SUPPORTER.value
+
+
+async def hand_control(ctx):
+    """Your opponent reveals his or her hand. You may choose a Supporter card
+    you find there. If you do, your opponent plays that Supporter card.
+    However, you make all decisions for that card. (It is discarded.)"""
+    opp = ctx.opponent_id
+    if ctx.player_attack_shielded(opp):
+        return
+    hand = await ctx.reveal_hand(opp, ctx.player_id)
+    supporters = [c for c in hand if _is_supporter(c)]
+    if not supporters:
+        return
+    picks = await ctx.choose_cards(supporters, 1, minimum=0,
+                                   prompt="You may choose a Supporter for your opponent to play")
+    if picks:
+        await ctx.play_opponent_supporter(picks[0])
 
 
 card = PokemonCardDef(
@@ -29,15 +46,13 @@ card = PokemonCardDef(
             title="Hand Control",
             game_text="Your opponent reveals his or her hand. You may choose a Supporter card you find there. If you do, your opponent plays that Supporter card. However, you make all decisions for that card. (That Supporter card is discarded.)",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=hand_control,
         ),
         Attack(
             title="Hypnoblast",
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.PSYCHIC: 3},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.ASLEEP),
         ),
     ],
