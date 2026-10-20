@@ -1,9 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.session.effects import is_special_energy
-from spirit.game.card_effects.attacks_common import snipe_attack, bonus_if
-from spirit.game.card_effects.attacks_common import discard_for_bonus, flip_damage
-from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import snipe_attack, flip_damage
 
 
 card = PokemonCardDef(

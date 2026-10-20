@@ -1,7 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_damage
-from spirit.game.card_effects.support_common import opponent_switches
+
+
+async def _karate_chop(ctx):
+    """80 damage minus 10 for each damage counter on this Pokemon."""
+    me = ctx.attacker
+    counters = max(0, ctx.max_hp(me) - me.get_attribute(AttrID.HP, 0)) // 10
+    amount = 80 - 10 * counters
+    if amount > 0:
+        await ctx.deal_damage(amount)
 
 
 card = PokemonCardDef(
@@ -36,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=80,
             damage_operator="-",
-            effect=unimplemented,
+            effect=_karate_chop,
         ),
     ],
 )

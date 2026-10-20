@@ -1,6 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
 
 async def _astonish(ctx):
@@ -14,6 +13,16 @@ async def _astonish(ctx):
     card = random.choice(hand)
     await ctx.reveal_cards([card])
     await ctx.shuffle_into_deck([card], ctx.opponent_id)
+
+
+async def _big_ol_bite(ctx):
+    """Printed damage; heal 30 from this Pokemon. The Defending Pokemon can't
+    retreat during your opponent's next turn."""
+    await ctx.deal_damage()
+    await ctx.heal(30, ctx.attacker)
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.lock_retreat(d)
 
 
 card = PokemonCardDef(
@@ -45,7 +54,7 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon. The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=_big_ol_bite,
         ),
     ],
 )

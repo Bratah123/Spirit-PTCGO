@@ -1,7 +1,21 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _PivotThrowPassive(Passive):
+    """During your opponent's next turn, damage done to this Pokemon by
+    attacks is increased by 20 (after Weakness and Resistance)."""
+
+    def modify_damage_taken(self, calc, carrier):
+        if calc.is_attack and calc.target is carrier_pokemon(carrier) and calc.amount > 0:
+            calc.amount += 20
+
+
+async def _pivot_throw(ctx):
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _PivotThrowPassive())
 
 
 card = PokemonCardDef(
@@ -34,7 +48,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is increased by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=_pivot_throw,
         ),
     ],
 )

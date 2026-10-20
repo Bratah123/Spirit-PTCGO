@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_or_nothing
+from spirit.game.card_effects.attacks_common import flip_or_nothing, damage_per
 from spirit.game.card_effects.passives_common import apply_protection
 
 
@@ -34,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(ctx.hand(ctx.opponent_id)), 10),
         ),
         Attack(
             title="Fly",

@@ -1,7 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+
+
+def _hand_not_empty(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    return bool(hand and hand.children)
+
+
+async def _diving_draw(ctx):
+    """Once during your turn, discard 1 card from your hand, then draw 2 cards."""
+    gone = await ctx.discard_from_hand(1, minimum=1, prompt="Discard a card to draw 2")
+    if gone:
+        await ctx.draw_cards(2)
 
 
 card = PokemonCardDef(
@@ -26,7 +37,9 @@ card = PokemonCardDef(
             title="Diving Draw",
             game_text="Once during your turn (before your attack), you may discard 1 card from your hand. Then, draw 2 cards.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_hand_not_empty,
+            effect=_diving_draw,
         ),
         Attack(
             title="Attack Command",

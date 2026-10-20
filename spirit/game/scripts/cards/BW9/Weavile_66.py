@@ -1,7 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import damage_all_opponents
-from spirit.game.card_effects.passives_common import debuff_defender_attacks
+from spirit.game.session.effects import is_pokemon_card
+
+
+async def _vilify(ctx):
+    """Discard as many Pokemon as you like from your hand; 30 damage times
+    the number discarded."""
+    n = sum(1 for c in ctx.hand() if is_pokemon_card(c))
+    gone = []
+    if n:
+        gone = await ctx.discard_from_hand(n, minimum=0, predicate=is_pokemon_card,
+                                           prompt="Discard any number of Pokémon") or []
+    if gone:
+        await ctx.deal_damage(30 * len(gone))
 
 
 card = PokemonCardDef(
@@ -35,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_vilify,
         ),
     ],
 )

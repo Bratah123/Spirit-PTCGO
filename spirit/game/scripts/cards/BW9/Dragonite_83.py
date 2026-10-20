@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.session.effects import is_item_card
+
+
+async def _lock_item(ctx):
+    """Printed damage; your opponent can't play item cards from their hand during their next turn."""
+    await ctx.deal_damage()
+    ctx.lock_plays(ctx.opponent_id, is_item_card)
 
 
 card = PokemonCardDef(
@@ -26,7 +33,7 @@ card = PokemonCardDef(
             game_text="Your opponent can't play any Item cards from his or her hand during his or her next turn.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
-            effect=unimplemented,
+            effect=_lock_item,
         ),
         Attack(
             title="Healwing",

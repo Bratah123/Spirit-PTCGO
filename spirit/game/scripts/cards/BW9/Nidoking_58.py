@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.content.definitions import def_for
+
+
+def _named(pokemon, name):
+    d = def_for(pokemon.archetype_id) if pokemon is not None else None
+    return getattr(d, "display_name", "") == name
+
 
 card = PokemonCardDef(
     guid="32070912-a6b7-5962-b225-d10897c0f58b",
@@ -26,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: sum(1 for p in ctx.my_bench() if _named(p, "Nidoqueen")), 40, base=20),
         ),
         Attack(
             title="Horn Drill",

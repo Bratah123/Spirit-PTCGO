@@ -1,5 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+
+
+async def _max_milk(ctx):
+    """Heal all damage from 1 of your Pokemon, then discard all Energy
+    attached to this Pokemon."""
+    pool = [p for p in ctx.my_pokemon_in_play() if p.get_attribute(AttrID.HP, 0) < ctx.max_hp(p)]
+    if pool:
+        target = pool[0] if len(pool) == 1 else await ctx.choose_pokemon(pool, "Choose a Pokémon to heal")
+        target = target or pool[0]
+        await ctx.heal(ctx.max_hp(target) - target.get_attribute(AttrID.HP, 0), target)
+    energies = ctx.attached_energies(ctx.attacker)
+    if energies:
+        await ctx.discard_cards(energies)
+
 
 card = PokemonCardDef(
     guid="a23f06f3-a96d-5584-9140-96c3cc4b953d",
@@ -22,7 +36,7 @@ card = PokemonCardDef(
             title="Max Milk",
             game_text="Heal all damage from 1 of your Pok\u00e9mon. Then, discard all Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_max_milk,
         ),
         Attack(
             title="Tackle",

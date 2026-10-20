@@ -1,7 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
-from spirit.game.card_effects.attacks_common import damage_per, count_bench
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.session.effects import plasma_energy_attached
 
 
 card = PokemonCardDef(
@@ -34,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(plasma_energy_attached(ctx.attacker)), 30, base=60),
         ),
     ],
 )

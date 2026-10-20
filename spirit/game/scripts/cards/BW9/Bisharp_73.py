@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, active_is
+from spirit.game.card_effects.trainers import is_dragon_pokemon
+
 
 card = PokemonCardDef(
     guid="6507bcdc-8b18-598e-a04b-746da849e045",
@@ -31,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(active_is(is_dragon_pokemon), 40),
         ),
     ],
 )

@@ -1,8 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import condition_attack, recoil_attack
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
-from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.attacks_common import condition_attack, self_energy_discard_attack
 
 
 card = PokemonCardDef(

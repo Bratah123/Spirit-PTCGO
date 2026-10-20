@@ -1,6 +1,5 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.passives_common import no_weakness_passive
 
 

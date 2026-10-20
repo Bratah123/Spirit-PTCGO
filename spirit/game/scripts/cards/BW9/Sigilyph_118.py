@@ -1,12 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID
 from spirit.game.card_effects.attacks_common import damage_per, count_energy
 from spirit.game.session.passives import Passive, carrier_pokemon
 from spirit.game.content.definitions import def_for
 from spirit.game.models.board import PlayArea, PokemonEntity
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
-from spirit.game.session.passives import effective_max_hp
 
 
 class _SafeguardPassive(Passive):
