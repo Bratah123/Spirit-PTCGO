@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lopunny (XY2 #85): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def power_rush(ctx):
+    """120 damage. Flip a coin. If tails, this Pokémon can't attack during your next turn."""
+    await ctx.deal_damage()
+    heads = (await ctx.flip_coins(1, "Power Rush"))[0]
+    if not heads:
+        lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="690c6029-bae0-5aae-8dcd-bb1d586144f3",
@@ -26,16 +33,15 @@ card = PokemonCardDef(
         Ability(
             title="Big Jump",
             game_text="Once during your turn (before your attack), you may return this Pok\u00e9mon and all cards attached to it to your hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=remove_self_from_play('hand'),
         ),
         Attack(
             title="Sitdown Bounce",
             game_text="Flip a coin. If tails, this Pok\u00e9mon can't attack during your next turn.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=power_rush,
         ),
     ],
 )

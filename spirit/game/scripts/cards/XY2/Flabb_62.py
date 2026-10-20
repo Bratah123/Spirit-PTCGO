@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flabébé (XY2 #62): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="bb75c4bc-6b1b-5ec9-ba97-570aac667f95",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             title="Aromatherapy",
             game_text="Heal 10 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(10, 'each_own'),
         ),
     ],
 )

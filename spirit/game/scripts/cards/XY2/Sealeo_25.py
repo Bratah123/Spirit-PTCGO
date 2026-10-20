@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sealeo (XY2 #25): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def rest(ctx):
+    """Heal 60 damage from this Pokémon. This Pokémon is now Asleep."""
+    await ctx.heal(60, ctx.attacker)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="e4283786-17d8-596e-8c84-380eec375784",
@@ -27,8 +30,7 @@ card = PokemonCardDef(
             title="Rest",
             game_text="Heal 60 damage from this Pok\u00e9mon. This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=rest,
         ),
         Attack(
             title="Ice Ball",

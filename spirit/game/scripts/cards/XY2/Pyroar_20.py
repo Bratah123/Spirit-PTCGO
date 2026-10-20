@@ -4,6 +4,13 @@ Pyroar (XY2 #20): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_for_bonus
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
 
 card = PokemonCardDef(
     guid="7c71795f-ec1a-5fc0-b434-43fcf89e13c9",
@@ -36,7 +43,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_for_bonus(source='self-energy', predicate=_is_fire_energy, max_count=1, flat=30, prompt='You may discard a Fire Energy for 30 more damage'),
         ),
     ],
 )
