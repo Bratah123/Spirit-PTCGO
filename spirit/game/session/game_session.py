@@ -4783,6 +4783,14 @@ class GameSession:
         if isinstance(card, (ComponentCardEntity, CompositePokemonEntity))                 or isinstance(target, CompositePokemonEntity):
             return False
 
+        # "Before it evolves" hooks on the pre-evolution (Kinesis).
+        def _setup(c):
+            c.evolution_card = card
+        await self._fire_triggered_abilities(
+            player_id, target, Triggers.ON_BEING_EVOLVED, ctx_setup=_setup)
+        if target.parent is not area:
+            return False  # the pre-evolution left play (KO'd by its own hook)
+
         slot = self.board_state.bench_slot_of(target)
 
         # Damage counters carry through evolution: capture what the
