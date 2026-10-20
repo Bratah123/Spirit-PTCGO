@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tentacruel (XY5 #72): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _big_ol_bite(ctx):
+    """Printed damage; heal 30 from this Pokemon. The Defending Pokemon can't
+    retreat during your opponent's next turn."""
+    await ctx.deal_damage()
+    await ctx.heal(30, ctx.attacker)
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.lock_retreat(d)
+
 
 card = PokemonCardDef(
     guid="82903d23-01f5-58d6-95d4-9aedd59cb712",
@@ -27,16 +35,14 @@ card = PokemonCardDef(
             title="Dancing Tentacles",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused and Poisoned.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, SpecialConditions.POISONED),
         ),
         Attack(
             title="Stick and Absorb",
             game_text="Heal 30 damage from this Pok\u00e9mon. The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_big_ol_bite,
         ),
     ],
 )

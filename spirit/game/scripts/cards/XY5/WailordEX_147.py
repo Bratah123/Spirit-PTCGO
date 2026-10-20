@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wailord-EX (XY5 #147): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def water_veil(ctx):
+    """Whenever you attach an Energy card from your hand to this Pokémon, remove all Special Conditions from it."""
+    if ctx.attaching_player_id != ctx.player_id or ctx.energy_receiver is not ctx.source:
+        return
+    await ctx.cure_all_conditions(ctx.source)
+
 
 card = PokemonCardDef(
     guid="50dc6278-ac4d-51ba-aaed-dc851cb390e3",
@@ -25,16 +30,15 @@ card = PokemonCardDef(
         Ability(
             title="Water Veil",
             game_text="Whenever you attach an Energy card from your hand to this Pok\u00e9mon, remove all Special Conditions from it.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_ENERGY_ATTACHED,
+            effect=water_veil,
         ),
         Attack(
             title="High Breaching",
             game_text="This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 5},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(self_conditions=(SpecialConditions.ASLEEP,)),
         ),
     ],
 )
