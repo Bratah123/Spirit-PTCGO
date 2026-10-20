@@ -38,6 +38,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Seedot.Name",
     family_id=273,
     abilities=[

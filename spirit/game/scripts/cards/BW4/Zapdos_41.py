@@ -19,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=145,
     abilities=[
         Attack(
