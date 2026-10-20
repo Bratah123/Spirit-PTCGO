@@ -6,6 +6,19 @@ from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
 
+
+async def _future_spin(ctx):
+    """Look at the top 3 cards of either player's deck and put them back in any order."""
+    pid = ctx.opponent_id if await ctx.ask_yes_no("Look at your opponent's deck? (No = your own)") else ctx.player_id
+    top = ctx.deck_top(3, pid)
+    if not top:
+        return
+    order = await ctx.choose_cards(top, len(top), minimum=len(top), ordered=True, display_cards=top,
+                                   prompt="Choose the order (first = top)") or top
+    for card in reversed(list(order)):
+        await ctx.put_on_top_of_deck(card)
+
+
 card = PokemonCardDef(
     guid="df3c3948-bbbe-5a99-851a-48364afb9c49",
     key="XY7",
@@ -29,7 +42,7 @@ card = PokemonCardDef(
             game_text="Look at the top 3 cards of either player's deck and put them back on top of that player's deck in any order.",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_future_spin,
         ),
     ],
 )

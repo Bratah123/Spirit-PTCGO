@@ -5,6 +5,21 @@ Ariados (XY7 #6): one or more attacks/abilities use effect=unimplemented until a
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import Activations
+from spirit.game.attributes import PokemonTypes
+from spirit.game.attributes import AttrID
+from spirit.game.attributes import SpecialConditions
+
+
+def _non_grass(p):
+    return p is not None and PokemonTypes.GRASS.value not in (p.get_attribute(AttrID.POKEMON_TYPES) or [])
+
+
+async def _poisonous_nest(ctx):
+    """Both Active Pokemon (except Grass Pokemon) are now Poisoned."""
+    for p in (ctx.my_active(), ctx.opponent_active()):
+        if _non_grass(p):
+            await ctx.apply_special_condition(p, SpecialConditions.POISONED)
 
 
 card = PokemonCardDef(
@@ -29,7 +44,8 @@ card = PokemonCardDef(
             title="Poisonous Nest",
             game_text="Once during your turn (before your attack), you may use this Ability. Both Active Pok\u00e9mon (except for Grass Pok\u00e9mon) are now Poisoned.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=_poisonous_nest,
         ),
         Attack(
             title="Impound",

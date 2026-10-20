@@ -5,6 +5,35 @@ M Sceptile-EX (XY7 #8): one or more attacks/abilities use effect=unimplemented u
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.attributes import AttrID
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+async def _jagged_saber(ctx):
+    """100; you may attach up to 2 Grass Energy from your hand to your Benched
+    Pokemon in any way; heal all damage from each Pokemon that got Energy."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    pool = [c for c in ctx.hand() if _is_grass_energy(c)]
+    if not bench or not pool:
+        return
+    picks = await ctx.choose_cards(pool, min(2, len(pool)), minimum=0, prompt="Attach up to 2 Grass Energy") or []
+    healed = []
+    for energy in picks:
+        target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Attach to which Benched Pokémon?")
+        if target is not None and await ctx.attach_energy(energy, target):
+            if target not in healed:
+                healed.append(target)
+    for p in healed:
+        dmg = ctx.max_hp(p) - p.get_attribute(AttrID.HP, 0)
+        if dmg > 0:
+            await ctx.heal(dmg, p)
+
 
 card = PokemonCardDef(
     guid="078d89f2-1516-55b6-b58f-b08a3f9153d5",
@@ -31,7 +60,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_jagged_saber,
         ),
     ],
 )

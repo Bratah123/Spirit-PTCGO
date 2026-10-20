@@ -4,6 +4,26 @@ Lugia-EX (XY7 #68): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+
+
+_mine = count_energy('self')
+_theirs = count_energy('defender')
+
+
+async def _aero_ball(ctx):
+    """20x the amount of Energy attached to both Active Pokemon."""
+    await ctx.deal_damage(20 * (_mine(ctx) + _theirs(ctx)))
+
+
+async def _deep_hurricane(ctx):
+    """80+; +70 if any Stadium is in play, then discard it."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(ctx.ability.damage + 70)
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="396fed67-66bf-5c52-b0ef-074ad11fe90a",
@@ -31,7 +51,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_aero_ball,
         ),
         Attack(
             title="Deep Hurricane",
@@ -40,7 +60,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_deep_hurricane,
         ),
     ],
 )

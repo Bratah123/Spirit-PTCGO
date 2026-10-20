@@ -27,6 +27,22 @@ async def _slippery_soles(ctx):
 def _slippery_soles_condition(board, player_id, pokemon=None):
     bench = board.find_player_area(player_id, "bench")
     return bool(bench and bench.children)
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_metal_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.METAL.value)
+
+
+async def _iron_cannon(ctx):
+    """80+; you may discard all Metal Energy on this Pokemon for 80 more."""
+    metal = [e for e in ctx.attached_energies(ctx.attacker) if _is_metal_energy(e)]
+    if metal and await ctx.ask_yes_no("Discard all Metal Energy for 80 more damage?"):
+        await ctx.discard_cards(metal)
+        await ctx.deal_damage(ctx.ability.damage + 80)
+    else:
+        await ctx.deal_damage()
 
 
 card = PokemonCardDef(
@@ -64,7 +80,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_cannon,
         ),
     ],
 )

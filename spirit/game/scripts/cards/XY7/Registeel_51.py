@@ -5,6 +5,19 @@ Registeel (XY7 #51): one or more attacks/abilities use effect=unimplemented unti
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+
+
+def _is_ex(p):
+    return "EX" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+async def _iron_hammer(ctx):
+    """70; if the opponent's Active is a Pokemon-EX, discard an Energy attached to it."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    if d is not None and _is_ex(d) and ctx.attached_energies(d) and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, minimum=1, prompt="Choose an Energy to discard")
 
 
 card = PokemonCardDef(
@@ -41,7 +54,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_hammer,
         ),
     ],
 )

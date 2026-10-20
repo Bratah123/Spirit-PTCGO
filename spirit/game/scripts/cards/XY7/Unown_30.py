@@ -4,6 +4,20 @@ Unown (XY7 #30): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import Activations
+from spirit.game.session.effects import full_stack
+
+
+def _farewell_condition(board, player_id, pokemon=None):
+    bench = board.find_player_area(player_id, "bench")
+    return pokemon is not None and bench is not None and pokemon in bench.children
+
+
+async def _farewell_letter(ctx):
+    """Discard this Benched Pokemon and all cards attached (not a Knock Out); draw a card."""
+    await ctx.discard_cards(full_stack(ctx.source))
+    await ctx.draw_cards(1)
+
 
 card = PokemonCardDef(
     guid="3fab86ca-52a6-5664-b8d0-6f2f6f670b27",
@@ -26,7 +40,9 @@ card = PokemonCardDef(
             title="Farewell Letter",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is on your Bench, you may discard this Pok\u00e9mon and all cards attached to it (this does not count as a Knock Out). If you do, draw a card.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_farewell_condition,
+            effect=_farewell_letter,
         ),
         Attack(
             title="Hidden Power",

@@ -4,6 +4,28 @@ Giratina-EX (XY7 #93): one or more attacks/abilities use effect=unimplemented un
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when
+from spirit.game.session.passives import carrier_pokemon
+from spirit.game.content.definitions import def_for
+from spirit.game.attributes import AttrID, TrainerType
+from spirit.game.session.effects import is_special_energy
+
+
+def _from_mega(calc, carrier):
+    return (calc.target is carrier_pokemon(carrier) and calc.attacker is not None
+            and "MEGA" in (getattr(def_for(calc.attacker.archetype_id), "subtypes", None) or []))
+
+
+def _wheel_locked(card):
+    tt = card.get_attribute(AttrID.TRAINER_TYPE)
+    return is_special_energy(card) or tt in (TrainerType.POKEMON_TOOL.value, TrainerType.STADIUM.value)
+
+
+async def _chaos_wheel(ctx):
+    """100; opponent can't play Tools, Special Energy, or Stadiums next turn."""
+    await ctx.deal_damage()
+    ctx.lock_plays(ctx.opponent_id, _wheel_locked)
+
 
 card = PokemonCardDef(
     guid="c8197583-3043-5321-aa31-0ff38776c77d",
@@ -26,7 +48,7 @@ card = PokemonCardDef(
             title="Renegade Pulse",
             game_text="Prevent all effects of attacks, including damage, done to this Pok\u00e9mon by your opponent's Mega Evolution Pok\u00e9mon.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=prevent_damage_when(_from_mega),
         ),
         Attack(
             title="Chaos Wheel",
@@ -34,7 +56,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_chaos_wheel,
         ),
     ],
 )

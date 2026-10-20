@@ -5,6 +5,13 @@ Sceptile-EX (XY7 #7): one or more attacks/abilities use effect=unimplemented unt
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.attributes import AttrID
+
+
+def _has_condition(ctx):
+    d = ctx.opponent_active()
+    return d is not None and bool(d.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
 
 
 card = PokemonCardDef(
@@ -39,7 +46,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_has_condition, 70),
         ),
     ],
 )

@@ -11,6 +11,8 @@ async def return_effect(ctx):
     await ctx.deal_damage()
     if await ctx.ask_yes_no("Draw cards until you have 6 cards in your hand?"):
         await ctx.draw_until(6)
+from spirit.game.card_effects.attacks_common import damage_per, count_discard
+from spirit.game.session.effects import is_pokemon_card
 
 
 card = PokemonCardDef(
@@ -46,7 +48,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_discard('mine', is_pokemon_card), 10, base=20),
         ),
     ],
 )

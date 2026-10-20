@@ -4,6 +4,18 @@ M Ampharos-EX (XY7 #88): one or more attacks/abilities use effect=unimplemented 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+
+
+async def _exavolt(ctx):
+    """120; you may do 50 more and Paralyze; if you do, 30 damage to this Pokemon."""
+    if await ctx.ask_yes_no("Do 50 more damage and Paralyze (30 damage to this Pokémon)?"):
+        await ctx.deal_damage(ctx.ability.damage + 50)
+        await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+        await ctx.deal_damage(30, target=ctx.attacker, apply_modifiers=False)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="36f679aa-7878-50b0-ba8a-76ebc1947a98",
@@ -32,7 +44,7 @@ card = PokemonCardDef(
             damage=120,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_exavolt,
         ),
     ],
 )

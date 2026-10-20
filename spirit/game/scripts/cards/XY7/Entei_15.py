@@ -6,6 +6,7 @@ from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import flip_damage
 
 
 card = PokemonCardDef(
@@ -40,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(tails_self_damage=30),
         ),
     ],
 )

@@ -5,6 +5,8 @@ M Tyranitar-EX (XY7 #43): one or more attacks/abilities use effect=unimplemented
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+
 
 card = PokemonCardDef(
     guid="6a1ea7e2-d424-53c0-b605-0dc540e1cdb8",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             damage=110,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('defender'), 60, base=110),
         ),
     ],
 )

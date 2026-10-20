@@ -5,6 +5,15 @@ Porygon (XY7 #64): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _data_check(ctx):
+    """Look through your deck. Shuffle your deck afterward."""
+    deck = list(reversed(ctx.deck()))
+    if deck:
+        await ctx.choose_cards(deck, 1, minimum=0, display_cards=deck, prompt="Your deck")
+        await ctx.shuffle_deck()
+
+
 card = PokemonCardDef(
     guid="42d15757-0ad3-5d95-b541-a845fb6279ab",
     key="XY7",
@@ -27,7 +36,7 @@ card = PokemonCardDef(
             game_text="Look through your deck. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_data_check,
         ),
         Attack(
             title="Sharpen",

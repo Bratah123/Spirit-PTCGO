@@ -4,6 +4,18 @@ Meowth (XY7 #61): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_dark_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.DARKNESS.value)
+
+
+def _has_dark(ctx):
+    return any(_is_dark_energy(e) for e in ctx.attached_energies(ctx.attacker))
+
 
 card = PokemonCardDef(
     guid="79383333-6460-5cbe-8216-690624b6abfe",
@@ -29,7 +41,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_has_dark, 20),
         ),
     ],
 )

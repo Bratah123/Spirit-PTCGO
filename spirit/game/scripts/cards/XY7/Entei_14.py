@@ -4,6 +4,28 @@ Entei (XY7 #14): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+async def _burning_roar(ctx):
+    """Discard the top 4 cards of your deck; attach any Fire Energy among them
+    to your Pokemon in any way."""
+    top = ctx.deck_top(4)
+    if not top:
+        return
+    await ctx.discard_cards(top)
+    for energy in [c for c in top if _is_fire_energy(c)]:
+        mine = ctx.my_pokemon_in_play()
+        target = mine[0] if len(mine) == 1 else await ctx.choose_pokemon(mine, "Attach the Fire Energy to which Pokémon?")
+        if target is not None:
+            await ctx.attach_energy(energy, target)
+
 
 card = PokemonCardDef(
     guid="6decb528-a0f3-5fdf-8d6a-d44b9e8ca759",
@@ -27,7 +49,7 @@ card = PokemonCardDef(
             game_text="Discard the top 4 cards of your deck. If any of those cards are Fire Energy cards, attach them to your Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_burning_roar,
         ),
         Attack(
             title="Combat Blaze",
@@ -36,7 +58,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_bench('opponent'), 20, base=20),
         ),
     ],
 )

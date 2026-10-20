@@ -6,6 +6,20 @@ from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import devolve_depth
+
+
+async def _digital_reboot(ctx):
+    """Devolve as many of your Benched Pokemon as many times as you like; the
+    removed Evolution cards go to your hand."""
+    for _ in range(12):
+        evolved = [p for p in ctx.my_bench() if devolve_depth(p) > 0]
+        if not evolved:
+            return
+        target = await ctx.choose_pokemon(evolved, "Devolve which Benched Pokémon? (decline to stop)", optional=True)
+        if target is None:
+            return
+        await ctx.devolve_pokemon(target, 1, destination="hand")
 
 
 card = PokemonCardDef(
@@ -32,7 +46,7 @@ card = PokemonCardDef(
             game_text="Devolve as many of your Benched Pok\u00e9mon as many times as you like. Put each Evolution card removed this way into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_digital_reboot,
         ),
         Attack(
             title="Dazzle Blast",

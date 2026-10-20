@@ -5,6 +5,21 @@ Jolteon (XY7 #26): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.session.passives import Passive
+from spirit.game.attributes import PokemonTypes
+from spirit.game.attributes import AttrID, PokemonStage
+from spirit.game.session.passives import carrier_pokemon
+
+
+class _StageOneType(Passive):
+    """Each of your Stage 1 Pokemon in play is now a Lightning Pokemon in addition to its types."""
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        me = carrier_pokemon(carrier)
+        if (me is None or pokemon.owning_player_id != me.owning_player_id
+                or pokemon.get_attribute(AttrID.STAGE) != PokemonStage.STAGE1.value
+                or PokemonTypes.LIGHTNING.value in types):
+            return types
+        return list(types) + [PokemonTypes.LIGHTNING.value]
 
 
 card = PokemonCardDef(
@@ -31,7 +46,7 @@ card = PokemonCardDef(
             title="Electric Effect",
             game_text="Each of your Stage 1 Pok\u00e9mon in play is now a Lightning Pok\u00e9mon in addition to its existing types.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_StageOneType(),
         ),
         Attack(
             title="Thunder Blast",

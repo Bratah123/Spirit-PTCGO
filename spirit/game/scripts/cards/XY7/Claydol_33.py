@@ -15,6 +15,15 @@ async def _flip_discard_defender_energy(ctx):
     if results and results[0] and target is not None and not ctx.effects_blocked(target):
         await ctx.discard_energy_from(target, 1, minimum=1,
                                       prompt="Choose an Energy to discard")
+from spirit.game.card_effects.pokemon import devolve_depth
+
+
+async def _rewind(ctx):
+    """Devolve each of your opponent's evolved Pokemon; the highest Stage card
+    goes to your opponent's hand."""
+    for p in list(ctx.opponent_pokemon_in_play()):
+        if devolve_depth(p) > 0 and not ctx.effects_blocked(p):
+            await ctx.devolve_pokemon(p, 1, destination="hand")
 
 
 card = PokemonCardDef(
@@ -40,7 +49,7 @@ card = PokemonCardDef(
             game_text="Devolve each of your opponent's evolved Pok\u00e9mon and put the highest Stage Evolution card on it into your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rewind,
         ),
         Attack(
             title="Hyper Beam",

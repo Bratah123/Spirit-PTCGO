@@ -4,6 +4,15 @@ Vileplume (XY7 #3): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+from spirit.game.session.effects import is_item_card
+
+
+class _IrritatingPollen(Passive):
+    """Each player can't play any Item cards from his or her hand."""
+    def blocks_trainer_play(self, card, player_id, carrier):
+        return is_item_card(card)
+
 
 card = PokemonCardDef(
     guid="799bb55d-d79b-5cd6-91d1-f25af840b56b",
@@ -27,7 +36,7 @@ card = PokemonCardDef(
             title="Irritating Pollen",
             game_text="Each player can't play any Item cards from his or her hand.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_IrritatingPollen(),
         ),
         Attack(
             title="Solar Beam",

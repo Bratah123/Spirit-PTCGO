@@ -6,6 +6,7 @@ from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import damage_per, count_hand
 
 
 card = PokemonCardDef(
@@ -36,7 +37,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_hand('mine'), 10, base=20),
         ),
         Attack(
             title="Guard Press",

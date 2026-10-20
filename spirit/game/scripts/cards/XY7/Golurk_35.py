@@ -14,6 +14,17 @@ async def _giga_power(ctx):
         await recoil_attack(20, damage=120)(ctx)
     else:
         await ctx.deal_damage()
+from spirit.game.session.passives import Passive
+from spirit.game.attributes import PokemonTypes
+from spirit.game.session.passives import carrier_pokemon
+
+
+class _DoubleType(Passive):
+    """As long as this Pokemon is in play, it is Psychic and Fighting type."""
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        if carrier_pokemon(carrier) is not pokemon:
+            return types
+        return [PokemonTypes.PSYCHIC.value, PokemonTypes.FIGHTING.value]
 
 
 card = PokemonCardDef(
@@ -41,7 +52,7 @@ card = PokemonCardDef(
             title="Double Type",
             game_text="As long as this Pok\u00e9mon is in play, it is Psychic and Fighting type.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_DoubleType(),
         ),
         Attack(
             title="Superpower",

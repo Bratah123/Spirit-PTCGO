@@ -5,6 +5,23 @@ Ampharos-EX (XY7 #27): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import ignore_effects_attack
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _thunder_rod(ctx):
+    """Look at the top 4 cards; attach any Lightning Energy there to this Pokemon; shuffle."""
+    top = ctx.deck_top(4)
+    pool = [c for c in top if _is_lightning_energy(c)]
+    picks = await ctx.choose_cards(pool, len(pool), minimum=0, display_cards=top,
+                                   prompt="Attach Lightning Energy to this Pokémon") if pool else []
+    for energy in picks or []:
+        await ctx.attach_energy(energy, ctx.attacker)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -31,7 +48,7 @@ card = PokemonCardDef(
             game_text="Look at the top 4 cards of your deck and attach as many Lightning Energy cards you find there as you like to this Pok\u00e9mon. Shuffle the other cards back into your deck.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_thunder_rod,
         ),
         Attack(
             title="Sparkling Tail",

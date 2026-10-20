@@ -5,6 +5,22 @@ Rotom (XY7 #29): one or more attacks/abilities use effect=unimplemented until a 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _electric_mischief(ctx):
+    """Flip 3 coins; for each heads, a random card from your opponent's hand
+    is revealed and shuffled into their deck."""
+    import random
+    results = await ctx.flip_coins(3, ctx.ability.title)
+    picks = []
+    for r in results or []:
+        hand = [c for c in ctx.hand(ctx.opponent_id) if c not in picks]
+        if r and hand:
+            picks.append(random.choice(hand))
+    if picks:
+        await ctx.reveal_cards(picks)
+        await ctx.shuffle_into_deck(picks, ctx.opponent_id)
+
+
 card = PokemonCardDef(
     guid="ec32a305-da81-5962-9ccf-88cee9a4be19",
     key="XY7",
@@ -34,7 +50,7 @@ card = PokemonCardDef(
             game_text="Flip 3 coins. For each heads, choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into his or her deck.",
             cost={PokemonTypes.COLORLESS: 2},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_electric_mischief,
         ),
     ],
 )

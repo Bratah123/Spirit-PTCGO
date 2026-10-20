@@ -5,6 +5,23 @@ Golurk (XY7 #41): one or more attacks/abilities use effect=unimplemented until a
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fighting_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIGHTING.value)
+
+
+async def _dig_out(ctx):
+    """20; discard the top card of your deck; if it's a Fighting Energy, attach it to this Pokemon."""
+    await ctx.deal_damage()
+    top = ctx.deck_top(1)
+    if not top:
+        return
+    await ctx.discard_cards(top)
+    if _is_fighting_energy(top[0]):
+        await ctx.attach_energy(top[0], ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -31,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dig_out,
         ),
         Attack(
             title="Double Lariat",
