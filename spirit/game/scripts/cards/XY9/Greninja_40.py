@@ -1,9 +1,32 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Greninja (XY9 #40): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import ability_lock_passive
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+async def _shadow_stitching(ctx):
+    """40; until the end of your opponent's next turn, each of their Pokemon has no Abilities."""
+    await ctx.deal_damage()
+    opp = ctx.opponent_id
+    ctx.add_global_passive(ability_lock_passive(lambda p, carrier: p.owning_player_id == opp),
+                           ctx.session.turn_state.turn_number + 1)
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _moonlight_slash(ctx):
+    """60+; you may return a Water Energy from this Pokemon to your hand for 20 more."""
+    water = [e for e in ctx.attached_energies(ctx.attacker) if _is_water_energy(e)]
+    if water and await ctx.ask_yes_no("Return a Water Energy to your hand for 20 more damage?"):
+        pick = water if len(water) == 1 else await ctx.choose_cards(water, 1, minimum=1, prompt="Choose a Water Energy")
+        if pick:
+            await ctx.put_in_hand(pick[:1], reveal=False)
+            await ctx.deal_damage(ctx.ability.damage + 20)
+            return
+    await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="06835cae-fddd-51da-b8b5-68fa60dc121c",
@@ -28,8 +51,7 @@ card = PokemonCardDef(
             game_text="Until the end of your opponent's next turn, each Pok\u00e9mon your opponent has in play, in his or her hand, and in his or her discard pile has no Abilities. (This includes cards that come into play on that turn.)",
             cost={PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_shadow_stitching,
         ),
         Attack(
             title="Moonlight Slash",
@@ -37,8 +59,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_moonlight_slash,
         ),
     ],
 )

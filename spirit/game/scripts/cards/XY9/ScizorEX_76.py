@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Scizor-EX (XY9 #76): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.attacks_common import bonus_if
 
 
 card = PokemonCardDef(
@@ -31,7 +28,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=protect_next_turn(reduce=20),
         ),
         Attack(
@@ -40,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.entered_active_this_turn(ctx.attacker), 60),
         ),
     ],
 )

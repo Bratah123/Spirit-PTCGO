@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shellder (XY9 #23): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _clamp(ctx):
+    """30; flip: heads Paralyzed; tails this attack does nothing."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if not (results and results[0]):
+        return
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="993cfffa-fedf-54af-a823-2b01b79abb8b",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed. If tails, this attack does nothing.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_clamp,
         ),
     ],
 )

@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Clefable (XY9 #82): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import prevent_damage_when
+from spirit.game.card_effects.trainers import is_dragon_pokemon
+
+
+async def _moon_barrier(ctx):
+    """30; during the opponent's next turn, prevent all damage from Dragon Pokemon's attacks to this Pokemon."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, prevent_damage_when(
+        lambda calc, carrier: calc.attacker is not None and is_dragon_pokemon(calc.attacker)))
 
 
 card = PokemonCardDef(
@@ -32,8 +37,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, prevent all effects of attacks, including damage, done to this Pok\u00e9mon by Dragon Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_moon_barrier,
         ),
         Attack(
             title="Tumbling Attack",
@@ -41,7 +45,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
     ],

@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Glameow (XY9 #93): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _act_cute(ctx):
+    """Your opponent puts a card from their hand on the bottom of their deck."""
+    hand = list(ctx.hand(ctx.opponent_id))
+    if not hand:
+        return
+    pick = await ctx.choose_cards(hand, 1, minimum=1, prompt="Put a card on the bottom of your deck",
+                                  player_id=ctx.opponent_id)
+    if pick:
+        await ctx.put_on_bottom_of_deck(pick[0])
+
 
 card = PokemonCardDef(
     guid="6ab9a3c9-bf2a-579f-b1e1-5debe87754e7",
@@ -26,8 +34,7 @@ card = PokemonCardDef(
             title="Act Cute",
             game_text="Your opponent puts a card from his or her hand on the bottom of his or her deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_act_cute,
         ),
         Attack(
             title="Scratch",

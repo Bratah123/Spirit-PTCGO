@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Purugly (XY9 #94): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _nyan_press(ctx):
+    """40+; heads 40 more; tails the opponent's Active is Paralyzed."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (40 if heads else 0))
+    if not heads:
+        await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="c87741d2-941e-5310-a988-100bc8c475ba",
@@ -34,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_nyan_press,
         ),
     ],
 )

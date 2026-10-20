@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gyarados-EX (XY9 #27): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+
+
+_water = count_energy('self', energy_type=PokemonTypes.WATER)
+
+
+async def _blast_geyser(ctx):
+    """120+; you may do 20 more per Water Energy on this Pokemon; if you do, discard your top 2 cards."""
+    n = _water(ctx)
+    if n and await ctx.ask_yes_no(f"Do {20 * n} more damage and discard the top 2 cards of your deck?"):
+        await ctx.deal_damage(ctx.ability.damage + 20 * n)
+        await ctx.discard_cards(ctx.deck_top(2))
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="edce07d9-2384-5316-b5f5-44e4430a43f0",
@@ -29,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=120,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_blast_geyser,
         ),
     ],
 )

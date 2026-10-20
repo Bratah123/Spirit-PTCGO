@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Togekiss-EX (XY9 #83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def _mighty_wind(ctx):
+    """20; you may attach an Energy card from your hand to 1 of your Benched Pokemon."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    pool = [c for c in ctx.hand() if is_energy_card(c)]
+    if not bench or not pool:
+        return
+    pick = await ctx.choose_cards(pool, 1, minimum=0, prompt="Attach an Energy card? (optional)")
+    if not pick:
+        return
+    target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Attach to which Benched Pokémon?")
+    await ctx.attach_energy(pick[0], target or bench[0])
 
 
 card = PokemonCardDef(
@@ -31,8 +42,7 @@ card = PokemonCardDef(
             game_text="You may attach an Energy card from your hand to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mighty_wind,
         ),
         Attack(
             title="Hurricane Wing",
@@ -40,7 +50,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=4, per_heads=50),
         ),
     ],
