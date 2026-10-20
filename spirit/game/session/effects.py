@@ -1888,7 +1888,8 @@ class EffectContext:
                             destination: str = "discard",
                             transfer: bool = True) -> bool:
         """Switches an in-play Pokemon with a hand/discard card; see
-        GameSession.perform_identity_swap. transfer=True carries attachments/
+        GameSession.perform_identity_swap (destination="underneath" tucks the
+        outgoing card under the new one). transfer=True carries attachments/
         damage/conditions/turn stamps onto the new Pokemon; a transferred
         damage total covering its HP queues a knockout. The TransformSwap
         choreography queues on this ctx so the announce/orb bracket (aimed at
@@ -2310,6 +2311,49 @@ def is_supporter_card(card: CardEntity) -> bool:
 
 def is_special_energy(card: CardEntity) -> bool:
     return bool(card.get_attribute(AttrID.IS_SPECIAL_ENERGY))
+
+
+TEAM_PLASMA_SUBTYPE = "Team Plasma"
+
+
+def _has_subtype(card: Optional[CardEntity], subtype: str) -> bool:
+    if card is None:
+        return False
+    from spirit.game.content.definitions import subtypes_for
+    return subtype in (subtypes_for(card.archetype_id) or [])
+
+
+def is_team_plasma_card(card: CardEntity) -> bool:
+    """Any card printed as Team Plasma (Pokemon, Trainer or Plasma Energy)."""
+    return _has_subtype(card, TEAM_PLASMA_SUBTYPE)
+
+
+def is_team_plasma_pokemon(card: CardEntity) -> bool:
+    """A Team Plasma Pokemon. In play, an attached card whose definition sets
+    grants_team_plasma=True (BW9 Team Plasma Badge) also makes it one; tucked
+    pre-evolutions are ignored."""
+    if not is_pokemon_card(card):
+        return False
+    if is_team_plasma_card(card):
+        return True
+    from spirit.game.content.definitions import def_for
+    for child in getattr(card, "children", None) or []:
+        if isinstance(child, PokemonEntity):
+            continue
+        if getattr(def_for(getattr(child, "archetype_id", None)), "grants_team_plasma", False):
+            return True
+    return False
+
+
+def is_plasma_energy(card: CardEntity) -> bool:
+    """Plasma Energy: the Team Plasma Special Energy (BW8-BW10)."""
+    return is_special_energy(card) and is_team_plasma_card(card)
+
+
+def plasma_energy_attached(pokemon: PokemonEntity) -> List[CardEntity]:
+    return [c for c in (getattr(pokemon, "children", None) or [])
+            if isinstance(c, CardEntity) and not isinstance(c, PokemonEntity)
+            and is_plasma_energy(c)]
 
 
 def full_stack(pokemon: PokemonEntity) -> List[CardEntity]:
