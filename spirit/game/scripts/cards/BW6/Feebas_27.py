@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _add_a_dash(ctx):
+    """Flip 2 coins. For each heads, draw a card."""
+    results = await ctx.flip_coins(2, "Add-a-Dash")
+    heads = sum(1 for r in results if r)
+    if heads:
+        await ctx.draw_cards(heads)
+
 
 card = PokemonCardDef(
     guid="e8645082-32c9-5a44-94a5-14ca180db252",
@@ -22,7 +31,7 @@ card = PokemonCardDef(
             title="Add-a-Dash",
             game_text="Flip 2 coins. For each heads, draw a card.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=_add_a_dash,
         ),
     ],
 )

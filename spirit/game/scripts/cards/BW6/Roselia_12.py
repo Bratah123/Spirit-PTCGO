@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _relaxing_fragrance(ctx):
+    """Heal 30 damage and remove all Special Conditions from this Pokemon."""
+    await ctx.heal(30, ctx.attacker)
+    await ctx.cure_all_conditions(ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -33,7 +39,7 @@ card = PokemonCardDef(
             title="Relaxing Fragrance",
             game_text="Heal 30 damage and remove all Special Conditions from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=_relaxing_fragrance,
         ),
     ],
 )

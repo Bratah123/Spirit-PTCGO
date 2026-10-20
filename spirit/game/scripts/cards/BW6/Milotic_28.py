@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import search_to_hand
 
 
 card = PokemonCardDef(
@@ -25,7 +26,8 @@ card = PokemonCardDef(
             title="Clear Search",
             game_text="Search your deck for any 3 cards and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=search_to_hand(None, count=3, minimum=0, reveal=False,
+                                  prompt='Choose any 3 cards to put into your hand.'),
         ),
         Attack(
             title="Water Pulse",

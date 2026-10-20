@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.support_common import remove_self_from_play
 
 
 card = PokemonCardDef(
@@ -26,7 +27,8 @@ card = PokemonCardDef(
             title="Leave It to the Wind",
             game_text="Once during your turn (before your attack), you may return this Pok\u00e9mon and all cards attached to it to your hand.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=remove_self_from_play('hand'),
         ),
         Attack(
             title="Acrobatics",

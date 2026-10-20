@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.support_common import heal_attack, gust_attack
 
 
 card = PokemonCardDef(
@@ -25,7 +25,7 @@ card = PokemonCardDef(
             title="Tangle Drag",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=gust_attack(),
         ),
         Attack(
             title="Spiral Drain",

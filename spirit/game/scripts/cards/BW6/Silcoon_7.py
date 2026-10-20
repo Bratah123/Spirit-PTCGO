@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _HardenPassive(Passive):
+    """Prevent attack damage of 60 or less (after W/R) done to this Pokemon."""
+
+    def prevents_damage(self, calc, carrier):
+        return bool(calc.is_attack and calc.is_opposing
+                    and carrier_pokemon(carrier) is calc.target
+                    and calc.amount <= 60)
+
+
+async def _harden(ctx):
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _HardenPassive())
+
 
 card = PokemonCardDef(
     guid="288a0583-699d-5828-8abb-7a1370a5da69",
@@ -23,7 +38,7 @@ card = PokemonCardDef(
             title="Harden",
             game_text="During your opponent's next turn, if this Pok\u00e9mon would be damaged by an attack, prevent that attack's damage done to this Pok\u00e9mon if that damage is 60 or less.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_harden,
         ),
         Attack(
             title="Bug Bite",

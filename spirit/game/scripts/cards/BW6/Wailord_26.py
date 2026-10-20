@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _water_cannon(ctx):
+    """Flip a coin. If heads, 30 damage times the Water Energy attached to this Pokemon."""
+    results = await ctx.flip_coins(1, "Water Cannon")
+    if not results or not results[0]:
+        return
+    water = sum(1 for e in ctx.attached_energies(ctx.attacker)
+                if energy_provides_type(e, PokemonTypes.WATER.value))
+    if water:
+        await ctx.deal_damage(30 * water)
+
 
 card = PokemonCardDef(
     guid="ef191cce-68f1-520c-9164-5f48e2ede195",
@@ -25,14 +38,15 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_water_cannon,
         ),
         Attack(
             title="Giant Wave",
             game_text="This Pok\u00e9mon can't use Giant Wave during your next turn.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 3},
             damage=80,
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

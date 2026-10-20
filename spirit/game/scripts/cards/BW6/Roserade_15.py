@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+async def _squeeze(ctx):
+    """Flip a coin. If heads, +20 damage and the Defending Pokemon is Paralyzed."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (20 if heads else 0))
+    if heads and ctx.defender is not None and not ctx.effects_blocked(ctx.defender):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="79ff3208-3405-5b91-88a0-199c89f07d21",
@@ -24,7 +35,9 @@ card = PokemonCardDef(
             title="Le Parfum",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may search your deck for any card and put it into your hand. Shuffle your deck afterward.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=search_to_hand(None, count=1, minimum=0, reveal=False,
+                                  prompt='You may choose any card to put into your hand.'),
         ),
         Attack(
             title="Squeeze",
@@ -32,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_squeeze,
         ),
     ],
 )
