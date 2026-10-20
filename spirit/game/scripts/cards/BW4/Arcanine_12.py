@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.pokemon import in_active_spot
 
 
 async def _fire_spin(ctx):
@@ -8,6 +9,16 @@ async def _fire_spin(ctx):
     results = await ctx.flip_coins(1, "Fire Spin")
     if results and not results[0]:
         await ctx.discard_energy_from(ctx.attacker, 2)
+
+
+async def _blazing_mane(ctx):
+    """Active only: the Attacking Pokémon is now Burned."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    await ctx.apply_special_condition(attacker, SpecialConditions.BURNED)
 
 
 card = PokemonCardDef(
@@ -32,7 +43,8 @@ card = PokemonCardDef(
             title="Blazing Mane",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon and is damaged by an opponent's attack (even if this Pok\u00e9mon is Knocked Out), the Attacking Pok\u00e9mon is now Burned.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=_blazing_mane,
         ),
         Attack(
             title="Fire Spin",

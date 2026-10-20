@@ -1,6 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _sporprise(ctx):
+    """On evolve from hand: you may make the opponent's Active Confused and Poisoned."""
+    target = ctx.opponent_active()
+    if target is None:
+        return
+    if not await ctx.ask_yes_no(
+            "Use Sporprise? Your opponent's Active Pokémon is now Confused and Poisoned."):
+        return
+    await ctx.apply_special_condition(target, SpecialConditions.CONFUSED)
+    await ctx.apply_special_condition(target, SpecialConditions.POISONED)
 
 
 card = PokemonCardDef(
@@ -26,7 +38,8 @@ card = PokemonCardDef(
             title="Sporprise",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may use this Ability. If you do, your opponent's Active Pok\u00e9mon is now Confused and Poisoned.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_sporprise,
         ),
         Attack(
             title="Rising Lunge",

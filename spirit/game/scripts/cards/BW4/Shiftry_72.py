@@ -1,6 +1,34 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.session.effects import full_stack
+
+
+async def _giant_fan(ctx):
+    """On evolve from hand: you may flip a coin. If heads, the opponent
+    shuffles 1 of their Pokémon (your choice) and all attached cards into
+    their deck."""
+    targets = ctx.opponent_pokemon_in_play()
+    if not targets:
+        return
+    if not await ctx.ask_yes_no("Use Giant Fan? Flip a coin."):
+        return
+    results = await ctx.flip_coins(1, "Giant Fan")
+    if not results or not results[0]:
+        return
+    target = await ctx.choose_pokemon(
+        targets, "Choose 1 of your opponent's Pokémon to shuffle into their deck")
+    if target is None:
+        return
+    was_active = target is ctx.opponent_active()
+    await ctx.shuffle_into_deck(full_stack(target), ctx.opponent_id)
+    if was_active:
+        async def _promote():
+            if not await ctx.session._promote_new_active(ctx.opponent_id):
+                screen_name = ctx.session.players[ctx.opponent_id].screen_name
+                await ctx.session.end_game(
+                    ctx.player_id, f"{screen_name} has no Pokémon left")
+        ctx.deferred_actions.append(_promote)
 
 
 card = PokemonCardDef(
@@ -26,7 +54,8 @@ card = PokemonCardDef(
             title="Giant Fan",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may flip a coin. If heads, choose 1 of your opponent's Pok\u00e9mon. Your opponent shuffles that Pok\u00e9mon and all cards attached to it into his or her deck.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_giant_fan,
         ),
         Attack(
             title="Whirlwind",

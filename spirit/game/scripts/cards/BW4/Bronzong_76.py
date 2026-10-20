@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import damage_per, count_hand
+from spirit.game.card_effects.passives_common import healing_block_passive
 
 
 card = PokemonCardDef(
@@ -26,7 +27,7 @@ card = PokemonCardDef(
             title="Heal Block",
             game_text="Damage can't be healed from any Pok\u00e9mon (both yours and your opponent's). (Damage counters can still be moved.)",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=healing_block_passive(lambda target, carrier: True),
         ),
         Attack(
             title="Oracle Inflict",

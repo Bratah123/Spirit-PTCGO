@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import damage_per
 from spirit.game.session.passives import effective_retreat_cost
@@ -7,6 +7,29 @@ from spirit.game.session.passives import effective_retreat_cost
 def _defender_retreat(ctx):
     defender = ctx.defender
     return effective_retreat_cost(ctx.board, defender) if defender is not None else 0
+
+
+def _slippery_soles_condition(board, player_id, pokemon=None):
+    bench = board.find_player_area(player_id, "bench")
+    return bool(bench and bench.children)
+
+
+async def _slippery_soles(ctx):
+    """Switch your Active with a Benched Pokémon; then your opponent switches
+    their Active with 1 of their Benched Pokémon."""
+    bench = ctx.my_bench()
+    if not bench:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+    if target is None:
+        return
+    await ctx.switch_active(ctx.player_id, target)
+    opp_bench = ctx.opponent_bench()
+    if opp_bench:
+        opp_target = await ctx.choose_pokemon(
+            opp_bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id)
+        if opp_target is not None:
+            await ctx.switch_active(ctx.opponent_id, opp_target)
 
 
 card = PokemonCardDef(
@@ -31,7 +54,9 @@ card = PokemonCardDef(
             title="Slippery Soles",
             game_text="Once during your turn (before your attack), you may switch your Active Pok\u00e9mon with 1 of your Benched Pok\u00e9mon. If you do, your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_slippery_soles_condition,
+            effect=_slippery_soles,
         ),
         Attack(
             title="Crushing Ice",
