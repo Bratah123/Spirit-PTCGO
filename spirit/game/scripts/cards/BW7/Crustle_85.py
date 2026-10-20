@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import guts_survive_passive
 
 
 card = PokemonCardDef(
@@ -25,7 +26,7 @@ card = PokemonCardDef(
             title="Sturdy",
             game_text="If this Pok\u00e9mon has full HP and would be Knocked Out by damage from an attack, this Pok\u00e9mon is not Knocked Out and its remaining HP becomes 10 instead.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=guts_survive_passive(hp_floor=10, title="Sturdy", flip=False, require_full_hp=True),
         ),
         Attack(
             title="Stone Edge",

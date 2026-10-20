@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.attacks_common import condition_attack
 
 
 card = PokemonCardDef(
@@ -27,7 +28,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon is now Poisoned. The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.FIGHTING: 1},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED, no_retreat=True),
         ),
         Attack(
             title="Night Slash",

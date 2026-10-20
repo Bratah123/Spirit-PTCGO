@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _jet_woofer(ctx):
+    """For each Psychic Energy attached to this Pokemon, discard the top card
+    of your opponent's deck."""
+    n = sum(1 for e in ctx.attached_energies(ctx.attacker)
+            if energy_provides_type(e, PokemonTypes.PSYCHIC.value))
+    if n:
+        await ctx.discard_cards(ctx.deck_top(n, player_id=ctx.opponent_id))
 
 
 card = PokemonCardDef(
@@ -26,7 +36,7 @@ card = PokemonCardDef(
             title="Jet Woofer",
             game_text="For each Psychic Energy attached to this Pok\u00e9mon, discard the top card of your opponent's deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_jet_woofer,
         ),
         Attack(
             title="Acrobatics",

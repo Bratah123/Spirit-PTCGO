@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+
+
+async def _long_distance_hypnosis(ctx):
+    """Flip a coin. Heads: your opponent's Active is Asleep. Tails: your Active is Asleep."""
+    results = await ctx.flip_coins(1, "Long-Distance Hypnosis")
+    target = ctx.opponent_active() if results and results[0] else ctx.my_active()
+    if target is not None and not ctx.effects_blocked(target):
+        await ctx.apply_special_condition(target, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="84d781a9-306b-5923-b098-889669e17382",
@@ -22,7 +31,8 @@ card = PokemonCardDef(
             title="Long-Distance Hypnosis",
             game_text="Once during your turn (before your attack), you may flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Asleep. If tails, your Active Pok\u00e9mon is now Asleep.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=_long_distance_hypnosis,
         ),
         Attack(
             title="Psyshot",

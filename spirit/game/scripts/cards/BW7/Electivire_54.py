@@ -1,5 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
 
 
 async def feint(ctx):
@@ -29,7 +30,7 @@ card = PokemonCardDef(
             title="Electriwave",
             game_text="This attack does 30 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=spread_damage(30),
         ),
         Attack(
             title="Shock Wave",
