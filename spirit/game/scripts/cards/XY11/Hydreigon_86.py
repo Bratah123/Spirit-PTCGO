@@ -1,10 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hydreigon (XY11 #86): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import debuff_defender_attacks
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_dark_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.DARKNESS.value)
+
+
+async def _dark_burn(ctx):
+    """Discard any number of Darkness Energy attached to your Pokemon; 50x that many."""
+    pool = [e for p in ctx.my_pokemon_in_play() for e in ctx.attached_energies(p) if _is_dark_energy(e)]
+    picked = await ctx.choose_cards(pool, len(pool), minimum=0, prompt="Discard any Darkness Energy") if pool else []
+    if picked:
+        await ctx.discard_cards(picked)
+    await ctx.deal_damage(50 * len(picked))
 
 
 card = PokemonCardDef(
@@ -30,7 +40,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 40 (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
-            # STUB: attack effect not implemented
             effect=debuff_defender_attacks(40),
         ),
         Attack(
@@ -39,8 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dark_burn,
         ),
     ],
 )

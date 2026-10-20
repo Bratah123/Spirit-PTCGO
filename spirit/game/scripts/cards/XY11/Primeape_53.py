@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Primeape (XY11 #53): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
 
 
 async def _flip_discard_defender_energy(ctx):
@@ -15,6 +12,11 @@ async def _flip_discard_defender_energy(ctx):
     if results and results[0] and target is not None and not ctx.effects_blocked(target):
         await ctx.discard_energy_from(target, 1, minimum=1,
                                       prompt="Choose an Energy to discard")
+
+
+def _more_hp(ctx):
+    d = ctx.opponent_active()
+    return d is not None and int(d.get_attribute(AttrID.HP) or 0) > int(ctx.attacker.get_attribute(AttrID.HP) or 0)
 
 
 card = PokemonCardDef(
@@ -40,7 +42,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
             effect=_flip_discard_defender_energy,
         ),
         Attack(
@@ -49,8 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_more_hp, 60),
         ),
     ],
 )

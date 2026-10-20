@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Drifloon (XY11 #46): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import _is_damaged
+
+
+async def _transfer_pain(ctx):
+    """Move 1 damage counter from 1 of your Pokemon to 1 of your opponent's Pokemon."""
+    pool = [p for p in ctx.my_pokemon_in_play() if _is_damaged(ctx.board, p)]
+    if not pool:
+        return
+    src = pool[0] if len(pool) == 1 else await ctx.choose_pokemon(pool, "Move a damage counter from which Pokémon?")
+    if src is not None:
+        await ctx.move_damage_counters(src, ctx.opponent_pokemon_in_play(), max_count=1)
+
 
 card = PokemonCardDef(
     guid="0b3c5bae-b743-5170-9a44-c21cce55d3f4",
@@ -28,8 +36,7 @@ card = PokemonCardDef(
             title="Transfer Pain",
             game_text="Move 1 damage counter from 1 of your Pok\u00e9mon to 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_transfer_pain,
         ),
     ],
 )

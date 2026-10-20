@@ -1,10 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bastiodon (XY11 #70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.passives import Passive
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.support_common import _is_damaged
 
 
 async def counter_press(ctx):
@@ -53,7 +51,6 @@ card = PokemonCardDef(
             title="Counter Head",
             game_text="During your opponent's next turn, if this Pok\u00e9mon is damaged by an attack (even if this Pok\u00e9mon is Knocked Out), put damage counters on the Attacking Pok\u00e9mon equal to the damage done to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
             effect=counter_press,
         ),
         Attack(
@@ -62,8 +59,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: sum(1 for p in ctx.my_bench() if _is_damaged(ctx.board, p)), 10, base=100),
         ),
     ],
 )

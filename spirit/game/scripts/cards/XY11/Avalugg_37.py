@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Avalugg (XY11 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 async def _flip_discard_defender_energy(ctx):
@@ -15,6 +12,24 @@ async def _flip_discard_defender_energy(ctx):
     if results and results[0] and target is not None and not ctx.effects_blocked(target):
         await ctx.discard_energy_from(target, 1, minimum=1,
                                       prompt="Choose an Energy to discard")
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _melting_floe(ctx):
+    """Discard the top 3 cards of your deck; for each Water Energy card, discard
+    the top 3 cards of your opponent's deck."""
+    top = ctx.deck_top(3)
+    if not top:
+        return
+    await ctx.discard_cards(top)
+    n = sum(1 for c in top if _is_water_energy(c))
+    if n:
+        mill = ctx.deck_top(3 * n, ctx.opponent_id)
+        if mill:
+            await ctx.discard_cards(mill)
 
 
 card = PokemonCardDef(
@@ -40,15 +55,13 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_flip_discard_defender_energy,
         ),
         Attack(
             title="Melting Floe",
             game_text="Discard the top 3 cards of your deck. For each Water Energy card you discarded in this way, discard the top 3 cards of your opponent's deck.",
             cost={PokemonTypes.WATER: 3},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_melting_floe,
         ),
     ],
 )

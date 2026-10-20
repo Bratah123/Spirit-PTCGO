@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hydreigon BREAK (XY11 #87): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def _calamity_blast(ctx):
+    """Discard 3 Energy attached to this Pokemon; 150, and 50 to 2 of the opponent's Benched Pokemon."""
+    n = min(3, len(ctx.attached_energies(ctx.attacker)))
+    if n:
+        await ctx.discard_energy_from(ctx.attacker, n, minimum=n)
+    await snipe_attack(50, count=2, also_base=True)(ctx)
+
 
 card = PokemonCardDef(
     guid="15ecb78f-c21f-5bdb-8584-994878895fea",
@@ -27,8 +33,7 @@ card = PokemonCardDef(
             game_text="Discard 3 Energy attached to this Pok\u00e9mon. This attack does 50 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=150,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_calamity_blast,
         ),
     ],
 )

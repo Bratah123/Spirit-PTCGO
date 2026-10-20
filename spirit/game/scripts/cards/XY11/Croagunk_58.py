@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Croagunk (XY11 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, SpecialConditions, CLIENT_SPECIAL_CONDITION_NAMES
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _has_cond(p, cond):
+    return p is not None and CLIENT_SPECIAL_CONDITION_NAMES[cond] in (p.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
+
+async def _poison_up(ctx):
+    """If the Defending Pokemon is Poisoned, 3 more damage counters on it
+    between turns (stacks)."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    if _has_cond(d, SpecialConditions.POISONED) and not ctx.effects_blocked(d):
+        counters = ctx.session.poison_counters
+        counters[d.entity_id] = counters.get(d.entity_id, 1) + 3
+
 
 card = PokemonCardDef(
     guid="56efb058-82be-5268-88bf-30433b7e42ab",
@@ -26,8 +37,7 @@ card = PokemonCardDef(
             title="Poison Up",
             game_text="If the Defending Pok\u00e9mon is Poisoned, put 3 more damage counters on that Pok\u00e9mon between turns. This effect can be applied more than once.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_poison_up,
         ),
     ],
 )
