@@ -1,9 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Porygon-Z (XY7 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import devolve_depth
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _digital_reboot(ctx):
+    """Devolve as many of your Benched Pokemon as many times as you like; the
+    removed Evolution cards go to your hand."""
+    for _ in range(12):
+        evolved = [p for p in ctx.my_bench() if devolve_depth(p) > 0]
+        if not evolved:
+            return
+        target = await ctx.choose_pokemon(evolved, "Devolve which Benched Pokémon? (decline to stop)", optional=True)
+        if target is None:
+            return
+        await ctx.devolve_pokemon(target, 1, destination="hand")
+
 
 card = PokemonCardDef(
     guid="24dc9a73-f476-53e1-9544-cd2970ab7432",
@@ -23,20 +36,19 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Porygon2.Name",
     family_id=137,
     abilities=[
+        ancient_trait('θ Stop'),
         Attack(
             title="Digital Reboot",
             game_text="Devolve as many of your Benched Pok\u00e9mon as many times as you like. Put each Evolution card removed this way into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_digital_reboot,
         ),
         Attack(
             title="Dazzle Blast",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],
 )
