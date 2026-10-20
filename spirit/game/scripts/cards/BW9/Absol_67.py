@@ -4,7 +4,8 @@ from spirit.game.card_effects.attacks_common import damage_per, count_bench
 
 
 async def _scout(ctx):
-    """Your opponent reveals their hand."""
+    """60; your opponent reveals their hand."""
+    await ctx.deal_damage()
     await ctx.reveal_hand(ctx.opponent_id)
 
 
