@@ -22,7 +22,7 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "Bratah123/Spirit-PTCGO")
 RAW_BASE = f"https://raw.githubusercontent.com/{REPO}/main"
 SCRIPT_NAME = re.compile(r"_(\d+)\.py$")
 PROMO_NUMBER = re.compile(r"[A-Za-z]+0*(\d+)")
-SET_TITLE = re.compile(r"^Set Support: .+ \(([a-z0-9.]+)\)$")
+SET_TITLE = re.compile(r"^Set support: .+ \(([a-z0-9.]+)\)$", re.I)
 LABEL = "card-support"
 EPIC_LABEL = "epic"
 
