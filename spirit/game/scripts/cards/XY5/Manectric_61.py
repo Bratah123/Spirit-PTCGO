@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Manectric (XY5 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.support_common import switch_self_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _electric_shock(ctx):
+    """70; discard all Lightning Energy from this Pokemon; the opponent's Active is Paralyzed."""
+    await ctx.deal_damage()
+    pool = [e for e in ctx.attached_energies(ctx.attacker) if _is_lightning_energy(e)]
+    if pool:
+        await ctx.discard_cards(pool)
+    if ctx.defender is not None:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
 
 
 card = PokemonCardDef(
@@ -32,7 +43,6 @@ card = PokemonCardDef(
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=switch_self_attack(),
         ),
         Attack(
@@ -40,8 +50,7 @@ card = PokemonCardDef(
             game_text="Discard all Lightning Energy attached to this Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_electric_shock,
         ),
     ],
 )

@@ -1,10 +1,27 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kingdra (XY5 #108): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _dragon_blast(ctx):
+    """150; discard a Water Energy and a Lightning Energy attached to this Pokemon."""
+    await ctx.deal_damage()
+    for pred, label in ((_is_water_energy, "Water"), (_is_lightning_energy, "Lightning")):
+        if any(pred(e) for e in ctx.attached_energies(ctx.attacker)):
+            await ctx.discard_energy_from(ctx.attacker, 1, predicate=pred, minimum=1,
+                                          prompt=f"Discard a {label} Energy")
+
 
 card = PokemonCardDef(
     guid="b4cd6b8f-707b-5923-a3e2-a09250b27238",
@@ -29,16 +46,15 @@ card = PokemonCardDef(
             title="Gather Strength",
             game_text="Search your deck for up to 4 basic Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_basic_energy_card, count=4, minimum=0, reveal=True,
+                prompt='Choose up to 4 basic Energy cards'),
         ),
         Attack(
             title="Dragon Blast",
             game_text="Discard a Water Energy and a Lightning Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.LIGHTNING: 1},
             damage=150,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dragon_blast,
         ),
     ],
 )

@@ -1,11 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sceptile (XY5 #9): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _power_poison(ctx):
+    """120; discard 1 Energy from this Pokemon; the opponent's Active is Poisoned."""
+    await ctx.deal_damage()
+    if ctx.attached_energies(ctx.attacker):
+        await ctx.discard_energy_from(ctx.attacker, 1, minimum=1, prompt="Discard an Energy")
+    if ctx.defender is not None:
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
 
 
 card = PokemonCardDef(
@@ -33,7 +38,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(30),
         ),
         Attack(
@@ -41,8 +45,7 @@ card = PokemonCardDef(
             game_text="Discard 1 Energy attached to this Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_power_poison,
         ),
     ],
 )

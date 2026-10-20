@@ -1,10 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tangrowth (XY5 #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _grass_knot(ctx):
+    """80 + 10 for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(80 + 10 * cost)
 
 
 card = PokemonCardDef(
@@ -30,7 +34,6 @@ card = PokemonCardDef(
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
-            # STUB: attack effect not implemented
             effect=heal_attack(20),
         ),
         Attack(
@@ -39,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_grass_knot,
         ),
     ],
 )

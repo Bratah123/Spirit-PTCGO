@@ -1,10 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ninetales (XY5 #21): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class _BarrierShrine(Passive):
+    """Each player can't play any Stadium cards from their hand."""
+    def blocks_trainer_play(self, card, player_id, carrier):
+        return card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.STADIUM.value
 
 
 card = PokemonCardDef(
@@ -28,15 +31,13 @@ card = PokemonCardDef(
         Ability(
             title="Barrier Shrine",
             game_text="Each player can't play any Stadium cards from his or her hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_BarrierShrine(),
         ),
         Attack(
             title="Flickering Flames",
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.ASLEEP),
         ),
     ],

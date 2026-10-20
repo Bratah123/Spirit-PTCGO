@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Doublade (XY5 #99): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _false_swipe(ctx):
+    """Flip: heads, put damage counters on the opponent's Active until its HP is 10."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    d = ctx.defender
+    if not (results and results[0]) or d is None:
+        return
+    hp = d.get_attribute(AttrID.HP, 0)
+    if hp > 10:
+        await ctx.deal_damage(hp - 10, target=d, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="df30da94-95e3-5827-8011-fc88a7c64315",
@@ -29,8 +37,7 @@ card = PokemonCardDef(
             title="False Swipe",
             game_text="Flip a coin. If heads, put damage counters on your opponent's Active Pok\u00e9mon until its remaining HP is 10.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_false_swipe,
         ),
         Attack(
             title="Slash",

@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gardevoir-EX (XY5 #156): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+
 
 card = PokemonCardDef(
     guid="cd551de2-662e-5fc8-a552-89b467d3dac9",
@@ -31,8 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('mine', energy_type=PokemonTypes.FAIRY), 30),
         ),
     ],
 )

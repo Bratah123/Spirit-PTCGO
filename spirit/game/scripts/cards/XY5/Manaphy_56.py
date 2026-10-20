@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Manaphy (XY5 #56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _is_water(pokemon):
+    return PokemonTypes.WATER.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+
+
+async def _life_saver(ctx):
+    """Put 2 Water Pokemon from your discard pile into your hand."""
+    cards = [c for c in ctx.discard_pile() if is_pokemon_card(c) and _is_water(c)]
+    if not cards:
+        return
+    picks = await ctx.choose_cards(cards, 2, minimum=min(2, len(cards)), prompt="Choose 2 Water Pokémon")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=True)
 
 
 card = PokemonCardDef(
@@ -28,15 +39,13 @@ card = PokemonCardDef(
             title="Deep Sea Swirl",
             game_text="Shuffle your hand into your deck. Then, draw 6 cards.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
             effect=shuffle_hand_into_deck_draw(6),
         ),
         Attack(
             title="Life Saver",
             game_text="Put 2 Water Pok\u00e9mon from your discard pile into your hand.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_life_saver,
         ),
     ],
 )

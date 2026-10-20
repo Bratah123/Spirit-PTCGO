@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Clamperl (XY5 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _ShellProtection(Passive):
+    """Prevent attack damage of 50 or less done to this Pokemon."""
+    def prevents_damage(self, calc, carrier):
+        return (calc.is_attack and calc.is_opposing and calc.target is carrier_pokemon(carrier)
+                and 0 < calc.amount <= 50)
+
+
+async def _shell_protection(ctx):
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _ShellProtection())
+
 
 card = PokemonCardDef(
     guid="e0193a99-0d26-513b-8328-498e4151e5a5",
@@ -26,8 +36,7 @@ card = PokemonCardDef(
             title="Shell Protection",
             game_text="During your opponent's next turn, if this Pok\u00e9mon would be damaged by an attack, prevent that attack's damage done to this Pok\u00e9mon if that damage is 50 or less.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_shell_protection,
         ),
     ],
 )

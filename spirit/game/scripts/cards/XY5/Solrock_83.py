@@ -1,10 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Solrock (XY5 #83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_special_energy
 
 
 card = PokemonCardDef(
@@ -28,8 +26,8 @@ card = PokemonCardDef(
             title="Solar Generator",
             game_text="Search your deck for up to 2 Special Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_special_energy, count=2, minimum=0, reveal=True,
+                prompt='Choose up to 2 Special Energy cards'),
         ),
         Attack(
             title="Knock Away",
@@ -37,7 +35,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(20),
         ),
     ],

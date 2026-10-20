@@ -1,10 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Azumarill (XY5 #103): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import condition_attack, recoil_attack
+
+
+async def _superpower(ctx):
+    """60; you may do 30 more damage. If you do, 30 damage to itself."""
+    if await ctx.ask_yes_no("Do 30 more damage (this Pokémon does 30 damage to itself)?"):
+        await recoil_attack(30, damage=90)(ctx)
+    else:
+        await ctx.deal_damage()
 
 
 card = PokemonCardDef(
@@ -32,7 +36,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
@@ -41,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_superpower,
         ),
     ],
 )

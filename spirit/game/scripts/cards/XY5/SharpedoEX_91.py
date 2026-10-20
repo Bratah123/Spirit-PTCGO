@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sharpedo-EX (XY5 #91): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+
+
+async def _jagged_fang(ctx):
+    """100; discard an Energy from this Pokemon, then one from the opponent's Active."""
+    await ctx.deal_damage()
+    if ctx.attached_energies(ctx.attacker):
+        await ctx.discard_energy_from(ctx.attacker, 1, minimum=1, prompt="Discard an Energy from this Pokémon")
+    d = ctx.defender
+    if d is not None and ctx.attached_energies(d) and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, minimum=1, prompt="Discard an Energy from the Defending Pokémon")
 
 
 card = PokemonCardDef(
@@ -28,7 +34,6 @@ card = PokemonCardDef(
             title="Hunt",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with his or her Active Pok\u00e9mon. This attack does 30 damage to the new Active Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=gust_attack(damage_to_new_active=30),
         ),
         Attack(
@@ -36,8 +41,7 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to this Pok\u00e9mon. Then, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_jagged_fang,
         ),
     ],
 )

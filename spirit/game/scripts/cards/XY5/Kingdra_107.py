@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kingdra (XY5 #107): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.pokemon import shred
+
+
+async def _twister(ctx):
+    """Flip 2 coins: discard an Energy from the opponent's Active per heads;
+    both tails does nothing."""
+    results = await ctx.flip_coins(2, ctx.ability.title) or []
+    heads = sum(1 for r in results if r)
+    if not heads:
+        return
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        n = min(heads, len(ctx.attached_energies(d)))
+        if n:
+            await ctx.discard_energy_from(d, n, minimum=n)
 
 
 card = PokemonCardDef(
@@ -30,7 +41,6 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=shred,
         ),
         Attack(
@@ -38,8 +48,7 @@ card = PokemonCardDef(
             game_text="Flip 2 coins. For each heads, discard an Energy attached to your opponent's Active Pok\u00e9mon. If both of them are tails, this attack does nothing.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.LIGHTNING: 1},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_twister,
         ),
     ],
 )

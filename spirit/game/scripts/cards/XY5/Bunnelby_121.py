@@ -1,11 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bunnelby (XY5 #121): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
 from spirit.game.card_effects.attacks_common import mill_attack
+
+
+async def _rototiller(ctx):
+    """Shuffle a card from your discard pile into your deck."""
+    cards = list(ctx.discard_pile())
+    if not cards:
+        return
+    picks = await ctx.choose_cards(cards, 1, minimum=1, prompt="Choose a card to shuffle into your deck")
+    if picks:
+        await ctx.shuffle_into_deck(picks, ctx.player_id)
 
 
 card = PokemonCardDef(
@@ -30,15 +36,13 @@ card = PokemonCardDef(
             title="Burrow",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=mill_attack(1),
         ),
         Attack(
             title="Rototiller",
             game_text="Shuffle a card from your discard pile into your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rototiller,
         ),
     ],
 )

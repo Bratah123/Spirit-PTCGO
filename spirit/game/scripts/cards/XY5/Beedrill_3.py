@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Beedrill (XY5 #3): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _AllergicShock(Passive):
+    """Your next turn: if this Pokemon is damaged by an attack, it is Knocked Out."""
+    def modify_damage_taken(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        if calc.is_attack and calc.amount > 0 and calc.target is me:
+            calc.amount = max(calc.amount, me.get_attribute(AttrID.HP, 0))
+
+
+async def _allergic_shock(ctx):
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_own_next_turn(d, _AllergicShock())
 
 
 card = PokemonCardDef(
@@ -29,8 +40,7 @@ card = PokemonCardDef(
             title="Allergic Shock",
             game_text="During your next turn, if the Defending Pok\u00e9mon is damaged by an attack, it is Knocked Out.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_allergic_shock,
         ),
         Attack(
             title="Twineedle",
@@ -38,7 +48,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(2, per_heads=50),
         ),
     ],

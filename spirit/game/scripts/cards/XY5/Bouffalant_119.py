@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bouffalant (XY5 #119): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.card_effects.passives_common import TypedDamageBoostPassive
 
 
 card = PokemonCardDef(
@@ -27,15 +24,13 @@ card = PokemonCardDef(
         Ability(
             title="Sap Sipper",
             game_text="This Pok\u00e9mon's attacks do 40 more damage to your opponent's Grass Pok\u00e9mon (before applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=TypedDamageBoostPassive(PokemonTypes.GRASS, 40, to_active_only=False),
         ),
         Attack(
             title="Derail",
             game_text="Discard a Special Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
             effect=discard_opponent_energy_attack(special_only=True),
         ),
     ],

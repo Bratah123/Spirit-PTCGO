@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Primal Groudon-EX (XY5 #151): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ancient_traits import ancient_trait
+
+
+async def _gaia_volcano(ctx):
+    """100; +100 and discard the Stadium if any Stadium is in play."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(200)
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="05023339-cfc8-5d71-8e56-9acdb78039ba",
@@ -31,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gaia_volcano,
         ),
     ],
 )
