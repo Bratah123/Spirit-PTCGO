@@ -1,11 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import attack_effect_shield_passive
+from spirit.game.card_effects.pokemon import is_energy_card
 
 
 async def psy_report(ctx):
     """Printed damage; your opponent reveals their hand."""
     await ctx.deal_damage()
     await ctx.reveal_hand(ctx.opponent_id)
+
+
+def _energized_ally(target, carrier):
+    return target.owning_player_id == carrier.owning_player_id and \
+        any(is_energy_card(c) for c in target.children)
 
 
 card = PokemonCardDef(
@@ -30,7 +37,7 @@ card = PokemonCardDef(
             title="Solar Revelation",
             game_text="Prevent all effects of your opponent's attacks, except damage, done to each of your Pok\u00e9mon that has any Energy attached to it.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=attack_effect_shield_passive(protects=_energized_ally),
         ),
         Attack(
             title="Psy Report",

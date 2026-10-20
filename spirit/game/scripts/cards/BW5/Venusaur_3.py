@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+
+
+def _deck_nonempty(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children)
 
 
 card = PokemonCardDef(
@@ -26,7 +33,10 @@ card = PokemonCardDef(
             title="Floral Fragrance",
             game_text="Once during your turn (before your attack), you may search your deck for a Pok\u00e9mon, reveal it, and put it into your hand. Shuffle your deck afterward.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_deck_nonempty,
+            effect=search_to_hand(is_pokemon_card, count=1, reveal=True,
+                                  prompt='Choose a Pokémon to put into your hand.'),
         ),
         Attack(
             title="Poison Powder",

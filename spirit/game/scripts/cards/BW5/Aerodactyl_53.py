@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import team_damage_boost_passive
+
 
 card = PokemonCardDef(
     guid="7da46a72-fa1e-52a2-9897-54f00e28771c",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Ancient Scream",
             game_text="Your Pok\u00e9mon's attacks do 10 more damage to the Active Pok\u00e9mon (before applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=team_damage_boost_passive(10),
         ),
         Attack(
             title="Wing Attack",

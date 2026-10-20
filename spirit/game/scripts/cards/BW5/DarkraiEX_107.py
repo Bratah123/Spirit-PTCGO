@@ -1,6 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.passives_common import retreat_free_when
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _has_darkness_energy(pokemon, carrier):
+    if pokemon.owning_player_id != carrier.owning_player_id:
+        return False
+    return any(is_energy_card(c) and energy_provides_type(c, PokemonTypes.DARKNESS.value)
+               for c in pokemon.children)
 
 
 card = PokemonCardDef(
@@ -25,7 +34,7 @@ card = PokemonCardDef(
             title="Dark Cloak",
             game_text="Each of your Pok\u00e9mon that has any Darkness Energy attached to it has no Retreat Cost.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=retreat_free_when(_has_darkness_energy),
         ),
         Attack(
             title="Night Spear",

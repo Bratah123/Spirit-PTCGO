@@ -1,6 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID
 from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.session.passives import effective_max_hp
+
+
+def _active_damaged(board, player_id, pokemon=None):
+    active = board.active_pokemon(player_id)
+    return active is not None and active.get_attribute(AttrID.HP, 0) < effective_max_hp(board, active)
+
+
+async def _softboiled(ctx):
+    """Flip a coin. If heads, heal 30 damage from your Active Pokémon."""
+    results = await ctx.flip_coins(1, "Softboiled")
+    if results and results[0]:
+        await ctx.heal(30, ctx.my_active())
 
 
 card = PokemonCardDef(
@@ -25,7 +38,9 @@ card = PokemonCardDef(
             title="Softboiled",
             game_text="Once during your turn (before your attack), you may flip a coin. If heads, heal 30 damage from your Active Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_active_damaged,
+            effect=_softboiled,
         ),
         Attack(
             title="Double-Edge",
