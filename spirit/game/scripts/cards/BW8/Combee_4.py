@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+
 
 card = PokemonCardDef(
     guid="3434508b-4a64-5040-95bd-90aa6f384355",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="Shuffle this Pok\u00e9mon and all cards attached to it into your deck.",
             cost={PokemonTypes.GRASS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=remove_self_from_play('deck'),
         ),
     ],
 )

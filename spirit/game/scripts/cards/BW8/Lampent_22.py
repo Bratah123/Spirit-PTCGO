@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import retreat_free_when
+from spirit.game.session.passives import carrier_pokemon
+from spirit.game.models.board import EnergyEntity
+
+
+def _no_energy(pokemon, carrier):
+    """If this Pokemon has no Energy attached to it, it has no Retreat Cost."""
+    return pokemon is carrier_pokemon(carrier) and not any(
+        isinstance(c, EnergyEntity) for c in pokemon.children)
+
 
 card = PokemonCardDef(
     guid="e5fe8ac4-a08f-5117-a9d2-255f162a4596",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Freefloating",
             game_text="If this Pok\u00e9mon has no Energy attached to it, this Pok\u00e9mon has no Retreat Cost.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=retreat_free_when(_no_energy),
         ),
         Attack(
             title="Will-O-Wisp",

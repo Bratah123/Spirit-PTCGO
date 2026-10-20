@@ -1,9 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.pokemon import in_active_spot
-from spirit.game.card_effects.attacks_common import flip_bonus, recoil_attack
+from spirit.game.card_effects.attacks_common import flip_bonus
 
 
 async def rough_skin(ctx):

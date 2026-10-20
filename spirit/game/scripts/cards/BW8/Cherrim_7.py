@@ -1,7 +1,30 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack, flip_damage
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, AttrID
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.session.passives import effective_max_hp
+
+
+def _is_grass_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+def _healable(board, pokemon):
+    return (any(_is_grass_energy(c) for c in pokemon.children)
+            and pokemon.get_attribute(AttrID.HP, 0) < effective_max_hp(board, pokemon))
+
+
+def _fair_weather_condition(board, player_id, pokemon=None):
+    return any(_healable(board, p) for p in board.pokemon_in_play(player_id))
+
+
+async def _fair_weather_heal(ctx):
+    """Heal 20 damage from 1 of your Pokemon that has any Grass Energy attached."""
+    pool = [p for p in ctx.my_pokemon_in_play() if _healable(ctx.board, p)]
+    if not pool:
+        return
+    target = await ctx.choose_pokemon(pool, "Choose a Pokémon to heal")
+    await ctx.heal(20, target or pool[0])
 
 
 card = PokemonCardDef(
@@ -27,7 +50,9 @@ card = PokemonCardDef(
             title="Fair-Weather Heal",
             game_text="Once during your turn (before your attack), you may heal 20 damage from 1 of your Pok\u00e9mon that has any Grass Energy attached to it.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_fair_weather_condition,
+            effect=_fair_weather_heal,
         ),
         Attack(
             title="Random Peck",

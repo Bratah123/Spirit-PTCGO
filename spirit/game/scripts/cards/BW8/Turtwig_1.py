@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.support_common import heal_attack, gust_attack
+from spirit.game.card_effects.support_common import heal_attack
 
 
 card = PokemonCardDef(

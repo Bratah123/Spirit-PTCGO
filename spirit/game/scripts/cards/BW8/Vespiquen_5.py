@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.content.definitions import def_for
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+
+
+def _is_combee(card):
+    d = def_for(card.archetype_id)
+    return is_pokemon_card(card) and getattr(d, "display_name", "") == "Combee"
+
 
 card = PokemonCardDef(
     guid="28c68674-f7ec-5dba-8713-16ca77214fc8",
@@ -23,7 +33,7 @@ card = PokemonCardDef(
             title="Gather Order",
             game_text="Search your deck for as many Combee as you like and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(_is_combee, count=5, prompt="Choose any number of Combee"),
         ),
         Attack(
             title="Damage Beat",
@@ -31,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(damage_counters_on('defender'), 20),
         ),
     ],
 )
