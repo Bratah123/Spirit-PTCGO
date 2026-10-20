@@ -1,0 +1,36 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+
+card = PokemonCardDef(
+    guid="d089aace-8b5a-55f0-b25b-7ea4f1c49b72",
+    key="BW7",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Jellicent.Name",
+    display_name="Jellicent",
+    searchable_by=["Jellicent", "Stage 1", "Jellicent"],
+    subtypes=["Stage 1"],
+    collector_number=45,
+    set_code="BW7",
+    rarity=Rarities.Rare,
+    hp=100,
+    elements=[PokemonTypes.WATER],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.LIGHTNING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Frillish.Name",
+    family_id=592,
+    abilities=[
+        Ability(
+            title="Stickiness",
+            game_text="The Retreat Cost of each of your opponent's Pok\u00e9mon in play is Colorless more.",
+            ability_type=AbilityTypes.POKE_ABILITY,
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Eerie Light",
+            game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Confused.",
+            cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
+            damage=40,
+            effect=unimplemented,
+        ),
+    ],
+)
