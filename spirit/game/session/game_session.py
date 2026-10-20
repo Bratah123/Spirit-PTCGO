@@ -221,12 +221,13 @@ class GameOptions:
 def mega_evolution_ends_turn(evolution_card) -> bool:
     """True when `evolution_card` is a Mega Evolution (subtype MEGA) and no
     Spirit Link tool attached to it names it (the tool's display name is
-    "<Pokemon> Spirit Link", e.g. "Venusaur Spirit Link" for M Venusaur-EX)."""
+    "<Pokemon> Spirit Link", e.g. "Venusaur Spirit Link" for M Venusaur-EX, "Groudon Spirit Link" for
+    Primal Groudon-EX -- Primal Reversion carries the MEGA subtype)."""
     if "MEGA" not in subtypes_for(evolution_card.archetype_id):
         return False
     target_def = def_for(evolution_card.archetype_id)
     name = (getattr(target_def, "display_name", "") or "")
-    base = name.removeprefix("M ").removesuffix("-EX").strip()
+    base = name.removeprefix("M ").removeprefix("Primal ").removesuffix("-EX").strip()
     for child in evolution_card.children:
         d = def_for(child.archetype_id)
         dn = getattr(d, "display_name", "") or ""
