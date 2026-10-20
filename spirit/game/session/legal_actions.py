@@ -36,6 +36,7 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    energy_attach_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
     effective_attack_cost,
@@ -507,6 +508,7 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and not energy_attach_blocked(board, player_id, card, p)
             ]
             if targets:
                 entries.append(_target_map_entry(
