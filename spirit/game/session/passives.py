@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import random
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from spirit.game.attributes import AttrID, PokemonTypes, TrainerType
+from spirit.game.attributes import AbilityTypes, AttrID, PokemonTypes, TrainerType
 from spirit.game.data_utils import ABILITIES_BY_ID, def_for, subtypes_for
 from spirit.game.models.board import (
     BENCH_SLOT_COUNT,
@@ -432,7 +432,10 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
                 if ability is not None and ability.passive is not None:
                     # A Tool-granted ability's passive rides the tool, not the
                     # Pokemon, so Path to the Peak can't switch it off.
-                    triples.append((ability.passive, pokemon, not ability.is_granted))
+                    # Ancient Traits aren't Abilities: locks never switch them off.
+                    triples.append((ability.passive, pokemon,
+                                    not ability.is_granted
+                                    and ability.ability_type != AbilityTypes.ANCIENT_TRAIT))
             for attachment in _descendants(pokemon):
                 if isinstance(attachment, PokemonEntity):
                     continue  # tucked pre-evolutions contribute nothing

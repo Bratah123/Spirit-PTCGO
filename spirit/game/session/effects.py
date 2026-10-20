@@ -509,6 +509,9 @@ class EffectContext:
                 f"prevented by a passive effect."
             )
             return 0
+        from spirit.game.card_effects.ancient_traits import ALPHA_RECOVERY, has_ancient_trait
+        if has_ancient_trait(target, ALPHA_RECOVERY):
+            amount *= 2  # alpha Recovery: "double the amount healed"
         current = target.get_attribute(AttrID.HP, 0)
         healed = min(self.max_hp(target), current + amount) - current
         if healed <= 0:
@@ -2541,7 +2544,8 @@ async def resolve_triggered_ability(
     """Runs a triggered ability (on-play/on-evolve/on-knocked-out/between-turns)
     with the full activation choreography; returns its ctx, or None when the
     ability didn't run (locked, or no scripted effect)."""
-    if ability_locked(session.board_state, pokemon) and not ability.is_granted:
+    if ability_locked(session.board_state, pokemon) and not ability.is_granted \
+            and ability.ability_type != AbilityTypes.ANCIENT_TRAIT:
         return None
     if ability.effect is None or ability.effect is unimplemented:
         if ability.effect is unimplemented:

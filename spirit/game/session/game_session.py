@@ -4212,6 +4212,11 @@ class GameSession:
         position = len(target.children)
         if not self.board_state.attach_card(card.entity_id, target_id):
             return
+        from spirit.game.card_effects.ancient_traits import ALPHA_GROWTH, has_ancient_trait
+        if self.turn_state.energy_attached:
+            self.turn_state.alpha_growth_target = None  # alpha Growth's 2nd card used
+        elif has_ancient_trait(target, ALPHA_GROWTH):
+            self.turn_state.alpha_growth_target = target.entity_id
         self.turn_state.energy_attached = True
         card.attached_on_turn = self.turn_state.turn_number
         self.stat_add(player_id, "energyplayed")
