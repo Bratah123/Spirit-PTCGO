@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Raikou (XY8 #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+class _ShiningBody(Passive):
+    """With any Lightning Energy attached, damage from attacks to this Pokemon is reduced by 20."""
+    def modify_damage_taken(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        if not (calc.is_attack and calc.target is me and me is not None):
+            return
+        if any(is_energy_card(c) and _is_lightning_energy(c) for c in me.children):
+            calc.amount = max(0, calc.amount - 20)
+
 
 card = PokemonCardDef(
     guid="a630362e-3388-54d6-8cb7-0b671f8ad161",
@@ -27,8 +41,7 @@ card = PokemonCardDef(
         Ability(
             title="Shining Body",
             game_text="If this Pok\u00e9mon has any Lightning Energy attached to it, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_ShiningBody(),
         ),
         Attack(
             title="Thunder Lance",
@@ -36,8 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.LIGHTNING), 20, base=50),
         ),
     ],
 )

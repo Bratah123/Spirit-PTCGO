@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wooper (XY7 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="3f0b5cb3-f4dd-5744-890d-c1a29584db28",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Nap",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
         Attack(
             title="Wave Splash",

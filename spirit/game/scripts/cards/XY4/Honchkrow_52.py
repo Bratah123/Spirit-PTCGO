@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Honchkrow (XY4 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions, AttrID, CLIENT_SPECIAL_CONDITION_NAMES
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _defender_asleep(ctx):
+    d = ctx.defender
+    return d is not None and CLIENT_SPECIAL_CONDITION_NAMES[SpecialConditions.ASLEEP] in (
+        d.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
 
 card = PokemonCardDef(
     guid="ed539843-200f-5a4e-a0b2-a06a9f816520",
@@ -30,8 +34,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Nightmare Mambo",
@@ -39,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_defender_asleep, 60),
         ),
     ],
 )

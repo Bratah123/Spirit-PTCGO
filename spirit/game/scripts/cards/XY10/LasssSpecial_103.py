@@ -1,13 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lass's Special (XY10 #103): trainer effect stubbed.
-
-Card text:
-  - Draw a card for each of your opponent's Benched Basic Pokémon.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def lasss_special(ctx):
+    """Draw a card for each of your opponent's Benched Basic Pokemon."""
+    n = sum(1 for p in ctx.opponent_bench() if is_basic_pokemon(p))
+    if n:
+        await ctx.draw_cards(n)
+
 
 card = SupporterCardDef(
     guid="1a44fea6-e882-53b6-be66-799e0c629b48",
@@ -19,6 +20,5 @@ card = SupporterCardDef(
     collector_number=103,
     set_code="XY10",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=lasss_special
 )

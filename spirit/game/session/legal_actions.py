@@ -36,6 +36,7 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    stadium_suppressed,
     energy_attach_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
@@ -101,6 +102,8 @@ class TurnState:
     supporter_played: bool = False
     stadium_played: bool = False
     energy_attached: bool = False
+    # alpha Growth: the Pokemon whose trait allows a 2nd manual attachment this turn.
+    alpha_growth_target: Optional[str] = None
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
     # placed during setup are absent and default to turn 0.
@@ -184,6 +187,7 @@ class TurnState:
         self.supporter_played = False
         self.stadium_played = False
         self.energy_attached = False
+        self.alpha_growth_target = None
         self.retreated = False
         self.used_abilities = set()
         self.used_named_abilities = set()
@@ -479,13 +483,18 @@ def compute_legal_actions(
             evolves_from = card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
             if not evolves_from:
                 continue
+            # delta Evolution: ignores the first-turn / just-played gates
+            # (a Pokemon that already evolved this turn still can't).
+            from spirit.game.card_effects.ancient_traits import DELTA_EVOLUTION, definition_has_trait
+            delta_evolution = definition_has_trait(card.archetype_id, DELTA_EVOLUTION)
             evolve_targets = [
                 p.entity_id for p in in_play
                 if not isinstance(p, CompositePokemonEntity)
                 and p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
-                     or can_evolve_early(board, p))
+                     or can_evolve_early(board, p)
+                     or delta_evolution)
             ]
             if evolve_targets:
                 entries.append(_target_map_entry(
@@ -495,7 +504,9 @@ def compute_legal_actions(
                 ))
 
         elif isinstance(card, EnergyEntity):
-            if state.energy_attached or not in_play_ids:
+            if not in_play_ids:
+                continue
+            if state.energy_attached and state.alpha_growth_target is None:
                 continue
             if state.play_locked(player_id, card):
                 continue
@@ -509,6 +520,7 @@ def compute_legal_actions(
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
                 and not energy_attach_blocked(board, player_id, card, p)
+                and (not state.energy_attached or p.entity_id == state.alpha_growth_target)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -561,8 +573,12 @@ def compute_legal_actions(
                     ))
             elif trainer_type == TrainerType.POKEMON_TOOL.value:
                 tool_attach_to = getattr(definition, "attach_to", None)
+                tool_pool = in_play
+                if getattr(definition, "attach_to_opponent", False):
+                    tool_pool = [p for pid in board.player_ids if pid != player_id
+                                 for p in board.pokemon_in_play(pid)]
                 tool_targets = [
-                    p.entity_id for p in in_play
+                    p.entity_id for p in tool_pool
                     if tool_slots_free(board, p) > 0
                     and (tool_attach_to is None or tool_attach_to(p))
                 ]
@@ -709,6 +725,8 @@ def _stadium_ability_entries(
             continue
         if (stadium.entity_id, ability.ability_id) in state.used_abilities:
             continue
+        if stadium_suppressed(board, stadium):
+            continue  # Wicked Wind: the Stadium has no effect
         if ability.condition and not ability.condition(board, player_id, stadium):
             continue
         entries.append(_target_map_entry(

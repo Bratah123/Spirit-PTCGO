@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Golem-EX (TwentiethAnn #46): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="1db1a7af-5d31-5829-8500-b1496546ab3a",
@@ -32,8 +30,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 60 damage to itself.",
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
             damage=180,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(60),
         ),
     ],
 )

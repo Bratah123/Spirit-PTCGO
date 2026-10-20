@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Noivern BREAK (XY8 #113): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
 
 card = PokemonCardDef(
     guid="110563a9-f258-524b-8f30-1983b2627214",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.hand_size() == ctx.hand_size(ctx.opponent_id), 80),
         ),
     ],
 )

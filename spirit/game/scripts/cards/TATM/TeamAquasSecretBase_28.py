@@ -1,13 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Secret Base (TATM #28): trainer effect stubbed.
-
-Card text:
-  - The Retreat Cost of each Pokémon in play (except for Team Aqua Pokémon) is Colorless more.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
-
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+from spirit.game.data_utils import StadiumCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.content.definitions import def_for
+from spirit.game.session.passives import Passive
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+class _SecretBase(Passive):
+    """The Retreat Cost of each Pokemon in play (except Team Aqua Pokemon) is Colorless more."""
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        return cost if _team(pokemon, "Aqua") else cost + 1
+
 
 card = StadiumCardDef(
     guid="b153aa0a-2aa0-5609-b220-9f77233a7231",
@@ -19,6 +25,5 @@ card = StadiumCardDef(
     collector_number=28,
     set_code="TATM",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_SecretBase()
 )

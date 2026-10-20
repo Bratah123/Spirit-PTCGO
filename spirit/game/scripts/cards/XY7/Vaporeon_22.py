@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vaporeon (XY7 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive, carrier_pokemon
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _StageOneType(Passive):
+    """Each of your Stage 1 Pokemon in play is now a Water Pokemon in addition to its types."""
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        me = carrier_pokemon(carrier)
+        if (me is None or pokemon.owning_player_id != me.owning_player_id
+                or pokemon.get_attribute(AttrID.STAGE) != PokemonStage.STAGE1.value
+                or PokemonTypes.WATER.value in types):
+            return types
+        return list(types) + [PokemonTypes.WATER.value]
+
 
 card = PokemonCardDef(
     guid="69b5ce39-396b-5b9a-83a6-1b450560212f",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="Aqua Effect",
             game_text="Each of your Stage 1 Pok\u00e9mon in play is now a Water Pok\u00e9mon in addition to its existing types.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_StageOneType(),
         ),
         Attack(
             title="Hydro Splash",

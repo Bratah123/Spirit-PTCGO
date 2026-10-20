@@ -1,9 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Simipour (XY8 #42): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_type_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.GRASS.value)
+
+
+async def _fling(ctx):
+    """Put 3 Grass Energy cards from your discard pile into your hand."""
+    pool = [c for c in ctx.discard_pile() if is_energy_card(c) and _is_type_energy(c)]
+    n = min(3, len(pool))
+    if n:
+        picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 3 Grass Energy cards")
+        if picks:
+            await ctx.put_in_hand(picks, reveal=True)
+
 
 card = PokemonCardDef(
     guid="e8129fb9-a4ef-59ba-a799-312b2f2c6432",
@@ -27,15 +40,13 @@ card = PokemonCardDef(
             title="Green Fling",
             game_text="Put 3 Grass Energy from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fling,
         ),
         Attack(
             title="Hand Fling",
             game_text="This attack does 10 damage times the number of cards in your hand.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(lambda ctx: len(ctx.hand()), 10),
         ),
     ],
 )

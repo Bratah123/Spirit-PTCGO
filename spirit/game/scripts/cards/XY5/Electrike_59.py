@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Electrike (XY5 #59): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_energy_card
+
 
 card = PokemonCardDef(
     guid="ebeed981-b129-579c-99ca-8986f5c46c85",
@@ -28,8 +28,7 @@ card = PokemonCardDef(
             title="Charge",
             game_text="Search your deck for a Lightning Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_attach_energy(predicate=lambda c: is_energy_card(c) and energy_provides_type(c, PokemonTypes.LIGHTNING.value), to_self=True, prompt='Choose a Lightning Energy card to attach.'),
         ),
         Attack(
             title="Bite",

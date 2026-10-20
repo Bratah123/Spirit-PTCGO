@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ninetales BREAK (XY12 #16): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+async def _explosive_fireball(ctx):
+    """Discard all Fire Energy attached to this Pokemon; 10 + 60 per card discarded."""
+    pool = [e for e in ctx.attached_energies(ctx.attacker) if _is_fire_energy(e)]
+    if pool:
+        await ctx.discard_cards(pool)
+    await ctx.deal_damage(10 + 60 * len(pool))
+
 
 card = PokemonCardDef(
     guid="814beafe-cdef-521d-9272-bfb73b281127",
@@ -28,8 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_explosive_fireball,
         ),
     ],
 )

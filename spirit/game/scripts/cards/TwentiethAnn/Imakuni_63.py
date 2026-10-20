@@ -1,13 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Imakuni? (TwentiethAnn #63): trainer effect stubbed.
+from spirit.game.data_utils import SupporterCardDef
+from spirit.game.attributes import Rarities, SpecialConditions
 
-Card text:
-  - Your Active Pokémon is now Confused.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import SupporterCardDef, unimplemented
-from spirit.game.attributes import Rarities
+async def imakuni(ctx):
+    """Your Active Pokemon is now Confused."""
+    a = ctx.my_active()
+    if a is not None:
+        await ctx.apply_special_condition(a, SpecialConditions.CONFUSED)
+
 
 card = SupporterCardDef(
     guid="341cc365-8750-5f9e-b179-09265beb7dac",
@@ -19,6 +19,5 @@ card = SupporterCardDef(
     collector_number=63,
     set_code="TwentiethAnn",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=imakuni
 )

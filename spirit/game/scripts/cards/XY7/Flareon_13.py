@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flareon (XY7 #13): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import Passive, carrier_pokemon
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _StageOneType(Passive):
+    """Each of your Stage 1 Pokemon in play is now a Fire Pokemon in addition to its types."""
+    def modify_pokemon_types(self, types, pokemon, carrier):
+        me = carrier_pokemon(carrier)
+        if (me is None or pokemon.owning_player_id != me.owning_player_id
+                or pokemon.get_attribute(AttrID.STAGE) != PokemonStage.STAGE1.value
+                or PokemonTypes.FIRE.value in types):
+            return types
+        return list(types) + [PokemonTypes.FIRE.value]
+
 
 card = PokemonCardDef(
     guid="f84611cc-0cd0-5516-bf79-3c2ebb4b90da",
@@ -26,8 +36,7 @@ card = PokemonCardDef(
         Ability(
             title="Flare Effect",
             game_text="Each of your Stage 1 Pok\u00e9mon in play is now a Fire Pok\u00e9mon in addition to its existing types.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_StageOneType(),
         ),
         Attack(
             title="Heat Breath",
@@ -35,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

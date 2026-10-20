@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Manectric-EX (XY4 #120): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
 
 card = PokemonCardDef(
     guid="5d337ad6-0d32-5af7-89cd-d36cec8e8337",
@@ -30,8 +30,7 @@ card = PokemonCardDef(
             game_text="Attach 2 basic Energy cards from your discard pile to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=110,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=is_basic_energy_card, count=2, minimum=1, target=lambda p: not is_in_active_spot(p), prompt='Choose 2 basic Energy cards to attach to 1 of your Benched Pokémon'),
         ),
     ],
 )

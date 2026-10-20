@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Aegislash (XY5 #100): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn, no_weakness_passive
+
 
 card = PokemonCardDef(
     guid="f213d983-895d-5157-97eb-788e578b0490",
@@ -28,16 +26,14 @@ card = PokemonCardDef(
         Ability(
             title="Miracle Guard",
             game_text="Each of your Pok\u00e9mon has no Weakness.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=no_weakness_passive(protects='team'),
         ),
         Attack(
             title="Protect Charge",
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=20),
         ),
     ],
 )

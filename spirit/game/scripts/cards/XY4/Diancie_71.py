@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diancie (XY4 #71): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import smokescreen_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_fairy(pokemon):
+    return PokemonTypes.FAIRY.value in (pokemon.get_attribute(AttrID.POKEMON_TYPES) or [])
+
+
+async def _diamond_storm(ctx):
+    """60; heal 30 damage from each of your Fairy Pokemon."""
+    await ctx.deal_damage()
+    for p in ctx.my_pokemon_in_play():
+        if _is_fairy(p):
+            await ctx.heal(30, p)
+
 
 card = PokemonCardDef(
     guid="96ad0e44-d289-5b19-b6fa-b46fd79834e1",
@@ -28,16 +38,14 @@ card = PokemonCardDef(
             title="Sparkle",
             game_text="If the Defending Pok\u00e9mon tries to attack during your opponent's next turn, your opponent flips a coin. If tails, that attack does nothing.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=smokescreen_attack(),
         ),
         Attack(
             title="Diamond Storm",
             game_text="Heal 30 damage from each of your Fairy Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_diamond_storm,
         ),
     ],
 )

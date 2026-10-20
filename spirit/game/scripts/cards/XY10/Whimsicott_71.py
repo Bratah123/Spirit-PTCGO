@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Whimsicott (XY10 #71): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def shadow_cyclone(ctx):
+    await ctx.deal_damage()
+    await ctx.move_energy_freely([ctx.attacker], ctx.my_bench(), max_count=1)
+
 
 card = PokemonCardDef(
     guid="61903476-df42-5d45-b810-fb71a133e052",
@@ -30,8 +32,7 @@ card = PokemonCardDef(
             game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shadow_cyclone,
         ),
     ],
 )

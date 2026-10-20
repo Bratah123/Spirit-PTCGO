@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Audino-EX (XY10 #85): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, TrainerType
+from spirit.game.card_effects.attacks_common import snipe_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_snipe = snipe_attack(50, also_base=True)
+
+
+async def _magical_symphony(ctx):
+    """110; if you played a Supporter from hand this turn, 50 to 1 of your opponent's Benched Pokemon."""
+    played = ctx.played_trainer_this_turn(lambda r: r[2] in (TrainerType.SUPPORTER, TrainerType.SUPPORTER.value))
+    if played:
+        await _snipe(ctx)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="431dc256-822d-57c5-9316-6c79af339988",
@@ -28,8 +38,7 @@ card = PokemonCardDef(
             game_text="If you played a Supporter card from your hand during this turn, this attack does 50 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 3},
             damage=110,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magical_symphony,
         ),
     ],
 )

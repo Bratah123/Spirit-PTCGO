@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Anorith (XY11 #56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import no_weakness_passive
+from spirit.game.session.passives import carrier_pokemon
+from spirit.game.session.effects import is_restored_pokemon
+
+
+def _restored_ally(target, carrier):
+    me = carrier_pokemon(carrier)
+    return me is not None and target.owning_player_id == me.owning_player_id and is_restored_pokemon(target)
+
 
 card = PokemonCardDef(
     guid="e15acfdc-cdc2-5218-a976-e76c0e61bcda",
@@ -26,8 +32,7 @@ card = PokemonCardDef(
         Ability(
             title="Restored Barrier",
             game_text="Each of your Restored Pok\u00e9mon has no Weakness.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=no_weakness_passive(protects=_restored_ally),
         ),
         Attack(
             title="X-Scissor",
@@ -35,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mr. Mime (XY8 #97): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import prevent_damage_when, is_in_active_spot
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+def _bench_barrier(calc, carrier):
+    """Prevent all damage done to your Benched Pokemon by attacks (either
+    player's attacks)."""
+    target = calc.target
+    return bool(calc.is_attack and target is not None
+                and target.owning_player_id == carrier.owning_player_id
+                and not is_in_active_spot(target))
+
 
 card = PokemonCardDef(
     guid="b7c88007-b26c-505b-bd9b-6880f3fb8047",
@@ -27,8 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="Bench Barrier",
             game_text="Prevent all damage done to your Benched Pok\u00e9mon by attacks.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=prevent_damage_when(_bench_barrier, attacks_only=False),
         ),
         Attack(
             title="Juggling",
@@ -36,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(4, per_heads=10),
         ),
     ],
 )

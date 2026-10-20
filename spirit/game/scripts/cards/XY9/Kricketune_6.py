@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kricketune (XY9 #6): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _Screeched(Passive):
+    """Attack damage to this Pokemon is increased by 60 (after W/R)."""
+    def modify_damage_taken(self, calc, carrier):
+        if calc.is_attack and calc.amount > 0 and calc.target is carrier_pokemon(carrier):
+            calc.amount += 60
+
+
+async def _screech(ctx):
+    """During your next turn, damage from attacks to the Defending Pokemon is increased by 60."""
+    d = ctx.opponent_active()
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_own_next_turn(d, _Screeched())
+
 
 card = PokemonCardDef(
     guid="eeb02153-a63e-5e13-925f-00e6ba4b0a6f",
@@ -27,8 +39,7 @@ card = PokemonCardDef(
             title="Screech",
             game_text="During your next turn, any damage done to the Defending Pok\u00e9mon by attacks is increased by 60 (after applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_screech,
         ),
         Attack(
             title="Slash",

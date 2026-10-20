@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Kyogre-EX (XY5 #54): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _giant_whirlpool(ctx):
+    """140; return 2 Water Energy attached to this Pokemon to your hand."""
+    await ctx.deal_damage()
+    pool = [e for e in ctx.attached_energies(ctx.attacker) if _is_water_energy(e)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(pool, min(2, len(pool)), minimum=min(2, len(pool)),
+                                   prompt="Return 2 Water Energy to your hand")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=False)
+
 
 card = PokemonCardDef(
     guid="c36d0844-ac25-56a5-9970-0140752b644b",
@@ -27,16 +42,14 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Giant Whirlpool",
             game_text="Return 2 Water Energy attached to this Pok\u00e9mon to your hand.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=140,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giant_whirlpool,
         ),
     ],
 )

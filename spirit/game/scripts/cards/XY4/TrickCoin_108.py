@@ -1,14 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trick Coin (XY4 #108): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - Once during your turn, after you flip any coins for an attack of the Pokémon this card is attached to, you may ignore all effects of those coin flips and begin flipping those coins again. (You may only use effects that let you flip coins again, including effects from other cards, once during your turn.)
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
+
+class _TrickCoin(Passive):
+    """Once during your turn, re-flip an attack's coins (holder's attacks)."""
+    def offers_attack_coin_reroll(self, player_id, carrier):
+        holder = carrier_pokemon(carrier)
+        return (holder is not None and holder.owning_player_id == player_id
+                and is_in_active_spot(holder))
+
 
 card = PokemonToolCardDef(
     guid="7e429de7-9066-542d-b839-6c7e4177b718",
@@ -20,6 +22,5 @@ card = PokemonToolCardDef(
     collector_number=108,
     set_code="XY4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=_TrickCoin()
 )

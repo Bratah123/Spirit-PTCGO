@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bidoof (XY5 #117): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
+from spirit.game.card_effects.attacks_common import bonus_if, count_energy
+
 
 card = PokemonCardDef(
     guid="971f22bc-2a67-59c4-a08e-cf54638b5e93",
@@ -22,14 +21,14 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.FIGHTING,
     family_id=399,
     abilities=[
+        ancient_trait('α Recovery'),
         Attack(
             title="Drench",
             game_text="If this Pok\u00e9mon has any Water Energy attached to it, this attack does 20 more damage.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: count_energy('self', energy_type=PokemonTypes.WATER)(ctx) > 0, 20),
         ),
     ],
 )

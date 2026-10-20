@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nosepass (XY5 #78): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+
 
 card = PokemonCardDef(
     guid="bab26bcf-5137-5987-a187-0ba219e2e56a",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Stiffen",
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 40 (after applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=40),
         ),
         Attack(
             title="Ram",

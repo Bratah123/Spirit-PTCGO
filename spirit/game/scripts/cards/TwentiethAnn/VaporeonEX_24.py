@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Vaporeon-EX (TwentiethAnn #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def _deep_squall(ctx):
+    """130 minus 10 for each damage counter on this Pokemon."""
+    await ctx.deal_damage(max(0, 130 - 10 * damage_counters_on('self')(ctx)))
+
 
 card = PokemonCardDef(
     guid="60c67b7c-6637-5555-9abd-b5ed450612bb",
@@ -27,8 +31,7 @@ card = PokemonCardDef(
             game_text="Heal 30 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(30),
         ),
         Attack(
             title="Deep Squall",
@@ -36,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_deep_squall,
         ),
     ],
 )

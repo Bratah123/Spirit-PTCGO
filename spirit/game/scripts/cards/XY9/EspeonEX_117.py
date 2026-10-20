@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Espeon-EX (XY9 #117): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import devolve_depth, shred
+
+
+async def _rewind(ctx):
+    """Devolve each of your opponent's evolved Pokemon; the highest Stage card
+    goes to your opponent's hand."""
+    for p in list(ctx.opponent_pokemon_in_play()):
+        if devolve_depth(p) > 0 and not ctx.effects_blocked(p):
+            await ctx.devolve_pokemon(p, 1, destination="hand")
+
 
 card = PokemonCardDef(
     guid="136b619f-1041-5e28-ac25-b876f1aa184d",
@@ -26,16 +32,14 @@ card = PokemonCardDef(
             title="Miraculous Shine",
             game_text="Devolve each of your opponent's evolved Pok\u00e9mon and put the highest Stage Evolution card on it into your opponent's hand.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rewind,
         ),
         Attack(
             title="Psyshock",
             game_text="This attack's damage isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shred,
         ),
     ],
 )
