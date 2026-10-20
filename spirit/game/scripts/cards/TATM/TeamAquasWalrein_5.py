@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Walrein (TATM #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy, snipe_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_water_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _dual_blizzard(ctx):
+    """Discard 2 Water Energy attached to this Pokemon; 80 damage to 2 of the opponent's Pokemon."""
+    n = min(2, sum(1 for e in ctx.attached_energies(ctx.attacker) if _is_water_energy(e)))
+    if n:
+        await ctx.discard_energy_from(ctx.attacker, n, predicate=_is_water_energy, minimum=n)
+    await snipe_attack(80, pool="any", count=2)(ctx)
+
 
 card = PokemonCardDef(
     guid="711c6159-4183-54b0-abf8-e30ce5a1f467",
@@ -29,15 +40,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self'), 30),
         ),
         Attack(
             title="Dual Blizzard",
             game_text="Discard 2 Water Energy attached to this Pok\u00e9mon. This attack does 80 damage to 2 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dual_blizzard,
         ),
     ],
 )

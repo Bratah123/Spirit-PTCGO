@@ -1,10 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Sealeo (TATM #4): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.attacks_common import snipe_attack, bonus_if, active_is
+from spirit.game.content.definitions import def_for
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
 
 
 card = PokemonCardDef(
@@ -29,7 +31,6 @@ card = PokemonCardDef(
             title="Splatter",
             game_text="This attack does 20 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=snipe_attack(20, pool='any', count=1),
         ),
         Attack(
@@ -38,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(active_is(lambda p: _team(p, "Magma")), 60),
         ),
     ],
 )

@@ -1,10 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Aqua's Kyogre-EX (TATM #6): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.session.passives import effective_retreat_cost
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import _other_player
 
 
 async def _iron_crash(ctx):
@@ -12,6 +10,18 @@ async def _iron_crash(ctx):
     target = ctx.opponent_active()
     cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
     await ctx.deal_damage(ctx.ability.damage + 20 * cost)
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+def _power_saver(board, player_id, pokemon=None):
+    """If there are 4 or fewer Team Aqua Pokemon in play (both sides), this Pokemon can't attack."""
+    n = sum(1 for pid in (player_id, _other_player(board, player_id))
+            for p in board.pokemon_in_play(pid) if _team(p, "Aqua"))
+    return n > 4
 
 
 card = PokemonCardDef(
@@ -34,8 +44,7 @@ card = PokemonCardDef(
         Ability(
             title="Power Saver",
             game_text="If there are 4 or fewer Team Aqua Pok\u00e9mon in play, this Pok\u00e9mon can't attack.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=None  # enforced by _power_saver on this card's attack condition,
         ),
         Attack(
             title="Aqua Impact",
@@ -43,7 +52,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
+            condition=_power_saver,
             effect=_iron_crash,
         ),
     ],
