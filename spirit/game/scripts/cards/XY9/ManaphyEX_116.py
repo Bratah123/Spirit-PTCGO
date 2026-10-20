@@ -6,6 +6,7 @@ from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_typ
 
 async def sugary_sprinkles(ctx):
     """Heal 30 damage from each of your Benched Pokemon."""
+    await ctx.deal_damage()
     for pokemon in ctx.my_bench():
         await ctx.heal(30, pokemon)
 

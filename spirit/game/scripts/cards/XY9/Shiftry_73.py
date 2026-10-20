@@ -17,6 +17,20 @@ async def _roll_up(ctx):
         await ctx.discard_cards(picks)
 
 
+from spirit.game.session.effects import is_trainer_card
+
+
+async def _otherworldly_return(ctx):
+    """60; put a Trainer card from your discard pile into your hand."""
+    await ctx.deal_damage()
+    trainers = [c for c in ctx.discard_pile() if is_trainer_card(c)]
+    if not trainers:
+        return
+    picks = await ctx.choose_cards(trainers, 1, minimum=1,
+                                   prompt="Choose a Trainer card to put into your hand")
+    await ctx.put_in_hand(picks, reveal=False)
+
+
 card = PokemonCardDef(
     guid="6e5b96c8-b6a0-55de-a1f6-bf9cfcb1c659",
     key="XY9",
@@ -48,7 +62,7 @@ card = PokemonCardDef(
             game_text="Put a Trainer card from your discard pile into your hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=electromagnetic_sonar,
+            effect=_otherworldly_return,
         ),
     ],
 )
