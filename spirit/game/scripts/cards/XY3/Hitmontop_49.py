@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hitmontop (XY3 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack, switch_self_attack
+
 
 card = PokemonCardDef(
     guid="89889cab-8cc6-5cf0-9a02-da2cfe3046b8",
@@ -26,16 +24,14 @@ card = PokemonCardDef(
             title="Quick Draw",
             game_text="Draw a card.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=draw_attack(1),
         ),
         Attack(
             title="Helicoptero",
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
     ],
 )

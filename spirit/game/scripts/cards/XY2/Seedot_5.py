@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Seedot (XY2 #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
 
 card = PokemonCardDef(
     guid="3e480498-4d3b-538f-a0c0-cfb27fb9ce21",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for a Basic Pok\u00e9mon and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(count=1, prompt='Choose a Basic Pokémon to put onto your Bench.'),
         ),
     ],
 )

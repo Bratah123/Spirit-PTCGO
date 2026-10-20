@@ -1,13 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Eco Arm (XY7 #71): trainer effect stubbed.
+from spirit.game.data_utils import ItemCardDef
+from spirit.game.attributes import Rarities, AttrID, TrainerType
 
-Card text:
-  - Shuffle 3 Pokémon Tool cards from your discard pile into your deck.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
 
-from spirit.game.data_utils import ItemCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _is_tool(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+def eco_arm_condition(board, player_id):
+    discard = board.find_player_area(player_id, "discard")
+    return bool(discard) and any(_is_tool(c) for c in discard.children)
+
+
+async def eco_arm(ctx):
+    """Shuffle 3 Pokemon Tool cards from your discard pile into your deck."""
+    pool = [c for c in ctx.discard_pile() if _is_tool(c)]
+    n = min(3, len(pool))
+    picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 3 Pokémon Tool cards") if n else []
+    if picks:
+        await ctx.shuffle_into_deck(picks, ctx.player_id)
+
 
 card = ItemCardDef(
     guid="81b11637-88ca-5d85-8101-26390a2fb766",
@@ -19,6 +30,6 @@ card = ItemCardDef(
     collector_number=71,
     set_code="XY7",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=eco_arm,
+    condition=eco_arm_condition
 )

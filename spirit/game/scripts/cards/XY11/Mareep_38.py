@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mareep (XY11 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="9e726cff-f182-5bbd-9d01-cd4ce0bf8b6e",
@@ -21,14 +19,14 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.METAL,
+    resistance_amount=20,
     family_id=179,
     abilities=[
         Attack(
             title="Thunder Wave",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Tackle",

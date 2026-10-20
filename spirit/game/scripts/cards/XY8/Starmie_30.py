@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie (XY8 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.support_common import shuffle_hand_into_deck_draw
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _balance_bind(ctx):
+    """30; if both players have the same number of Benched Pokemon, Paralyze."""
+    await ctx.deal_damage()
+    if len(ctx.my_bench()) == len(ctx.opponent_bench()):
+        await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="8265df0b-0693-5bc4-a300-934599ca8931",
@@ -27,16 +32,14 @@ card = PokemonCardDef(
             title="Deep Sea Swirl",
             game_text="Shuffle your hand into your deck. Then, draw 7 cards.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shuffle_hand_into_deck_draw(7),
         ),
         Attack(
             title="Balance Bind",
             game_text="If you and your opponent have the same number of Benched Pok\u00e9mon, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_balance_bind,
         ),
     ],
 )

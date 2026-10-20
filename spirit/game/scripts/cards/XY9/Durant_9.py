@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Durant (XY9 #9): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import mill_attack
+from spirit.game.session.passives import effective_max_hp
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _scrape_down(ctx):
+    """If this Pokemon has any damage counters, discard the top 4 cards of your opponent's deck."""
+    me = ctx.attacker
+    if effective_max_hp(ctx.board, me) > me.get_attribute(AttrID.HP, 0):
+        await ctx.discard_cards(ctx.deck_top(4, player_id=ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="e92e0e0b-a002-569d-a8bb-24d64c1874cf",
@@ -27,15 +33,13 @@ card = PokemonCardDef(
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.GRASS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Scrape Down",
             game_text="If this Pok\u00e9mon has any damage counters on it, discard the top 4 cards of your opponent's deck.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scrape_down,
         ),
     ],
 )

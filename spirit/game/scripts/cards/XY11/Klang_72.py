@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Klang (XY11 #72): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="9f8ca60f-5afd-5f79-8226-d20c828fa62f",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Klink.Name",
     family_id=599,
     abilities=[
@@ -35,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(4, per_heads=30),
         ),
     ],
 )

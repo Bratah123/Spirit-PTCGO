@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Quilladin (XY8 #10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="484f1bab-aaaa-58a7-82cb-aa61e1d42ec4",
@@ -34,8 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(4, per_heads=40),
         ),
     ],
 )

@@ -112,6 +112,15 @@ def check_card(card: dict, path: str, tree: ast.Module) -> List[str]:
         errs.append(f"collector_number {_lit(kw.get('collector_number'))} != {want_num}")
     if "Pok" not in card.get("supertype", ""):
         return errs
+    if "inherits" in kw:
+        # Reprint: gameplay numbers live in the inherited script.
+        parent = os.path.join(CARDS_ROOT, _lit(kw["inherits"], "") + ".py")
+        if not os.path.exists(parent):
+            return errs + [f"reprint parent {_lit(kw['inherits'])} missing"]
+        with open(parent, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read(), parent)
+        call = _card_call(tree)
+        kw = {k.arg: k.value for k in call.keywords}
     if _lit(kw.get("hp")) != int(card.get("hp") or 0):
         errs.append(f"hp {_lit(kw.get('hp'))} != {card.get('hp')}")
     if _lit(kw.get("retreat_cost"), 0) != card.get("convertedRetreatCost", 0):

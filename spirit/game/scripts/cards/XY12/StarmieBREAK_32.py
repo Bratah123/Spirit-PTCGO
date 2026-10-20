@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie BREAK (XY12 #32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.content.definitions import def_for
+
+
+def _is_break(p):
+    return "BREAK" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+async def _break_star(ctx):
+    """100 damage to each of the opponent's Pokemon BREAK."""
+    for p in list(ctx.opponent_pokemon_in_play()):
+        if _is_break(p):
+            await ctx.deal_damage(100, target=p, apply_modifiers=None)
+
 
 card = PokemonCardDef(
     guid="5f919691-ad5d-5128-8541-83e036a17016",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
             title="Break Star",
             game_text="This attack does 100 damage to each of your opponent's Pok\u00e9mon BREAK. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_break_star,
         ),
     ],
 )

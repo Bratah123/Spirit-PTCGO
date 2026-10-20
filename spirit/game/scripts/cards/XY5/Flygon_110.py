@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flygon (XY5 #110): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _sand_flap(ctx):
+    """Choose either player: they shuffle their hand into their deck and draw 4."""
+    idx = await ctx.choose("Choose a player", ["You", "Your opponent"])
+    pid = ctx.opponent_id if idx == 1 else ctx.player_id
+    await ctx.shuffle_into_deck(list(ctx.hand(pid)), pid)
+    await ctx.draw_cards(4, pid)
+
 
 card = PokemonCardDef(
     guid="e509c516-da73-534b-841e-dee37e5a451b",
@@ -26,16 +32,15 @@ card = PokemonCardDef(
         Ability(
             title="Sand Flap",
             game_text="Once during your turn (before your attack), you may choose either player. That player shuffles his or her hand into his or her deck and draws 4 cards.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            effect=_sand_flap,
         ),
         Attack(
             title="Sand Tomb",
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
     ],
 )

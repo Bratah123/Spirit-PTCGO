@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Rayquaza-EX (XY6 #105): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_bench
+
 
 card = PokemonCardDef(
     guid="7babadae-6006-5ac6-9eb8-4c8e6f3852db",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.RayquazaEX.Name",
     family_id=384,
     abilities=[
@@ -30,8 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_bench('mine'), 30),
         ),
     ],
 )

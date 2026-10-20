@@ -1,9 +1,33 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Poliwhirl (XY12 #24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_damage
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def torment(ctx):
+    """Choose 1 of the Defending Pokémon's attacks; it can't use
+    that attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    entries = [
+        e for e in (defender.get_attribute(AttrID.PIE_ABILITIES) or [])
+        if isinstance(e, dict) and e.get("abilityType") == "Attack"
+        and e.get("abilityID")
+    ]
+    if not entries:
+        return
+    index = 0
+    if len(entries) > 1:
+        index = await ctx.choose(
+            "Choose an attack to lock",
+            [e.get("title", {}).get("id", "Attack") for e in entries],
+        )
+    entry = entries[index]
+    state = ctx.session.turn_state
+    state.attack_locks[(defender.entity_id, entry["abilityID"])] = \
+        state.turn_number + 1
+
 
 card = PokemonCardDef(
     guid="c43ecdc1-497f-5963-a9d7-fead4deb878e",
@@ -28,8 +52,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of your opponent's Active Pok\u00e9mon's attacks. That Pok\u00e9mon can't use that attack during your opponent's next turn.",
             cost={PokemonTypes.WATER: 2},
             damage=30,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=torment,
         ),
         Attack(
             title="Double Slap",
@@ -37,8 +60,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=50),
         ),
     ],
 )

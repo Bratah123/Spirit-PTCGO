@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Jumpluff (XY11 #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_remaining
+
 
 card = PokemonCardDef(
     guid="6656b0a6-5aff-5640-88f6-986f494b90ea",
@@ -27,8 +26,7 @@ card = PokemonCardDef(
             title="Fluffy Transport",
             game_text="Switch 1 of your opponent's Benched Pok\u00e9mon with his or her Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gust_attack(),
         ),
         Attack(
             title="Solar Step",
@@ -36,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_prizes_remaining('mine'), 20),
         ),
     ],
 )

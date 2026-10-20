@@ -1,13 +1,27 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trainers' Mail (XY6 #92a): trainer effect stubbed.
-
-Card text:
-  - Look at the top 4 cards of your deck. You may reveal a Trainer card you find there (except Trainers' Mail) and put it into your hand. Shuffle the other cards back into your deck.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_trainer_card
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import deck_nonempty
+
+
+def _mailable(card):
+    return is_trainer_card(card) and getattr(def_for(card.archetype_id), "display_name", None) != "Trainers' Mail"
+
+
+async def trainers_mail(ctx):
+    """Look at the top 4 cards of your deck; you may reveal a Trainer card
+    (except Trainers' Mail) and put it into your hand. Shuffle the rest back."""
+    top = ctx.deck_top(4)
+    pool = [c for c in top if _mailable(c)]
+    picks = await ctx.choose_cards(pool, 1, minimum=0, display_cards=top,
+                                   prompt="Choose a Trainer card") if pool else []
+    if not pool and top:
+        await ctx.choose_cards(top, 1, minimum=0, display_cards=top, prompt="No Trainer cards")
+    if picks:
+        await ctx.put_in_hand(picks, reveal=True)
+    await ctx.shuffle_deck()
+
 
 card = ItemCardDef(
     guid="9b0e3c49-0f2a-546b-bbcb-2811bc706407",
@@ -19,6 +33,6 @@ card = ItemCardDef(
     collector_number=112,
     set_code="XY6",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=trainers_mail,
+    condition=deck_nonempty
 )

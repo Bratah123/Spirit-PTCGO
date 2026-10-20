@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Roserade (XY2 #9): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
+
+async def _sludge_crash(ctx):
+    """Printed damage; flip until tails, discard an Energy from the Defending
+    Pokemon for each heads."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_until_tails(ctx.ability.title)
+    d = ctx.defender
+    if heads and d is not None and not ctx.effects_blocked(d):
+        n = min(heads, len(ctx.attached_energies(d)))
+        if n:
+            await ctx.discard_energy_from(d, n, minimum=n)
+
 
 card = PokemonCardDef(
     guid="4348003f-bad0-5d75-ba0e-0c00b844421f",
@@ -27,16 +37,14 @@ card = PokemonCardDef(
             title="Whiplash",
             game_text="Flip a coin until you get tails. For each heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sludge_crash,
         ),
         Attack(
             title="Mega Drain",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 3},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
     ],
 )

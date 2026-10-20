@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Petilil (XY9 #7): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="3a6fe586-2a2c-5788-8a49-e487551e6c7e",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Aromatherapy",
             game_text="Heal 10 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(10, 'each_own'),
         ),
     ],
 )

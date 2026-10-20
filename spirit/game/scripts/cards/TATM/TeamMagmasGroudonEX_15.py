@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Magma's Groudon-EX (TATM #15): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_damage
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import _other_player
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+def _power_saver(board, player_id, pokemon=None):
+    """If there are 4 or fewer Team Magma Pokemon in play (both sides), this Pokemon can't attack."""
+    n = sum(1 for pid in (player_id, _other_player(board, player_id))
+            for p in board.pokemon_in_play(pid) if _team(p, "Magma"))
+    return n > 4
+
 
 card = PokemonCardDef(
     guid="660d49ae-3d1c-57a8-805f-86d8f891499e",
@@ -25,8 +37,7 @@ card = PokemonCardDef(
         Ability(
             title="Power Saver",
             game_text="If there are 4 or fewer Team Magma Pok\u00e9mon in play, this Pok\u00e9mon can't attack.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=None  # enforced by _power_saver on this card's attack condition,
         ),
         Attack(
             title="Magma Quake",
@@ -34,8 +45,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            condition=_power_saver,
+            effect=bonus_if(has_damage(), 80),
         ),
     ],
 )

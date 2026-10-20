@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Houndoom-EX (XY8 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+async def _inferno_fang(ctx):
+    """80+; you may discard all Fire Energy attached to this Pokemon for 80 more."""
+    fire = [e for e in ctx.attached_energies(ctx.attacker) if _is_fire_energy(e)]
+    if fire and await ctx.ask_yes_no("Discard all Fire Energy for 80 more damage?"):
+        await ctx.discard_cards(fire)
+        await ctx.deal_damage(ctx.ability.damage + 80)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="743c618a-6fdb-5fc9-952a-28a41e076bb2",
@@ -29,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_inferno_fang,
         ),
     ],
 )

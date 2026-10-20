@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Sylveon-EX (TwentiethAnn #RC32): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, has_tool
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fairy_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FAIRY.value)
+
+
+async def _precious_ribbon(ctx):
+    """100; move a Fairy Energy from this Pokemon to 1 of your Benched Pokemon;
+    if you do, heal 50 damage from that Pokemon."""
+    await ctx.deal_damage()
+    bench = ctx.my_bench()
+    if not bench or not any(_is_fairy_energy(e) for e in ctx.attached_energies(ctx.attacker)):
+        return
+    moved = await ctx.move_energy_freely([ctx.attacker], bench, predicate=_is_fairy_energy, max_count=1,
+                                         prompt="Move a Fairy Energy to a Benched Pokémon")
+    for _e, dest in moved or []:
+        await ctx.heal(50, dest)
+
 
 card = PokemonCardDef(
     guid="cc1855e8-e31d-5c84-842e-95ecaf9d5a08",
@@ -21,6 +37,7 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.METAL,
     resistance_type=PokemonTypes.DARKNESS,
+    resistance_amount=20,
     family_id=700,
     abilities=[
         Attack(
@@ -29,16 +46,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: has_tool(ctx.attacker), 30),
         ),
         Attack(
             title="Precious Ribbon",
             game_text="Move a Fairy Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon. If you do, heal 50 damage from that Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_precious_ribbon,
         ),
     ],
 )

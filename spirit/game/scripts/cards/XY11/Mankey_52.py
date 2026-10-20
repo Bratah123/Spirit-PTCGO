@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mankey (XY11 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="f51ebb74-9244-59d5-a1ca-f868eafe0e1e",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Focus Energy",
             game_text="During your next turn, this Pok\u00e9mon's Flop attack's base damage is 50.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(40, 'Flop'),
         ),
         Attack(
             title="Flop",

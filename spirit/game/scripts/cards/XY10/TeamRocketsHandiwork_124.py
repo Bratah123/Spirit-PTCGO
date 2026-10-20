@@ -1,13 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Rocket's Handiwork (XY10 #124): trainer effect stubbed.
-
-Card text:
-  - Flip 2 coins. For each heads, discard 2 cards from the top of your opponent's deck.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def team_rockets_handiwork(ctx):
+    """Flip 2 coins. For each heads, discard 2 cards from the top of your opponent's deck."""
+    results = await ctx.flip_coins(2, "Team Rocket's Handiwork")
+    n = 2 * sum(1 for r in results or [] if r)
+    cards = ctx.deck_top(n, ctx.opponent_id)
+    if cards:
+        await ctx.discard_cards(cards)
+
 
 card = SupporterCardDef(
     guid="b0a3f91f-e4d7-5357-9f5a-00e623edd536",
@@ -19,6 +21,5 @@ card = SupporterCardDef(
     collector_number=124,
     set_code="XY10",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=team_rockets_handiwork
 )

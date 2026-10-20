@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dragonite (XY6 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _wrapped_in_wind(ctx):
+    """Attach up to 2 basic Energy cards from your hand to this Pokemon."""
+    pool = [c for c in ctx.hand() if is_basic_energy_card(c)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(pool, min(2, len(pool)), minimum=0, prompt="Attach up to 2 basic Energy")
+    for energy in picks or []:
+        await ctx.attach_energy(energy, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="b1a47c7a-7e4f-5d82-9d8b-4c7fe71c6343",
@@ -27,8 +35,7 @@ card = PokemonCardDef(
             title="Wrapped in Wind",
             game_text="Attach up to 2 basic Energy cards from your hand to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wrapped_in_wind,
         ),
         Attack(
             title="Heavy Impact",

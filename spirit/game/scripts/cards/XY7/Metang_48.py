@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Metang (XY7 #48): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="b5ce68d6-6a06-5422-bc58-4cdc5a3eeab2",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Beldum.Name",
     family_id=374,
     abilities=[
@@ -35,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=20),
         ),
     ],
 )

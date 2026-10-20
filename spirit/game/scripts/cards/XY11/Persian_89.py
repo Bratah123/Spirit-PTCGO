@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Persian (XY11 #89): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _evolved_from_meowth_this_turn(ctx):
+    ts = ctx.session.turn_state
+    me = ctx.attacker
+    if ts.entered_play_turn.get(me.entity_id) != ts.turn_number:
+        return False
+    return any(getattr(def_for(c.archetype_id), "display_name", "") == "Meowth" for c in me.children)
+
 
 card = PokemonCardDef(
     guid="e9f16493-9cfa-5806-a287-275727c28cd1",
@@ -29,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_evolved_from_meowth_this_turn, 30),
         ),
         Attack(
             title="Fury Swipes",
@@ -38,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=3, per_heads=30),
         ),
     ],
 )

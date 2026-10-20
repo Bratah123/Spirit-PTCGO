@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Voltorb (XY12 #39): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="c564ec0d-cd0e-5c90-a282-1c504756d45f",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.METAL,
+    resistance_amount=20,
     family_id=100,
     abilities=[
         Attack(
@@ -29,8 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=10),
         ),
     ],
 )
