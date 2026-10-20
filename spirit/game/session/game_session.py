@@ -3269,6 +3269,8 @@ class GameSession:
                 await self._fire_triggered_abilities(
                     player_id, pokemon, Triggers.BETWEEN_TURNS
                 )
+        # Stadium checkup hooks (Faded Town: "at any time between turns").
+        await self._fire_stadium_triggers(active_id, Triggers.BETWEEN_TURNS)
         # Checkup KOs/triggers may have toggled bench-capacity passives.
         await self.enforce_bench_capacity()
 
