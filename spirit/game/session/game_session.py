@@ -309,6 +309,8 @@ class GameSession:
         # entity_id -> damage-counter multiplier while Poisoned (10 * count
         # dealt each checkup; default 1).
         self.poison_counters: Dict[str, int] = {}
+        # entity_id -> Confusion self-hit damage when not the default 30.
+        self.confusion_damage: Dict[str, int] = {}
         # entity_id -> turn number Paralyzed was applied (cures after the
         # checkup following the OWNER's next turn, not the same turn).
         self.paralyzed_since: Dict[str, int] = {}
@@ -1469,6 +1471,7 @@ class GameSession:
         (KO, leaving play, switching out of Active)."""
         self.sleep_checkup_coins.pop(entity_id, None)
         self.poison_counters.pop(entity_id, None)
+        self.confusion_damage.pop(entity_id, None)
         self.paralyzed_since.pop(entity_id, None)
 
     def clear_pokemon_effects(self, pokemon) -> bool:
@@ -1536,6 +1539,8 @@ class GameSession:
             self.paralyzed_since.pop(pokemon.entity_id, None)
         elif condition == SpecialConditions.POISONED:
             self.poison_counters.pop(pokemon.entity_id, None)
+        elif condition == SpecialConditions.CONFUSED:
+            self.confusion_damage.pop(pokemon.entity_id, None)
         return self._condition_attr_msg(pokemon)
 
     def _place_damage_effect_msg(self, target_id: str, amount: int) -> Dict[str, Any]:
@@ -4953,7 +4958,7 @@ class GameSession:
         # The incoming entity may carry stale keys from an earlier stint in
         # play: its old entries are dropped even when `old` has none to move.
         for entity_map in (self.sleep_checkup_coins, self.poison_counters,
-                           self.paralyzed_since, ts.entered_play_turn,
+                           self.confusion_damage, self.paralyzed_since, ts.entered_play_turn,
                            ts.became_active_turn, ts.retreat_locks,
                            ts.attach_restrictions, ts.attack_flip_checks,
                            ts.damage_taken, ts.damage_taken_last_turn):
@@ -5444,7 +5449,8 @@ class GameSession:
         if heads:
             return True
         knocked_out = await self._apply_raw_damage(
-            attacker, 30, GameSequence.HURT_FROM_CONFUSION.value
+            attacker, self.confusion_damage.get(attacker.entity_id, 30),
+            GameSequence.HURT_FROM_CONFUSION.value
         )
         if knocked_out:
             await self._resolve_raw_knockout(attacker)
