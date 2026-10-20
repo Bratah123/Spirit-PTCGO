@@ -4,6 +4,7 @@ Primal Groudon-EX (XY7 #97): one or more attacks/abilities use effect=unimplemen
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="74343277-b250-536b-aadf-d98d3b9a3d56",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.GroudonEX.Name",
     family_id=383,
     abilities=[
+        ancient_trait('θ Max'),
         Attack(
             title="Gaia Volcano",
             game_text="If there is any Stadium card in play, this attack does 100 more damage. Discard that Stadium card.",

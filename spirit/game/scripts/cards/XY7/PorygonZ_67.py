@@ -4,6 +4,7 @@ Porygon-Z (XY7 #67): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="24dc9a73-f476-53e1-9544-cd2970ab7432",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Porygon2.Name",
     family_id=137,
     abilities=[
+        ancient_trait('θ Stop'),
         Attack(
             title="Digital Reboot",
             game_text="Devolve as many of your Benched Pok\u00e9mon as many times as you like. Put each Evolution card removed this way into your hand.",

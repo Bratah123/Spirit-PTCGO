@@ -4,6 +4,7 @@ Gyarados (XY7 #21): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="515531db-3a2d-5b98-9067-b53e6b6737a5",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Magikarp.Name",
     family_id=129,
     abilities=[
+        ancient_trait('θ Double'),
         Attack(
             title="Full Retaliation",
             game_text="This attack does 30 more damage for each damage counter on each of your Benched Magikarp.",

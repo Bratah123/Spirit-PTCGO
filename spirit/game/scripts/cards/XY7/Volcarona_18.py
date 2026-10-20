@@ -4,6 +4,7 @@ Volcarona (XY7 #18): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="46dc8b79-c316-56e5-a836-34e11b81138c",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Larvesta.Name",
     family_id=636,
     abilities=[
+        ancient_trait('θ Stop'),
         Attack(
             title="Burning Scales",
             game_text="Flip 2 coins. This attack does 20 more damage for each heads.",

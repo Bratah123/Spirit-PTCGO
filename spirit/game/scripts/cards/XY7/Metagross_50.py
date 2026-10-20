@@ -4,6 +4,7 @@ Metagross (XY7 #50): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="635784b6-9b71-54ef-81c3-0d435eba9de5",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Metang.Name",
     family_id=374,
     abilities=[
+        ancient_trait('θ Double'),
         Attack(
             title="Machine Gun Stomp",
             game_text="This attack does 10 more damage for each card in your hand.",

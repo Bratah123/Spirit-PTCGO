@@ -4,6 +4,7 @@ Golurk (XY7 #35): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="919ae753-fcb6-5965-b628-3221c3def5b8",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Golett.Name",
     family_id=622,
     abilities=[
+        ancient_trait('θ Stop'),
         Ability(
             title="Double Type",
             game_text="As long as this Pok\u00e9mon is in play, it is Psychic and Fighting type.",

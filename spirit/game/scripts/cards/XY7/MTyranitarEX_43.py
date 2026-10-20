@@ -4,6 +4,7 @@ M Tyranitar-EX (XY7 #43): one or more attacks/abilities use effect=unimplemented
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="6a1ea7e2-d424-53c0-b605-0dc540e1cdb8",
@@ -25,6 +26,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.TyranitarEX.Name",
     family_id=248,
     abilities=[
+        ancient_trait('θ Double'),
         Attack(
             title="Destroyer King",
             game_text="This attack does 60 more damage for each damage counter on your opponent's Active Pok\u00e9mon.",

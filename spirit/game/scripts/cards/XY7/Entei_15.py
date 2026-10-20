@@ -4,6 +4,7 @@ Entei (XY7 #15): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="620728d0-9fb3-556b-839d-56f0bd46065f",
@@ -22,6 +23,7 @@ card = PokemonCardDef(
     weakness_type=PokemonTypes.WATER,
     family_id=244,
     abilities=[
+        ancient_trait('θ Double'),
         Attack(
             title="Flame Screen",
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 30 (after applying Weakness and Resistance).",

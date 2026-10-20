@@ -4,6 +4,7 @@ Primal Kyogre-EX (XY7 #96): one or more attacks/abilities use effect=unimplement
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ancient_traits import ancient_trait
 
 card = PokemonCardDef(
     guid="40efb67e-0b9d-544c-a294-2304cae88e5a",
@@ -23,6 +24,7 @@ card = PokemonCardDef(
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.KyogreEX.Name",
     family_id=382,
     abilities=[
+        ancient_trait('θ Max'),
         Attack(
             title="Tidal Storm",
             game_text="Move 2 Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon. This attack does 30 damage to each of your opponent's Benched Pok\u00e9mon-EX. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
