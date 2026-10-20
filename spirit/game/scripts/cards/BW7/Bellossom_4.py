@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import damage_per, flip_damage
+from spirit.game.session.passives import effective_retreat_cost
+
+
+def _defender_retreat_cost(ctx):
+    d = ctx.defender
+    return effective_retreat_cost(ctx.board, d) if d is not None else 0
+
+
+async def _confuse_self(ctx):
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="90482447-b846-562a-bda3-621110d1fe22",
@@ -26,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=10,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(_defender_retreat_cost, 20, base=10),
         ),
         Attack(
             title="Petal Dance",
@@ -34,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(3, per_heads=50, also=_confuse_self),
         ),
     ],
 )

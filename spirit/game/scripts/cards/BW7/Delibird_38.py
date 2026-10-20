@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _present(ctx):
+    """Flip a coin. If heads, search your deck for a card and put it into your hand; shuffle."""
+    results = await ctx.flip_coins(1, "Present")
+    if not results or not results[0]:
+        return
+    picks = await ctx.search_deck(None, count=1, minimum=0, prompt="Choose a card to put into your hand.")
+    await ctx.put_in_hand(picks, reveal=False)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -24,7 +34,7 @@ card = PokemonCardDef(
             title="Present",
             game_text="Flip a coin. If heads, search your deck for a card and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_present,
         ),
         Attack(
             title="Icy Wind",

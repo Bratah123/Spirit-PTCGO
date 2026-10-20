@@ -1,6 +1,29 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _FluffyTagBoost(Passive):
+    """During your next turn this Pokemon's attacks do 40 more damage to the
+    opponent's Active (before Weakness and Resistance)."""
+
+    def modify_damage_dealt(self, calc, carrier):
+        if (calc.is_attack and calc.is_opposing and calc.to_active and calc.amount > 0
+                and calc.attacker is carrier_pokemon(carrier)):
+            calc.amount += 40
+
+
+async def _fluffy_tag(ctx):
+    """Switch this Pokemon with 1 of your Benched Pokemon; during your next
+    turn the new Active's attacks do 40 more damage to the Active Pokemon."""
+    bench = ctx.my_bench()
+    if not bench:
+        return
+    target = await ctx.choose_pokemon(bench, "Choose your new Active Pok\u00e9mon")
+    target = target or bench[0]
+    await ctx.switch_active(ctx.player_id, target)
+    ctx.add_passive_through_own_next_turn(target, _FluffyTagBoost())
 
 
 card = PokemonCardDef(
@@ -26,7 +49,7 @@ card = PokemonCardDef(
             title="Fluffy Tag",
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon. During your next turn, the attacks of that Pok\u00e9mon do 40 more damage to the Active Pok\u00e9mon (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_fluffy_tag,
         ),
         Attack(
             title="Stun Spore",

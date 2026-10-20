@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, bonus_if, has_damage
+
 
 card = PokemonCardDef(
     guid="5564a1cc-1713-53e2-a964-045c447eb124",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=20),
         ),
         Attack(
             title="Damage Counterpunch",
@@ -33,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=bonus_if(has_damage('self'), 60),
         ),
     ],
 )

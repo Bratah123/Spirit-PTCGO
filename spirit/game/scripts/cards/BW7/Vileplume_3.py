@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.passives_common import weakness_multiplier_passive
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="76dd469a-0d3c-58b4-877b-73952a8c947f",
@@ -24,14 +27,14 @@ card = PokemonCardDef(
             title="Allergy Panic",
             game_text="Apply Weakness for each Pok\u00e9mon (both yours and your opponent's) as \u00d74 instead.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=weakness_multiplier_passive(4, when=lambda calc, carrier: True),
         ),
         Attack(
             title="Pollen Spray",
             game_text="The Defending Pok\u00e9mon is now Asleep and Poisoned.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 3},
             damage=50,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, SpecialConditions.POISONED),
         ),
     ],
 )

@@ -1,6 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _defog(ctx):
+    """You may discard any Stadium in play; if you do, +40 damage."""
+    bonus = 0
+    if ctx.stadium_in_play() is not None and await ctx.ask_yes_no("Discard the Stadium in play for 40 more damage?"):
+        if await ctx.discard_stadium() is not None:
+            bonus = 40
+    await ctx.deal_damage(ctx.ability.damage + bonus)
 
 
 card = PokemonCardDef(
@@ -36,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_defog,
         ),
     ],
 )

@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+async def _firefighting(ctx):
+    """Printed damage; discard a Fire Energy attached to the Defending Pokemon."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, predicate=_is_fire_energy,
+                                      prompt="Choose a Fire Energy to discard")
+
 
 card = PokemonCardDef(
     guid="b6e34221-da09-5b1d-87ef-6891ab236b10",
@@ -22,7 +37,7 @@ card = PokemonCardDef(
             title="Firefighting",
             game_text="Discard a Fire Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=_firefighting,
         ),
     ],
 )

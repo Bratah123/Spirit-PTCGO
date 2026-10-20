@@ -1,6 +1,28 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
+
+async def _amnesia(ctx):
+    """Printed damage. Choose 1 of the Defending Pokemon's attacks; it can't
+    use that attack during your opponent's next turn."""
+    await ctx.deal_damage()
+    defender = ctx.defender
+    if defender is None or ctx.effects_blocked(defender):
+        return
+    entries = [
+        e for e in (defender.get_attribute(AttrID.PIE_ABILITIES) or [])
+        if isinstance(e, dict) and e.get("abilityType") == "Attack" and e.get("abilityID")
+    ]
+    if not entries:
+        return
+    index = 0
+    if len(entries) > 1:
+        index = await ctx.choose(
+            "Choose an attack to lock",
+            [e.get("title", {}).get("id", "Attack") for e in entries])
+    state = ctx.session.turn_state
+    state.attack_locks[(defender.entity_id, entries[index]["abilityID"])] = state.turn_number + 1
 
 
 card = PokemonCardDef(
@@ -26,7 +48,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of the Defending Pok\u00e9mon's attacks. The Pok\u00e9mon can't use that attack during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=_amnesia,
         ),
         Attack(
             title="Aquafall",

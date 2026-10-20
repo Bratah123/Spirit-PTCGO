@@ -1,6 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.passives_common import is_in_active_spot
+
+
+class _ShellShieldPassive(Passive):
+    """While this Pokemon is on your Bench, prevent all damage done to it by
+    attacks (both yours and your opponent's)."""
+
+    def prevents_damage(self, calc, carrier):
+        target = carrier_pokemon(carrier)
+        return bool(calc.is_attack and target is calc.target and not is_in_active_spot(target))
 
 
 card = PokemonCardDef(
@@ -24,7 +35,7 @@ card = PokemonCardDef(
             title="Shell Shield",
             game_text="As along as this Pok\u00e9mon is on your Bench, prevent all damage done to this Pok\u00e9mon by attacks (both yours and your opponent's).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_ShellShieldPassive(),
         ),
         Attack(
             title="Water Splash",

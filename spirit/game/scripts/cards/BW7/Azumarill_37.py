@@ -1,10 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 
 async def feint(ctx):
     """30. This attack's damage isn't affected by Resistance."""
     await ctx.deal_damage(ignore_resistance=True)
+
+
+async def _deep_dive(ctx):
+    """Flip 2 coins. For each heads, heal 40 damage from this Pokemon."""
+    results = await ctx.flip_coins(2, "Deep Dive")
+    heads = sum(1 for r in results if r)
+    if heads:
+        await ctx.heal(40 * heads, ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -29,7 +37,7 @@ card = PokemonCardDef(
             title="Deep Dive",
             game_text="Flip 2 coins. For each heads, heal 40 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_deep_dive,
         ),
         Attack(
             title="Aqua Sonic",

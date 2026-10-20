@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+
+
+class _StickinessPassive(Passive):
+    """The Retreat Cost of each of your opponent's Pokemon in play is Colorless more."""
+
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        if pokemon.owning_player_id != carrier.owning_player_id:
+            return cost + 1
+        return cost
 
 
 card = PokemonCardDef(
@@ -25,7 +35,7 @@ card = PokemonCardDef(
             title="Stickiness",
             game_text="The Retreat Cost of each of your opponent's Pok\u00e9mon in play is Colorless more.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_StickinessPassive(),
         ),
         Attack(
             title="Eerie Light",
