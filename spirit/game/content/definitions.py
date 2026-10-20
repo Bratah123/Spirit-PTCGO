@@ -114,6 +114,10 @@ class Triggers:
     """Events the game session fires scripted abilities on (Ability.trigger)."""
     ON_PLAY = "on_play"  # the Pokemon is played from hand onto the bench
     ON_EVOLVE = "on_evolve"  # the Pokemon evolves into this card
+    # This in-play Pokemon is about to evolve (Alakazam-EX Kinesis: "before it
+    # evolves"); fires on the PRE-evolution before the card moves; ctx carries
+    # evolution_card.
+    ON_BEING_EVOLVED = "on_being_evolved"
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
     # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
