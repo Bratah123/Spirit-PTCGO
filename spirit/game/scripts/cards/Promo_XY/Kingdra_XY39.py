@@ -2,8 +2,11 @@
 Kingdra (Promo_XY #XY39): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
 
 card = PokemonCardDef(
     guid="2f310d96-7827-540b-aa04-fba46495cd0d",
@@ -28,7 +31,7 @@ card = PokemonCardDef(
             game_text="Search your deck for up to 4 basic Energy cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_basic_energy_card, count=4, minimum=0, reveal=True, prompt='Choose up to 4 basic Energy cards'),
         ),
         Attack(
             title="Dragon Blast",

@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Jirachi (Promo_XY #XY112): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_damage
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _precognitive_dream(ctx):
+    """Draw 3 cards. This Pokemon is now Asleep."""
+    await ctx.draw_cards(3)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="024ef305-0dc3-5374-8913-7d84fb019921",
@@ -28,15 +32,13 @@ card = PokemonCardDef(
             title="Precognitive Dream",
             game_text="Draw 3 cards. This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.METAL: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_precognitive_dream,
         ),
         Attack(
             title="Iron Head",
             game_text="Flip a coin until you get tails. This attack does 30 damage times the number of heads.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
     ],
 )

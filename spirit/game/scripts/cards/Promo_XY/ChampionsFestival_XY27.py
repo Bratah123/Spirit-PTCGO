@@ -1,13 +1,36 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Champions Festival (Promo_XY #XY27): trainer effect stubbed.
+from spirit.game.data_utils import StadiumCardDef, Ability, Activations
+from spirit.game.attributes import Rarities, AttrID
+from spirit.game.session.passives import effective_max_hp
 
-Card text:
-  - Once during each player's turn, if that player has 6 Pokémon in play, he or she may heal 10 damage from each of his or her Pokémon.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
 
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _in_play(board, player_id):
+    active = board.find_player_area(player_id, "activePokemonArea")
+    bench = board.find_player_area(player_id, "bench")
+    return [p for area in (active, bench) if area for p in area.children]
+
+
+def _festival_condition(board, player_id, stadium=None):
+    mine = _in_play(board, player_id)
+    return len(mine) == 6 and any(p.get_attribute(AttrID.HP, 0) < effective_max_hp(board, p) for p in mine)
+
+
+async def champions_festival(ctx):
+    """If you have 6 Pokemon in play, heal 10 damage from each of your Pokemon."""
+    mine = ctx.my_pokemon_in_play()
+    if len(mine) != 6:
+        return
+    for pokemon in mine:
+        await ctx.heal(10, pokemon)
+
+
+CHAMPIONS_FESTIVAL_ABILITY = Ability(
+    title="Champions Festival",
+    game_text="Once during each player's turn, if that player has 6 Pok\u00e9mon in play, he or she may heal 10 damage from each of his or her Pok\u00e9mon.",
+    activation=Activations.ONCE_PER_TURN,
+    condition=_festival_condition,
+    effect=champions_festival,
+)
+
 
 card = StadiumCardDef(
     guid="18518adf-4894-548f-a27b-78bb7783abdf",
@@ -19,6 +42,5 @@ card = StadiumCardDef(
     collector_number=27,
     set_code="Promo_XY",
     rarity=Rarities.RarePromo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    ability=CHAMPIONS_FESTIVAL_ABILITY
 )

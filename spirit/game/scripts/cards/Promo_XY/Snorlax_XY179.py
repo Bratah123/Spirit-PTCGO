@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Snorlax (Promo_XY #XY179): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.passives_common import condition_immunity_passive
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="d6f40549-8270-5144-bfcd-9dfedb09e011",
@@ -25,16 +24,14 @@ card = PokemonCardDef(
         Ability(
             title="Immunity",
             game_text="This Pok\u00e9mon can't be affected by any Special Conditions. (Remove any Special Conditions affecting this Pok\u00e9mon.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=condition_immunity_passive(),
         ),
         Attack(
             title="Body Slam",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=50,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],
 )

@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gyarados (Promo_XY #XY60): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _full_retaliation(ctx):
+    """30+; 30 more for each damage counter on each of your Benched Magikarp."""
+    n = sum((ctx.max_hp(p) - p.get_attribute(AttrID.HP, 0)) // 10 for p in ctx.my_bench()
+            if getattr(def_for(p.archetype_id), "display_name", None) == "Magikarp")
+    await ctx.deal_damage(ctx.ability.damage + 30 * max(0, n))
+
+
+async def _thrash(ctx):
+    """100+; heads +30, tails 30 damage to this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        await ctx.deal_damage(ctx.ability.damage + 30)
+    else:
+        await ctx.deal_damage()
+        await ctx.deal_damage(30, target=ctx.attacker, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="14c436c2-3657-5cb6-88d5-b7e1b9479496",
@@ -29,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_full_retaliation,
         ),
         Attack(
             title="Thrash",
@@ -38,8 +52,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_thrash,
         ),
     ],
 )

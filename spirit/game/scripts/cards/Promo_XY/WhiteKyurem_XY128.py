@@ -1,9 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-White Kyurem (Promo_XY #XY128): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks, snipe_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+async def _freeze_shock(ctx):
+    """Printed damage; this Pokemon can't attack during your next turn."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+_snipe = snipe_attack(20, count=2, also_base=True)
+
+
+async def _burning_icicles(ctx):
+    """40; with any Fire Energy attached, 20 to 2 of your opponent's Benched Pokemon."""
+    if any(_is_fire_energy(e) for e in ctx.attached_energies(ctx.attacker)):
+        await _snipe(ctx)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="70f2ee40-a471-5123-8ca5-482ed5266446",
@@ -27,16 +47,14 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon has any Fire Energy attached to it, this attack does 20 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_burning_icicles,
         ),
         Attack(
             title="Blizzard Burn",
             game_text="This Pok\u00e9mon can't attack during your next turn.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_freeze_shock,
         ),
     ],
 )

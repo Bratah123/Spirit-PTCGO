@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flygon-EX (Promo_XY #XY61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import opponent_switches
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+def _big_wing_condition(board, player_id, pokemon=None):
+    opponent = next((p for p in board.player_ids if p != player_id), None)
+    bench = board.find_player_area(opponent, "bench") if opponent else None
+    return (pokemon is not None and pokemon is board.active_pokemon(player_id)
+            and bool(bench and bench.children))
+
+
+async def _big_wing(ctx):
+    """If this Pokemon is your Active, your opponent switches their Active
+    with 1 of their Benched Pokemon."""
+    await opponent_switches(ctx)
+
 
 card = PokemonCardDef(
     guid="3cb3be79-f760-5a31-9e7e-13be78899fcf",
@@ -25,8 +37,9 @@ card = PokemonCardDef(
         Ability(
             title="Voice of the Sands",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is your Active Pok\u00e9mon, you may have your opponent switch his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_big_wing_condition,
+            effect=_big_wing,
         ),
         Attack(
             title="Spiral Buzz",
@@ -34,8 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, bonus_per_heads=30),
         ),
     ],
 )

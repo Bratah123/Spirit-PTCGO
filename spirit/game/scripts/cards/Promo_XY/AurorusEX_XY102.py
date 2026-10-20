@@ -4,6 +4,14 @@ Aurorus-EX (Promo_XY #XY102): one or more attacks/abilities use effect=unimpleme
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def _freeze_shock(ctx):
+    """Printed damage; this Pokemon can't attack during your next turn."""
+    await ctx.deal_damage()
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="3db6faa8-68fa-5d77-a1c4-ebbc893a390f",
@@ -34,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
             damage=160,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_freeze_shock,
         ),
     ],
 )

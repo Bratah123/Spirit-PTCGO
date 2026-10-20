@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gengar-EX (Promo_XY #XY166): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="db05143b-0a13-5a1f-a7b7-a3d6838876d0",
@@ -30,8 +28,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused and Poisoned.",
             cost={PokemonTypes.PSYCHIC: 3, PokemonTypes.COLORLESS: 1},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, SpecialConditions.POISONED),
         ),
     ],
 )

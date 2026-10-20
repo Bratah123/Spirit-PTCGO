@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Zekrom (Promo_XY #XY76): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+
 
 card = PokemonCardDef(
     guid="6d40415a-15c7-515d-bc67-df2a477ef64f",
@@ -34,8 +32,7 @@ card = PokemonCardDef(
             game_text="This attack does 10 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, also_base=True),
         ),
     ],
 )

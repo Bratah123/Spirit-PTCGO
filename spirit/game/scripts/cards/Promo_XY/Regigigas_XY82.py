@@ -5,6 +5,14 @@ Regigigas (Promo_XY #XY82): one or more attacks/abilities use effect=unimplement
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _giga_horn(ctx):
+    """Flip 2 coins. If both are tails, this attack does nothing."""
+    results = await ctx.flip_coins(2, "Giga Horn")
+    if any(results):
+        await ctx.deal_damage()
+
+
 card = PokemonCardDef(
     guid="69c1fa80-da82-5ed7-a73d-2bbe8abfc850",
     key="Promo_XY",
@@ -34,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=100,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giga_horn,
         ),
     ],
 )

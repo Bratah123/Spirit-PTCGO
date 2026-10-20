@@ -5,6 +5,18 @@ Heliolisk (Promo_XY #XY47): one or more attacks/abilities use effect=unimplement
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _flip_discard_defender_energy(ctx):
+    """Printed damage; flip a coin. If heads, discard an Energy attached to
+    your opponent's Active Pokemon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    target = ctx.opponent_active()
+    if results and results[0] and target is not None and not ctx.effects_blocked(target):
+        await ctx.discard_energy_from(target, 1, minimum=1,
+                                      prompt="Choose an Energy to discard")
+
+
 card = PokemonCardDef(
     guid="5cc1a896-40a8-5072-a437-9454f9c4e2a5",
     key="Promo_XY",
@@ -37,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_flip_discard_defender_energy,
         ),
     ],
 )

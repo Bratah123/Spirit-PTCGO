@@ -2,8 +2,17 @@
 Rayquaza-EX (Promo_XY #XY66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _fire_spin(ctx):
+    """Printed damage. Flip a coin. If tails, discard 2 Energy from this Pokémon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, "Fire Spin")
+    if results and not results[0]:
+        await ctx.discard_energy_from(ctx.attacker, 2)
+
 
 card = PokemonCardDef(
     guid="3ab789bd-6dcc-5c21-a5d7-c7d85ddbb4cb",
@@ -37,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=130,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fire_spin,
         ),
     ],
 )

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Aerodactyl-EX (Promo_XY #XY98): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+
 
 card = PokemonCardDef(
     guid="01d2903b-0b11-5505-bdc1-8dc2e965c4bf",
@@ -30,8 +28,7 @@ card = PokemonCardDef(
             game_text="This attack does 10 damage to each Benched Pok\u00e9mon (both yours and your opponent's). (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=110,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spread_damage(10, side='both', also_base=True),
         ),
     ],
 )

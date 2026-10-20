@@ -2,8 +2,16 @@
 Xerneas (Promo_XY #XY31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import no_weakness_passive
+
+
+async def _cavalry_lance(ctx):
+    """Printed damage; during your opponent's next turn this Pokémon has no Weakness."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, no_weakness_passive())
+
 
 card = PokemonCardDef(
     guid="b6757a74-b697-5942-97b3-2a8332d6e9b8",
@@ -30,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_cavalry_lance,
         ),
         Attack(
             title="Light of Life",

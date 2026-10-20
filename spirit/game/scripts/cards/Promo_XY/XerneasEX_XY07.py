@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Xerneas-EX (Promo_XY #XY07): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="c9acfdd1-82a5-5ff3-a152-bbd79b57208a",
@@ -29,16 +27,15 @@ card = PokemonCardDef(
             game_text="This attack does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(30),
         ),
         Attack(
             title="X Blast",
             game_text="This Pok\u00e9mon can't use X Blast during your next turn.",
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 2},
             damage=140,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

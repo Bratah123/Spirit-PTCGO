@@ -1,9 +1,10 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pikachu (Promo_XY #XY202): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_energy_card
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="26effeab-6dec-5f90-aa2c-776df978c343",
@@ -28,16 +29,14 @@ card = PokemonCardDef(
             title="Charge",
             game_text="Search your deck for a Lightning Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.LIGHTNING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_attach_energy(predicate=lambda c: is_energy_card(c) and energy_provides_type(c, PokemonTypes.LIGHTNING.value), to_self=True, prompt='Choose a Lightning Energy card to attach.'),
         ),
         Attack(
             title="Thunderbolt",
             game_text="Discard all Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 3},
             damage=70,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(all_energy=True),
         ),
     ],
 )

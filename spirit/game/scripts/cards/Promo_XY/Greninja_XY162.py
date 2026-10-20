@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Greninja (Promo_XY #XY162): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_all_opponents, flip_damage
+
 
 card = PokemonCardDef(
     guid="78003046-c997-5ecc-8676-a9f4329cacf4",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             title="Aqua Shower",
             game_text="This attack does 20 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_all_opponents(20),
         ),
         Attack(
             title="Dual Cut",
@@ -36,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=60),
         ),
     ],
 )

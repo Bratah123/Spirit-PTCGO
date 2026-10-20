@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lucario (Promo_XY #XY140): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def feint(ctx):
+    """30. This attack's damage isn't affected by Resistance."""
+    await ctx.deal_damage(ignore_resistance=True)
+
 
 card = PokemonCardDef(
     guid="05cc7937-337f-5c44-91ba-97675643733e",
@@ -29,16 +32,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
         Attack(
             title="Mach Claw",
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.FIGHTING: 3},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=feint,
         ),
     ],
 )

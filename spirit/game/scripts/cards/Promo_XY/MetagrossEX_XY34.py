@@ -2,8 +2,10 @@
 Metagross-EX (Promo_XY #XY34): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="0b36186e-dd0c-5fe5-839e-9dcc6f5ed0ba",
@@ -39,7 +41,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=4, per_heads=50),
         ),
     ],
 )

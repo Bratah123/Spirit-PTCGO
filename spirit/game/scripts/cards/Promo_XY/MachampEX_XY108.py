@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Machamp-EX (Promo_XY #XY108): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _crazy_hammer(ctx):
+    """80+; +80 if this Pokemon has a Special Condition, then remove them all."""
+    affected = bool(ctx.attacker.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+    await ctx.deal_damage(ctx.ability.damage + (80 if affected else 0))
+    if affected:
+        await ctx.cure_all_conditions(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="fad59901-27ad-535c-8a78-26899cd0a222",
@@ -34,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_crazy_hammer,
         ),
     ],
 )

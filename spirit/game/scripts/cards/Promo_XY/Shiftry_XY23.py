@@ -2,8 +2,10 @@
 Shiftry (Promo_XY #XY23): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="cc42f256-9d42-50e7-8186-1d6d90d7e61a",
@@ -39,7 +41,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=30),
         ),
     ],
 )

@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Diancie-EX (Promo_XY #XY43): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import debuff_defender_attacks
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="e3d3f361-cacc-54d1-8dcb-bc2f4e6e962d",
@@ -29,8 +28,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 20 (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=debuff_defender_attacks(20),
         ),
         Attack(
             title="Luminous Swirl",
@@ -38,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, bonus_per_heads=40),
         ),
     ],
 )

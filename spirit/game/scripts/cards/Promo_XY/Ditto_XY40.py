@@ -4,6 +4,9 @@ Ditto (Promo_XY #XY40): one or more attacks/abilities use effect=unimplemented u
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
 
 card = PokemonCardDef(
     guid="ad9d7205-fd76-5fda-80c2-6f9cddae0abe",
@@ -34,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=attach_from_discard(predicate=is_basic_energy_card, count=1, target='self', prompt='Choose a basic Energy card to attach.'),
         ),
     ],
 )

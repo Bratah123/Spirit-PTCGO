@@ -2,8 +2,10 @@
 Fearow (Promo_XY #XY57): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="cb2115f7-2d0e-59ad-88f9-5e68ad26e0f2",
@@ -40,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(20),
         ),
     ],
 )

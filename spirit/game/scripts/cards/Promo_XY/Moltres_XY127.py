@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Moltres (Promo_XY #XY127): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def _giga_power(ctx):
+    """80; you may do 40 more damage. If you do, 20 damage to itself."""
+    if await ctx.ask_yes_no("Do 40 more damage (this Pokémon does 20 damage to itself)?"):
+        await recoil_attack(20, damage=120)(ctx)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="03603ef2-9ef3-5c30-83dc-eb9e964e194a",
@@ -35,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giga_power,
         ),
     ],
 )

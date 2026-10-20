@@ -4,6 +4,13 @@ Giratina (Promo_XY #XY184): one or more attacks/abilities use effect=unimplement
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_random_from_hand
+
+
+async def knock_off(ctx):
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, player_id=ctx.opponent_id, count=1)
+
 
 card = PokemonCardDef(
     guid="34c29038-3972-54d1-99d0-c44a1c2258e2",
@@ -36,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=110,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=knock_off,
         ),
     ],
 )

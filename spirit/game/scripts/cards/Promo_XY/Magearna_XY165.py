@@ -2,8 +2,10 @@
 Magearna (Promo_XY #XY165): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
 
 card = PokemonCardDef(
     guid="040839d2-9f11-5557-b160-34828ca5d2eb",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Heal 40 damage from 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(40, 'bench_choice'),
         ),
         Attack(
             title="Prismatic Wave",

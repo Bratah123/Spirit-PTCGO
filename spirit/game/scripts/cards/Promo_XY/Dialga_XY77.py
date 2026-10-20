@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dialga (Promo_XY #XY77): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+async def _b_cancel(ctx):
+    """10; your opponent can't evolve the Defending Pokemon during their next turn."""
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_opponents_turn(d, _BCancel())
+
+
+class _BCancel(Passive):
+    """This Pokemon can't be evolved."""
+    def blocks_evolution(self, player_id, target, carrier):
+        return target is carrier_pokemon(carrier)
+
 
 card = PokemonCardDef(
     guid="300c3344-1df1-54e2-9441-fb3dbd59248e",
@@ -34,8 +46,7 @@ card = PokemonCardDef(
             game_text="Your opponent can't play any Pok\u00e9mon from his or her hand to evolve the Defending Pok\u00e9mon during his or her next turn.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_b_cancel,
         ),
     ],
 )

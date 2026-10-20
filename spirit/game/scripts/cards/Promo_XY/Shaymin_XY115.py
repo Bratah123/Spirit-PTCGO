@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shaymin (Promo_XY #XY115): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_targets
+
+
+async def _magical_leaf(ctx):
+    """20+; heads: +20 and heal 20 from this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (20 if heads else 0))
+    if heads:
+        await ctx.heal(20, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="f6556f0f-f548-5c60-81f2-02b8d9ecf3bd",
@@ -26,8 +33,7 @@ card = PokemonCardDef(
             title="Aromatherapy",
             game_text="Heal 30 damage from each of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_targets(30, 'each_own'),
         ),
         Attack(
             title="Magical Leaf",
@@ -35,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magical_leaf,
         ),
     ],
 )

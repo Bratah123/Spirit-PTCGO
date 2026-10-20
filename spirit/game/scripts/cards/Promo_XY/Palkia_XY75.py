@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Palkia (Promo_XY #XY75): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+async def _submission_hold(ctx):
+    await ctx.deal_damage()
+    d = ctx.defender
+    if d is not None and not ctx.effects_blocked(d):
+        ctx.add_passive_through_opponents_turn(d, _SubmissionHold())
+
+
+class _SubmissionHold(Passive):
+    """No Energy from hand can be attached to this Pokemon."""
+    def blocks_energy_attach(self, energy, player_id, target, carrier):
+        return target is carrier_pokemon(carrier)
+
 
 card = PokemonCardDef(
     guid="31423115-7a86-5916-bac8-e2065fb9af70",
@@ -32,8 +43,7 @@ card = PokemonCardDef(
             game_text="Your opponent can't attach Energy from his or her hand to the Defending Pok\u00e9mon during his or her next turn.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_submission_hold,
         ),
     ],
 )

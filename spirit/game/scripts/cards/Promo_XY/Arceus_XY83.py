@@ -2,8 +2,20 @@
 Arceus (Promo_XY #XY83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+def _basic_energy_types_count(ctx):
+    types = set()
+    for e in ctx.attached_energies(ctx.attacker):
+        if is_basic_energy_card(e):
+            for t in (e.get_attribute(AttrID.POKEMON_TYPES) or []):
+                types.add(t)
+    return len(types)
+
 
 card = PokemonCardDef(
     guid="f73eeedd-5823-59a6-84c2-1a0a55e3979e",
@@ -36,7 +48,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(_basic_energy_types_count, 30, base=10),
         ),
     ],
 )

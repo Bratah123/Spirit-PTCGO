@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Mawile-EX (Promo_XY #XY104): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _power_pinch(ctx):
+    """Flip 2 coins. For each heads, discard an Energy from the Defending Pokémon."""
+    results = await ctx.flip_coins(2, "Power Pinch")
+    heads = sum(1 for r in results if r)
+    defender = ctx.defender
+    if not heads or defender is None or ctx.effects_blocked(defender):
+        return
+    await ctx.discard_energy_from(
+        defender, heads, prompt="Choose Energy to discard from the Defending Pokémon")
+
 
 card = PokemonCardDef(
     guid="82d84d24-e57d-5d14-a54e-613d3618cb79",
@@ -30,8 +38,7 @@ card = PokemonCardDef(
             game_text="Flip 2 coins. For each heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 3},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_power_pinch,
         ),
     ],
 )
