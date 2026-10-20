@@ -5228,6 +5228,9 @@ class GameSession:
                 self.board_state.move_card(existing.entity_id, owner_discard.entity_id)
                 move_msg = self._entity_moved_msg(existing.entity_id, owner_discard.entity_id, discard_pos)
                 await self._send_play_sequence(player_id, GameSequence.GROUPED_MOVE, [move_msg], [])
+        # Declared ON_PLAY hooks on the Stadium just played (Parallel City's
+        # facing choice); runs before the bench shrink it may cause.
+        await self._fire_triggered_abilities(player_id, card, Triggers.ON_PLAY)
         # A capacity-reducing Stadium (Collapsed Stadium) shrinks benches now.
         await self.enforce_bench_capacity()
 
