@@ -1,0 +1,36 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+
+card = PokemonCardDef(
+    guid="1f7087d1-64cc-55fc-93d9-6f523d6f215c",
+    key="BW6",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Ampharos.Name",
+    display_name="Ampharos",
+    searchable_by=["Ampharos", "Stage 2", "Ampharos"],
+    subtypes=["Stage 2"],
+    collector_number=40,
+    set_code="BW6",
+    rarity=Rarities.RareHolo,
+    hp=140,
+    elements=[PokemonTypes.LIGHTNING],
+    stage=PokemonStage.STAGE2,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.FIGHTING,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Flaaffy.Name",
+    family_id=179,
+    abilities=[
+        Ability(
+            title="Electromagnetic Wall",
+            game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, whenever your opponent attaches an Energy from his or her hand to 1 of his or her Pok\u00e9mon, put 3 damage counters on that Pok\u00e9mon.",
+            ability_type=AbilityTypes.POKE_ABILITY,
+            effect=unimplemented,
+        ),
+        Attack(
+            title="Electrobullet",
+            game_text="Does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
+            damage=70,
+            effect=unimplemented,
+        ),
+    ],
+)
