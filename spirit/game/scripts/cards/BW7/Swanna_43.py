@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="6039f9e4-5d42-55b0-9700-229ab337c1b1",
@@ -26,7 +28,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
         Attack(
             title="Defog",

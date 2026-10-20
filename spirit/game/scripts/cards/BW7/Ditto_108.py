@@ -1,4 +1,4 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 
 card = PokemonCardDef(

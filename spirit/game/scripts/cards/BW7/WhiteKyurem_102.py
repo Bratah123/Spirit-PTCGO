@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="7e193a42-78c1-5eca-bc9d-46930dd182a7",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(40),
         ),
     ],
 )

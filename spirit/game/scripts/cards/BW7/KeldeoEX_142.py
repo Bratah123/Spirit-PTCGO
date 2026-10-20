@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import count_energy, damage_per
+
 
 card = PokemonCardDef(
     guid="3a071f51-b474-5344-bd1d-f9460b3f0875",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', PokemonTypes.WATER), 20, base=50),
         ),
     ],
 )

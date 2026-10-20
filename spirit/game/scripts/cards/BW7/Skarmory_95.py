@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
 
 card = PokemonCardDef(
     guid="630bd3db-7881-55d0-961e-37d68e57110f",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.METAL: 1},
             damage=20,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
         Attack(
             title="Drill Peck",

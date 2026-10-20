@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
 
 card = PokemonCardDef(
     guid="90a18feb-8d51-5ca3-b7be-ca75c80ce4f6",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, this attack does nothing.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

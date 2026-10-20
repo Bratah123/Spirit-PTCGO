@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="7ca2b41e-0c0c-5098-863b-1a26168f62cc",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon is now Burned. Flip a coin. If heads, the Defending Pok\u00e9mon is also Paralyzed.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True, always_conditions=(SpecialConditions.BURNED,)),
         ),
         Attack(
             title="Flamethrower",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="3074097f-e79b-59c1-b65f-a8e8d573089d",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             title="Foul Odor",
             game_text="Both this Pok\u00e9mon and the Defending Pok\u00e9mon are now Confused.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, self_conditions=(SpecialConditions.CONFUSED,)),
         ),
         Attack(
             title="Poison Powder",
             game_text="The Defending Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

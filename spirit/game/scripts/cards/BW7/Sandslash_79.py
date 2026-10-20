@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import smokescreen_attack, spread_damage
+
 
 card = PokemonCardDef(
     guid="f6aed608-0259-5efd-be6d-bc953910955d",
@@ -25,14 +27,14 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon tries to attack during your opponent's next turn, your opponent flips a coin. If tails, that attack does nothing.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=smokescreen_attack(),
         ),
         Attack(
             title="Earthquake",
             game_text="Does 10 damage to each of your Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=spread_damage(10, side='mine', also_base=True),
         ),
     ],
 )

@@ -1,5 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_attack
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="7e3fd262-c885-5104-b847-0d37692d6bc2",
@@ -22,7 +25,7 @@ card = PokemonCardDef(
             title="Collect",
             game_text="Draw a card.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=draw_attack(1),
         ),
         Attack(
             title="Relentless Flames",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
     ],
 )

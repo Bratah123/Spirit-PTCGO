@@ -1,6 +1,12 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 
+
+async def feint(ctx):
+    """30. This attack's damage isn't affected by Resistance."""
+    await ctx.deal_damage(ignore_resistance=True)
+
+
 card = PokemonCardDef(
     guid="4aad088f-0846-5d0a-a570-3dc9fc3ec72d",
     key="BW7",
@@ -30,7 +36,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 3},
             damage=60,
-            effect=unimplemented,
+            effect=feint,
         ),
     ],
 )

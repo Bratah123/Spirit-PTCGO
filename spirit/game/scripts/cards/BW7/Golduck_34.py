@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="c63e4f8e-3b92-556e-80e7-3b1667cf7e0d",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Confuse Ray",
             game_text="The Defending Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED),
         ),
         Attack(
             title="Water Gun",

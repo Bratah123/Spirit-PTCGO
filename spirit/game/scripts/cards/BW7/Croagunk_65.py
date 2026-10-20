@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="bf94db69-ae4a-5e54-925c-8c05bc9e24c0",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon is now Poisoned.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.POISONED),
         ),
     ],
 )

@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _giga_horn(ctx):
+    """Flip 2 coins. If both are tails, this attack does nothing."""
+    results = await ctx.flip_coins(2, "Giga Horn")
+    if any(results):
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="cd485163-ea7c-5f58-baed-37c4be419963",
@@ -28,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip 2 coins. If both of them are tails, this attack does nothing.",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=80,
-            effect=unimplemented,
+            effect=_giga_horn,
         ),
     ],
 )

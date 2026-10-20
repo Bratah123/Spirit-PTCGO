@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="e8ac5963-5efa-58ed-a012-cc066f526efb",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Dazzle Dance",
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, flip=True),
         ),
     ],
 )

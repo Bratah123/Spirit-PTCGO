@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import flip_protection
+
 
 card = PokemonCardDef(
     guid="15fefa91-2fd9-5018-9f5e-4f15e90653ac",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Withdraw",
             game_text="Flip a coin. If heads, prevent all damage done to this Pok\u00e9mon by attacks during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=flip_protection(prevent=True),
         ),
         Attack(
             title="Waterfall",

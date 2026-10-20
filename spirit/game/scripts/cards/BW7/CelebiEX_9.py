@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.support_common import switch_self_attack
+
 
 card = PokemonCardDef(
     guid="38302287-4728-529d-92e8-6ef454d17735",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=switch_self_attack(),
         ),
     ],
 )

@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="d089aace-8b5a-55f0-b25b-7ea4f1c49b72",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, flip=True),
         ),
     ],
 )

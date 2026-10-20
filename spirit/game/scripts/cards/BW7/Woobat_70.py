@@ -1,5 +1,11 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="54faa6c0-f38e-5150-8839-4b455e715be1",
@@ -23,7 +29,7 @@ card = PokemonCardDef(
             title="Scout",
             game_text="Your opponent reveals his or her hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_scout,
         ),
         Attack(
             title="Heart Stamp",

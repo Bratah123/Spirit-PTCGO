@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="469ad383-1903-54f6-9362-3f05a71ab51f",
@@ -24,14 +26,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=20),
         ),
         Attack(
             title="Flash Freeze",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=100,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

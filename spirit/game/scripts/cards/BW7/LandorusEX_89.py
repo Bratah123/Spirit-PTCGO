@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="2e5d208b-d544-51df-9508-5c784a705da5",
@@ -24,7 +26,7 @@ card = PokemonCardDef(
             game_text="Does 30 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1},
             damage=30,
-            effect=unimplemented,
+            effect=snipe_attack(30, pool='bench', count=1, also_base=True),
         ),
         Attack(
             title="Land's Judgment",

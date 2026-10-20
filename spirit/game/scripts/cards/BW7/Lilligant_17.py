@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_until_effect
+
 
 card = PokemonCardDef(
     guid="6661b9d3-b5b4-57bf-90b7-f6f549d11a5a",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             game_text="Draw cards until you have 6 cards in your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            effect=unimplemented,
+            effect=draw_until_effect(6),
         ),
         Attack(
             title="Magical Leaf",
