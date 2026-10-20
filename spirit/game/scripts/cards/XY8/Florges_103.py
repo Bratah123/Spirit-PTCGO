@@ -5,6 +5,19 @@ Florges (XY8 #103): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.passives import Passive
+from spirit.game.session.passives import carrier_pokemon
+
+
+class _CalmingAroma(Passive):
+    """Each of your Pokemon's attacks costs Fairy less."""
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if pokemon.owning_player_id != carrier.owning_player_id or cost.get("Fairy", 0) <= 0:
+            return cost
+        cost["Fairy"] -= 1
+        if cost["Fairy"] <= 0:
+            del cost["Fairy"]
+        return cost
 
 
 card = PokemonCardDef(
@@ -31,7 +44,7 @@ card = PokemonCardDef(
             title="Calming Aroma",
             game_text="Each of your Pok\u00e9mon's attacks costs Fairy less.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_CalmingAroma(),
         ),
         Attack(
             title="Wonder Shine",

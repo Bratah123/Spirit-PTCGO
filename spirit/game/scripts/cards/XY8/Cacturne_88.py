@@ -5,6 +5,7 @@ Cacturne (XY8 #88): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.card_effects.attacks_common import flip_damage
 
 
 card = PokemonCardDef(
@@ -42,7 +43,7 @@ card = PokemonCardDef(
             damage=40,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(3, per_heads=40),
         ),
     ],
 )

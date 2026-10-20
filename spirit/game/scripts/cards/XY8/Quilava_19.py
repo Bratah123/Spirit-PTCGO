@@ -4,6 +4,16 @@ Quilava (XY8 #19): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+async def _mini_eruption(ctx):
+    """30+; discard the top card of your deck; +30 if it's an Energy card."""
+    top = ctx.deck_top(1)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(ctx.ability.damage + (30 if top and is_energy_card(top[0]) else 0))
+
 
 card = PokemonCardDef(
     guid="bdd098ab-3300-53f9-9630-1d80bd32955f",
@@ -30,7 +40,7 @@ card = PokemonCardDef(
             damage=30,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mini_eruption,
         ),
     ],
 )

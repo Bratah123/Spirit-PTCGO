@@ -5,6 +5,15 @@ Piloswine (XY8 #81): one or more attacks/abilities use effect=unimplemented unti
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.content.definitions import def_for
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _gathering_footsteps(ctx):
+    """30+; 10 more per Colorless in the Retreat Costs of your Swinub, Piloswine, and Mamoswine."""
+    n = sum(effective_retreat_cost(ctx.board, p) for p in ctx.my_pokemon_in_play()
+            if getattr(def_for(p.archetype_id), "display_name", None) in ("Swinub", "Piloswine", "Mamoswine"))
+    await ctx.deal_damage(ctx.ability.damage + 10 * n)
 
 
 card = PokemonCardDef(
@@ -40,7 +49,7 @@ card = PokemonCardDef(
             damage=30,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gathering_footsteps,
         ),
     ],
 )

@@ -4,6 +4,14 @@ Starly (XY8 #125): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.content.definitions import def_for
+
+
+def _is_starly(card):
+    return is_pokemon_card(card) and getattr(def_for(card.archetype_id), "display_name", None) == "Starly"
+
 
 card = PokemonCardDef(
     guid="5eabe58f-6097-547a-9ccd-10e1745da52e",
@@ -29,7 +37,7 @@ card = PokemonCardDef(
             game_text="Search your deck for as many Starly as you like and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(_is_starly, count=5, prompt='Choose any number of Starly'),
         ),
     ],
 )

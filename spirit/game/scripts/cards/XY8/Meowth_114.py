@@ -5,6 +5,16 @@ Meowth (XY8 #114): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _exhausted_tackle(ctx):
+    """Flip: heads 30 to the opponent's Active; tails 30 to this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        await ctx.deal_damage(30)
+    else:
+        await ctx.deal_damage(30, target=ctx.attacker, apply_modifiers=False)
+
+
 card = PokemonCardDef(
     guid="2cdbd8bb-1be9-55bd-9f65-71c223b17161",
     key="XY8",
@@ -27,7 +37,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, this attack does 30 damage to your opponent's Active Pok\u00e9mon. If tails, this Pok\u00e9mon does 30 damage to itself.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_exhausted_tackle,
         ),
     ],
 )

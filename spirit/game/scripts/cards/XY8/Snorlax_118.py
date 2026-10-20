@@ -5,6 +5,7 @@ Snorlax (XY8 #118): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 
 card = PokemonCardDef(
@@ -28,7 +29,7 @@ card = PokemonCardDef(
             title="Plump Body",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 30 (after applying Weakness and Resistance).",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(30),
         ),
         Attack(
             title="Knock Away",

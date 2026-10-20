@@ -5,6 +5,7 @@ Stunfisk (XY8 #56): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.attacks_common import bonus_if
 
 
 card = PokemonCardDef(
@@ -33,7 +34,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.kos_suffered_last_turn() > 0, 80),
         ),
         Attack(
             title="Thunder Blast",

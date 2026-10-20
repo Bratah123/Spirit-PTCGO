@@ -5,6 +5,21 @@ Marowak (XY8 #78): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.content.definitions import def_for
+
+
+def _is_ex(p):
+    return "EX" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+async def _bone_windmill(ctx):
+    """60; if the opponent's Active is a Pokemon-EX, switch this Pokemon with 1 of your Benched Pokemon."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    bench = ctx.my_bench()
+    if d is not None and _is_ex(d) and bench and ctx.attacker is ctx.my_active():
+        target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Switch with which Benched Pokémon?")
+        await ctx.switch_active(ctx.player_id, target or bench[0])
 
 
 card = PokemonCardDef(
@@ -38,7 +53,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_bone_windmill,
         ),
     ],
 )

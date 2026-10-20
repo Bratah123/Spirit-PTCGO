@@ -16,6 +16,8 @@ async def gritty_comeback(ctx):
     opp_counters = damage_counters_on("defender")(ctx)
     await ctx.set_damage_counters(ctx.source, opp_counters)
     await ctx.set_damage_counters(defender, self_counters)
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.attributes import PokemonTypes
 
 
 card = PokemonCardDef(
@@ -42,7 +44,7 @@ card = PokemonCardDef(
             damage=30,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.PSYCHIC), 30),
         ),
         Attack(
             title="Damage Change",

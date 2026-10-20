@@ -12,6 +12,15 @@ def _fire_or_water(pokemon):
     return PokemonTypes.FIRE.value in types or PokemonTypes.WATER.value in types
 
 
+async def _primordial_boom(ctx):
+    """80+; +40 if you have a Stadium in play; heal 40 from this Pokemon if your opponent has one."""
+    stadium = ctx.stadium_in_play()
+    mine = stadium is not None and stadium.owning_player_id == ctx.player_id
+    await ctx.deal_damage(ctx.ability.damage + (40 if mine else 0))
+    if stadium is not None and stadium.owning_player_id == ctx.opponent_id:
+        await ctx.heal(40, ctx.attacker)
+
+
 card = PokemonCardDef(
     guid="6988e9da-fd28-5a5f-aae6-26263ed0d768",
     key="XY8",
@@ -43,7 +52,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_primordial_boom,
         ),
     ],
 )

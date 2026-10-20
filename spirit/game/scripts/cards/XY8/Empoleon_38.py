@@ -4,6 +4,13 @@ Empoleon (XY8 #38): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import team_damage_boost_passive
+from spirit.game.attributes import AttrID, PokemonStage
+
+
+def _is_basic(p):
+    return p.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value
+
 
 card = PokemonCardDef(
     guid="5b9110d5-a6a9-515d-bd60-ddde5aa55630",
@@ -27,7 +34,7 @@ card = PokemonCardDef(
             title="Dignified Fighter",
             game_text="Each of your Basic Pok\u00e9mon's attacks does 20 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=team_damage_boost_passive(20, attacker_pred=_is_basic),
         ),
         Attack(
             title="Hydro Splash",

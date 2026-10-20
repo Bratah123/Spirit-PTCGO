@@ -12,6 +12,7 @@ async def _iron_crash(ctx):
     target = ctx.opponent_active()
     cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
     await ctx.deal_damage(ctx.ability.damage + 20 * cost)
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 card = PokemonCardDef(
@@ -37,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, side='mine', also_base=True),
         ),
         Attack(
             title="Heavy Suplex",

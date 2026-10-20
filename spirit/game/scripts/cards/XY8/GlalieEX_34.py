@@ -5,6 +5,11 @@ Glalie-EX (XY8 #34): one or more attacks/abilities use effect=unimplemented unti
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _same_hand(ctx):
+    return ctx.hand_size() == ctx.hand_size(ctx.opponent_id)
 
 
 card = PokemonCardDef(
@@ -38,7 +43,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_same_hand, 100),
         ),
     ],
 )

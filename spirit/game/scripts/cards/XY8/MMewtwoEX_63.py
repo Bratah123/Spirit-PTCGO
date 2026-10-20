@@ -5,6 +5,15 @@ M Mewtwo-EX (XY8 #63): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _vanishing_strike(ctx):
+    """150+; with any Stadium in play, +50 and ignores Resistance and effects on the Defending Pokemon."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(ctx.ability.damage + 50, ignore_resistance=True, ignore_target_effects=True)
+
+
 card = PokemonCardDef(
     guid="206a292e-3816-5310-98a9-a2cbd44fcfae",
     key="XY8",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             damage=150,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_vanishing_strike,
         ),
     ],
 )

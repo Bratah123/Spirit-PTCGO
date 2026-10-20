@@ -7,6 +7,17 @@ from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, Special
 from spirit.game.card_effects.attacks_common import condition_attack
 
 
+async def _startling_bark(ctx):
+    """Flip: heads, 3 random cards from your opponent's hand are revealed and shuffled into their deck."""
+    import random
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    hand = list(ctx.hand(ctx.opponent_id))
+    if results and results[0] and hand:
+        picks = random.sample(hand, min(3, len(hand)))
+        await ctx.reveal_cards(picks)
+        await ctx.shuffle_into_deck(picks, ctx.opponent_id)
+
+
 card = PokemonCardDef(
     guid="710bf233-4a6a-5c1f-a4a8-47b22e628824",
     key="XY8",
@@ -32,7 +43,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, choose 3 random cards from your opponent's hand. Your opponent reveals those cards and shuffles them into his or her deck.",
             cost={PokemonTypes.COLORLESS: 2},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_startling_bark,
         ),
         Attack(
             title="Tantrum",

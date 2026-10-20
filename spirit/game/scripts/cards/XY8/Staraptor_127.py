@@ -7,6 +7,16 @@ from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import recoil_attack
 
 
+async def _cyclone_slash(ctx):
+    """Before damage, your opponent switches their Active with 1 of their Benched Pokemon; 70."""
+    bench = ctx.opponent_bench()
+    if bench and not ctx.effects_blocked(ctx.opponent_active()):
+        target = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(
+            bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id)
+        await ctx.switch_active(ctx.opponent_id, target or bench[0])
+    await ctx.deal_damage()
+
+
 card = PokemonCardDef(
     guid="1d7c40a5-013f-5a21-8825-cfcd540ea519",
     key="XY8",
@@ -33,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=70,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_cyclone_slash,
         ),
         Attack(
             title="Brave Bird",

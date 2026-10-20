@@ -5,6 +5,18 @@ Octillery (XY8 #33): one or more attacks/abilities use effect=unimplemented unti
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import Activations
+
+
+def _abyssal_condition(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    deck = board.find_player_area(player_id, "deck")
+    return hand is not None and len(hand.children) < 5 and bool(deck and deck.children)
+
+
+async def _abyssal_hand(ctx):
+    """Draw cards until you have 5 cards in your hand."""
+    await ctx.draw_until(5)
 
 
 card = PokemonCardDef(
@@ -29,7 +41,9 @@ card = PokemonCardDef(
             title="Abyssal Hand",
             game_text="Once during your turn (before your attack), you may draw cards until you have 5 cards in your hand.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_abyssal_condition,
+            effect=_abyssal_hand,
         ),
         Attack(
             title="Hug",

@@ -4,6 +4,17 @@ Abomasnow (XY8 #40): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+from spirit.game.card_effects.trainers import is_dragon_pokemon
+
+
+async def _ice_age(ctx):
+    """80; if the opponent's Active is a Dragon Pokemon, it is now Paralyzed."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    if d is not None and is_dragon_pokemon(d):
+        await ctx.apply_special_condition(d, SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="e1d6367b-0987-52d0-afc6-d69dbffbaf8e",
@@ -29,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_ice_age,
         ),
         Attack(
             title="Frost Breath",

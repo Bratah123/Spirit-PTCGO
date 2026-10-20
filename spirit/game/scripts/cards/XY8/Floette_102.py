@@ -7,6 +7,15 @@ from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_targets
 
 
+async def _magical_leaf(ctx):
+    """20+; heads: +20 and heal 20 from this Pokemon."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (20 if heads else 0))
+    if heads:
+        await ctx.heal(20, ctx.attacker)
+
+
 card = PokemonCardDef(
     guid="9a97fa96-b5b3-500b-912d-9e4065def5d7",
     key="XY8",
@@ -41,7 +50,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magical_leaf,
         ),
     ],
 )

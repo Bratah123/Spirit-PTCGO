@@ -5,6 +5,21 @@ Haxorus (XY8 #111): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import mill_attack
+from spirit.game.session.passives import Passive
+from spirit.game.session.passives import carrier_pokemon
+
+
+class _DragonDance(Passive):
+    """As long as this Haxorus is your Active Pokemon, its attacks do 100 more (max +100)."""
+    def modify_damage_dealt(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        if me is None or calc.attacker is not me or not calc.is_attack or calc.target is None:
+            return
+        opp = calc.target.owning_player_id
+        if (opp == me.owning_player_id or calc.board.active_pokemon(opp) is not calc.target
+                or calc.board.active_pokemon(me.owning_player_id) is not me):
+            return
+        calc.amount += 100
 
 
 card = PokemonCardDef(
@@ -30,7 +45,7 @@ card = PokemonCardDef(
             game_text="As long as this Haxorus is your Active Pok\u00e9mon, each of its attacks does 100 more damage (before applying Weakness and Resistance). You can't add more than 100 damage in this way.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            passive=_DragonDance(),
         ),
         Attack(
             title="Sharp Fang",

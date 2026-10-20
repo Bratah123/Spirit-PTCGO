@@ -9,6 +9,23 @@ from spirit.game.card_effects.attacks_common import bonus_if
 
 def _supporter_played_this_turn(ctx):
     return ctx.supporters_played_this_turn() > 0
+from spirit.game.data_utils import Activations
+
+
+def _premonition_condition(board, player_id, pokemon=None):
+    deck = board.find_player_area(player_id, "deck")
+    return bool(deck and deck.children)
+
+
+async def _premonition(ctx):
+    """Look at the top 5 cards of your deck and put them back in any order."""
+    top = ctx.deck_top(5)
+    if not top:
+        return
+    order = await ctx.choose_cards(top, len(top), minimum=len(top), ordered=True, display_cards=top,
+                                   prompt="Choose the order (first = top)") or top
+    for card in reversed(list(order)):
+        await ctx.put_on_top_of_deck(card)
 
 
 card = PokemonCardDef(
@@ -33,7 +50,9 @@ card = PokemonCardDef(
             title="Premonition",
             game_text="Once during your turn (before your attack), you may look at the top 5 cards of your deck and put them back on top of your deck in any order.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_premonition_condition,
+            effect=_premonition,
         ),
         Attack(
             title="Sensitive Blade",

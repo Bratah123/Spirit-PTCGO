@@ -5,6 +5,12 @@ Aromatisse (XY8 #106): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.attributes import SpecialConditions
+
+
+async def _heavy_perfume(ctx):
+    """Confuse the opponent's Active; 6 damage counters instead of 3 for this Confusion."""
+    await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.CONFUSED, confusion_damage=60)
 
 
 card = PokemonCardDef(
@@ -32,7 +38,7 @@ card = PokemonCardDef(
             game_text="Your opponent's Active Pok\u00e9mon is now Confused. Put 6 damage counters instead of 3 on that Pok\u00e9mon for this Special Condition.",
             cost={PokemonTypes.FAIRY: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_heavy_perfume,
         ),
         Attack(
             title="Hug",

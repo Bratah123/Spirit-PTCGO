@@ -5,6 +5,17 @@ Cresselia (XY8 #70): one or more attacks/abilities use effect=unimplemented unti
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.session.passives import Passive
+from spirit.game.session.passives import carrier_pokemon
+
+
+class _MyWay(Passive):
+    """If there is any Stadium card in play, this Pokemon has no Retreat Cost."""
+    def modify_retreat_cost(self, cost, pokemon, carrier, board):
+        area = board.find_global_area("activeStadium")
+        if carrier_pokemon(carrier) is pokemon and area and area.children:
+            return 0
+        return cost
 
 
 card = PokemonCardDef(
@@ -28,7 +39,7 @@ card = PokemonCardDef(
             title="My Way",
             game_text="If there is any Stadium card in play, this Pok\u00e9mon has no Retreat Cost.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_MyWay(),
         ),
         Attack(
             title="Moonlight Gain",

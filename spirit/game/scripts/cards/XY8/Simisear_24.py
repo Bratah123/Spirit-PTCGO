@@ -5,6 +5,22 @@ Simisear (XY8 #24): one or more attacks/abilities use effect=unimplemented until
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import damage_per
+from spirit.game.attributes import PokemonTypes
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_type_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.WATER.value)
+
+
+async def _fling(ctx):
+    """Put 3 Water Energy cards from your discard pile into your hand."""
+    pool = [c for c in ctx.discard_pile() if is_energy_card(c) and _is_type_energy(c)]
+    n = min(3, len(pool))
+    if n:
+        picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 3 Water Energy cards")
+        if picks:
+            await ctx.put_in_hand(picks, reveal=True)
 
 
 card = PokemonCardDef(
@@ -30,7 +46,7 @@ card = PokemonCardDef(
             game_text="Put 3 Water Energy from your discard pile into your hand.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fling,
         ),
         Attack(
             title="Hand Fling",

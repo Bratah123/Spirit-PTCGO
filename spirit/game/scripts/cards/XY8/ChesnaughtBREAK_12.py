@@ -4,6 +4,8 @@ Chesnaught BREAK (XY8 #12): one or more attacks/abilities use effect=unimplement
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="e8f54453-bf41-5edd-84a8-6cea6f241f3f",
@@ -28,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 2},
             damage=160,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(30, also_base=True, self_damage=30),
         ),
     ],
 )

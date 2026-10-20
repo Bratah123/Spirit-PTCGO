@@ -4,6 +4,17 @@ M Mewtwo-EX (XY8 #160): one or more attacks/abilities use effect=unimplemented u
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+
+
+_mine = count_energy('self')
+_theirs = count_energy('defender')
+
+
+async def _psychic_infinity(ctx):
+    """10+; 30 more per Energy attached to both Active Pokemon; ignores Weakness."""
+    await ctx.deal_damage(ctx.ability.damage + 30 * (_mine(ctx) + _theirs(ctx)), ignore_weakness=True)
+
 
 card = PokemonCardDef(
     guid="f37e9b3c-677b-55db-903f-b02aef3885fe",
@@ -30,7 +41,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_psychic_infinity,
         ),
     ],
 )

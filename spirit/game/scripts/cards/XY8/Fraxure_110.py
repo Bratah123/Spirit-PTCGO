@@ -4,6 +4,9 @@ Fraxure (XY8 #110): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.card_effects.trainers import is_dragon_pokemon
+
 
 card = PokemonCardDef(
     guid="0a97fa99-05bb-53f3-83e2-d1a0e2862424",
@@ -35,7 +38,7 @@ card = PokemonCardDef(
             damage=60,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.opponent_active() is not None and is_dragon_pokemon(ctx.opponent_active()), 40),
         ),
     ],
 )

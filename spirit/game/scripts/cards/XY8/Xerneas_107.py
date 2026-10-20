@@ -9,6 +9,15 @@ from spirit.game.card_effects.attacks_common import bonus_if
 
 def _healed_this_turn(ctx):
     return ctx.attacker.entity_id in ctx.session.turn_state.healed_entities
+from spirit.game.attributes import AttrID
+
+
+async def _rainbow_force(ctx):
+    """10+; 30 more for each different type of Pokemon on your Bench."""
+    types = set()
+    for p in ctx.my_bench():
+        types.update(p.get_attribute(AttrID.POKEMON_TYPES) or [])
+    await ctx.deal_damage(ctx.ability.damage + 30 * len(types))
 
 
 card = PokemonCardDef(
@@ -37,7 +46,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rainbow_force,
         ),
         Attack(
             title="Power Creation",

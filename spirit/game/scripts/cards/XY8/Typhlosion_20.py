@@ -14,6 +14,15 @@ async def _jagged_fang(ctx):
     d = ctx.defender
     if d is not None and ctx.attached_energies(d) and not ctx.effects_blocked(d):
         await ctx.discard_energy_from(d, 1, minimum=1, prompt="Discard an Energy from the Defending Pokémon")
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+async def _massive_eruption(ctx):
+    """Discard the top 5 cards of your deck; 80x the Energy cards discarded."""
+    top = ctx.deck_top(5)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(80 * sum(1 for c in top if is_energy_card(c)))
 
 
 card = PokemonCardDef(
@@ -41,7 +50,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_massive_eruption,
         ),
         Attack(
             title="Flare Destroy",

@@ -7,6 +7,18 @@ from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, Special
 from spirit.game.card_effects.attacks_common import condition_attack
 
 
+async def _mind_bullet(ctx):
+    """20 to 1 of your opponent's Pokemon times the Energy attached to it."""
+    opp = ctx.opponent_pokemon_in_play()
+    if not opp:
+        return
+    target = opp[0] if len(opp) == 1 else await ctx.choose_pokemon(opp, "Choose 1 of your opponent's Pokémon")
+    if target is not None:
+        n = len(ctx.attached_energies(target))
+        if n:
+            await ctx.deal_damage(20 * n, target=target)
+
+
 card = PokemonCardDef(
     guid="79c69323-1630-550c-b0e1-147551a0eb1c",
     key="XY8",
@@ -30,7 +42,7 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to 1 of your opponent's Pok\u00e9mon times the amount of Energy attached to that Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mind_bullet,
         ),
         Attack(
             title="Psybeam",

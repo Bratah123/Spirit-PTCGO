@@ -4,6 +4,17 @@ Swoobat (XY8 #72): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+from spirit.game.session.effects import full_stack
+
+
+async def _returning_echo(ctx):
+    """60; flip: tails, return this Pokemon and all cards attached to it to your hand."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and not results[0]:
+        await ctx.put_in_hand(full_stack(ctx.attacker), reveal=False)
+
 
 card = PokemonCardDef(
     guid="a934da46-f5cb-56e1-8626-cd0f919ec19b",
@@ -30,7 +41,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Returning Echo attack does 60 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(60, attack_title='Returning Echo'),
         ),
         Attack(
             title="Returning Echo",
@@ -38,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_returning_echo,
         ),
     ],
 )

@@ -4,6 +4,8 @@ Marowak BREAK (XY8 #79): one or more attacks/abilities use effect=unimplemented 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_taken
+
 
 card = PokemonCardDef(
     guid="498101c2-ba80-59d8-aee3-cfb5d8c34c21",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_prizes_taken('opponent'), 40, base=20),
         ),
     ],
 )

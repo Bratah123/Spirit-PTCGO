@@ -5,6 +5,8 @@ Kirlia (XY8 #69): one or more attacks/abilities use effect=unimplemented until a
 from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.support_common import recover_from_discard
+from spirit.game.session.effects import is_supporter_card
 
 
 card = PokemonCardDef(
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="Put a Supporter card from your discard pile into your hand.",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recover_from_discard(predicate=is_supporter_card, count=1, minimum=1, reveal=True, to="hand"),
         ),
         Attack(
             title="Quick Turn",

@@ -5,6 +5,17 @@ Haunter (XY8 #59): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.data_utils import Triggers
+from spirit.game.attributes import SpecialConditions
+
+
+async def _gothic_fear(ctx):
+    """On evolve from hand: you may leave both Active Pokemon Confused."""
+    if not await ctx.ask_yes_no("Leave both Active Pokémon Confused?"):
+        return
+    for p in (ctx.my_active(), ctx.opponent_active()):
+        if p is not None:
+            await ctx.apply_special_condition(p, SpecialConditions.CONFUSED)
 
 
 card = PokemonCardDef(
@@ -31,7 +42,8 @@ card = PokemonCardDef(
             title="Gothic Fear",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may leave both Active Pok\u00e9mon Confused.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_gothic_fear,
         ),
         Attack(
             title="Poison Ring",
