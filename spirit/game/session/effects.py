@@ -43,6 +43,7 @@ from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
+    special_energy_suppressed,
     flip_coin_for,
     TempPassive,
     ability_effects_blocked,
@@ -1926,6 +1927,7 @@ class EffectContext:
         position = len(pokemon.children)
         if not self.board.attach_card(energy.entity_id, pokemon.entity_id):
             return False
+        energy.attached_on_turn = self.session.turn_state.turn_number
         self._queue_intro_and_move(energy, pokemon.entity_id, position)
         if counts_as_attachment:
             self.deferred_actions.append(
@@ -2397,6 +2399,11 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     ctx = AttackContext(session, player_id, attacker, ability)
     effect = ability.effect if ability else None
     title = ability.title if ability else action_id
+    # Burning Energy: energies that return to the attacker if this attack
+    # discards them (snapshot while still attached and not suppressed).
+    returning = [e for e in session.board_state.attached_energies(attacker)
+                 if getattr(def_for(e.archetype_id), "reattach_after_own_attack", False)
+                 and not special_energy_suppressed(session.board_state, e)]
     ctx._copy_chain.append(title)
     session.turn_state.attacks_used.append(
         (attacker.entity_id, attacker.archetype_id, title)
@@ -2423,7 +2430,30 @@ async def resolve_attack(session, player_id: str, attacker: PokemonEntity,
     # A KO'd/removed carrier may have shrunk a bench (Eternatus VMAX leaving).
     await session.enforce_bench_capacity()
     await _run_attack_followups(session, ctx)
+    if returning:
+        await _reattach_discarded_energy(session, ctx, attacker, returning)
     return ctx
+
+
+async def _reattach_discarded_energy(session, ctx, attacker, energies):
+    """After attacking: energies the attack discarded from the attacker go
+    back onto it (Burning Energy), if it is still in play and may hold them."""
+    board = session.board_state
+    owner = attacker.owning_player_id
+    discard = board.find_player_area(owner, "discard") if owner else None
+    if discard is None or attacker not in board.pokemon_in_play(owner):
+        return
+    back = []
+    for energy in energies:
+        attach_to = getattr(def_for(energy.archetype_id), "attach_to", None)
+        if energy in discard.children and (attach_to is None or attach_to(attacker)):
+            back.append(energy)
+    if not back:
+        return
+    ctx._messages.clear()
+    for energy in back:
+        await ctx.attach_energy(energy, attacker)
+    await session._flush_effect_runs(ctx)
 
 
 async def _run_attack_followups(session, ctx: EffectContext):
@@ -2465,6 +2495,20 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
             if locked and not ability.is_granted:
                 continue
             snapshot.append((pokemon, owner_id, ability, dealt, pre_hit))
+    # Special Energy "whenever the Pokemon this card is attached to is damaged
+    # by an attack" hooks (Dangerous Energy); opponent attacks only, snapshot
+    # before any hook runs, suppressed Special Energy (Temple) excluded.
+    energy_hooks = []
+    for entity_id, (dealt, pre_hit) in ctx.attack_damage.items():
+        pokemon = board.get_entity(entity_id)
+        if not isinstance(pokemon, PokemonEntity) or pokemon.owning_player_id is None \
+                or ctx.attacker is None or ctx.attacker.owning_player_id == pokemon.owning_player_id:
+            continue
+        for energy in board.attached_energies(pokemon):
+            hook = getattr(def_for(energy.archetype_id), "on_carrier_damaged_by_attack", None)
+            if hook is None or hook is unimplemented or special_energy_suppressed(board, energy):
+                continue
+            energy_hooks.append((pokemon, energy, hook, dealt, pre_hit))
     for pokemon, owner_id, ability, dealt, pre_hit in snapshot:
         def _setup(c, _dealt=dealt, _pre=pre_hit):
             c.damaged_by = ctx.attacker
@@ -2472,6 +2516,14 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
             c.pre_hit_hp = _pre
         await resolve_triggered_ability(session, owner_id, pokemon, ability,
                                         ctx_setup=_setup)
+    for pokemon, energy, hook, dealt, pre_hit in energy_hooks:
+        hook_ctx = EffectContext(session, pokemon.owning_player_id, energy, None,
+                                 attached_to=pokemon)
+        hook_ctx.damaged_by = ctx.attacker
+        hook_ctx.damage_amount = dealt
+        hook_ctx.pre_hit_hp = pre_hit
+        await hook(hook_ctx)
+        await session._flush_effect_runs(hook_ctx)
 
 
 async def resolve_triggered_ability(

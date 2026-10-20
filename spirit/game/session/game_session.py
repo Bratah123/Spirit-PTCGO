@@ -2258,6 +2258,11 @@ class GameSession:
             if not discard:
                 continue
             was_active = self.board_state.active_pokemon(owner_id) is pokemon
+            # Read by knockout_destination hooks that need "Knocked Out by
+            # damage from an opponent's attack" (Splash Energy).
+            pokemon.ko_by_opponent_attack_damage = bool(
+                _damage_ko(pokemon) and ctx.attacker is not None
+                and ctx.attacker.owning_player_id != owner_id)
             # Lost City-style passives (Lost Zone) redirect the KO'd Pokemon
             # stack; energy/tools always fall to the discard pile.
             dest_name = next(
@@ -3681,6 +3686,7 @@ class GameSession:
             await self._run_state_unit(self._begin_turn(active_id))
             await self._run_player_turn(active_id)
             await self._wait_for_connection_resume()
+            await self._run_state_unit(self.enforce_energy_attach_rules())
             await self._run_state_unit(self._fire_end_of_turn_triggers(active_id))
             await self._run_state_unit(self._expire_visualizations(
                 "end", active_id, self.turn_state.turn_number))
@@ -3755,6 +3761,7 @@ class GameSession:
 
         for _ in range(MAX_ACTIONS_PER_TURN):
             await self._wait_for_connection_resume()
+            await self._run_state_unit(self.enforce_energy_attach_rules())
             await self._run_state_unit(self._refresh_dynamic_attacks(active_id))
             target_map = compute_legal_actions(
                 self.board_state, self.turn_state, active_id, self.game_id
@@ -4050,6 +4057,39 @@ class GameSession:
         for pokemon in list(self.board_state.pokemon_in_play(active_id)):
             await self._fire_triggered_abilities(
                 active_id, pokemon, Triggers.END_OF_TURN)
+        await self._discard_end_of_attach_turn_energy()
+
+    def _attached_special_energies(self):
+        out = []
+        for pid in self.players:
+            for pokemon in list(self.board_state.pokemon_in_play(pid)):
+                for energy in list(self.board_state.attached_energies(pokemon)):
+                    out.append((pid, pokemon, energy, def_for(energy.archetype_id)))
+        return out
+
+    async def _discard_end_of_attach_turn_energy(self):
+        """Double Aqua/Magma Energy: discarded at the end of the turn it was
+        attached (manual attach or ctx.attach_energy)."""
+        turn = self.turn_state.turn_number
+        doomed = [(pid, e) for pid, _p, e, d in self._attached_special_energies()
+                  if getattr(d, "discard_end_of_attach_turn", False)
+                  and getattr(e, "attached_on_turn", None) == turn]
+        for pid, energy in doomed:
+            ctx = EffectContext(self, pid, energy, None)
+            await ctx.discard_cards([energy])
+            await self._flush_effect_runs(ctx)
+
+    async def enforce_energy_attach_rules(self):
+        """XY type-locked Special Energy: "(If this card is attached to anything
+        other than a X Pokemon, discard this card.)" -- checked before each
+        action offer and at the end of the turn."""
+        bad = [(pid, e) for pid, p, e, d in self._attached_special_energies()
+               if getattr(d, "discard_unless_attach_to", False)
+               and getattr(d, "attach_to", None) is not None and not d.attach_to(p)]
+        for pid, energy in bad:
+            ctx = EffectContext(self, pid, energy, None)
+            await ctx.discard_cards([energy])
+            await self._flush_effect_runs(ctx)
 
     async def _fire_stadium_triggers(self, acting_player_id: str, trigger: str,
                                      ctx_setup=None):
@@ -4130,6 +4170,7 @@ class GameSession:
         if not self.board_state.attach_card(card.entity_id, target_id):
             return
         self.turn_state.energy_attached = True
+        card.attached_on_turn = self.turn_state.turn_number
         self.stat_add(player_id, "energyplayed")
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
