@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import restore_fossil
 
 card = ItemCardDef(
     guid="9fcd7409-97fd-52b2-bb48-d2f70c8bbfbc",
@@ -11,5 +12,5 @@ card = ItemCardDef(
     collector_number=82,
     set_code="BW10",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=restore_fossil("Archen")
 )

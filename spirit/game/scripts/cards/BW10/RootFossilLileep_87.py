@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import restore_fossil
 
 card = ItemCardDef(
     guid="972135c9-19af-57e4-8f29-3c663fcfd9d0",
@@ -11,5 +12,5 @@ card = ItemCardDef(
     collector_number=87,
     set_code="BW10",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=restore_fossil("Lileep")
 )

@@ -1,5 +1,6 @@
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import restore_fossil
 
 card = ItemCardDef(
     guid="e482382e-c42b-5200-bb37-ad1e96179bff",
@@ -11,5 +12,5 @@ card = ItemCardDef(
     collector_number=79,
     set_code="BW10",
     rarity=Rarities.Uncommon,
-    effect=unimplemented
+    effect=restore_fossil("Tirtouga")
 )
