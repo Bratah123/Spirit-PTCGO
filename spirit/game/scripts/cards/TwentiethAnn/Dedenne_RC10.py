@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dedenne (TwentiethAnn #RC10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_bonus
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _rest(ctx):
+    """Heal 30 damage from this Pokemon. This Pokemon is now Asleep."""
+    await ctx.heal(30, ctx.attacker)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="5f77d765-f855-5fb3-aa4d-fa64d153b253",
@@ -28,8 +32,7 @@ card = PokemonCardDef(
             title="Rest",
             game_text="Heal 30 damage from this Pok\u00e9mon. This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_rest,
         ),
         Attack(
             title="Pachi",
@@ -37,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )
