@@ -1,9 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Scrafty (XY3 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import flip_damage
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _confuse_self(ctx):
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+
 
 card = PokemonCardDef(
     guid="e4962497-84e0-54b2-baa0-bbe58007d1db",
@@ -36,8 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(3, per_heads=50, also=_confuse_self),
         ),
     ],
 )

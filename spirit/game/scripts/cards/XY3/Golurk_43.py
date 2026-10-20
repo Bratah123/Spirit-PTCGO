@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Golurk (XY3 #43): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _wreck(ctx):
+    """60; +60 and discard the Stadium if any Stadium is in play."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(120)
+    await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="db4ee41e-c8d1-5812-ab7f-30a295270375",
@@ -31,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wreck,
         ),
         Attack(
             title="Golurk Hammer",

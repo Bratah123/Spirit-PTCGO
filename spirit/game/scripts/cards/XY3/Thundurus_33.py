@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Thundurus (XY3 #33): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
+from spirit.game.card_effects.attacks_common import bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_tool(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
 
 card = PokemonCardDef(
     guid="8daa3cdc-f5a8-5258-859d-7a668a18a083",
@@ -30,16 +33,15 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.defender is not None and any(_is_tool(c) for c in ctx.defender.children), 30),
         ),
         Attack(
             title="Lightning Slam",
             game_text="This Pok\u00e9mon can't use Lightning Slam during your next turn.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )
