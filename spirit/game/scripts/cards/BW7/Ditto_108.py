@@ -11,14 +11,14 @@ def _transform_condition(board, player_id, pokemon=None):
 async def _transform(ctx):
     """Put a Basic Pokemon from your hand on top of this Pokemon; it becomes
     that Pokemon, keeping attachments, damage, Special Conditions, turns in
-    play and effects. Approximation: the engine's identity swap carries all of
-    that over but leaves Ditto in the discard pile rather than underneath."""
+    play and effects. Ditto stays underneath the new Pokemon and leaves play
+    with it."""
     pool = [c for c in ctx.hand() if is_basic_pokemon(c)]
     if not pool:
         return
     picks = await ctx.choose_cards(pool, 1, minimum=0, prompt="Choose a Basic Pok\u00e9mon to transform into")
     if picks:
-        await ctx.identity_swap(ctx.source, picks[0], destination="discard", transfer=True)
+        await ctx.identity_swap(ctx.source, picks[0], destination="underneath", transfer=True)
 
 
 card = PokemonCardDef(
