@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive, boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="7cfd6631-793c-5d10-8cc7-ef8bedbf5981",
@@ -23,14 +25,14 @@ card = PokemonCardDef(
             title="Smooth Coat",
             game_text="If any damage is done to this Pok\u00e9mon by attacks, flip a coin. If heads, prevent that damage.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=flip_prevent_damage_passive('Smooth Coat'),
         ),
         Attack(
             title="Echoed Voice",
             game_text="During your next turn, this Pok\u00e9mon's Echoed Voice attack does 50 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
-            effect=unimplemented,
+            effect=boost_own_next_turn(50, attack_title='Echoed Voice'),
         ),
     ],
 )

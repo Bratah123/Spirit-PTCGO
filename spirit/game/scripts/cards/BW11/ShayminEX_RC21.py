@@ -1,5 +1,9 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.trainers import is_grass_energy_card
+from spirit.game.card_effects.attacks_common import damage_per, count_prizes_taken
+
 
 card = PokemonCardDef(
     guid="300eb967-fa8f-5bd6-82f8-21477e14ace4",
@@ -23,7 +27,8 @@ card = PokemonCardDef(
             title="Synthesis",
             game_text="Search your deck for a Grass Energy card and attach it to 1 of your Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.GRASS: 1},
-            effect=unimplemented,
+            effect=search_attach_energy(predicate=is_grass_energy_card, count=1,
+                                        prompt='Choose a Grass Energy card to attach.'),
         ),
         Attack(
             title="Revenge Blast",
@@ -31,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=damage_per(count_prizes_taken('opponent'), 30, base=30),
         ),
     ],
 )

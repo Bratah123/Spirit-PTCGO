@@ -1,5 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack, damage_per, count_energy
+
+
+_self_energy = count_energy('self')
+_defender_energy = count_energy('defender')
+
+
+def _x_ball_count(ctx):
+    return _self_energy(ctx) + _defender_energy(ctx)
+
 
 card = PokemonCardDef(
     guid="9fdac9be-f50f-5b11-b594-4906a564fc72",
@@ -22,14 +32,16 @@ card = PokemonCardDef(
             title="X Ball",
             game_text="Does 20 damage times the amount of Energy attached to this Pok\u00e9mon and the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            damage=20,
+            damage_operator="x",
+            effect=damage_per(_x_ball_count, 20),
         ),
         Attack(
             title="Psydrive",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

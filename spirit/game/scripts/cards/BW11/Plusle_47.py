@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import AttrID, PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _tag_draw(ctx):
+    """Shuffle your hand into your deck, draw 4 (8 if Minun is on your Bench)."""
+    hand = list(ctx.hand())
+    if hand:
+        await ctx.shuffle_into_deck(hand)
+    else:
+        await ctx.shuffle_deck()
+    minun = any(p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == "Minun" for p in ctx.my_bench())
+    await ctx.draw_cards(8 if minun else 4)
+
 
 card = PokemonCardDef(
     guid="310b2601-b601-5c76-85e1-9b0a0886c83a",
@@ -22,7 +35,7 @@ card = PokemonCardDef(
             title="Tag Draw",
             game_text="Shuffle your hand into your deck. Then, draw 4 cards. If Minun is on your Bench, draw 4 more cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_tag_draw,
         ),
         Attack(
             title="Positive Ion",
@@ -30,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=20,
             damage_operator="+",
-            effect=unimplemented,
+            effect=flip_bonus(10),
         ),
     ],
 )

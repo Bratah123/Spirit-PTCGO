@@ -1,5 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, def_for
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_in_play, damage_per
+
+
+async def future_sight(ctx):
+    """Look at the top 5 cards of your deck and put them back in any order."""
+    await ctx.reorder_deck_top(5)
+
+
+def _is_reuniclus(pokemon) -> bool:
+    definition = def_for(pokemon.archetype_id)
+    return definition is not None and definition.display_name == "Reuniclus"
+
 
 card = PokemonCardDef(
     guid="26c86b53-ae72-5957-85f8-74f837298c04",
@@ -23,7 +35,7 @@ card = PokemonCardDef(
             title="Future Sight",
             game_text="Look at the top 5 cards of your deck and put them back on top of your deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=future_sight,
         ),
         Attack(
             title="Net Force",
@@ -31,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_in_play("mine", pred=_is_reuniclus), 40),
         ),
     ],
 )
