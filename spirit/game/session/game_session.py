@@ -3295,6 +3295,16 @@ class GameSession:
             )
 
     async def _run_pokemon_checkup(self, active_id: Optional[str] = None):
+        """Flags the checkup window (between turns, not during either
+        player's turn: Malamar Contrary) around the real checkup."""
+        state = self.turn_state
+        state.in_checkup = True
+        try:
+            await self._run_pokemon_checkup_body(active_id)
+        finally:
+            state.in_checkup = False
+
+    async def _run_pokemon_checkup_body(self, active_id: Optional[str] = None):
         """Between-turns checkup, per player (turn order), on that player's
         ACTIVE only: Poison -> Burn -> Sleep -> Paralysis-cure. Then fires
         BETWEEN_TURNS triggered abilities for every in-play Pokemon."""
