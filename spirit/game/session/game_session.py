@@ -118,8 +118,9 @@ from .effects import (
     resolve_triggered_ability,
 )
 from .passives import (
+    flip_coin_for,
     ability_locked, active_passives, active_to_bench_counters,
-    burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
+    burn_recovery_blocked, passive_sleep_coins, effective_bench_capacity, effective_max_hp,
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
     granted_extra_attacks, retreat_energy_destination, tool_slots_free,
     tool_suppressed,
@@ -216,6 +217,23 @@ class GameOptions:
         return serialized
 
 
+
+def mega_evolution_ends_turn(evolution_card) -> bool:
+    """True when `evolution_card` is a Mega Evolution (subtype MEGA) and no
+    Spirit Link tool attached to it names it (the tool's display name is
+    "<Pokemon> Spirit Link", e.g. "Venusaur Spirit Link" for M Venusaur-EX)."""
+    if "MEGA" not in subtypes_for(evolution_card.archetype_id):
+        return False
+    target_def = def_for(evolution_card.archetype_id)
+    name = (getattr(target_def, "display_name", "") or "")
+    base = name.removeprefix("M ").removesuffix("-EX").strip()
+    for child in evolution_card.children:
+        d = def_for(child.archetype_id)
+        dn = getattr(d, "display_name", "") or ""
+        if dn.endswith("Spirit Link") and dn.removesuffix("Spirit Link").strip() == base:
+            return False
+    return True
+
 class GameSession:
     # Pacing sleeps for client choreography; headless harnesses flip this off.
     choreography_pauses: bool = True
@@ -276,6 +294,7 @@ class GameSession:
         # entity_id -> coins flipped at Pokemon Checkup while Asleep (waking
         # needs ALL heads; Snorlax's Thumping Snore sets 2).
         self.sleep_checkup_coins: Dict[str, int] = {}
+        self.skip_turn_draw: set = set()
         # entity_id -> damage-counter multiplier while Poisoned (10 * count
         # dealt each checkup; default 1).
         self.poison_counters: Dict[str, int] = {}
@@ -2257,6 +2276,11 @@ class GameSession:
             if not discard:
                 continue
             was_active = self.board_state.active_pokemon(owner_id) is pokemon
+            # Read by knockout_destination hooks that need "Knocked Out by
+            # damage from an opponent's attack" (Splash Energy).
+            pokemon.ko_by_opponent_attack_damage = bool(
+                _damage_ko(pokemon) and ctx.attacker is not None
+                and ctx.attacker.owning_player_id != owner_id)
             # Lost City-style passives (Lost Zone) redirect the KO'd Pokemon
             # stack; energy/tools always fall to the discard pile.
             dest_name = next(
@@ -3248,8 +3272,12 @@ class GameSession:
         await self.enforce_bench_capacity()
 
     async def _checkup_poison(self, active):
-        """Poison tick: 10 * poison_counters (default 1) raw damage."""
-        amount = 10 * self.poison_counters.get(active.entity_id, 1)
+        """Poison tick: 10 * poison_counters (default 1) raw damage; passives
+        may add counters (Virbank City Gym)."""
+        counters = self.poison_counters.get(active.entity_id, 1)
+        for passive, carrier in active_passives(self.board_state):
+            counters = passive.modify_poison_counters(counters, active, carrier)
+        amount = 10 * max(0, counters)
         knocked_out = await self._apply_raw_damage(
             active, amount, GameSequence.POISON_DAMAGE.value
         )
@@ -3272,7 +3300,7 @@ class GameSession:
             return
         if burn_recovery_blocked(self.board_state, active):
             return
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -3300,8 +3328,9 @@ class GameSession:
 
     async def _checkup_sleep(self, player_id: str, active):
         """Sleep flip: all heads wakes (Thumping Snore's rider flips 2 coins)."""
-        coins = self.sleep_checkup_coins.get(active.entity_id, 1)
-        flips = [random.choice([0, 1]) for _ in range(coins)]
+        coins = max(self.sleep_checkup_coins.get(active.entity_id, 1),
+                    passive_sleep_coins(self.board_state, active))
+        flips = [flip_coin_for(self.board_state, player_id) for _ in range(coins)]
         woke = all(f == 0 for f in flips)
         self.stat_add(player_id, "headsflipped", flips.count(0))
         self.stat_add(player_id, "tailsflipped", flips.count(1))
@@ -3676,6 +3705,7 @@ class GameSession:
             await self._run_state_unit(self._begin_turn(active_id))
             await self._run_player_turn(active_id)
             await self._wait_for_connection_resume()
+            await self._run_state_unit(self.enforce_energy_attach_rules())
             await self._run_state_unit(self._fire_end_of_turn_triggers(active_id))
             await self._run_state_unit(self._expire_visualizations(
                 "end", active_id, self.turn_state.turn_number))
@@ -3702,8 +3732,11 @@ class GameSession:
             f"begins for {player.screen_name}."
         )
 
-        drawn = self.board_state.draw_cards(active_id, 1)
-        if not drawn:
+        # "Your opponent can't draw a card at the beginning of their next
+        # turn" (Luvdisc Heart Wink) -- keyed by (player, turn number).
+        skip = (active_id, self.turn_state.turn_number) in self.skip_turn_draw
+        drawn = [] if skip else self.board_state.draw_cards(active_id, 1)
+        if not drawn and not skip:
             # Failing the mandatory turn draw loses the game (deck out).
             await self.end_game(
                 self._opponent_id(active_id),
@@ -3750,6 +3783,7 @@ class GameSession:
 
         for _ in range(MAX_ACTIONS_PER_TURN):
             await self._wait_for_connection_resume()
+            await self._run_state_unit(self.enforce_energy_attach_rules())
             await self._run_state_unit(self._refresh_dynamic_attacks(active_id))
             target_map = compute_legal_actions(
                 self.board_state, self.turn_state, active_id, self.game_id
@@ -3892,7 +3926,7 @@ class GameSession:
         elif description == ACTION_ATTACH_TOOL:
             await self._execute_attach_tool(player_id, card, entry, target_ids)
         elif description == ACTION_EVOLVE:
-            await self._execute_evolve(player_id, card, entry, target_ids)
+            return bool(await self._execute_evolve(player_id, card, entry, target_ids))
         elif description == ACTION_USE_TRAINER:
             targets = trainer_play_target_ids(self.board_state, player_id, card)
             play_target = None
@@ -4045,6 +4079,39 @@ class GameSession:
         for pokemon in list(self.board_state.pokemon_in_play(active_id)):
             await self._fire_triggered_abilities(
                 active_id, pokemon, Triggers.END_OF_TURN)
+        await self._discard_end_of_attach_turn_energy()
+
+    def _attached_special_energies(self):
+        out = []
+        for pid in self.players:
+            for pokemon in list(self.board_state.pokemon_in_play(pid)):
+                for energy in list(self.board_state.attached_energies(pokemon)):
+                    out.append((pid, pokemon, energy, def_for(energy.archetype_id)))
+        return out
+
+    async def _discard_end_of_attach_turn_energy(self):
+        """Double Aqua/Magma Energy: discarded at the end of the turn it was
+        attached (manual attach or ctx.attach_energy)."""
+        turn = self.turn_state.turn_number
+        doomed = [(pid, e) for pid, _p, e, d in self._attached_special_energies()
+                  if getattr(d, "discard_end_of_attach_turn", False)
+                  and getattr(e, "attached_on_turn", None) == turn]
+        for pid, energy in doomed:
+            ctx = EffectContext(self, pid, energy, None)
+            await ctx.discard_cards([energy])
+            await self._flush_effect_runs(ctx)
+
+    async def enforce_energy_attach_rules(self):
+        """XY type-locked Special Energy: "(If this card is attached to anything
+        other than a X Pokemon, discard this card.)" -- checked before each
+        action offer and at the end of the turn."""
+        bad = [(pid, e) for pid, p, e, d in self._attached_special_energies()
+               if getattr(d, "discard_unless_attach_to", False)
+               and getattr(d, "attach_to", None) is not None and not d.attach_to(p)]
+        for pid, energy in bad:
+            ctx = EffectContext(self, pid, energy, None)
+            await ctx.discard_cards([energy])
+            await self._flush_effect_runs(ctx)
 
     async def _fire_stadium_triggers(self, acting_player_id: str, trigger: str,
                                      ctx_setup=None):
@@ -4125,6 +4192,7 @@ class GameSession:
         if not self.board_state.attach_card(card.entity_id, target_id):
             return
         self.turn_state.energy_attached = True
+        card.attached_on_turn = self.turn_state.turn_number
         self.stat_add(player_id, "energyplayed")
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
@@ -4152,7 +4220,7 @@ class GameSession:
     async def _resolve_attach_tax_flip(self, player_id: str, energy, taxer) -> bool:
         """Slimy Room flip on a manual energy attach: heads (True) proceeds;
         tails discards the energy from hand (revealed) and returns False."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -4580,8 +4648,12 @@ class GameSession:
                 f"[Session {self.game_id}] Evolve without a valid target "
                 f"({target_ids}); re-offering."
             )
-            return
-        await self.perform_evolution(player_id, card, target)
+            return False
+        if not await self.perform_evolution(player_id, card, target):
+            return False
+        # XY rule: "When 1 of your Pokemon becomes a Mega Evolution Pokemon,
+        # your turn ends" -- unless a matching Spirit Link tool is attached.
+        return mega_evolution_ends_turn(card)
 
     async def perform_evolution(self, player_id, evolution_card, target,
                                 from_zone_intro: bool = False) -> bool:
@@ -4832,6 +4904,9 @@ class GameSession:
         pile with the outgoing card and the new Pokemon enters fresh
         (Phantom Transformation). With ctx the choreography is QUEUED on it
         (so the ability announce/orb bracket plays first) instead of sent.
+        destination_name="underneath" (requires transfer=True) tucks the
+        outgoing card under the new Pokemon like a pre-evolution (BW7 Ditto
+        Transform); it then leaves play with that stack.
         Returns `incoming`, or None on failure.
         """
         area = outgoing.parent
@@ -4842,7 +4917,11 @@ class GameSession:
         if isinstance(outgoing, CompositePokemonEntity)                 or isinstance(incoming, (ComponentCardEntity, CompositePokemonEntity)):
             return None
         source_area = incoming._containing_area_name()
-        dest = self.board_state.find_player_area(owner_id, destination_name)
+        underneath = destination_name == "underneath"
+        if underneath and not transfer:
+            return None
+        dest = incoming if underneath else \
+            self.board_state.find_player_area(owner_id, destination_name)
         out_of_play = self.board_state.find_global_area("outOfPlay")
         if dest is None or out_of_play is None or source_area is None:
             return None
@@ -4873,9 +4952,12 @@ class GameSession:
                 self.board_state.move_card(other.entity_id, dest.entity_id)
                 stack_moves.append(self._entity_moved_msg(
                     other.entity_id, dest.entity_id, position))
-        # ...and the old card leaves play.
+        # ...and the old card leaves play (or is tucked under the new one).
         position = len(dest.children)
-        self.board_state.move_card(outgoing.entity_id, dest.entity_id)
+        if underneath:
+            self.board_state.attach_card(outgoing.entity_id, incoming.entity_id)
+        else:
+            self.board_state.move_card(outgoing.entity_id, dest.entity_id)
         outgoing_move = self._entity_moved_msg(
             outgoing.entity_id, dest.entity_id, position)
 
@@ -5221,7 +5303,7 @@ class GameSession:
         not happen (no damage, no lock/VSTAR bookkeeping; the turn still
         ends). PokeAbility bracket: M.s runs the L.x flip with no condition
         pop-in (FlipToWakeUp would stamp the Asleep pop-in)."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -5246,7 +5328,7 @@ class GameSession:
     async def _resolve_confusion_flip(self, player_id: str, attacker) -> bool:
         """Confused Pokemon flip before attacking: heads proceeds into the
         normal attack; tails hurts the attacker for 30 raw damage instead."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)

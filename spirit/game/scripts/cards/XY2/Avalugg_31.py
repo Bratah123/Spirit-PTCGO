@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Avalugg (XY2 #31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+
+
+async def _gaia_crush(ctx):
+    """Printed damage; discard any Stadium card in play."""
+    await ctx.deal_damage()
+    if ctx.stadium_in_play() is not None:
+        await ctx.discard_stadium()
+
 
 card = PokemonCardDef(
     guid="c52d956c-3779-5777-9ff8-c4a7b1f2c35f",
@@ -28,16 +33,14 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=20),
         ),
         Attack(
             title="Shatter",
             game_text="Discard any Stadium card in play.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gaia_crush,
         ),
     ],
 )

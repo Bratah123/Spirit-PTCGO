@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yveltal-EX (XY1 #79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per
+
+
+async def shadow_cyclone(ctx):
+    await ctx.deal_damage()
+    await ctx.move_energy_freely([ctx.attacker], ctx.my_bench(), max_count=1)
+
+
+def _both_actives_energy(ctx):
+    total = 0
+    for p in (ctx.attacker, ctx.defender):
+        if p is not None:
+            total += len(ctx.attached_energies(p))
+    return total
+
 
 card = PokemonCardDef(
     guid="70ca16fb-b31d-5913-8a29-a2957bd86b4e",
@@ -29,16 +40,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(_both_actives_energy, 20, base=20),
         ),
         Attack(
             title="Y Cyclone",
             game_text="Move an Energy from this Pok\u00e9mon to 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=shadow_cyclone,
         ),
     ],
 )

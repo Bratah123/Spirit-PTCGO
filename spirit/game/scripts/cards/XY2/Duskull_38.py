@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Duskull (XY2 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def _revival(ctx):
+    """Put a Basic Pokemon from your opponent's discard pile onto their Bench."""
+    cards = [c for c in ctx.discard_pile(ctx.opponent_id) if is_basic_pokemon(c)]
+    if not cards:
+        return
+    picks = await ctx.choose_cards(cards, 1, minimum=1, prompt="Choose a Basic Pokémon")
+    if picks:
+        await ctx.bench_pokemon(picks[0])
+
 
 card = PokemonCardDef(
     guid="a1033261-4a71-5215-bea4-3b9eb2eacec7",
@@ -27,15 +36,13 @@ card = PokemonCardDef(
             title="Revival",
             game_text="Put a Basic Pok\u00e9mon from your opponent's discard pile onto his or her Bench.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_revival,
         ),
         Attack(
             title="Sneaky Placement",
             game_text="Put 1 damage counter on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(1, 'opponent_active'),
         ),
     ],
 )

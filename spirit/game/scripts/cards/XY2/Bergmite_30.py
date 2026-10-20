@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Bergmite (XY2 #30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import mill_attack
+
 
 card = PokemonCardDef(
     guid="e7b4c04f-864d-5727-b69a-a443d80661f8",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Stomp Off",
             game_text="Discard the top card of your opponent's deck.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mill_attack(1),
         ),
         Attack(
             title="Tackle",
