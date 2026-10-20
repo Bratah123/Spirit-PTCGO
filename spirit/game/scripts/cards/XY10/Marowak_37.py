@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Marowak (XY10 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.session.passives import Passive
+
+
+class BodyguardPassive(Passive):
+    """Prevent all effects of attacks done to you or your hand by your
+    opponent's Pokemon (the engine's player/hand shield; attack-made play
+    locks already on you switch off)."""
+
+    def blocks_player_attack_effects(self, affected_player_id, carrier):
+        return affected_player_id == carrier.owning_player_id
+
 
 card = PokemonCardDef(
     guid="b49d7f42-e18a-5092-b10c-4ad8a5fcd66b",
@@ -26,8 +34,7 @@ card = PokemonCardDef(
         Ability(
             title="Bodyguard",
             game_text="Prevent all effects of attacks done to you or your hand by your opponent's Pok\u00e9mon. Remove any existing effects.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=BodyguardPassive(),
         ),
         Attack(
             title="Bonemerang",
@@ -35,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=60),
         ),
     ],
 )

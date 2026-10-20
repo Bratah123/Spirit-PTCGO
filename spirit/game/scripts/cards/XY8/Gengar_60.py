@@ -1,9 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gengar (XY8 #60): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import damage_counters_on
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _sinister_fog(ctx):
+    """Poison the opponent's Active; 1 damage counter on each of their Benched Pokemon."""
+    await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.POISONED)
+    for p in ctx.opponent_bench():
+        await ctx.place_damage_counters(1, [p])
+
+
+_counters = damage_counters_on('defender')
+
+
+async def _creep_show(ctx):
+    """If the opponent's Active has 3 or more damage counters, it is Knocked Out."""
+    d = ctx.opponent_active()
+    if d is not None and _counters(ctx) >= 3 and not ctx.effects_blocked(d):
+        await ctx.knock_out(d)
+
 
 card = PokemonCardDef(
     guid="b0a321b9-8197-516c-8e42-46694519cffa",
@@ -29,15 +44,13 @@ card = PokemonCardDef(
             title="Sinister Fog",
             game_text="Your opponent's Active Pok\u00e9mon is now Poisoned. Put 1 damage counter on each of your opponent's Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sinister_fog,
         ),
         Attack(
             title="Creep Show",
             game_text="If your opponent's Active Pok\u00e9mon has 3 or more damage counters on it, that Pok\u00e9mon is Knocked Out.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_creep_show,
         ),
     ],
 )

@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Togepi (XY6 #43): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _sweet_kiss(ctx):
+    """Printed damage; your opponent draws a card."""
+    await ctx.deal_damage()
+    await ctx.draw_cards(1, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="dc01572f-9c45-55ed-8569-59c06a294e9c",
@@ -29,8 +32,7 @@ card = PokemonCardDef(
             game_text="Your opponent draws a card.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sweet_kiss,
         ),
     ],
 )

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Rayquaza-EX (XY6 #61): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="14935706-93e9-5140-99ff-00ad53ba6ffc",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 3, PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=300,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

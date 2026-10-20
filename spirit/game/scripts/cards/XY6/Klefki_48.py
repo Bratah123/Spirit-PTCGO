@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Klefki (XY6 #48): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.effects import is_item_card
+
+
+async def _look_for_keys(ctx):
+    """Reveal from the top until an Item card; put it into your hand; shuffle."""
+    deck = list(reversed(ctx.deck()))
+    revealed = []
+    item = None
+    for card in deck:
+        revealed.append(card)
+        if is_item_card(card):
+            item = card
+            break
+    if revealed:
+        await ctx.reveal_cards(revealed)
+    if item is not None:
+        await ctx.put_in_hand([item], reveal=True)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="aa8eb436-ae05-5ba1-ac2c-a05c30e65b15",
@@ -28,8 +44,7 @@ card = PokemonCardDef(
             title="Look for Keys",
             game_text="Reveal cards from the top of your deck until you reveal an Item card. Put it into your hand. Shuffle the other cards back into your deck.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_look_for_keys,
         ),
         Attack(
             title="Play Rough",
@@ -37,8 +52,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mr. Mime (XY10 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _synchrodraw(ctx):
+    """Shuffle your hand into your deck, then draw as many cards as your
+    opponent has in hand."""
+    count = ctx.hand_size(ctx.opponent_id)
+    hand = list(ctx.hand())
+    if hand:
+        await ctx.shuffle_into_deck(hand)
+    else:
+        await ctx.shuffle_deck()
+    if count > 0:
+        await ctx.draw_cards(count)
+
 
 card = PokemonCardDef(
     guid="909a77d7-4fe9-5149-bcb2-c2af1972ac3f",
@@ -28,8 +39,7 @@ card = PokemonCardDef(
             title="Mimic",
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of cards in your opponent's hand.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_synchrodraw,
         ),
         Attack(
             title="Juggling",
@@ -37,8 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=4, per_heads=20),
         ),
     ],
 )

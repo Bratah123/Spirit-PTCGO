@@ -114,7 +114,16 @@ class Triggers:
     """Events the game session fires scripted abilities on (Ability.trigger)."""
     ON_PLAY = "on_play"  # the Pokemon is played from hand onto the bench
     ON_EVOLVE = "on_evolve"  # the Pokemon evolves into this card
+    # This in-play Pokemon is about to evolve (Alakazam-EX Kinesis: "before it
+    # evolves"); fires on the PRE-evolution before the card moves; ctx carries
+    # evolution_card.
+    ON_BEING_EVOLVED = "on_being_evolved"
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
+    # This Pokemon is about to be Knocked Out (Celebi Leap Through Time):
+    # fires before prizes and stack moves; a trigger that sets
+    # ctx.ko_replaced = True (and moved the stack itself) cancels the KO's
+    # discard and prizes.
+    ON_KNOCKED_OUT_REPLACEMENT = "on_knocked_out_replacement"
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
     # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
     # ctx carries damaged_by / damage_amount / pre_hit_hp.
@@ -653,10 +662,19 @@ class PokemonToolCardDef(TrainerCardDef):
     restricts legal attach targets (Hero's Medal)."""
     def __init__(self, passive: Optional[Any] = None,
                  granted_abilities: Optional[List[Ability]] = None,
-                 attach_to: Optional[Callable] = None, **kwargs):
+                 attach_to: Optional[Callable] = None,
+                 on_carrier_knocked_out: Optional[Any] = None,
+                 attach_to_opponent: bool = False, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        # Team Flare Hyper Gear: attaches to the OPPONENT's Pokemon; the card
+        # keeps its owner (home_player_id) and returns to its owner's discard
+        # pile when it leaves that Pokemon for any reason.
+        self.attach_to_opponent = attach_to_opponent
+        # async (ctx) run after the holder is Knocked Out by damage from an
+        # opponent's attack; ctx.ko_energies lists its Energy pre-discard.
+        self.on_carrier_knocked_out = on_carrier_knocked_out
         self.attach_to = attach_to
         self.granted_abilities: List[Ability] = granted_abilities or []
         for idx, a in enumerate(self.granted_abilities):

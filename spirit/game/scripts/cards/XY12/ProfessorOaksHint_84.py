@@ -1,13 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Professor Oak's Hint (XY12 #84): trainer effect stubbed.
-
-Card text:
-  - Draw cards until you have 7 cards in your hand. Your turn ends.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+
+
+async def professor_oaks_hint(ctx):
+    """Draw cards until you have 7 cards in your hand. Your turn ends."""
+    await ctx.draw_until(7)
+    ctx.ends_turn = True
+
 
 card = SupporterCardDef(
     guid="50303223-e9c7-5a18-bb74-27048380401a",
@@ -19,6 +18,5 @@ card = SupporterCardDef(
     collector_number=84,
     set_code="XY12",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=professor_oaks_hint
 )

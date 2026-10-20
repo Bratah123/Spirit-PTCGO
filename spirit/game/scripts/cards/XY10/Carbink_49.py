@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Carbink (XY10 #49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.trainers import is_basic_energy_card
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _EnergyKeeper(Passive):
+    """Basic Energy on your Basic Pokemon can't be discarded by your opponent's effects
+    (the engine hook covers opposing Item/Supporter moves)."""
+    def blocks_energy_removal(self, energy, mover_player_id, carrier):
+        me = carrier_pokemon(carrier)
+        holder = getattr(energy, "parent", None)
+        return (me is not None and holder is not None and mover_player_id != me.owning_player_id
+                and holder.owning_player_id == me.owning_player_id and is_basic_energy_card(energy)
+                and holder.get_attribute(AttrID.STAGE) == PokemonStage.BASIC.value)
+
 
 card = PokemonCardDef(
     guid="cd246f41-0853-56bd-b45e-892f8bc1234c",
@@ -25,8 +36,7 @@ card = PokemonCardDef(
         Ability(
             title="Energy Keeper",
             game_text="Basic Energy attached to your Basic Pok\u00e9mon can't be discarded by effects of your opponent's attacks, Abilities, or Trainer cards.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_EnergyKeeper(),
         ),
         Attack(
             title="Stone Edge",
@@ -34,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

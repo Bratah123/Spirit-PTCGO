@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Yanmega (XY11 #7): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+from spirit.game.card_effects.attacks_common import bonus_if, active_is, has_tool
+
+
+class _SonicVision(Passive):
+    """With exactly 4 cards in your hand, this Pokemon's attacks cost no Energy."""
+    def modify_attack_cost(self, cost, pokemon, carrier, board):
+        if carrier_pokemon(carrier) is not pokemon:
+            return cost
+        hand = board.find_player_area(pokemon.owning_player_id, "hand")
+        return {} if hand is not None and len(hand.children) == 4 else cost
+
 
 card = PokemonCardDef(
     guid="0216a86c-ec90-579f-845b-3a512a356769",
@@ -28,8 +36,7 @@ card = PokemonCardDef(
         Ability(
             title="Sonic Vision",
             game_text="If you have exactly 4 cards in your hand, ignore all Energy in the attack cost of each of this Pok\u00e9mon's attacks.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_SonicVision(),
         ),
         Attack(
             title="Assault Boom",
@@ -37,8 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(active_is(has_tool), 70),
         ),
     ],
 )

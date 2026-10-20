@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Frogadier (XY9 #39): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.content.definitions import def_for
+
+
+def _is_frogadier(card):
+    return is_pokemon_card(card) and getattr(def_for(card.archetype_id), "display_name", None) == "Frogadier"
+
 
 card = PokemonCardDef(
     guid="0117edf5-cdd7-5916-983d-b368f2a5fd02",
@@ -27,8 +31,7 @@ card = PokemonCardDef(
             title="Water Duplicates",
             game_text="Search your deck for up to 3 Frogadier and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(_is_frogadier, count=3, prompt='Choose up to 3 Frogadier'),
         ),
     ],
 )

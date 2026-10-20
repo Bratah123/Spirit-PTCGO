@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pidgeot-EX (XY12 #104): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def _mirror_move(ctx):
+    """If this Pokemon was damaged by an attack during the opponent's last turn,
+    this attack does the same amount of damage to the opponent's Active."""
+    n = ctx.damage_taken_last_turn(ctx.attacker)
+    if n > 0:
+        await ctx.deal_damage(n)
+
 
 card = PokemonCardDef(
     guid="8bf751da-9d82-5285-ac92-6a2569b7cf3b",
@@ -28,16 +34,14 @@ card = PokemonCardDef(
             title="Mirror Move",
             game_text="If this Pok\u00e9mon was damaged by an attack during your opponent's last turn, this attack does the same amount of damage to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_mirror_move,
         ),
         Attack(
             title="Feather Lance",
             game_text="This attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, also_base=True),
         ),
     ],
 )

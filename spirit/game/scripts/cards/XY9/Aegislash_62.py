@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Aegislash (XY9 #62): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import snipe_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def lunar_pain(ctx):
+    """Double the number of damage counters on each of your opponent's Pokemon."""
+    for pokemon in ctx.opponent_pokemon_in_play():
+        current = (ctx.max_hp(pokemon) - pokemon.get_attribute(AttrID.HP, 0)) // 10
+        if current > 0:
+            await ctx.deal_damage(current * 10, target=pokemon, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="40b36eb4-1085-56b7-8142-cb32d5c10d14",
@@ -29,16 +35,14 @@ card = PokemonCardDef(
             title="Painful Sword",
             game_text="Double the number of damage counters on each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 3},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=lunar_pain,
         ),
         Attack(
             title="Megaton Slash",
             game_text="This attack does 10 damage to 2 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(10, count=2, also_base=True),
         ),
     ],
 )

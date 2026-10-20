@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Aipom (XY11 #90): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _fiddle_around(ctx):
+    """Look at the top 3 cards of your opponent's deck and put them back in any order."""
+    if ctx.deck(ctx.opponent_id):
+        await ctx.reorder_deck_top(3, player_id=ctx.opponent_id,
+                                   prompt="Rearrange the top of your opponent's deck")
+
 
 card = PokemonCardDef(
     guid="4a120da5-b852-5cae-a42b-321b8789025d",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Fiddle Around",
             game_text="Look at the top 3 cards of your opponent's deck and put them back in any order.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_fiddle_around,
         ),
         Attack(
             title="Tail Jab",

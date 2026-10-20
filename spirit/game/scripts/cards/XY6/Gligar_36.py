@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gligar (XY6 #36): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="01f31d03-afe3-52e6-bfb5-985e1d6555f5",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Stun Poison",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed and Poisoned.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, SpecialConditions.POISONED, flip=True),
         ),
     ],
 )

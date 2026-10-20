@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Togetic (XY6 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def _go_fetch(ctx):
+    """Shuffle 3 basic Energy cards from your discard pile into your deck."""
+    pool = [c for c in ctx.discard_pile() if is_basic_energy_card(c)]
+    if not pool:
+        return
+    n = min(3, len(pool))
+    picks = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 3 basic Energy cards")
+    if picks:
+        await ctx.shuffle_into_deck(picks, ctx.player_id)
+
 
 card = PokemonCardDef(
     guid="d3afa7c5-19a4-5233-ba51-016371c6d2a6",
@@ -29,8 +38,7 @@ card = PokemonCardDef(
             title="Go Fetch",
             game_text="Shuffle 3 basic Energy cards from your discard pile into your deck.",
             cost={PokemonTypes.FAIRY: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_go_fetch,
         ),
         Attack(
             title="Fairy Wind",

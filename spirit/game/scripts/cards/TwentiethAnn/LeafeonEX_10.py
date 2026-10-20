@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Leafeon-EX (TwentiethAnn #10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _stadium_drain(ctx):
+    """30+. If any Stadium is in play: +30 damage and heal 30 from this Pokémon."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(60)
+    await ctx.heal(30, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="b9275f7e-1c43-5bc4-8250-a3b373d21b49",
@@ -28,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
         Attack(
             title="Nature's Breath",
@@ -37,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=90,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_stadium_drain,
         ),
     ],
 )

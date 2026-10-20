@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ampharos-EX (XY7 #87): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import ignore_effects_attack
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_lightning_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _thunder_rod(ctx):
+    """Look at the top 4 cards; attach any Lightning Energy there to this Pokemon; shuffle."""
+    top = ctx.deck_top(4)
+    pool = [c for c in top if _is_lightning_energy(c)]
+    picks = await ctx.choose_cards(pool, len(pool), minimum=0, display_cards=top,
+                                   prompt="Attach Lightning Energy to this Pokémon") if pool else []
+    for energy in picks or []:
+        await ctx.attach_energy(energy, ctx.attacker)
+    await ctx.shuffle_deck()
+
 
 card = PokemonCardDef(
     guid="2988501b-19c3-5491-a1bc-4dc6ecef3aa7",
@@ -28,16 +42,14 @@ card = PokemonCardDef(
             title="Thunder Rod",
             game_text="Look at the top 4 cards of your deck and attach as many Lightning Energy cards you find there as you like to this Pok\u00e9mon. Shuffle the other cards back into your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_thunder_rod,
         ),
         Attack(
             title="Sparkling Tail",
             game_text="This attack's damage isn't affected by Weakness, Resistance, or any other effects on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=ignore_effects_attack(ignore_weakness=True, ignore_resistance=True),
         ),
     ],
 )

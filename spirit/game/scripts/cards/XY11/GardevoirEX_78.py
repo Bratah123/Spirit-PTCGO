@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gardevoir-EX (XY11 #78): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack, bonus_if, count_energy
+
+
+def _same_energy(ctx):
+    d = ctx.opponent_active()
+    return d is not None and count_energy('self')(ctx) == count_energy('defender')(ctx)
+
 
 card = PokemonCardDef(
     guid="4bf10b93-80e9-5547-a32e-c612f681a46a",
@@ -30,16 +33,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_same_energy, 70),
         ),
         Attack(
             title="Luminous Blade",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

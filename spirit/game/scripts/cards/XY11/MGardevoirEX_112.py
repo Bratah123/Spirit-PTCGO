@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Gardevoir-EX (XY11 #112): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import full_stack
+
+
+async def _despair_ray(ctx):
+    """Discard as many of your Benched Pokemon as you like; +10 each."""
+    bench = ctx.my_bench()
+    picked = await ctx.choose_cards(bench, len(bench), minimum=0,
+                                    prompt="Discard any of your Benched Pokémon") if bench else []
+    for p in picked:
+        await ctx.discard_cards(full_stack(p))
+    await ctx.deal_damage(110 + 10 * len(picked))
+
 
 card = PokemonCardDef(
     guid="187d88d4-f2bf-5f58-8dec-1765979e0418",
@@ -31,8 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 1},
             damage=110,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_despair_ray,
         ),
     ],
 )
