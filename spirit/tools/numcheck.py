@@ -3,7 +3,7 @@
 Cards are matched by GUID (import_set derives it from the JSON card id), so
 file names and accent handling don't matter; scripts carrying another GUID
 (e.g. original client GUIDs) fall back to a collector-number match. Per card it compares:
-  * collector number (subset numbers such as RC1 use import_set's mapping),
+  * collector number (RC1 / 28a style numbers use import_set's mapping),
   * HP, retreat cost, attack count, and per attack name / damage / energy count,
   * explicit `base=` in damage_per / flip_damage / bonus_if effects of "+"
     or plain attacks against the printed damage (copied effects often keep
@@ -169,7 +169,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         parser.error(f"unknown set folder: {args.set}")
     with open(data_path, encoding="utf-8") as fh:
         cards = json.load(fh)
-    import_set.SUBSET_NUMBER_BASE = import_set.subset_number_base(cards)
+    import_set.set_numbering(cards)
     scripts = load_scripts(args.set)
     by_number = {}
     for key, (path, _src, tree) in scripts.items():
