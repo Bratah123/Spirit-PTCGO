@@ -2211,6 +2211,37 @@ class GameSession:
         Active for the losing side, and checks every win condition."""
         if not ctx.knockouts:
             return
+        # Replacement effects first (Celebi Leap Through Time): each one may
+        # move its own stack away and cancel the KO (no discard, no prizes).
+        for pokemon in list(ctx.knockouts):
+            owner_id = pokemon.owning_player_id
+            if owner_id is None or ability_locked(self.board_state, pokemon):
+                continue
+            for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
+                if not isinstance(entry, dict):
+                    continue
+                ability_id = entry.get("abilityID")
+                ability = ABILITIES_BY_ID.get(ability_id) if ability_id else None
+                if ability is None or not ability.has_trigger(
+                        Triggers.ON_KNOCKED_OUT_REPLACEMENT):
+                    continue
+                rep_ctx = await resolve_triggered_ability(
+                    self, owner_id, pokemon, ability, _ko_depth=_ko_depth + 1,
+                )
+                if rep_ctx is not None and getattr(rep_ctx, "ko_replaced", False):
+                    ctx.knockouts = [p for p in ctx.knockouts if p is not pokemon]
+                    if self.board_state.active_pokemon(owner_id) is None \
+                            and not any(p.owning_player_id == owner_id
+                                        for p in ctx.knockouts):
+                        if not await self._promote_new_active(owner_id):
+                            name = self.players[owner_id].screen_name
+                            await self.end_game(
+                                self._opponent_id(owner_id),
+                                f"{name} has no Pokémon left",
+                            )
+                    break
+        if not ctx.knockouts:
+            return
         # Snapshot ON_KNOCKED_OUT triggers BEFORE any stack moves: ability_locked
         # reads board position, so the carrier must still be top-level in-play;
         # was_active is captured here too (Radiant Jirachi's Active-spot gate).
