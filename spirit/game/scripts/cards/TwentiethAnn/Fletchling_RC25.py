@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Fletchling (TwentiethAnn #RC25): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.content.definitions import def_for
+
 
 card = PokemonCardDef(
     guid="c49eb161-61c7-5d7c-85ab-eb6f552cb1b3",
@@ -28,8 +27,7 @@ card = PokemonCardDef(
             title="Warble",
             game_text="Search your deck for up to 2 Fletchling, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(lambda c: getattr(def_for(c.archetype_id), "display_name", "") == "Fletchling", count=2, minimum=0, reveal=True, prompt="Choose up to 2 Fletchling"),
         ),
     ],
 )

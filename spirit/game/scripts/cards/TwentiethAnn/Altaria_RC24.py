@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Altaria (TwentiethAnn #RC24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.attacks_common import bonus_if
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
     guid="47c8b63a-c45f-5d4e-b01a-9b5941b67a79",
@@ -36,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: any(PokemonTypes.FAIRY.value in (p.get_attribute(AttrID.POKEMON_TYPES) or []) for p in ctx.my_bench()), 30),
         ),
     ],
 )

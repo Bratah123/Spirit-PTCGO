@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Venusaur-EX (TwentiethAnn #2): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import spread_damage
+
+
+async def _bloom_buster(ctx):
+    """130; flip a coin. If heads, 30 damage to each of the opponent's Benched Pokemon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if results and results[0]:
+        await spread_damage(30)(ctx)
+
 
 card = PokemonCardDef(
     guid="dcd25acc-73d0-5144-ac99-87f0f606f51d",
@@ -28,8 +34,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, this attack does 30 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_bloom_buster,
         ),
     ],
 )

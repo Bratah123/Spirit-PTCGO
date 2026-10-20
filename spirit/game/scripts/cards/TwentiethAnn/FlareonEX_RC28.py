@@ -1,10 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Flareon-EX (TwentiethAnn #RC28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import damage_per, count_energy
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+def _flash_fire_condition(board, player_id, pokemon=None):
+    return pokemon is not None and any(
+        _is_fire_energy(e) for p in board.pokemon_in_play(player_id) if p is not pokemon
+        for e in board.attached_energies(p))
+
+
+async def _flash_fire(ctx):
+    """Move a Fire Energy from 1 of your Pokemon to this Pokemon."""
+    sources = [p for p in ctx.my_pokemon_in_play() if p is not ctx.source]
+    await ctx.move_energy_freely(sources, [ctx.source], predicate=_is_fire_energy, max_count=1,
+                                 prompt="Move a Fire Energy to this Pokémon")
 
 
 card = PokemonCardDef(
@@ -27,8 +41,9 @@ card = PokemonCardDef(
         Ability(
             title="Flash Fire",
             game_text="Once during your turn (before your attack), you may move a Fire Energy from 1 of your Pok\u00e9mon to this Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_flash_fire_condition,
+            effect=_flash_fire,
         ),
         Attack(
             title="Blaze Ball",
@@ -36,7 +51,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=damage_per(count_energy('self', energy_type=PokemonTypes.FIRE), 20, base=50),
         ),
     ],
