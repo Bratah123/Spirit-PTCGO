@@ -1,6 +1,6 @@
 from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.pokemon import electromagnetic_sonar
+from spirit.game.session.effects import is_trainer_card
 
 
 async def _roll_up(ctx):
@@ -15,9 +15,6 @@ async def _roll_up(ctx):
     picks = await ctx.choose_cards(hand, n, minimum=n, display_cards=hand, prompt=f"Discard {n} card(s)")
     if picks:
         await ctx.discard_cards(picks)
-
-
-from spirit.game.session.effects import is_trainer_card
 
 
 async def _otherworldly_return(ctx):
