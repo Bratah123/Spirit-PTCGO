@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack, damage_per, count_prizes_taken
+
 
 card = PokemonCardDef(
     guid="73caa7ea-127c-5c82-8f00-cc36aecb15c7",
@@ -25,7 +27,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=condition_attack(no_retreat=True),
         ),
         Attack(
             title="Bombast",
@@ -33,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(count_prizes_taken('mine'), 40),
         ),
     ],
 )

@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="735f9a8d-f737-5df3-b40a-d07efa0ff9fb",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             title="Spiral Drain",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
     ],
 )

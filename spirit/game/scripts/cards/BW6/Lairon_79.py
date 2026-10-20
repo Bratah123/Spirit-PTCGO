@@ -1,5 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def top_down(ctx):
+    """Flip until tails; discard opponent's top deck card per heads."""
+    await ctx.deal_damage()
+    heads = await ctx.flip_until_tails(ctx.ability.title)
+    if heads:
+        await ctx.discard_cards(ctx.deck_top(heads, player_id=ctx.opponent_id))
+
 
 card = PokemonCardDef(
     guid="288c4a42-3fc8-52c3-acfb-28788fdfe84d",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin until you get tails. For each heads, discard the top card of your opponent's deck.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=top_down,
         ),
     ],
 )

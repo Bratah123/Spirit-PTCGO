@@ -1,5 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+async def celestial_roar(ctx):
+    """Discard the top 3 cards of your deck; attach any Energy among them."""
+    top = ctx.deck_top(3)
+    await ctx.discard_cards(top)
+    for card in top:
+        if is_energy_card(card):
+            await ctx.attach_energy(card, ctx.source)
+
 
 card = PokemonCardDef(
     guid="2593d077-a5d4-57ac-93ba-c4178ffcb790",
@@ -22,7 +33,7 @@ card = PokemonCardDef(
             title="Celestial Roar",
             game_text="Discard the top 3 cards of your deck. If any of those cards are Energy cards, attach them to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=celestial_roar,
         ),
         Attack(
             title="Dragon Burst",

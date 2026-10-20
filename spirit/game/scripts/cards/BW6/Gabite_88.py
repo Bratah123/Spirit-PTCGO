@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import ignore_effects_attack
+
 
 card = PokemonCardDef(
     guid="c8ba62c4-ac32-5e48-accc-6f28e6f29c82",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 1},
             damage=40,
-            effect=unimplemented,
+            effect=ignore_effects_attack(),
         ),
     ],
 )

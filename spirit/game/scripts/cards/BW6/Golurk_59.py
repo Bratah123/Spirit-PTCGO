@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import no_weakness_passive
+
+
+async def _cavalry_lance(ctx):
+    """Printed damage; during your opponent's next turn this Pokémon has no Weakness."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, no_weakness_passive())
+
 
 card = PokemonCardDef(
     guid="90c13e88-66b8-5bfb-9404-b6e569e92854",
@@ -31,7 +39,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon has no Weakness.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=90,
-            effect=unimplemented,
+            effect=_cavalry_lance,
         ),
     ],
 )

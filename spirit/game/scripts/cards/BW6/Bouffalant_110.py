@@ -1,5 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.passives_common import takes_less_passive
+
 
 card = PokemonCardDef(
     guid="5b93cdfa-e7a7-51ba-95f9-78eaba1ad62d",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Bouffer",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=takes_less_passive(20),
         ),
         Attack(
             title="Gold Breaker",

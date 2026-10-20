@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="5f31340c-ace0-53c5-8ac5-f6fdfda4da04",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             game_text="Does 20 damage to 1 of your Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            effect=unimplemented,
+            effect=snipe_attack(20, pool='any', side='mine', also_base=True, apply_modifiers=False, prompt='Choose 1 of your Pokémon to take 20 damage'),
         ),
     ],
 )

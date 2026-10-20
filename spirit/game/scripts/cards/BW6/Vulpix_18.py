@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="1a0d3a1c-a32c-56a9-a207-c973c9f2a238",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Singe",
             game_text="The Defending Pok\u00e9mon is now Burned.",
             cost={PokemonTypes.FIRE: 1},
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.BURNED),
         ),
     ],
 )

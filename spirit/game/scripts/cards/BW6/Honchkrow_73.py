@@ -1,5 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_random_from_hand
+
+
+async def knock_off(ctx):
+    """discard a random card from the opponent's hand."""
+    await ctx.deal_damage()
+    await discard_random_from_hand(ctx, ctx.opponent_id, count=1)
+
 
 card = PokemonCardDef(
     guid="fe40f556-61fb-52fe-98f9-c1105898b0ac",
@@ -32,7 +40,7 @@ card = PokemonCardDef(
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
-            effect=unimplemented,
+            effect=knock_off,
         ),
     ],
 )

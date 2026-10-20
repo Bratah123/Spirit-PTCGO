@@ -1,5 +1,18 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def garbage_collection(ctx):
+    """Put a card from your discard pile on top of your deck."""
+    pile = list(ctx.discard_pile())
+    if not pile:
+        return
+    picks = await ctx.choose_cards(
+        pile, 1, prompt="Choose a card to put on top of your deck")
+    if picks:
+        await ctx.put_on_top_of_deck(picks[0])
+
 
 card = PokemonCardDef(
     guid="4ec7aa8c-90ae-5cdd-821e-8416a35b2478",
@@ -23,7 +36,7 @@ card = PokemonCardDef(
             title="Pull Out",
             game_text="Put a card from your discard pile on top of your deck.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=garbage_collection,
         ),
         Attack(
             title="Iron Head",
@@ -31,7 +44,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, per_heads=30),
         ),
     ],
 )

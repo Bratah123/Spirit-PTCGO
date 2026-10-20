@@ -1,5 +1,20 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def leaf_tornado(ctx):
+    """60 damage, then move Grass Energy freely among your Pokémon."""
+    await ctx.deal_damage()
+    mine = ctx.my_pokemon_in_play()
+    if len(mine) < 2:
+        return
+    await ctx.move_energy_freely(
+        mine, mine,
+        predicate=lambda e: energy_provides_type(e, PokemonTypes.GRASS.value),
+        prompt="Choose a Grass Energy to move",
+    )
+
 
 card = PokemonCardDef(
     guid="29f0368e-9b76-5191-9be8-eb676410bcf6",
@@ -31,7 +46,7 @@ card = PokemonCardDef(
             game_text="Move as many Grass Energy attached to your Pok\u00e9mon to your other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            effect=unimplemented,
+            effect=leaf_tornado,
         ),
     ],
 )

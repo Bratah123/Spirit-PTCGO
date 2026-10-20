@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+
 
 card = PokemonCardDef(
     guid="a33e0208-4c25-5ecb-ab0f-760388d221d9",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for 2 Basic Pok\u00e9mon and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_bench(count=2),
         ),
         Attack(
             title="Static Shock",

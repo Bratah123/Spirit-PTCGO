@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import ignore_effects_attack, mill_attack
+
 
 card = PokemonCardDef(
     guid="4a58e7b0-f2be-5640-85f1-e02f5bae9a7a",
@@ -23,14 +25,14 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by any effects on the Defending Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=ignore_effects_attack(),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top 3 cards of your deck.",
             cost={PokemonTypes.GRASS: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=130,
-            effect=unimplemented,
+            effect=mill_attack(3, opponent=False),
         ),
     ],
 )
