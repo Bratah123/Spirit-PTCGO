@@ -5080,7 +5080,16 @@ class GameSession:
 
         # Effect dialogs run after placement so both viewers see the card on
         # the trainer slot while the player decides.
-        ctx = await resolve_trainer_effect(self, player_id, card, play_target=play_target)
+        from spirit.game.session.passives import trainer_play_flip_title
+        flip_title = trainer_play_flip_title(self.board_state, card, player_id)
+        no_effect = False
+        if flip_title:
+            flip_ctx = EffectContext(self, player_id, card, None)
+            results = await flip_ctx.flip_coins(1, flip_title)
+            await self._flush_effect_runs(flip_ctx)
+            no_effect = not (results and results[0])
+        ctx = None if no_effect else await resolve_trainer_effect(
+            self, player_id, card, play_target=play_target)
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
             f"played trainer {card.entity_id}."
