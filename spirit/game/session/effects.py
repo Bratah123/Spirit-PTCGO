@@ -324,6 +324,11 @@ class EffectContext:
             return True
         return False
 
+    def player_attack_shielded(self, player_id: str) -> bool:
+        """Public form for scripts: is `player_id` shielded from this
+        attack's effects (Bodyguard)?"""
+        return self.is_attack_effect() and self._player_attack_shielded(player_id)
+
     def _energy_removal_blocked(self, card) -> bool:
         """Brazen Tail shield: in a trainer context, True when a passive keeps
         this attached Energy from moving to hand/deck/discard."""
