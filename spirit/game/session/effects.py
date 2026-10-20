@@ -553,8 +553,12 @@ class EffectContext:
         condition: SpecialConditions,
         checkup_coins: int = 1,
         poison_counters: int = 1,
+        confusion_damage: int = 30,
     ) -> bool:
         """Applies a Special Condition (Asleep etc.); returns False if shielded.
+
+        confusion_damage: self-damage when a Confused attack flip is tails
+        (Aromatisse's Heavy Perfume: 6 counters instead of 3).
 
         checkup_coins: coins flipped at Pokemon Checkup for Asleep -- waking
         requires ALL heads (Snorlax's Thumping Snore flips 2).
@@ -604,6 +608,11 @@ class EffectContext:
             self.session.sleep_checkup_coins[target.entity_id] = checkup_coins
         elif condition == SpecialConditions.POISONED:
             self.session.poison_counters[target.entity_id] = poison_counters
+        elif condition == SpecialConditions.CONFUSED:
+            if confusion_damage != 30:
+                self.session.confusion_damage[target.entity_id] = confusion_damage
+            else:
+                self.session.confusion_damage.pop(target.entity_id, None)
         elif condition == SpecialConditions.PARALYZED:
             self.session.paralyzed_since[target.entity_id] = self.session.turn_state.turn_number
         # The executor diffs the full new array; its ctor requires a "Target" data effect.
