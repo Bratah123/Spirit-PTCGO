@@ -1,13 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-AZ (XY4 #117): trainer effect stubbed.
-
-Card text:
-  - Put 1 Pokémon into your hand. (Discard all cards attached to that Pokémon.)
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import full_stack
+
+
+async def az(ctx):
+    """Put 1 of your Pokemon into your hand. (Discard all cards attached.)"""
+    target = await ctx.choose_pokemon(ctx.my_pokemon_in_play(),
+                                      "Choose 1 of your Pokémon to put into your hand")
+    if target is None:
+        return
+    was_active = target is ctx.my_active()
+    await ctx.discard_cards([c for c in full_stack(target) if c is not target])
+    await ctx.put_in_hand([target], reveal=False)
+    if was_active:
+        async def _promote():
+            if not await ctx.session._promote_new_active(ctx.player_id):
+                screen_name = ctx.session.players[ctx.player_id].screen_name
+                await ctx.session.end_game(
+                    ctx.opponent_id, f"{screen_name} has no Pokémon left")
+        ctx.deferred_actions.append(_promote)
+
 
 card = SupporterCardDef(
     guid="bb3855cc-0a1e-5265-adc3-428851559235",
@@ -19,6 +31,5 @@ card = SupporterCardDef(
     collector_number=117,
     set_code="XY4",
     rarity=Rarities.RareUltra,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=az
 )

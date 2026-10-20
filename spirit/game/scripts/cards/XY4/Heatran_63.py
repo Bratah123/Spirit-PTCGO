@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heatran (XY4 #63): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if, self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="417db991-8a3b-5781-8d5f-4fd9e7839e24",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=3,
     weakness_type=PokemonTypes.FIRE,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=485,
     abilities=[
         Attack(
@@ -29,16 +28,14 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: ctx.stadium_in_play() is not None, 40),
         ),
         Attack(
             title="Steam Blast",
             game_text="Discard an Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1),
         ),
     ],
 )

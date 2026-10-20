@@ -1,13 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Brigette (XY8 #134): trainer effect stubbed.
-
-Card text:
-  - Search your deck for 1 Basic Pokémon-EX or 3 Basic Pokémon (except for Pokémon-EX) and put them onto your Bench. Shuffle your deck afterward.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.content.definitions import def_for
+from spirit.game.session.effects import is_basic_pokemon
+
+
+def _is_ex(card):
+    return "EX" in (getattr(def_for(card.archetype_id), "subtypes", None) or [])
+
+
+async def brigette(ctx):
+    """Search your deck for 1 Basic Pokemon-EX or 3 Basic Pokemon (except
+    Pokemon-EX) and put them onto your Bench. Shuffle."""
+    pick = await ctx.choose("Brigette", ["1 Basic Pokémon-EX", "3 Basic Pokémon (not EX)"])
+    if pick == 0:
+        await search_to_bench(lambda c: is_basic_pokemon(c) and _is_ex(c), 1,
+                              prompt="Choose a Basic Pokémon-EX")(ctx)
+    else:
+        await search_to_bench(lambda c: is_basic_pokemon(c) and not _is_ex(c), 3,
+                              prompt="Choose up to 3 Basic Pokémon")(ctx)
+
 
 card = SupporterCardDef(
     guid="562e45e6-0f03-5a12-b9b3-9be90088ecb3",
@@ -19,6 +31,5 @@ card = SupporterCardDef(
     collector_number=134,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=brigette
 )

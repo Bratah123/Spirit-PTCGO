@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Mewtwo-EX (XY8 #64): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import count_energy
+
+
+_mine = count_energy('self')
+_theirs = count_energy('defender')
+
+
+async def _psychic_infinity(ctx):
+    """10+; 30 more per Energy attached to both Active Pokemon; ignores Weakness."""
+    await ctx.deal_damage(ctx.ability.damage + 30 * (_mine(ctx) + _theirs(ctx)), ignore_weakness=True)
+
 
 card = PokemonCardDef(
     guid="66086710-2332-543d-9c47-22387d229f55",
@@ -29,8 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_psychic_infinity,
         ),
     ],
 )

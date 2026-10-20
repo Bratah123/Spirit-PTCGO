@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Corsola (XY1 #36): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _relaxing_fragrance(ctx):
+    """Heal 30 damage and remove all Special Conditions from this Pokemon."""
+    await ctx.heal(30, ctx.attacker)
+    await ctx.cure_all_conditions(ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="1ac05949-f4a7-5253-a4c0-54e798d35d0f",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Refresh",
             game_text="Heal 30 damage and remove all Special Conditions from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_relaxing_fragrance,
         ),
         Attack(
             title="Spiny Rush",
@@ -35,8 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(until_tails=True, bonus_per_heads=20),
         ),
     ],
 )

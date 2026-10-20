@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Swanna (XY9 #37): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import recoil_attack
+
 
 card = PokemonCardDef(
     guid="c6af99ff-a754-5f37-9c0f-48fed6307293",
@@ -21,6 +19,7 @@ card = PokemonCardDef(
     retreat_cost=0,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Ducklett.Name",
     family_id=580,
     abilities=[
@@ -34,8 +33,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.COLORLESS: 3},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(20),
         ),
     ],
 )

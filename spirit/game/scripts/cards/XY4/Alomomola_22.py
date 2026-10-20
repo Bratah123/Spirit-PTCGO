@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Alomomola (XY4 #22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _defensive_stance(ctx):
+    """Heal 30 damage from this Pokemon, then switch it with 1 of your Benched Pokemon."""
+    await ctx.heal(30, ctx.attacker)
+    bench = ctx.my_bench()
+    if bench:
+        target = await ctx.choose_pokemon(bench, "Choose your new Active Pok\u00e9mon")
+        await ctx.switch_active(ctx.player_id, target or bench[0])
+
 
 card = PokemonCardDef(
     guid="8dd043c7-2636-55cf-a36f-40315f5a238f",
@@ -26,8 +32,7 @@ card = PokemonCardDef(
             title="Super Deep Dive",
             game_text="Heal 30 damage from this Pok\u00e9mon. Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_defensive_stance,
         ),
         Attack(
             title="Surf",

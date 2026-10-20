@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Fearow (XY4 #79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+from spirit.game.card_effects.passives_common import apply_protection
+
+
+async def _fly_success(ctx):
+    await ctx.deal_damage()
+    await apply_protection(ctx, prevent=True, effects_too=True)
+
 
 card = PokemonCardDef(
     guid="b2103273-2533-5b76-bf40-e8f99d4fa56e",
@@ -21,6 +25,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Spearow.Name",
     family_id=21,
     abilities=[
@@ -29,8 +34,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, this attack does nothing. If heads, prevent all effects of attacks, including damage, done to this Pok\u00e9mon during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_or_nothing(then=_fly_success),
         ),
         Attack(
             title="Drill Peck",

@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Golurk (XY7 #41): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fighting_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIGHTING.value)
+
+
+async def _dig_out(ctx):
+    """20; discard the top card of your deck; if it's a Fighting Energy, attach it to this Pokemon."""
+    await ctx.deal_damage()
+    top = ctx.deck_top(1)
+    if not top:
+        return
+    await ctx.discard_cards(top)
+    if _is_fighting_energy(top[0]):
+        await ctx.attach_energy(top[0], ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="d2057b80-f391-5c87-8236-b41275faf1ac",
@@ -28,8 +42,7 @@ card = PokemonCardDef(
             game_text="Discard the top card of your deck. If that card is a Fighting Energy card, attach it to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dig_out,
         ),
         Attack(
             title="Double Lariat",
@@ -37,8 +50,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=90,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=2, per_heads=90),
         ),
     ],
 )

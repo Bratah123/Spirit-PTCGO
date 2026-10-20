@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Stantler (XY9 #91): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack, bonus_if
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _mega_on_bench(ctx):
+    return any("MEGA" in (getattr(def_for(p.archetype_id), "subtypes", None) or []) for p in ctx.my_bench())
+
 
 card = PokemonCardDef(
     guid="81aed745-5abf-53ce-9990-91916866b733",
@@ -26,8 +29,7 @@ card = PokemonCardDef(
             title="Mystifying Horns",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.CONFUSED, flip=True),
         ),
         Attack(
             title="Big Charge",
@@ -35,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_mega_on_bench, 50),
         ),
     ],
 )

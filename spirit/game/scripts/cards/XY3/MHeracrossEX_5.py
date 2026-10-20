@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Heracross-EX (XY3 #5): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+async def _big_bang_horn(ctx):
+    """180 minus 10 for each damage counter on this Pokemon."""
+    await ctx.deal_damage(max(0, 180 - 10 * damage_counters_on('self')(ctx)))
+
 
 card = PokemonCardDef(
     guid="f4de6e3b-bdcc-52ff-b176-1a8b8dceacc7",
@@ -29,8 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.COLORLESS: 1},
             damage=180,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_big_bang_horn,
         ),
     ],
 )

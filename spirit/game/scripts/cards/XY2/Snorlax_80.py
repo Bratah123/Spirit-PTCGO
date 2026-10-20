@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Snorlax (XY2 #80): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.session.passives import Passive
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _StirAndSnooze(Passive):
+    """If this Pokemon is Asleep, flip 2 coins between turns (all heads wakes)."""
+    def sleep_checkup_coins(self, pokemon, carrier):
+        return 2 if pokemon is carrier else 0
+
+
+async def _sleepy_press(ctx):
+    """120; heal 20 damage from this Pokemon. This Pokemon is now Asleep."""
+    await ctx.deal_damage()
+    await ctx.heal(20, ctx.attacker)
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.ASLEEP)
+
 
 card = PokemonCardDef(
     guid="a9d82a14-800f-5f02-9e78-f969af42cdfa",
@@ -25,16 +36,14 @@ card = PokemonCardDef(
         Ability(
             title="Stir and Snooze",
             game_text="If this Pok\u00e9mon is Asleep, flip 2 coins instead of 1 between turns. If either of them is tails, this Pok\u00e9mon is still Asleep.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_StirAndSnooze(),
         ),
         Attack(
             title="Sleepy Press",
             game_text="Heal 20 damage from this Pok\u00e9mon. This Pok\u00e9mon is now Asleep.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_sleepy_press,
         ),
     ],
 )

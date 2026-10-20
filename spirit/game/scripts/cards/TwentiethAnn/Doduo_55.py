@@ -1,43 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Doduo (TwentiethAnn #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonReprintCardDef
+from spirit.game.attributes import Rarities
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-
-card = PokemonCardDef(
+card = PokemonReprintCardDef(
+    inherits="XY8/Doduo_116",
     guid="0f166815-c646-5b68-a0bf-b129836329e7",
     key="TwentiethAnn",
-    name="com.direwolfdigital.cake.data.archetypes.pokemon.Doduo.Name",
-    display_name="Doduo",
-    searchable_by=["Doduo", "Basic", "Doduo"],
-    subtypes=["Basic"],
-    collector_number=55,
     set_code="TwentiethAnn",
+    collector_number=55,
     rarity=Rarities.Common,
-    hp=60,
-    elements=[PokemonTypes.COLORLESS],
-    stage=PokemonStage.BASIC,
-    retreat_cost=1,
-    weakness_type=PokemonTypes.LIGHTNING,
-    resistance_type=PokemonTypes.FIGHTING,
-    family_id=84,
-    abilities=[
-        Attack(
-            title="Double Stab",
-            game_text="Flip 2 coins. This attack does 10 damage times the number of heads.",
-            cost={PokemonTypes.COLORLESS: 1},
-            damage=10,
-            damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
-        ),
-        Attack(
-            title="Doduo Delivery",
-            game_text="Draw 2 cards.",
-            cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
-        ),
-    ],
 )

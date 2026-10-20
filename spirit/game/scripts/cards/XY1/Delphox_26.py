@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Delphox (XY1 #26): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_energy
+
+
+def _mystical_fire_condition(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    deck = board.find_player_area(player_id, "deck")
+    return len(hand.children if hand else []) < 6 and bool(deck and deck.children)
+
+
+async def _mystical_fire(ctx):
+    """Once during your turn, draw cards until you have 6 cards in your hand."""
+    await ctx.draw_until(6)
+
 
 card = PokemonCardDef(
     guid="c4bd9366-b4d4-5a31-b53f-287bac195dfd",
@@ -26,8 +35,9 @@ card = PokemonCardDef(
         Ability(
             title="Mystical Fire",
             game_text="Once during your turn (before your attack), you may draw cards until you have 6 cards in your hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_mystical_fire_condition,
+            effect=_mystical_fire,
         ),
         Attack(
             title="Blaze Ball",
@@ -35,8 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_energy('self', energy_type=PokemonTypes.FIRE), 20, base=50),
         ),
     ],
 )

@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gigalith (XY4 #50): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.session.passives import Passive, carrier_pokemon, effective_max_hp
+from spirit.game.card_effects.passives_common import boost_own_next_turn
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+class _HighDensityArmor(Passive):
+    """At full HP, opposing attack damage to this Pokemon is reduced by 50 (after W/R)."""
+    def modify_damage_taken(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        if not (calc.is_attack and calc.is_opposing and calc.target is me):
+            return
+        if me.get_attribute(AttrID.HP, 0) >= effective_max_hp(calc.board, me):
+            calc.amount = max(0, calc.amount - 50)
+
 
 card = PokemonCardDef(
     guid="5f519eec-9dad-5527-b10a-fd6bc4449c90",
@@ -26,8 +35,7 @@ card = PokemonCardDef(
         Ability(
             title="High Density Armor",
             game_text="If this Pok\u00e9mon has full HP, any damage done to this Pok\u00e9mon by an opponent's attack is reduced by 50 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_HighDensityArmor(),
         ),
         Attack(
             title="Overdrive Smash",
@@ -35,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(40, attack_title='Overdrive Smash'),
         ),
     ],
 )

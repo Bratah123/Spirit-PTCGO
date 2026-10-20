@@ -1,13 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rough Seas (XY5 #137): trainer effect stubbed.
+from spirit.game.data_utils import StadiumCardDef, Ability, Activations
+from spirit.game.attributes import Rarities, AttrID, PokemonTypes
+from spirit.game.session.passives import effective_max_hp
 
-Card text:
-  - Once during each player's turn, that player may heal 30 damage from each of his or her Water Pokémon and Lightning Pokémon.
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-"""
 
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+def _wl(p):
+    types = p.get_attribute(AttrID.POKEMON_TYPES) or []
+    return PokemonTypes.WATER.value in types or PokemonTypes.LIGHTNING.value in types
+
+
+def rough_seas_condition(board, player_id, stadium=None):
+    return any(_wl(p) and effective_max_hp(board, p) > p.get_attribute(AttrID.HP, 0)
+               for p in board.pokemon_in_play(player_id))
+
+
+async def rough_seas(ctx):
+    """Heal 30 damage from each of your Water Pokemon and Lightning Pokemon."""
+    for p in ctx.my_pokemon_in_play():
+        if _wl(p):
+            await ctx.heal(30, p)
+
 
 card = StadiumCardDef(
     guid="c6fc8d01-d342-5e2a-891a-4fa09765b4c5",
@@ -19,6 +30,11 @@ card = StadiumCardDef(
     collector_number=137,
     set_code="XY5",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    ability=Ability(
+        title="Rough Seas",
+        game_text="Once during each player's turn, that player may heal 30 damage from each of his or her Water Pokémon and Lightning Pokémon.",
+        activation=Activations.ONCE_PER_TURN,
+        effect=rough_seas,
+        condition=rough_seas_condition,
+    )
 )

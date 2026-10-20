@@ -53,6 +53,7 @@ STAGE_MAP = {
     "Basic": "PokemonStage.BASIC",
     "Stage 1": "PokemonStage.STAGE1",
     "Stage 2": "PokemonStage.STAGE2",
+    "Restored": "PokemonStage.RESTORED",
     "VMAX": "PokemonStage.VMAX",
     "VSTAR": "PokemonStage.VSTAR",
     "V-UNION": "PokemonStage.VUNION",
@@ -317,6 +318,9 @@ card = PokemonCardDef(
             resist_type = TYPE_MAP.get(resistances[0].get("type"))
             if resist_type:
                 content += f"    resistance_type={resist_type},\n"
+                amount = abs(int(re.sub(r"[^0-9-]", "", str(resistances[0].get("value", "-30"))) or -30))
+                if amount != 30:
+                    content += f"    resistance_amount={amount},\n"
 
         if evolves_from:
             content += f"    evolves_from=\"com.direwolfdigital.cake.data.archetypes.pokemon.{clean_name(evolves_from)}.Name\",\n"

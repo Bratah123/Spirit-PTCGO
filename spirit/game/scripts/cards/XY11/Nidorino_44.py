@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nidorino (XY11 #44): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _named(p, name):
+    return getattr(def_for(p.archetype_id), "display_name", None) == name
+
 
 card = PokemonCardDef(
     guid="e8d11dfe-d88f-5c6c-8e13-b2c84ca6a997",
@@ -34,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(lambda ctx: any(_named(p, "Nidorina") for p in ctx.my_bench()), 40),
         ),
     ],
 )

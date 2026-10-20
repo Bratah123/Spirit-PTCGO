@@ -1,9 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Snorlax (XY8 #118): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.passives_common import takes_less_passive
+
 
 card = PokemonCardDef(
     guid="b024088d-be48-56ff-be71-a375719abc86",
@@ -25,8 +24,7 @@ card = PokemonCardDef(
         Ability(
             title="Plump Body",
             game_text="Any damage done to this Pok\u00e9mon by attacks is reduced by 30 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(30),
         ),
         Attack(
             title="Knock Away",
@@ -34,8 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 4},
             damage=50,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(30),
         ),
     ],
 )

@@ -1,15 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Giovanni's Scheme (XY8 #138): trainer effect stubbed.
-
-Card text:
-  - Choose 1:
-• Draw cards until you have 5 cards in your hand.
-• During this turn, your Pokémon's attacks do 20 more damage to your opponent's Active Pokémon (before applying Weakness and Resistance).
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.passives import TurnDamageModifier
+
+
+async def giovannis_scheme(ctx):
+    """Choose 1: draw until you have 5 cards in hand; or this turn your
+    Pokemon's attacks do 20 more damage to the opponent's Active."""
+    pick = await ctx.choose("Giovanni's Scheme", ["Draw until 5 cards", "+20 damage this turn"])
+    if pick == 0:
+        await ctx.draw_until(5)
+    else:
+        ctx.add_turn_damage_modifier(TurnDamageModifier(20, ctx.player_id))
+
 
 card = SupporterCardDef(
     guid="df0f98f9-b058-544a-a2dd-c5f71f3f3f5f",
@@ -21,6 +23,5 @@ card = SupporterCardDef(
     collector_number=138,
     set_code="XY8",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=giovannis_scheme
 )

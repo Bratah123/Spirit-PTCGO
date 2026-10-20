@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pawniard (XY11 #63): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_per, count_in_play
+from spirit.game.content.definitions import def_for
+
+
+def _named(p, name):
+    return getattr(def_for(p.archetype_id), "display_name", None) == name
+
 
 card = PokemonCardDef(
     guid="b61e5319-75ce-54fc-bb5d-0100e636ad0d",
@@ -21,6 +24,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     family_id=624,
     abilities=[
         Attack(
@@ -29,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_in_play("mine", lambda p: _named(p, "Pawniard")), 10),
         ),
     ],
 )

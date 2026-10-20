@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chespin (XY8 #7): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import heal_attack
+
 
 card = PokemonCardDef(
     guid="295e6b84-b0e7-512a-9411-810454bd5ffb",
@@ -26,8 +24,7 @@ card = PokemonCardDef(
             title="Nosh",
             game_text="Heal 20 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(20),
         ),
         Attack(
             title="Seed Bomb",

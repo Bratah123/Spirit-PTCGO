@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Solrock (XY1 #64): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _lunatone_on_bench(ctx):
+    return any(getattr(def_for(p.archetype_id), "display_name", None) == "Lunatone"
+               for p in ctx.my_bench())
+
 
 card = PokemonCardDef(
     guid="b5286690-9511-5749-805e-e60210ab82a0",
@@ -28,8 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_lunatone_on_bench, 30, base=10),
         ),
         Attack(
             title="Solar Beam",

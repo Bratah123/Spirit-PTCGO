@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Farfetch'd (XY12 #68): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
 
 card = PokemonCardDef(
     guid="647effbd-8d0b-562f-8c78-62ebcb502159",
@@ -21,6 +18,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.LIGHTNING,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=83,
     abilities=[
         Attack(
@@ -28,8 +26,8 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon can't use Leek Slap during your next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=50,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
         Attack(
             title="Pot Smash",

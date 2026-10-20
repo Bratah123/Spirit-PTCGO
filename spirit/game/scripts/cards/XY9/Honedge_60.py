@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Honedge (XY9 #60): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="75e56d49-5867-5c47-8a87-e3acf2203a7d",
@@ -21,14 +19,14 @@ card = PokemonCardDef(
     retreat_cost=2,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     family_id=679,
     abilities=[
         Attack(
             title="Stab",
             game_text="Put 1 damage counter on your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(1, 'opponent_active'),
         ),
     ],
 )

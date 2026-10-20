@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shiftry (XY9 #73): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import electromagnetic_sonar
+
+
+async def _roll_up(ctx):
+    """Flip 3 coins; any heads: opponent reveals their hand; discard a card from it per heads."""
+    results = await ctx.flip_coins(3, ctx.ability.title)
+    heads = sum(1 for r in results or [] if r)
+    hand = list(ctx.hand(ctx.opponent_id))
+    if not heads or not hand:
+        return
+    await ctx.reveal_hand(ctx.opponent_id, ctx.player_id)
+    n = min(heads, len(hand))
+    picks = await ctx.choose_cards(hand, n, minimum=n, display_cards=hand, prompt=f"Discard {n} card(s)")
+    if picks:
+        await ctx.discard_cards(picks)
+
 
 card = PokemonCardDef(
     guid="6e5b96c8-b6a0-55de-a1f6-bf9cfcb1c659",
@@ -21,6 +33,7 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.FIGHTING,
     resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Nuzleaf.Name",
     family_id=273,
     abilities=[
@@ -28,16 +41,14 @@ card = PokemonCardDef(
             title="Roll Up",
             game_text="Flip 3 coins. If any of them are heads, your opponent reveals his or her hand. Then, for each heads, discard a card from your opponent's hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_roll_up,
         ),
         Attack(
             title="Otherworldly Return",
             game_text="Put a Trainer card from your discard pile into your hand.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=electromagnetic_sonar,
         ),
     ],
 )

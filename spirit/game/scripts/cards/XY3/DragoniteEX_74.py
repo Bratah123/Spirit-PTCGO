@@ -1,9 +1,25 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dragonite-EX (XY3 #74): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.card_effects.attacks_common import discard_for_bonus
+
+
+async def _bust_in(ctx):
+    """When played from hand to the Bench: you may move any number of basic
+    Energy from your Pokemon to this Pokemon. If you do, switch it with your
+    Active Pokemon."""
+    me = ctx.source
+    others = [p for p in ctx.my_pokemon_in_play() if p is not me
+              and any(is_basic_energy_card(e) for e in ctx.attached_energies(p))]
+    if not others or not await ctx.ask_yes_no(
+            "Move basic Energy from your Pokémon to this Pokémon?"):
+        return
+    moved = await ctx.move_energy_freely(others, [me], predicate=is_basic_energy_card,
+                                         max_count=99,
+                                         prompt="Choose basic Energy to move")
+    if moved and ctx.my_active() is not me:
+        await ctx.switch_active(ctx.player_id, me)
+
 
 card = PokemonCardDef(
     guid="23b02669-c934-5ed1-8d1c-85068646dd6a",
@@ -25,8 +41,8 @@ card = PokemonCardDef(
         Ability(
             title="Bust In",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench, you may move any number of basic Energy attached to your Pok\u00e9mon to this Pok\u00e9mon. If you do, switch this Pok\u00e9mon with your Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=_bust_in,
         ),
         Attack(
             title="Jet Sonic",
@@ -34,8 +50,8 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 2, PokemonTypes.LIGHTNING: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=discard_for_bonus(source='self-energy', flat=40,
+                prompt='You may discard an Energy for 40 more damage'),
         ),
     ],
 )

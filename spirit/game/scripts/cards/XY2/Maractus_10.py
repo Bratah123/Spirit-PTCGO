@@ -1,9 +1,31 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Maractus (XY2 #10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class _ExcitingShake(Passive):
+    """Marker: next turn, Prickly Needles flips 6 coins instead of 2."""
+
+
+async def _exciting_shake(ctx):
+    """During your next turn, flip 6 coins instead of 2 for Prickly Needles."""
+    ctx.add_passive_through_own_next_turn(ctx.attacker, _ExcitingShake())
+
+
+def _shaken(ctx):
+    me = ctx.attacker
+    turn = ctx.session.turn_state.turn_number
+    return any(isinstance(t.passive, _ExcitingShake) and t.carrier_entity_id == me.entity_id
+               and (t.expires_after_turn is None or t.expires_after_turn >= turn)
+               for t in ctx.board.temporary_passives)
+
+
+async def _prickly_needles(ctx):
+    """Flip 2 coins (6 after Exciting Shake): 20 damage times the heads."""
+    coins = 6 if _shaken(ctx) else 2
+    results = await ctx.flip_coins(coins, ctx.ability.title) or []
+    await ctx.deal_damage(20 * sum(1 for r in results if r))
+
 
 card = PokemonCardDef(
     guid="b6328748-aa4a-51c6-aab5-9e51b2c31d3a",
@@ -26,8 +48,7 @@ card = PokemonCardDef(
             title="Exciting Shake",
             game_text="During your next turn, flip 6 coins instead of 2 for this Pok\u00e9mon's Prickly Needles attack.",
             cost={PokemonTypes.GRASS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_exciting_shake,
         ),
         Attack(
             title="Prickly Needles",
@@ -35,8 +56,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_prickly_needles,
         ),
     ],
 )

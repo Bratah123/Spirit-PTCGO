@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Banette (XY6 #31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class _ToolConcealment(Passive):
+    """Each Pokemon Tool card in play has no effect."""
+    def suppresses_tool(self, tool, carrier):
+        return True
+
 
 card = PokemonCardDef(
     guid="0f8c2718-cfcd-59f6-9d70-e9752c630bb3",
@@ -21,14 +25,14 @@ card = PokemonCardDef(
     retreat_cost=1,
     weakness_type=PokemonTypes.DARKNESS,
     resistance_type=PokemonTypes.FIGHTING,
+    resistance_amount=20,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Shuppet.Name",
     family_id=353,
     abilities=[
         Ability(
             title="Tool Concealment",
             game_text="Each Pok\u00e9mon Tool card in play has no effect.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_ToolConcealment(),
         ),
         Attack(
             title="Psyshot",
