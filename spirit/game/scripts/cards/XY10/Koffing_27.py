@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Koffing (XY10 #27): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_bench
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.content.definitions import def_for
+
+
+def _is_koffing(card):
+    return is_pokemon_card(card) and getattr(def_for(card.archetype_id), "display_name", None) == "Koffing"
+
 
 card = PokemonCardDef(
     guid="7c72b4d6-f1c8-5f43-8bfe-09e44922fde9",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Division",
             game_text="Search your deck for up to 2 Koffing and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(_is_koffing, count=2, prompt='Choose up to 2 Koffing'),
         ),
     ],
 )

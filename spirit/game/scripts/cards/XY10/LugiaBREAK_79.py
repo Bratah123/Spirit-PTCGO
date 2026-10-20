@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Lugia BREAK (XY10 #79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+
 
 card = PokemonCardDef(
     guid="68fbb567-1a34-5469-97cc-6cd11c4370cb",
@@ -27,8 +25,7 @@ card = PokemonCardDef(
             game_text="Discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=150,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=2),
         ),
     ],
 )

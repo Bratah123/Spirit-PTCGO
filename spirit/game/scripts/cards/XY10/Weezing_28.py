@@ -1,9 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Weezing (XY10 #28): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _balloon_bomb(ctx):
+    """Flip 2 coins; for each heads, discard the top 2 cards of your opponent's deck."""
+    results = await ctx.flip_coins(2, ctx.ability.title)
+    heads = sum(1 for r in results or [] if r)
+    if heads:
+        await ctx.discard_cards(ctx.deck_top(2 * heads, player_id=ctx.opponent_id))
+
+
+async def _thick_liquid(ctx):
+    """80; both Active Pokemon are now Confused and Poisoned."""
+    await ctx.deal_damage()
+    for p in (ctx.opponent_active(), ctx.my_active()):
+        if p is not None:
+            await ctx.apply_special_condition(p, SpecialConditions.CONFUSED)
+            await ctx.apply_special_condition(p, SpecialConditions.POISONED)
+
 
 card = PokemonCardDef(
     guid="496d3579-320d-5ae2-8ef4-48bca82ea2d3",
@@ -27,16 +41,14 @@ card = PokemonCardDef(
             title="Balloon Bomb",
             game_text="Flip 2 coins. For each heads, discard 2 cards from the top of your opponent's deck.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_balloon_bomb,
         ),
         Attack(
             title="Thick Liquid",
             game_text="Both Active Pok\u00e9mon are now Confused and Poisoned.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_thick_liquid,
         ),
     ],
 )

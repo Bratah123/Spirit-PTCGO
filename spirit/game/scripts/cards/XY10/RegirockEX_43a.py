@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Regirock-EX (XY10 #43a): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import protect_next_turn, team_damage_boost_passive
+from spirit.game.content.definitions import def_for
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _regi_target(p):
+    return PokemonTypes.FIGHTING.value in (p.get_attribute(AttrID.POKEMON_TYPES) or []) \
+        and getattr(def_for(p.archetype_id), "display_name", None) != "Regirock-EX"
+
 
 card = PokemonCardDef(
     guid="2a5dc0a1-a784-540f-8252-66ef92eac375",
@@ -25,16 +29,14 @@ card = PokemonCardDef(
         Ability(
             title="Regi Power",
             game_text="The attacks of your Fighting Pok\u00e9mon (excluding Regirock-EX) do 10 more damage to your opponent's Active Pok\u00e9mon (before applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=team_damage_boost_passive(10, attacker_pred=_regi_target),
         ),
         Attack(
             title="Bedrock Press",
             game_text="During your opponent's next turn, any damage done to this Pok\u00e9mon by attacks is reduced by 20 (after applying Weakness and Resistance).",
             cost={PokemonTypes.FIGHTING: 3},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=protect_next_turn(reduce=20),
         ),
     ],
 )
