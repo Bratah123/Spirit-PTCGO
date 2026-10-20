@@ -2,8 +2,32 @@
 Bastiodon (XY11 #70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+async def counter_press(ctx):
+    """90. During your opponent's next turn, a hit on this Pokemon reflects
+    as damage counters on the attacker (even if this Pokemon is KO'd)."""
+    await ctx.deal_damage()
+    ctx.add_passive_through_opponents_turn(ctx.attacker, CounterPressPassive())
+
+
+class CounterPressPassive(Passive):
+    """Reflects the damage this Pokemon takes onto the attacker as counters."""
+
+    async def damage_interceptor(self, ctx, calc, target, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.amount > 0):
+            return None
+        if target is not carrier:
+            return None
+        attacker = calc.attacker
+        if attacker is not None:
+            await ctx.deal_damage(calc.amount, target=attacker,
+                                  apply_modifiers=False, as_counters=True)
+        return None
+
 
 card = PokemonCardDef(
     guid="36742245-10fc-5a40-97d9-00513d066b6a",
@@ -30,7 +54,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, if this Pok\u00e9mon is damaged by an attack (even if this Pok\u00e9mon is Knocked Out), put damage counters on the Attacking Pok\u00e9mon equal to the damage done to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=counter_press,
         ),
         Attack(
             title="Fortress of Rage",

@@ -2,8 +2,16 @@
 Druddigon (XY11 #83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _giga_horn(ctx):
+    """Flip 2 coins. If both are tails, this attack does nothing."""
+    results = await ctx.flip_coins(2, "Giga Horn")
+    if any(results):
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="272a086a-1307-508c-b232-bb3b52cb7340",
@@ -37,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=100,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_giga_horn,
         ),
     ],
 )

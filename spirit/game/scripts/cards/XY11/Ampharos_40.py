@@ -3,7 +3,17 @@ Ampharos (XY11 #40): one or more attacks/abilities use effect=unimplemented unti
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+
+
+async def _nyan_press(ctx):
+    """40+; heads 40 more; tails the opponent's Active is Paralyzed."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (40 if heads else 0))
+    if not heads:
+        await ctx.apply_special_condition(ctx.opponent_active(), SpecialConditions.PARALYZED)
+
 
 card = PokemonCardDef(
     guid="9eb384a6-56b5-5338-ad4a-ae64f6dac685",
@@ -38,7 +48,7 @@ card = PokemonCardDef(
             damage=80,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_nyan_press,
         ),
     ],
 )
