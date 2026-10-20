@@ -1,6 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes, TrainerType
 from spirit.game.card_effects.support_common import draw_until_effect
+from spirit.game.card_effects.passives_common import TrainerEffectShieldPassive
+from spirit.game.models.board import PokemonEntity
+
+
+class _BrightVeilPassive(TrainerEffectShieldPassive):
+    """While this Pokemon is your Active, prevent all effects of your
+    opponent's Item cards done to your Pokemon."""
+
+    def blocks_trainer_effects(self, affected_player_id, trainer_card, trainer_type, carrier,
+                               affected_entity=None, board=None):
+        if trainer_type != TrainerType.ITEM.value:
+            return False
+        return super().blocks_trainer_effects(affected_player_id, trainer_card, trainer_type,
+                                              carrier, affected_entity, board)
 
 
 card = PokemonCardDef(
@@ -26,7 +40,7 @@ card = PokemonCardDef(
             title="Bright Veil",
             game_text="As long as this Pok\u00e9mon is your Active Pok\u00e9mon, whenever your opponent plays an Item card from his or her hand, prevent all effects of that card done to your Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            passive=_BrightVeilPassive(supporters_only=False, protects=lambda e, c: isinstance(e, PokemonEntity), while_active=True),
         ),
         Attack(
             title="Return",

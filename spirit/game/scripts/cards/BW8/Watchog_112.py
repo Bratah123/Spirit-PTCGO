@@ -1,7 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import discard_random_from_hand, flip_damage
-from spirit.game.card_effects.attacks_common import flip_bonus, recoil_attack
+from spirit.game.card_effects.attacks_common import discard_random_from_hand, flip_bonus
 
 
 async def knock_off(ctx):

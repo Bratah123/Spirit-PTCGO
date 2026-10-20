@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.card_effects.attacks_common import damage_counters_on, damage_per
+from spirit.game.card_effects.support_common import opponent_switches
 
 
 async def superpower(ctx):
@@ -12,6 +12,19 @@ async def superpower(ctx):
         await ctx.deal_damage(20, target=ctx.attacker, apply_modifiers=False)
     else:
         await ctx.deal_damage(60)
+
+
+def _big_wing_condition(board, player_id, pokemon=None):
+    opponent = next((p for p in board.player_ids if p != player_id), None)
+    bench = board.find_player_area(opponent, "bench") if opponent else None
+    return (pokemon is not None and pokemon is board.active_pokemon(player_id)
+            and bool(bench and bench.children))
+
+
+async def _big_wing(ctx):
+    """If this Pokemon is your Active, your opponent switches their Active
+    with 1 of their Benched Pokemon."""
+    await opponent_switches(ctx)
 
 
 card = PokemonCardDef(
@@ -37,7 +50,9 @@ card = PokemonCardDef(
             title="Big Wing",
             game_text="Once during your turn (before your attack), if this Pok\u00e9mon is your Active Pok\u00e9mon, you may have your opponent switch his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             ability_type=AbilityTypes.POKE_ABILITY,
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_big_wing_condition,
+            effect=_big_wing,
         ),
         Attack(
             title="Wild Edge",

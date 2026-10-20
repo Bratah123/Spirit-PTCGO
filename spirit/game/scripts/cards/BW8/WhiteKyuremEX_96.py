@@ -1,8 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import (
-    damage_per, damage_counters_on, self_energy_discard_attack,
-)
+from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
 
 
 card = PokemonCardDef(

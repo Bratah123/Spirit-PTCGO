@@ -1,5 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _sweet_kiss(ctx):
+    """Printed damage; your opponent draws a card."""
+    await ctx.deal_damage()
+    await ctx.draw_cards(1, player_id=ctx.opponent_id)
+
 
 card = PokemonCardDef(
     guid="aa070c98-497e-5ce7-9f65-6bec65229a11",
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             game_text="Your opponent draws a card.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
-            effect=unimplemented,
+            effect=_sweet_kiss,
         ),
     ],
 )
