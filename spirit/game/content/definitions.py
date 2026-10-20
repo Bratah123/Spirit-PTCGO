@@ -657,10 +657,14 @@ class PokemonToolCardDef(TrainerCardDef):
     restricts legal attach targets (Hero's Medal)."""
     def __init__(self, passive: Optional[Any] = None,
                  granted_abilities: Optional[List[Ability]] = None,
-                 attach_to: Optional[Callable] = None, **kwargs):
+                 attach_to: Optional[Callable] = None,
+                 on_carrier_knocked_out: Optional[Any] = None, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        # async (ctx) run after the holder is Knocked Out by damage from an
+        # opponent's attack; ctx.ko_energies lists its Energy pre-discard.
+        self.on_carrier_knocked_out = on_carrier_knocked_out
         self.attach_to = attach_to
         self.granted_abilities: List[Ability] = granted_abilities or []
         for idx, a in enumerate(self.granted_abilities):

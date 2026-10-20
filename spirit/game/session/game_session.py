@@ -2228,17 +2228,27 @@ class GameSession:
         def _damage_ko(pokemon) -> bool:
             return ctx.is_attack_effect() \
                 and pokemon.entity_id in ctx.attack_damage
-        energy_ko_hooks: List[Tuple[str, Any]] = []
+        energy_ko_hooks: List[Tuple[str, Any, list]] = []
         for pokemon in ctx.knockouts:
             owner_id = pokemon.owning_player_id
             if owner_id is None or not _damage_ko(pokemon) \
                     or ctx.attacker.owning_player_id == owner_id:
                 continue
-            for energy in self.board_state.attached_energies(pokemon):
+            attached = self.board_state.attached_energies(pokemon)
+            for energy in attached:
                 definition = def_for(energy.archetype_id)
                 hook = getattr(definition, "on_carrier_knocked_out", None)
                 if hook is not None and hook is not unimplemented:
-                    energy_ko_hooks.append((owner_id, hook))
+                    energy_ko_hooks.append((owner_id, hook, list(attached)))
+            # Pokemon Tools with the same hook (Energy Pouch); they get the
+            # pre-move list of the carrier's Energy on hook_ctx.ko_energies.
+            for child in list(pokemon.children):
+                if child in attached:
+                    continue
+                definition = def_for(child.archetype_id)
+                hook = getattr(definition, "on_carrier_knocked_out", None)
+                if hook is not None and hook is not unimplemented:
+                    energy_ko_hooks.append((owner_id, hook, list(attached)))
 
         # Prize counts/destinations evaluate BEFORE any stack moves so the
         # KO'd Pokemon's own passives and Special Conditions still count.
@@ -2438,8 +2448,9 @@ class GameSession:
                     if trigger_ctx is not None:
                         trigger_ctxs.append(trigger_ctx)
 
-        for owner_id, hook in energy_ko_hooks:
+        for owner_id, hook, ko_energies in energy_ko_hooks:
             hook_ctx = EffectContext(self, owner_id, ctx.attacker, None)
+            hook_ctx.ko_energies = ko_energies
             await hook(hook_ctx)
             if hook_ctx._messages:
                 await self._flush_effect_runs(hook_ctx)
