@@ -1532,6 +1532,26 @@ class EffectContext:
                         owner, card, Triggers.ON_DISCARDED_FROM_HAND)
                 self.deferred_actions.append(_fire_hand_discard)
 
+    async def turn_prizes_face_up(self, player_id: Optional[str] = None) -> int:
+        """Town Map: turn all of a player's Prize cards face up for the rest
+        of the game. Each card is introduced to BOTH viewers now and keeps
+        serializing face-up while it stays a Prize (reconnect-safe); cards put
+        into the Prizes later stay face down. Returns how many were turned."""
+        pid = player_id or self.player_id
+        prize_area = self.board.find_player_area(pid, "prizePile")
+        prizes = [c for c in (prize_area.children if prize_area else [])
+                  if isinstance(c, CardEntity) and not c.face_up_prize]
+        if not prizes:
+            return 0
+        await self.flush_choreography()
+        for card in prizes:
+            card.face_up_prize = True
+        session = self.session
+        await session.send_game_sequence(
+            list(session.players.values()), GameSequence.GROUPED_MOVE,
+            [session._entity_introduced_msg(c) for c in prizes])
+        return len(prizes)
+
     async def look_at_prizes_take_basic(self) -> bool:
         """Hisuian Heavy Ball: look at your face-down Prizes; you may reveal a
         Basic Pokemon to your hand and put the source card in its place as a
