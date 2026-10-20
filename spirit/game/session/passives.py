@@ -53,6 +53,9 @@ class TempPassive:
     passive: "Passive"
     carrier_entity_id: str
     expires_after_turn: Optional[int] = None
+    # Player-level lifetime (Hex Maniac): the carrier is a player area, so
+    # the in-play check is skipped; only expires_after_turn ends it.
+    global_scope: bool = False
 
 
 class DamageCalc:
@@ -452,7 +455,7 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
     # Effect-granted temporary passives; dead carriers are silently skipped.
     for temp in getattr(board, "temporary_passives", None) or []:
         carrier = board.get_entity(temp.carrier_entity_id)
-        if carrier is None or not _carrier_in_play(carrier):
+        if carrier is None or not (temp.global_scope or _carrier_in_play(carrier)):
             continue
         triples.append((temp.passive, carrier, False))
     return triples

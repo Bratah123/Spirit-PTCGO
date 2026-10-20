@@ -677,6 +677,17 @@ class EffectContext:
             TempPassive(passive, target.entity_id, expires_after_turn)
         )
 
+    def add_global_passive(self, passive, expires_after_turn: int) -> None:
+        """A player-level passive not tied to any Pokemon ("until the end of
+        your opponent's next turn, each Pokemon ... has no Abilities" -- Hex
+        Maniac); carried by the acting player's hand area until it expires."""
+        hand = self.board.find_player_area(self.player_id, "hand")
+        if hand is None:
+            return
+        self.board.temporary_passives.append(
+            TempPassive(passive, hand.entity_id, expires_after_turn, global_scope=True)
+        )
+
     def add_passive_through_opponents_turn(self, target, passive) -> None:
         """"During your opponent's next turn ..." lifetime."""
         self.add_temporary_passive(
