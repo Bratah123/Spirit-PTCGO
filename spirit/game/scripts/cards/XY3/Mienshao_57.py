@@ -4,6 +4,8 @@ Mienshao (XY3 #57): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import remove_self_from_play
+
 
 card = PokemonCardDef(
     guid="6ca8ba41-53c9-5902-8960-af7c3d822fdc",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=40,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=remove_self_from_play('hand'),
         ),
         Attack(
             title="High Jump Kick",

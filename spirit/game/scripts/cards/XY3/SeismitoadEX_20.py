@@ -4,6 +4,14 @@ Seismitoad-EX (XY3 #20): one or more attacks/abilities use effect=unimplemented 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_item_card
+
+
+async def _lock_item(ctx):
+    """Printed damage; your opponent can't play item cards from their hand during their next turn."""
+    await ctx.deal_damage()
+    ctx.lock_plays(ctx.opponent_id, is_item_card)
+
 
 card = PokemonCardDef(
     guid="05b1a304-d59a-5cc8-94fa-6bf11e28274e",
@@ -28,7 +36,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_lock_item,
         ),
         Attack(
             title="Grenade Hammer",

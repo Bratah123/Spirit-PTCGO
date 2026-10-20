@@ -4,6 +4,19 @@ Hawlucha-EX (XY3 #64): one or more attacks/abilities use effect=unimplemented un
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import Triggers
+from spirit.game.card_effects.pokemon import in_active_spot
+
+
+async def rough_skin(ctx):
+    """Active only: put 2 damage counters on Attacking Pokemon."""
+    if not in_active_spot(ctx.board, ctx.player_id, ctx.source):
+        return
+    attacker = ctx.damaged_by
+    if attacker is None:
+        return
+    await ctx.deal_damage(20, target=attacker, apply_modifiers=False, as_counters=True)
+
 
 card = PokemonCardDef(
     guid="118c19a7-bb73-5598-8f15-b732a9510c1d",
@@ -27,7 +40,8 @@ card = PokemonCardDef(
             title="Counterattack",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon and is damaged by an opponent's attack (even if this Pok\u00e9mon is Knocked Out), put 2 damage counters on the Attacking Pok\u00e9mon.",
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=rough_skin,
         ),
         Attack(
             title="Moonsault Stomp",

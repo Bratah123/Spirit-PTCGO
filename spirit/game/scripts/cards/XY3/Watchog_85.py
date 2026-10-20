@@ -5,6 +5,18 @@ Watchog (XY3 #85): one or more attacks/abilities use effect=unimplemented until 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _power_pinch(ctx):
+    """Flip 2 coins. For each heads, discard an Energy from the Defending Pokémon."""
+    results = await ctx.flip_coins(2, "Power Pinch")
+    heads = sum(1 for r in results if r)
+    defender = ctx.defender
+    if not heads or defender is None or ctx.effects_blocked(defender):
+        return
+    await ctx.discard_energy_from(
+        defender, heads, prompt="Choose Energy to discard from the Defending Pokémon")
+
+
 card = PokemonCardDef(
     guid="7474be87-192e-5644-bada-e780a5c1411b",
     key="XY3",
@@ -36,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_power_pinch,
         ),
     ],
 )

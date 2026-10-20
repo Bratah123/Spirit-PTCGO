@@ -4,6 +4,9 @@ Slakoth (XY3 #81): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="fc4f70e7-3c5a-5328-8971-2bae7dbd99a2",
@@ -27,7 +30,7 @@ card = PokemonCardDef(
             game_text="Both Active Pok\u00e9mon are now Asleep.",
             cost={PokemonTypes.COLORLESS: 2},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP, both_actives=True),
         ),
     ],
 )

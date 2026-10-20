@@ -4,6 +4,18 @@ Leafeon (XY3 #7): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _magical_leaf(ctx):
+    """Flip a coin. If heads, +30 damage and heal 30 damage from this Pokemon."""
+    results = await ctx.flip_coins(1, "Magical Leaf")
+    heads = bool(results and results[0])
+    await ctx.deal_damage(ctx.ability.damage + (30 if heads else 0))
+    if heads:
+        await ctx.heal(30, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="b9ccf504-c1f4-59c2-ad73-dba48a960d34",
@@ -29,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Magical Leaf",
@@ -38,7 +50,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magical_leaf,
         ),
     ],
 )

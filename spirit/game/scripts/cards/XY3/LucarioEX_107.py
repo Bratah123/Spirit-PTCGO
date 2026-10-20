@@ -5,6 +5,19 @@ Lucario-EX (XY3 #107): one or more attacks/abilities use effect=unimplemented un
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def feint(ctx):
+    """30. This attack's damage isn't affected by Resistance."""
+    await ctx.deal_damage(ignore_resistance=True)
+
+
+async def return_effect(ctx):
+    """30 damage; you may draw cards until you have 6 cards in your hand."""
+    await ctx.deal_damage()
+    if await ctx.ask_yes_no("Draw cards until you have 6 cards in your hand?"):
+        await ctx.draw_until(6)
+
+
 card = PokemonCardDef(
     guid="feb55d40-93f0-5e2c-89d4-9b39f88c0d90",
     key="XY3",
@@ -28,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=feint,
         ),
         Attack(
             title="Corkscrew Smash",
@@ -36,7 +49,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=return_effect,
         ),
         Attack(
             title="Somersault Kick",

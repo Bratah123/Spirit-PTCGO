@@ -4,6 +4,15 @@ Beartic (XY3 #22): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import effective_retreat_cost
+
+
+async def _iron_crash(ctx):
+    """20 more damage for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(20 + 20 * cost)
+
 
 card = PokemonCardDef(
     guid="af7a3d84-a33e-5cf9-ba1c-fa11d5b42cd3",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_iron_crash,
         ),
         Attack(
             title="Mountain Drop",

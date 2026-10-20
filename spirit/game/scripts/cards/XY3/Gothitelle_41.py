@@ -5,6 +5,12 @@ Gothitelle (XY3 #41): one or more attacks/abilities use effect=unimplemented unt
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
+
+async def _scout(ctx):
+    """Your opponent reveals their hand."""
+    await ctx.reveal_hand(ctx.opponent_id)
+
+
 card = PokemonCardDef(
     guid="9eb1697f-42bb-58a6-9a40-68fe2daa79ff",
     key="XY3",
@@ -35,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_scout,
         ),
     ],
 )
