@@ -2259,6 +2259,20 @@ def is_basic_pokemon(card: CardEntity) -> bool:
     )
 
 
+def is_stage1_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE1.value
+    )
+
+
+def is_stage2_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value
+    )
+
+
 def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
