@@ -1,9 +1,29 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Porygon (XY12 #71): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+_TYPES = ['GRASS', 'FIRE', 'WATER', 'LIGHTNING', 'PSYCHIC', 'FIGHTING', 'DARKNESS', 'METAL', 'FAIRY', 'DRAGON']
+
+
+class _Converted(Passive):
+    def __init__(self, type_value):
+        self.type_value = type_value
+
+    def modify_weakness(self, calc, carrier):
+        if calc.target is carrier_pokemon(carrier) and calc.weak_types:
+            calc.weak_types = [self.type_value]
+
+
+async def _conversion_3(ctx):
+    """Choose a type; the Defending Pokemon's Weakness is now that type until
+    the end of your next turn (the amount doesn't change)."""
+    d = ctx.opponent_active()
+    if d is None or ctx.effects_blocked(d):
+        return
+    pick = await ctx.choose("Conversion 3: new Weakness type", [t.title() for t in _TYPES])
+    ctx.add_passive_through_own_next_turn(d, _Converted(getattr(PokemonTypes, _TYPES[pick]).value))
+
 
 card = PokemonCardDef(
     guid="7f5f22ce-592c-5f45-b1fd-d18681eccc94",
@@ -26,8 +46,7 @@ card = PokemonCardDef(
             title="Conversion 3",
             game_text="Choose Grass, Fire, Water, Lightning, Psychic, Fighting, Darkness, Metal, Fairy, or Dragon type. The Defending Pok\u00e9mon's Weakness is now that type until the end of your next turn. (The amount of Weakness doesn't change.)",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_conversion_3,
         ),
     ],
 )

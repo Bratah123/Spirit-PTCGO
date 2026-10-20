@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Raticate (XY12 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack, damage_per, count_discard
+from spirit.game.session.effects import is_special_energy
 
 
 card = PokemonCardDef(
@@ -30,7 +27,6 @@ card = PokemonCardDef(
             game_text="Discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
             effect=discard_opponent_energy_attack(),
         ),
         Attack(
@@ -39,8 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=60,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=damage_per(count_discard('opponent', is_special_energy), 60),
         ),
     ],
 )

@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Nidoking (XY12 #45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def _tail_swing(ctx):
+    """100; 20 damage to each of the opponent's Benched Basic Pokemon."""
+    await ctx.deal_damage()
+    for p in list(ctx.opponent_bench()):
+        if is_basic_pokemon(p):
+            await ctx.deal_damage(20, target=p, apply_modifiers=None)
 
 
 card = PokemonCardDef(
@@ -30,7 +35,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
-            # STUB: attack effect not implemented
             effect=condition_attack(no_retreat=True),
         ),
         Attack(
@@ -38,8 +42,7 @@ card = PokemonCardDef(
             game_text="This attack does 20 damage to each of your opponent's Benched Basic Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_tail_swing,
         ),
     ],
 )

@@ -1,10 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mewtwo-EX (XY12 #52): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.support_common import attach_from_discard
+from spirit.game.card_effects.support_common import attach_from_discard, heal_attack
 
 
 card = PokemonCardDef(
@@ -28,15 +24,13 @@ card = PokemonCardDef(
             title="Energy Absorption",
             game_text="Attach an Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=attach_from_discard(),
         ),
         Attack(
             title="Regeneration",
             game_text="Heal 60 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=heal_attack(60),
         ),
         Attack(
             title="Psyburn",

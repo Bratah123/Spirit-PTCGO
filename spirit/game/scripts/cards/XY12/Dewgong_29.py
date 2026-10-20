@@ -1,10 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dewgong (XY12 #29): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import recoil_attack
+
+
+async def _super_deep_dive(ctx):
+    """Heal 40 damage from this Pokemon; switch it with 1 of your Benched Pokemon."""
+    await ctx.heal(40, ctx.attacker)
+    bench = ctx.my_bench()
+    if bench:
+        t = bench[0] if len(bench) == 1 else await ctx.choose_pokemon(bench, "Choose your new Active Pokémon")
+        if t is not None:
+            await ctx.switch_active(ctx.player_id, t)
 
 
 card = PokemonCardDef(
@@ -29,15 +35,13 @@ card = PokemonCardDef(
             title="Super Deep Dive",
             game_text="Heal 40 damage from this Pok\u00e9mon. Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_super_deep_dive,
         ),
         Attack(
             title="Take Down",
             game_text="This Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=90,
-            # STUB: attack effect not implemented
             effect=recoil_attack(20),
         ),
     ],

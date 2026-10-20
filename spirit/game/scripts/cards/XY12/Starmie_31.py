@@ -1,10 +1,26 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Starmie (XY12 #31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+def _space_beacon_condition(board, player_id, pokemon=None):
+    hand = board.find_player_area(player_id, "hand")
+    discard = board.find_player_area(player_id, "discard")
+    return bool(hand and hand.children) and bool(discard and any(is_basic_energy_card(c) for c in discard.children))
+
+
+async def _space_beacon(ctx):
+    """Discard a card from your hand; if you do, put 2 basic Energy cards from
+    your discard pile into your hand (not the one just discarded)."""
+    gone = await ctx.discard_from_hand(1, minimum=1, prompt="Discard a card")
+    if not gone:
+        return
+    pool = [c for c in ctx.discard_pile() if is_basic_energy_card(c) and c not in gone]
+    if pool:
+        n = min(2, len(pool))
+        picked = await ctx.choose_cards(pool, n, minimum=n, prompt="Choose 2 basic Energy cards")
+        await ctx.put_in_hand(picked)
 
 
 card = PokemonCardDef(
@@ -28,15 +44,15 @@ card = PokemonCardDef(
         Ability(
             title="Space Beacon",
             game_text="Once during your turn (before your attack), you may discard a card from your hand. If you do, put 2 basic Energy cards from your discard pile into your hand. (You can't choose a card you discarded with the effect of this Ability.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            activation=Activations.ONCE_PER_TURN,
+            condition=_space_beacon_condition,
+            effect=_space_beacon,
         ),
         Attack(
             title="Star Freeze",
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],

@@ -1,10 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dragonite-EX (XY12 #106): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+from spirit.game.content.definitions import def_for
+from spirit.game.session.effects import is_basic_pokemon
+
+
+async def _pull_up(ctx):
+    """When played from hand onto the Bench: you may put 2 Basic Pokemon
+    (except Dragonite-EX) from your discard pile into your hand."""
+    pool = [c for c in ctx.discard_pile() if is_basic_pokemon(c)
+            and getattr(def_for(c.archetype_id), "display_name", "") != "Dragonite-EX"]
+    if not pool:
+        return
+    picked = await ctx.choose_cards(pool, min(2, len(pool)), minimum=0, prompt="Choose Basic Pokémon to put into your hand")
+    if picked:
+        await ctx.put_in_hand(picked)
 
 
 card = PokemonCardDef(
@@ -29,15 +39,14 @@ card = PokemonCardDef(
         Ability(
             title="Pull Up",
             game_text="When you play this Pok\u00e9mon from your hand onto your Bench, you may put 2 Basic Pok\u00e9mon (except for Dragonite-EX) from your discard pile into your hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_PLAY,
+            effect=_pull_up,
         ),
         Attack(
             title="Hyper Beam",
             game_text="Discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=130,
-            # STUB: attack effect not implemented
             effect=discard_opponent_energy_attack(),
         ),
     ],

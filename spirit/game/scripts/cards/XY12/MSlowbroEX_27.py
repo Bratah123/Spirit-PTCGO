@@ -1,9 +1,14 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Slowbro-EX (XY12 #27): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.passives_common import apply_own_next_turn_boost
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _loll_roll_spin(ctx):
+    """100; this Pokemon is now Confused; during your next turn Loll Roll Spin does 100 more."""
+    await ctx.deal_damage()
+    await ctx.apply_special_condition(ctx.attacker, SpecialConditions.CONFUSED)
+    await apply_own_next_turn_boost(ctx, 100, "Loll Roll Spin")
+
 
 card = PokemonCardDef(
     guid="8d4c9998-4172-5df3-9675-9b2301efd224",
@@ -29,8 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 3},
             damage=100,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_loll_roll_spin,
         ),
     ],
 )

@@ -1,9 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Slowbro-EX (XY12 #26): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import lock_all_attacks
+
+
+async def _slack_off(ctx):
+    """Heal 60 damage from this Pokemon; it can't attack during your next turn."""
+    await ctx.heal(60, ctx.attacker)
+    lock_all_attacks(ctx, ctx.attacker)
+
 
 card = PokemonCardDef(
     guid="658a66f7-be51-564e-8636-ed408773128a",
@@ -26,8 +30,7 @@ card = PokemonCardDef(
             title="Slack Off",
             game_text="Heal 60 damage from this Pok\u00e9mon. This Pok\u00e9mon can't attack during your next turn.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_slack_off,
         ),
         Attack(
             title="Flash Splash",

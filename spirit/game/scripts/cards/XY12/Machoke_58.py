@@ -1,10 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Machoke (XY12 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.attacks_common import recoil_attack, damage_counters_on
+
+
+async def _karate_chop(ctx):
+    """60 minus 10 for each damage counter on this Pokemon."""
+    await ctx.deal_damage(max(0, 60 - 10 * damage_counters_on('self')(ctx)))
 
 
 card = PokemonCardDef(
@@ -31,15 +32,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2},
             damage=60,
             damage_operator="-",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_karate_chop,
         ),
         Attack(
             title="Submission",
             game_text="This Pok\u00e9mon does 20 damage to itself.",
             cost={PokemonTypes.FIGHTING: 3},
             damage=80,
-            # STUB: attack effect not implemented
             effect=recoil_attack(20),
         ),
     ],

@@ -1,10 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magneton (XY12 #38): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
-from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.attacks_common import condition_attack, recoil_attack
 
 
 card = PokemonCardDef(
@@ -32,7 +28,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, your opponent's Active Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
@@ -40,8 +35,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 80 damage to itself.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=80,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=recoil_attack(80),
         ),
     ],
 )

@@ -1,11 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Raichu (XY12 #36): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import attach_from_discard
 from spirit.game.card_effects.pokemon import is_lightning_energy
+
+
+async def _spark_bolt(ctx):
+    """70; you may discard all Energy attached to this Pokemon for 70 more."""
+    energies = ctx.attached_energies(ctx.attacker)
+    if energies and await ctx.ask_yes_no("Discard all Energy attached to this Pokémon for 70 more damage?"):
+        await ctx.discard_cards(list(energies))
+        await ctx.deal_damage(140)
+    else:
+        await ctx.deal_damage(70)
 
 
 card = PokemonCardDef(
@@ -32,7 +38,6 @@ card = PokemonCardDef(
             title="Energize",
             game_text="Attach a Lightning Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1},
-            # STUB: attack effect not implemented
             effect=attach_from_discard(predicate=is_lightning_energy),
         ),
         Attack(
@@ -41,8 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 2, PokemonTypes.COLORLESS: 1},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_spark_bolt,
         ),
     ],
 )
