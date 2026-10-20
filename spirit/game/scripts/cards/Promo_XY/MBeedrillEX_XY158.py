@@ -1,9 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Beedrill-EX (Promo_XY #XY158): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+_STING = condition_attack(SpecialConditions.PARALYZED, SpecialConditions.POISONED, counters=4)
+
+
+async def _hazard_stinger(ctx):
+    """40; discard all Energy from this Pokemon; the opponent's Active is
+    Paralyzed and Poisoned (4 counters between turns)."""
+    await _STING(ctx)
+    energies = list(ctx.attached_energies(ctx.attacker))
+    if energies:
+        await ctx.discard_cards(energies)
+
 
 card = PokemonCardDef(
     guid="3d5f1a5b-d016-5c03-b005-2eb98b746e31",
@@ -28,8 +38,7 @@ card = PokemonCardDef(
             game_text="Discard all Energy attached to this Pok\u00e9mon. Your opponent's Active Pok\u00e9mon is now Paralyzed and Poisoned. Put 4 damage counters instead of 1 on that Pok\u00e9mon between turns.",
             cost={PokemonTypes.GRASS: 2},
             damage=40,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_hazard_stinger,
         ),
     ],
 )

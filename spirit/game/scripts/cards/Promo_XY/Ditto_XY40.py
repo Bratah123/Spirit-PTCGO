@@ -1,11 +1,23 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ditto (Promo_XY #XY40): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import attach_from_discard
 from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.session.passives import Passive
+from spirit.game.content.definitions import def_for
+
+
+class _MetamorphosisGene(Passive):
+    """While this Pokemon is Active it can use the attacks of the opponent's
+    Active Pokemon (Energy costs still apply)."""
+    def granted_attacks(self, board, pokemon, carrier):
+        if carrier is not pokemon or board.active_pokemon(pokemon.owning_player_id) is not pokemon:
+            return []
+        foe_id = next((pid for pid in board.player_ids if pid != pokemon.owning_player_id), None)
+        foe = board.active_pokemon(foe_id) if foe_id else None
+        if foe is None:
+            return []
+        return [a for a in (getattr(def_for(foe.archetype_id), "abilities", None) or [])
+                if isinstance(a, Attack)]
 
 
 card = PokemonCardDef(
@@ -28,15 +40,13 @@ card = PokemonCardDef(
         Ability(
             title="Metamorphosis Gene",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon, it can use the attacks of your opponent's Active Pok\u00e9mon. (You still need the necessary Energy to use each attack.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_MetamorphosisGene(),
         ),
         Attack(
             title="Stick On",
             game_text="Attach a basic Energy card from your discard pile to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
-            # STUB: attack effect not implemented
             effect=attach_from_discard(predicate=is_basic_energy_card, count=1, target='self', prompt='Choose a basic Energy card to attach.'),
         ),
     ],

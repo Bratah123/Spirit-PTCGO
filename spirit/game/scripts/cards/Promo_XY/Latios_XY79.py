@@ -1,9 +1,16 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Latios (Promo_XY #XY79): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+from spirit.game.content.definitions import def_for
+
+
+def _named(p, *names):
+    return getattr(def_for(p.archetype_id), "display_name", None) in names
+
+
+def _partner_benched(ctx):
+    return any(_named(p, 'Latias') for p in ctx.my_bench())
+
 
 card = PokemonCardDef(
     guid="bb5efee1-27c7-54c8-b394-2aaa4480d5d4",
@@ -33,8 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=70,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_partner_benched, 50),
         ),
     ],
 )

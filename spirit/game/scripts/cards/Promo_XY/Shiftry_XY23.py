@@ -1,10 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shiftry (Promo_XY #XY23): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.session.effects import is_pokemon_card
+
+
+async def _whisk_away(ctx):
+    """30+; the opponent reveals their hand; put a Pokemon from it on the
+    bottom of their deck. If you do, +30."""
+    cards = await ctx.reveal_hand(ctx.opponent_id, ctx.player_id)
+    pool = [c for c in cards or [] if is_pokemon_card(c)]
+    bonus = 0
+    if pool:
+        picks = await ctx.choose_cards(pool, 1, minimum=1, prompt="Choose a Pokémon to put on the bottom of your opponent's deck")
+        if picks and await ctx.put_on_bottom_of_deck(picks[0]):
+            bonus = 30
+    await ctx.deal_damage(ctx.ability.damage + bonus)
 
 
 card = PokemonCardDef(
@@ -31,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_whisk_away,
         ),
         Attack(
             title="Spirit Dance",
@@ -40,7 +49,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=2, bonus_per_heads=30),
         ),
     ],

@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ho-Oh BREAK (Promo_XY #XY154): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
 
 card = PokemonCardDef(
     guid="6b8bd9e2-048d-5595-bcd0-4282e4145b7d",
@@ -27,8 +24,8 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon can't use Shining Flame during your next turn.",
             cost={PokemonTypes.FIRE: 3, PokemonTypes.COLORLESS: 2},
             damage=160,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

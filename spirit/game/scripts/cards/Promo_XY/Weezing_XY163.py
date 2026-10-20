@@ -1,10 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Weezing (Promo_XY #XY163): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import smokescreen_attack
+from spirit.game.card_effects.passives_common import retreat_free_when
+from spirit.game.card_effects.pokemon import is_energy_card
+
+
+def _has_any_energy(pokemon, carrier):
+    return pokemon is carrier and any(is_energy_card(c) for c in pokemon.children)
 
 
 card = PokemonCardDef(
@@ -28,15 +30,13 @@ card = PokemonCardDef(
         Ability(
             title="Levitate",
             game_text="If this Pok\u00e9mon has any Energy attached to it, this Pok\u00e9mon has no Retreat Cost.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=retreat_free_when(_has_any_energy),
         ),
         Attack(
             title="Smokescreen",
             game_text="If the Defending Pok\u00e9mon tries to attack during your opponent's next turn, your opponent flips a coin. If tails, that attack does nothing.",
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=smokescreen_attack(),
         ),
     ],

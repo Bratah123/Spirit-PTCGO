@@ -1,10 +1,24 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rayquaza (Promo_XY #XY141): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_a(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+def _is_b(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.LIGHTNING.value)
+
+
+async def _dragon_blast(ctx):
+    """Printed damage; discard a Fire and a Lightning Energy attached to this Pokemon."""
+    await ctx.deal_damage()
+    for pred, label in ((_is_a, "Fire"), (_is_b, "Lightning")):
+        if any(pred(e) for e in ctx.attached_energies(ctx.attacker)):
+            await ctx.discard_energy_from(ctx.attacker, 1, predicate=pred, minimum=1,
+                                          prompt=f"Discard a {label} Energy")
 
 
 card = PokemonCardDef(
@@ -30,7 +44,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(2, per_heads=20),
         ),
         Attack(
@@ -38,8 +51,7 @@ card = PokemonCardDef(
             game_text="Discard 1 Fire Energy and 1 Lightning Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dragon_blast,
         ),
     ],
 )

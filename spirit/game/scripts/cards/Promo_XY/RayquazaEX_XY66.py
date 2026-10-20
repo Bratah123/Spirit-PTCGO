@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Rayquaza-EX (Promo_XY #XY66): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.content.definitions import def_for
 
 
 async def _fire_spin(ctx):
@@ -12,6 +10,10 @@ async def _fire_spin(ctx):
     results = await ctx.flip_coins(1, "Fire Spin")
     if results and not results[0]:
         await ctx.discard_energy_from(ctx.attacker, 2)
+
+
+def _is_m(card):
+    return getattr(def_for(card.archetype_id), "display_name", None) == "M Rayquaza-EX"
 
 
 card = PokemonCardDef(
@@ -37,15 +39,13 @@ card = PokemonCardDef(
             title="Mega Ascension",
             game_text="Search your deck for M Rayquaza-EX, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 2},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(_is_m, count=1, minimum=0, reveal=True, prompt="Choose M Rayquaza-EX"),
         ),
         Attack(
             title="Aeroscream",
             game_text="Flip a coin. If tails, discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 4},
             damage=130,
-            # STUB: attack effect not implemented
             effect=_fire_spin,
         ),
     ],

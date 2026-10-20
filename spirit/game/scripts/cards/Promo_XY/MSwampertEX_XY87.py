@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Swampert-EX (Promo_XY #XY87): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+
+async def _strongarm_impact(ctx):
+    """130+; you may do 30 more; if you do, discard the top 3 cards of each player's deck."""
+    if await ctx.ask_yes_no("Do 30 more damage and discard the top 3 cards of each player's deck?"):
+        await ctx.deal_damage(ctx.ability.damage + 30)
+        for pid in (ctx.player_id, ctx.opponent_id):
+            top = ctx.deck_top(3, player_id=pid)
+            if top:
+                await ctx.discard_cards(top)
+    else:
+        await ctx.deal_damage()
+
 
 card = PokemonCardDef(
     guid="b8ebaa97-3e82-5031-a140-0c3fd58a0c19",
@@ -29,8 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=130,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_strongarm_impact,
         ),
     ],
 )

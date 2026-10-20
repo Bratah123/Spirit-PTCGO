@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Volcanion (Promo_XY #XY185): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.attacks_common import flip_damage, count_energy
 
 
 card = PokemonCardDef(
@@ -30,15 +27,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(per_heads=50, coins_from=count_energy("self", energy_type=PokemonTypes.FIRE)),
         ),
         Attack(
             title="Combustion Impact",
             game_text="Your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 3},
             damage=100,
-            # STUB: attack effect not implemented
             effect=gust_attack(opponent_chooses=True),
         ),
     ],

@@ -1,10 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Regirock (Promo_XY #XY49): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+def _is_stadium(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.STADIUM.value
+
+
+async def _land_maker(ctx):
+    """Put 2 Stadium cards from your discard pile into your hand."""
+    pool = [c for c in ctx.discard_pile() if _is_stadium(c)]
+    n = min(2, len(pool))
+    if not n:
+        return
+    picks = pool if len(pool) == n else await ctx.choose_cards(pool, n, minimum=n, prompt="Choose Stadium cards")
+    if picks:
+        await ctx.put_in_hand(list(picks))
 
 
 card = PokemonCardDef(
@@ -28,8 +39,7 @@ card = PokemonCardDef(
             title="Land Maker",
             game_text="Put 2 Stadium cards from your discard pile into your hand.",
             cost={PokemonTypes.FIGHTING: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_land_maker,
         ),
         Attack(
             title="Stone Edge",
@@ -37,7 +47,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 3, PokemonTypes.COLORLESS: 1},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(40),
         ),
     ],

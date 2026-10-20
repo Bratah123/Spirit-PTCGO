@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Black Kyurem (Promo_XY #XY160): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _frosty_thunder(ctx):
+    """120; with any Lightning Energy attached, 20 to each opposing Benched Pokemon."""
+    await ctx.deal_damage()
+    if any(energy_provides_type(e, PokemonTypes.LIGHTNING.value) for e in ctx.attached_energies(ctx.attacker)):
+        for p in ctx.opponent_bench():
+            await ctx.deal_damage(20, target=p, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="e77c48f4-aa04-5e64-8fec-632fab591288",
@@ -32,8 +38,7 @@ card = PokemonCardDef(
             game_text="If this Pok\u00e9mon has any Lightning Energy attached to it, this attack does 20 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_frosty_thunder,
         ),
     ],
 )

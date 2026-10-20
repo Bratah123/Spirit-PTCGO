@@ -1,9 +1,26 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Wobbuffet BREAK (Promo_XY #XY155): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import Passive
+
+
+class _RightBackPassive(Passive):
+    """Reflects the damage this Pokemon takes onto the attacker as counters."""
+    async def damage_interceptor(self, ctx, calc, target, carrier):
+        if not (calc.is_attack and calc.is_opposing and calc.amount > 0) or target is not carrier:
+            return None
+        if calc.attacker is not None:
+            await ctx.deal_damage(calc.amount, target=calc.attacker,
+                                  apply_modifiers=False, as_counters=True)
+        return None
+
+
+async def _right_back(ctx):
+    """Discard all Energy from this Pokemon; next turn reflect damage taken as counters."""
+    energies = list(ctx.attached_energies(ctx.attacker))
+    if energies:
+        await ctx.discard_cards(energies)
+    ctx.add_passive_through_opponents_turn(ctx.attacker, _RightBackPassive())
+
 
 card = PokemonCardDef(
     guid="cfa6326d-5738-5944-bcd1-05c9dec05ad1",
@@ -26,8 +43,7 @@ card = PokemonCardDef(
             title="Right Back at You",
             game_text="Discard all Energy attached to this Pok\u00e9mon. During your opponent's next turn, if this Pok\u00e9mon is damaged by an attack (even if this Pok\u00e9mon is Knocked Out), put damage counters on the Attacking Pok\u00e9mon equal to the damage done to this Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_right_back,
         ),
     ],
 )

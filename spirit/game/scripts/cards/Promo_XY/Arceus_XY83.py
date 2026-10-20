@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Arceus (Promo_XY #XY83): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.attacks_common import damage_per
 from spirit.game.card_effects.trainers import is_basic_energy_card
@@ -15,6 +11,13 @@ def _basic_energy_types_count(ctx):
             for t in (e.get_attribute(AttrID.POKEMON_TYPES) or []):
                 types.add(t)
     return len(types)
+
+
+async def _gather_light(ctx):
+    """Move as many Energy as you like from your Benched Pokemon to this Pokemon."""
+    sources = [p for p in ctx.my_bench() if ctx.attached_energies(p)]
+    if sources:
+        await ctx.move_energy_freely(sources, [ctx.attacker])
 
 
 card = PokemonCardDef(
@@ -38,8 +41,7 @@ card = PokemonCardDef(
             title="Gather Light",
             game_text="Move as many Energy as you like from your Benched Pok\u00e9mon to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_gather_light,
         ),
         Attack(
             title="Judgment Blast",
@@ -47,7 +49,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=damage_per(_basic_energy_types_count, 30, base=10),
         ),
     ],

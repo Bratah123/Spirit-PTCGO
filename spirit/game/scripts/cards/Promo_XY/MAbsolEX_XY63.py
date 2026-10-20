@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Absol-EX (Promo_XY #XY63): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.effects import is_trainer_card
+
+
+async def _disaster_wing(ctx):
+    """80+; discard the opponent's top card: +80 if it is a Trainer card."""
+    top = ctx.deck_top(1, player_id=ctx.opponent_id)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(ctx.ability.damage + (80 if top and is_trainer_card(top[0]) else 0))
+
 
 card = PokemonCardDef(
     guid="7a33fd4d-b73d-5f86-854d-920db7b07b63",
@@ -31,8 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_disaster_wing,
         ),
     ],
 )

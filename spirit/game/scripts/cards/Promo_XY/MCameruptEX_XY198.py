@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Camerupt-EX (Promo_XY #XY198): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.trainers import is_energy_card
+
+
+async def _magma_eruption(ctx):
+    """120+; you may discard the top 3 cards of each player's deck: +40 per Energy card discarded."""
+    bonus = 0
+    if await ctx.ask_yes_no("Discard the top 3 cards of each player's deck?"):
+        mine = ctx.deck_top(3)
+        theirs = ctx.deck_top(3, player_id=ctx.opponent_id)
+        if mine:
+            await ctx.discard_cards(mine)
+        if theirs:
+            await ctx.discard_cards(theirs)
+        bonus = 40 * sum(1 for c in mine + theirs if is_energy_card(c))
+    await ctx.deal_damage(ctx.ability.damage + bonus)
+
 
 card = PokemonCardDef(
     guid="401d1c8b-d2c3-5ce9-a3dc-dc34aca4c3ee",
@@ -29,8 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magma_eruption,
         ),
     ],
 )

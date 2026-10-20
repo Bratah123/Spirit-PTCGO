@@ -1,13 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Trevor (Promo_XY #XY33): trainer effect stubbed.
-
-Card text:
-  - Search your deck for a Pokémon, reveal it, and put it into your hand. Shuffle your deck afterward.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
+
 
 card = SupporterCardDef(
     guid="215733d5-9be6-58bd-a058-252d1a91c14f",
@@ -19,6 +14,5 @@ card = SupporterCardDef(
     collector_number=33,
     set_code="Promo_XY",
     rarity=Rarities.RarePromo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=search_to_hand(is_pokemon_card, count=1, minimum=0, reveal=True, prompt="Choose a Pokémon")
 )

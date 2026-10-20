@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tyrantrum-EX (Promo_XY #XY70): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.session.passives import Passive, carrier_pokemon
+
+
+class _DespoticFang(Passive):
+    """Damage from this Pokemon's attacks ignores effects on the opponent's Active."""
+    def modify_damage_dealt(self, calc, carrier):
+        me = carrier_pokemon(carrier)
+        if me is not None and calc.attacker is me and calc.is_attack and calc.is_opposing and calc.to_active:
+            calc.ignore_target_effects = True
 
 
 card = PokemonCardDef(
@@ -27,15 +32,13 @@ card = PokemonCardDef(
         Ability(
             title="Despotic Fang",
             game_text="Damage from this Pok\u00e9mon's attacks isn't affected by any effects on your opponent's Active Pok\u00e9mon.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=_DespoticFang(),
         ),
         Attack(
             title="Dragon Fang",
             game_text="Discard 3 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 1},
             damage=190,
-            # STUB: attack effect not implemented
             effect=self_energy_discard_attack(count=3),
         ),
     ],

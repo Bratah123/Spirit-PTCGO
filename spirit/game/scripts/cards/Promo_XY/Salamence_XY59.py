@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Salamence (Promo_XY #XY59): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import mill_attack
+from spirit.game.card_effects.support_common import search_to_bench
 
 
 card = PokemonCardDef(
@@ -29,15 +26,13 @@ card = PokemonCardDef(
             title="Call for Goons",
             game_text="Search your deck for up to 3 Basic Pok\u00e9mon and put them onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_bench(count=3),
         ),
         Attack(
             title="Dragon Pulse",
             game_text="Discard the top card of your deck.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=130,
-            # STUB: attack effect not implemented
             effect=mill_attack(1, opponent=False),
         ),
     ],

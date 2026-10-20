@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hoopa-EX (Promo_XY #XY85): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.support_common import gust_attack
+from spirit.game.card_effects.support_common import gust_attack, search_to_hand
+from spirit.game.session.effects import is_item_card
 
 
 card = PokemonCardDef(
@@ -28,15 +25,13 @@ card = PokemonCardDef(
             title="Hyperspace Ring",
             game_text="Search your deck for up to 2 Item cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(is_item_card, count=2, minimum=0, reveal=True, prompt="Choose up to 2 Item cards"),
         ),
         Attack(
             title="Wonder Trick",
             game_text="Your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 3},
             damage=100,
-            # STUB: attack effect not implemented
             effect=gust_attack(opponent_chooses=True),
         ),
     ],

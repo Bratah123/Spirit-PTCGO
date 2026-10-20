@@ -1,9 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Sharpedo-EX (Promo_XY #XY200a): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+async def _torpedo_dive(ctx):
+    """120; 10 to each opposing Benched Pokemon per [C] in its Retreat Cost."""
+    await ctx.deal_damage()
+    for p in ctx.opponent_bench():
+        cost = p.get_attribute(AttrID.RETREAT_COST) or 0
+        if isinstance(cost, dict):
+            cost = sum(cost.values())
+        if cost:
+            await ctx.deal_damage(10 * int(cost), target=p, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="6c71bd12-b5b3-5dfc-96f6-0147d2f51643",
@@ -28,8 +36,7 @@ card = PokemonCardDef(
             game_text="This attack does 10 damage to each of your opponent's Benched Pok\u00e9mon for each Colorless in that Pok\u00e9mon's Retreat Cost. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.DARKNESS: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_torpedo_dive,
         ),
     ],
 )

@@ -1,9 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Beheeyem BREAK (Promo_XY #XY135): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_psychic(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.PSYCHIC.value)
+
+
+async def _cosmic_circle(ctx):
+    """100; move as many Psychic Energy among your Pokemon as you like."""
+    await ctx.deal_damage()
+    mine = ctx.my_pokemon_in_play()
+    sources = [p for p in mine if any(_is_psychic(e) for e in ctx.attached_energies(p))]
+    if sources and len(mine) > 1 and await ctx.ask_yes_no("Move Psychic Energy between your Pokémon?"):
+        await ctx.move_energy_freely(sources, mine, predicate=_is_psychic)
+
 
 card = PokemonCardDef(
     guid="3cd637f2-1e79-5c0c-8a22-54d6c7e4b1c7",
@@ -27,8 +38,7 @@ card = PokemonCardDef(
             game_text="Move as many Psychic Energy attached to your Pok\u00e9mon to your other Pok\u00e9mon in any way you like.",
             cost={PokemonTypes.PSYCHIC: 3},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_cosmic_circle,
         ),
     ],
 )

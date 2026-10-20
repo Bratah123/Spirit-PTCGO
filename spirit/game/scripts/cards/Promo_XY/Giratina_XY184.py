@@ -1,15 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Giratina (Promo_XY #XY184): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import discard_random_from_hand
+from spirit.game.card_effects.passives_common import ability_lock_passive
+from spirit.game.content.definitions import def_for
 
 
 async def knock_off(ctx):
     await ctx.deal_damage()
     await discard_random_from_hand(ctx, player_id=ctx.opponent_id, count=1)
+
+
+def _is_break(pokemon, carrier):
+    return "BREAK" in (getattr(def_for(pokemon.archetype_id), "subtypes", None) or [])
 
 
 card = PokemonCardDef(
@@ -34,15 +36,13 @@ card = PokemonCardDef(
         Ability(
             title="Devour Light",
             game_text="Each Pok\u00e9mon BREAK has no Abilities (this includes Abilities of its previous Evolution).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=ability_lock_passive(_is_break),
         ),
         Attack(
             title="Shadow Claw",
             game_text="Discard a random card from your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=110,
-            # STUB: attack effect not implemented
             effect=knock_off,
         ),
     ],

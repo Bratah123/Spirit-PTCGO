@@ -1,10 +1,19 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Metagross-EX (Promo_XY #XY34): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_metal(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.METAL.value)
+
+
+async def _magnetic_laser(ctx):
+    """20; you may move a Metal Energy from 1 of your Benched Pokemon to this Pokemon."""
+    await ctx.deal_damage()
+    sources = [p for p in ctx.my_bench() if any(_is_metal(e) for e in ctx.attached_energies(p))]
+    if sources and await ctx.ask_yes_no("Move a Metal Energy from your Bench to this Pokémon?"):
+        await ctx.move_energy_freely(sources, [ctx.attacker], predicate=_is_metal, max_count=1)
 
 
 card = PokemonCardDef(
@@ -31,8 +40,7 @@ card = PokemonCardDef(
             game_text="You may move a Metal Energy from 1 of your Benched Pok\u00e9mon to this Pok\u00e9mon.",
             cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_magnetic_laser,
         ),
         Attack(
             title="Squared Attack",
@@ -40,7 +48,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 2, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=4, per_heads=50),
         ),
     ],

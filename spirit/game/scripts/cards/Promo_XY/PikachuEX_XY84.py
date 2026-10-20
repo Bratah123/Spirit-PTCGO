@@ -1,10 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pikachu-EX (Promo_XY #XY84): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.pokemon import energy_provides_type
+
+
+async def _overspark(ctx):
+    """Discard all Lightning Energy from this Pokemon: 50 times the number discarded."""
+    pool = [e for e in ctx.attached_energies(ctx.attacker)
+            if energy_provides_type(e, PokemonTypes.LIGHTNING.value)]
+    if not pool:
+        return
+    await ctx.discard_cards(pool)
+    await ctx.deal_damage(50 * len(pool))
 
 
 card = PokemonCardDef(
@@ -32,7 +39,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(until_tails=True, per_heads=30),
         ),
         Attack(
@@ -41,8 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_overspark,
         ),
     ],
 )

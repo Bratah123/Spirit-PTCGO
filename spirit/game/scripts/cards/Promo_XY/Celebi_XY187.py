@@ -1,10 +1,32 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Celebi (Promo_XY #XY187): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import heal_attack
+from spirit.game.session.effects import is_pokemon_card
+from spirit.game.session.passives import evolution_blocked
+
+
+async def _time_call(ctx):
+    """Flip a coin. If heads, search your deck for a card that evolves from 1
+    of your Pokemon and put it onto that Pokemon (counts as evolving); shuffle."""
+    results = await ctx.flip_coins(1, ctx.ability.title)
+    if not (results and results[0]):
+        return
+    targets = [p for p in ctx.my_pokemon_in_play()
+               if not evolution_blocked(ctx.board, ctx.player_id, p)]
+    names = {p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) for p in targets}
+
+    def _fits(card):
+        return is_pokemon_card(card) and card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM) in names
+
+    picks = await ctx.search_deck(_fits, count=1, minimum=0, prompt="Choose a card to evolve into")
+    if picks:
+        evo = picks[0]
+        pool = [p for p in targets if p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME)
+                == evo.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)]
+        if pool:
+            target = pool[0] if len(pool) == 1 else await ctx.choose_pokemon(pool, "Choose a Pokémon to evolve")
+            await ctx.evolve_pokemon(target or pool[0], evo)
+    await ctx.shuffle_deck()
 
 
 card = PokemonCardDef(
@@ -28,15 +50,13 @@ card = PokemonCardDef(
             title="Time Call",
             game_text="Flip a coin. If heads, search your deck for a card that evolves from 1 of your Pok\u00e9mon and put it onto that Pok\u00e9mon. (This counts as evolving that Pok\u00e9mon.) Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_time_call,
         ),
         Attack(
             title="Leech Seed",
             game_text="Heal 10 damage from this Pok\u00e9mon.",
             cost={PokemonTypes.GRASS: 1},
             damage=10,
-            # STUB: attack effect not implemented
             effect=heal_attack(10),
         ),
     ],

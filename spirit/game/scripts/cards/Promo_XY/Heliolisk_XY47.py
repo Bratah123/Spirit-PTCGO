@@ -1,9 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Heliolisk (Promo_XY #XY47): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
+from spirit.game.card_effects.passives_common import takes_less_passive
 
 
 async def _flip_discard_defender_energy(ctx):
@@ -15,6 +12,10 @@ async def _flip_discard_defender_energy(ctx):
     if results and results[0] and target is not None and not ctx.effects_blocked(target):
         await ctx.discard_energy_from(target, 1, minimum=1,
                                       prompt="Choose an Energy to discard")
+
+
+def _is_water_pokemon(card):
+    return PokemonTypes.WATER.value in (card.get_attribute(AttrID.POKEMON_TYPES) or [])
 
 
 card = PokemonCardDef(
@@ -40,15 +41,13 @@ card = PokemonCardDef(
         Ability(
             title="Dry Skin",
             game_text="Any damage done to this Pok\u00e9mon by an attack from 1 of your opponent's Water Pok\u00e9mon is reduced by 30 (after applying Weakness and Resistance).",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=takes_less_passive(30, attacker_pred=_is_water_pokemon),
         ),
         Attack(
             title="Hyper Beam",
             game_text="Flip a coin. If heads, discard an Energy attached to your opponent's Active Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_flip_discard_defender_energy,
         ),
     ],

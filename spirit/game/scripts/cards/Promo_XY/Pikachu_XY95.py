@@ -1,10 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Pikachu (Promo_XY #XY95): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_bonus
+
+
+async def _eat_together(ctx):
+    """Heal 30 damage from both Active Pokemon."""
+    for p in (ctx.my_active(), ctx.opponent_active()):
+        if p is not None:
+            await ctx.heal(30, p)
 
 
 card = PokemonCardDef(
@@ -30,8 +33,7 @@ card = PokemonCardDef(
             title="Let's Eat Together",
             game_text="Heal 30 damage from both Active Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_eat_together,
         ),
         Attack(
             title="Quick Attack",
@@ -39,7 +41,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
             effect=flip_bonus(20),
         ),
     ],

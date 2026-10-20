@@ -1,9 +1,21 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mandibuzz BREAK (Promo_XY #XY182): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+
+def _is_tool(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+async def _wings_of_disaster(ctx):
+    """20 to each opposing Pokemon (no W/R); discard all Tools on them."""
+    for p in ctx.opponent_pokemon_in_play():
+        await ctx.deal_damage(20, target=p, ignore_weakness=True, ignore_resistance=True)
+    tools = [t for p in ctx.opponent_pokemon_in_play() if not ctx.effects_blocked(p)
+             for t in p.children if _is_tool(t)]
+    if tools:
+        await ctx.discard_cards(tools)
+
 
 card = PokemonCardDef(
     guid="c99e8ffc-d3dd-515a-93ed-c1bdfd353634",
@@ -26,8 +38,7 @@ card = PokemonCardDef(
             title="Wings of Disaster",
             game_text="This attack does 20 damage to each of your opponent's Pok\u00e9mon. Don't apply Weakness and Resistance. Discard all Pok\u00e9mon Tool cards attached to each of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_wings_of_disaster,
         ),
     ],
 )

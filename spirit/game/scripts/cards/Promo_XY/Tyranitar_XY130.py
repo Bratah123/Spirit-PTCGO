@@ -1,11 +1,8 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Tyranitar (Promo_XY #XY130): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import count_prizes_taken
 from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+from spirit.game.session.effects import is_supporter_card
 
 
 async def _raging_roar(ctx):
@@ -25,6 +22,14 @@ def _is_dark_energy(card):
 
 
 _taken = count_prizes_taken('opponent')
+
+
+async def _dark_mountain(ctx):
+    """150+; discard your top 2 cards; 50 more per Supporter discarded."""
+    top = ctx.deck_top(2)
+    if top:
+        await ctx.discard_cards(top)
+    await ctx.deal_damage(ctx.ability.damage + 50 * sum(1 for c in top if is_supporter_card(c)))
 
 
 card = PokemonCardDef(
@@ -50,7 +55,6 @@ card = PokemonCardDef(
         Ability(
             title="Raging Roar",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may attach 1 Darkness Energy from your discard pile to this Pok\u00e9mon for each Prize card your opponent has taken.",
-            # STUB: ability effect not implemented
             trigger=Triggers.ON_EVOLVE,
             effect=_raging_roar,
         ),
@@ -60,8 +64,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 5},
             damage=150,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_dark_mountain,
         ),
     ],
 )

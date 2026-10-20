@@ -1,13 +1,11 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gym Badge (Promo_XY #XY203): trainer effect stubbed.
-
-Card text:
-  - Flip a coin until you get tails. For each heads, draw a card.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+async def gym_badge(ctx):
+    """Flip a coin until you get tails. For each heads, draw a card."""
+    heads = await ctx.flip_until_tails("Gym Badge")
+    if heads:
+        await ctx.draw_cards(heads)
+
 
 card = ItemCardDef(
     guid="d55a84b8-e829-59e9-b5ad-4385c293296b",
@@ -19,6 +17,5 @@ card = ItemCardDef(
     collector_number=203,
     set_code="Promo_XY",
     rarity=Rarities.RarePromo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=gym_badge
 )

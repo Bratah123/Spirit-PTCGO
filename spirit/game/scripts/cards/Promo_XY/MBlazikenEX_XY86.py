@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Blaziken-EX (Promo_XY #XY86): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="194bdd6e-1fef-5cfc-ae00-78aea9afae6f",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Moonsault Blaze attack does 100 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 2},
             damage=100,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(100, attack_title='Moonsault Blaze'),
         ),
     ],
 )

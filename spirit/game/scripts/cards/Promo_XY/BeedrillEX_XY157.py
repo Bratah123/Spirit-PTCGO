@@ -1,10 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Beedrill-EX (Promo_XY #XY157): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+def _is_tool(card):
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
+
+
+async def _double_scrapper(ctx):
+    """Discard up to 2 Pokemon Tool cards attached to the opponent's Pokemon."""
+    pool = [t for p in ctx.opponent_pokemon_in_play() if not ctx.effects_blocked(p)
+            for t in p.children if _is_tool(t)]
+    if not pool:
+        return
+    picks = await ctx.choose_cards(pool, min(2, len(pool)), minimum=0, prompt="Choose Pokémon Tools to discard")
+    if picks:
+        await ctx.discard_cards(list(picks))
 
 
 card = PokemonCardDef(
@@ -28,8 +40,7 @@ card = PokemonCardDef(
             title="Double Scrapper",
             game_text="Discard up to 2 Pok\u00e9mon Tool cards attached to your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_double_scrapper,
         ),
         Attack(
             title="Pin Missile",
@@ -37,7 +48,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(4, per_heads=40),
         ),
     ],

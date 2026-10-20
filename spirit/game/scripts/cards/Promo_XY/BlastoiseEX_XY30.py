@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Blastoise-EX (Promo_XY #XY30): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import opponent_switches
+from spirit.game.card_effects.attacks_common import flip_damage
 
 
 async def _rapid_spin(ctx):
@@ -41,7 +38,6 @@ card = PokemonCardDef(
             game_text="Switch this Pok\u00e9mon with 1 of your Benched Pok\u00e9mon. Then, your opponent switches his or her Active Pok\u00e9mon with 1 of his or her Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=_rapid_spin,
         ),
         Attack(
@@ -49,8 +45,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, this Pok\u00e9mon does 30 damage to itself.",
             cost={PokemonTypes.WATER: 3},
             damage=130,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(coins=1, base=130, tails_self_damage=30),
         ),
     ],
 )

@@ -1,16 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Aurorus-EX (Promo_XY #XY102): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import lock_all_attacks
+from spirit.game.card_effects.passives_common import condition_immunity_passive
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
 
 
 async def _freeze_shock(ctx):
     """Printed damage; this Pokemon can't attack during your next turn."""
     await ctx.deal_damage()
     lock_all_attacks(ctx, ctx.attacker)
+
+
+def _watered_teammate(target, carrier):
+    return target.owning_player_id == carrier.owning_player_id and any(
+        is_energy_card(e) and energy_provides_type(e, PokemonTypes.WATER.value)
+        for e in target.children)
 
 
 card = PokemonCardDef(
@@ -33,15 +37,13 @@ card = PokemonCardDef(
         Ability(
             title="Frozen Charm",
             game_text="Each of your Pok\u00e9mon that has any Water Energy attached to it can't be Paralyzed. (If any of those Pok\u00e9mon are Paralyzed, remove that Special Condition.)",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            passive=condition_immunity_passive(SpecialConditions.PARALYZED, protects=_watered_teammate),
         ),
         Attack(
             title="Crystal Breath",
             game_text="This Pok\u00e9mon can't attack during your next turn.",
             cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
             damage=160,
-            # STUB: attack effect not implemented
             effect=_freeze_shock,
         ),
     ],

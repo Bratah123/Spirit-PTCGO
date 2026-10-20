@@ -1,9 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Gallade-EX (Promo_XY #XY45): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import bonus_if
+
+
+def _bare_defender(ctx):
+    target = ctx.opponent_active()
+    return target is not None and not ctx.attached_energies(target)
+
 
 card = PokemonCardDef(
     guid="98c2c863-0bd6-5297-82d4-ec1354a1a43f",
@@ -28,16 +31,15 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(_bare_defender, 40),
         ),
         Attack(
             title="Cross Slash",
             game_text="This Pok\u00e9mon can't use Cross Slash during your next turn.",
             cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 2},
             damage=140,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=None,
+            locks_next_turn=True,
         ),
     ],
 )

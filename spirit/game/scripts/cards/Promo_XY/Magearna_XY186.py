@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Magearna (Promo_XY #XY186): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID
 from spirit.game.card_effects.support_common import heal_targets
+
+
+async def _prismatic_wave(ctx):
+    """20 times the number of different types of Pokemon on the opponent's Bench."""
+    types = set()
+    for p in ctx.opponent_bench():
+        types.update(p.get_attribute(AttrID.POKEMON_TYPES) or [])
+    if types:
+        await ctx.deal_damage(20 * len(types))
 
 
 card = PokemonCardDef(
@@ -30,7 +35,6 @@ card = PokemonCardDef(
             title="Entertain",
             game_text="Heal 40 damage from 1 of your Benched Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=heal_targets(40, 'bench_choice'),
         ),
         Attack(
@@ -39,8 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=20,
             damage_operator="x",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_prismatic_wave,
         ),
     ],
 )

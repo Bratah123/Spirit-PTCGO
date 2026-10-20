@@ -1,10 +1,22 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Absol (Promo_XY #XY178): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.pokemon import in_active_spot
+import random
+
+
+async def _lamentation(ctx):
+    """If Active and damaged by an opponent's attack (even if KO'd), discard a
+    random card from the opponent's hand."""
+    pokemon = ctx.source
+    attacker = ctx.damaged_by
+    if attacker is None or attacker.owning_player_id == pokemon.owning_player_id:
+        return
+    if not in_active_spot(ctx.board, ctx.player_id, pokemon):
+        return
+    hand = ctx.hand(ctx.opponent_id)
+    if hand:
+        await ctx.discard_cards([random.choice(hand)])
 
 
 card = PokemonCardDef(
@@ -29,15 +41,14 @@ card = PokemonCardDef(
         Ability(
             title="Lamentation",
             game_text="If this Pok\u00e9mon is your Active Pok\u00e9mon and is damaged by an opponent's attack (even if this Pok\u00e9mon is Knocked Out), discard a random card from your opponent's hand.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_DAMAGED_BY_ATTACK,
+            effect=_lamentation,
         ),
         Attack(
             title="Shadow Cage",
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            # STUB: attack effect not implemented
             effect=condition_attack(no_retreat=True),
         ),
     ],

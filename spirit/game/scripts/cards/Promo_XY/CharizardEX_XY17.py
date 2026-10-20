@@ -1,10 +1,12 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Charizard-EX (Promo_XY #XY17): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import recoil_attack
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.content.definitions import def_for
+
+
+def _is_m(card):
+    return getattr(def_for(card.archetype_id), "display_name", None) == "M Charizard-EX"
 
 
 card = PokemonCardDef(
@@ -28,15 +30,13 @@ card = PokemonCardDef(
             title="Mega Ascension",
             game_text="Search your deck for M Charizard-EX, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=search_to_hand(_is_m, count=1, minimum=0, reveal=True, prompt="Choose M Charizard-EX"),
         ),
         Attack(
             title="Brave Fire",
             game_text="This Pok\u00e9mon does 30 damage to itself.",
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 3},
             damage=120,
-            # STUB: attack effect not implemented
             effect=recoil_attack(30),
         ),
     ],

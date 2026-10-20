@@ -1,9 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Greninja (Promo_XY #XY24): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import apply_protection
+from spirit.game.card_effects.attacks_common import snipe_attack
+
+
+async def _mist_concealment(ctx):
+    """When you evolve into this Pokemon from your hand: you may prevent all
+    effects of attacks, including damage, done to it during the opponent's next turn."""
+    if await ctx.ask_yes_no("Use Mist Concealment?"):
+        await apply_protection(ctx, target=ctx.source, prevent=True, effects_too=True)
+
 
 card = PokemonCardDef(
     guid="689f4414-0cae-56c2-9c44-918350bde9bc",
@@ -28,16 +34,15 @@ card = PokemonCardDef(
         Ability(
             title="Mist Concealment",
             game_text="When you play this Pok\u00e9mon from your hand to evolve 1 of your Pok\u00e9mon, you may prevent all effects of attacks, including damage, done to this Pok\u00e9mon by your opponent's Pok\u00e9mon during your opponent's next turn.",
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            trigger=Triggers.ON_EVOLVE,
+            effect=_mist_concealment,
         ),
         Attack(
             title="Shadow Bullet",
             game_text="This attack does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness or Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=60,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20, also_base=True),
         ),
     ],
 )

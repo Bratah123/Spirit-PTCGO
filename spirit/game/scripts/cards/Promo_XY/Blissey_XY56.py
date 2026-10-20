@@ -1,10 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Blissey (Promo_XY #XY56): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+
+
+async def _nurses_egg(ctx):
+    """Heal 100 from each of your Benched Pokemon, then discard 2 Energy from this Pokemon."""
+    for p in ctx.my_bench():
+        await ctx.heal(100, p)
+    n = min(2, len(ctx.attached_energies(ctx.attacker)))
+    if n:
+        await ctx.discard_energy_from(ctx.attacker, n, minimum=n, prompt="Choose 2 Energy to discard")
 
 
 card = PokemonCardDef(
@@ -31,15 +36,13 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=40,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(2, per_heads=40),
         ),
         Attack(
             title="Nurse's Egg",
             game_text="Heal 100 damage from each of your Benched Pok\u00e9mon. Then, discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 4},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_nurses_egg,
         ),
     ],
 )

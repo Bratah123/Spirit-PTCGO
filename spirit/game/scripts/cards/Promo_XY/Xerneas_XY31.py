@@ -1,10 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Xerneas (Promo_XY #XY31): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.passives_common import no_weakness_passive
+from spirit.game.card_effects.attacks_common import bonus_if, named_in_play
 
 
 async def _cavalry_lance(ctx):
@@ -37,7 +34,6 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, this Pok\u00e9mon has no weakness.",
             cost={PokemonTypes.FAIRY: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
-            # STUB: attack effect not implemented
             effect=_cavalry_lance,
         ),
         Attack(
@@ -46,8 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FAIRY: 2, PokemonTypes.COLORLESS: 2},
             damage=80,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=bonus_if(named_in_play('Yveltal', 'Yveltal-EX', side='opponent'), 40),
         ),
     ],
 )

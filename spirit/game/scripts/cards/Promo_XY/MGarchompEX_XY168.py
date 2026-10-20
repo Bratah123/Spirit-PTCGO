@@ -1,9 +1,18 @@
-"""STUB: effect not implemented — do not guess mechanics.
-M Garchomp-EX (Promo_XY #XY168): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on
+
+
+_own_counters = damage_counters_on('self')
+
+
+async def _crimson_edge(ctx):
+    """180; this Pokemon does 10 damage to itself for each damage counter on it."""
+    await ctx.deal_damage()
+    n = _own_counters(ctx)
+    if n:
+        await ctx.deal_damage(10 * n, target=ctx.attacker, apply_modifiers=False)
+
 
 card = PokemonCardDef(
     guid="280886af-32ed-5595-9cb8-54ebe102ad14",
@@ -28,8 +37,7 @@ card = PokemonCardDef(
             game_text="This Pok\u00e9mon does 10 damage to itself for each damage counter on it.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=180,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_crimson_edge,
         ),
     ],
 )

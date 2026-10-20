@@ -1,10 +1,13 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Azelf (Promo_XY #XY142): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.card_effects.support_common import _is_damaged
+
+
+async def _shining_eyes(ctx):
+    """2 damage counters on each opposing Pokemon that has any damage counters."""
+    for p in [p for p in ctx.opponent_pokemon_in_play() if _is_damaged(ctx.board, p)]:
+        await ctx.deal_damage(20, target=p, apply_modifiers=False, as_counters=True)
 
 
 card = PokemonCardDef(
@@ -28,15 +31,13 @@ card = PokemonCardDef(
             title="Shining Eyes",
             game_text="Put 2 damage counters on each of your opponent's Pok\u00e9mon that has any damage counters on it.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_shining_eyes,
         ),
         Attack(
             title="Mind Bend",
             game_text="Your opponent's Active Pok\u00e9mon is now Confused.",
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.CONFUSED),
         ),
     ],

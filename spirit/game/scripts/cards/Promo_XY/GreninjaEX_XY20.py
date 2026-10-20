@@ -1,10 +1,6 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Greninja-EX (Promo_XY #XY20): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import snipe_attack
+from spirit.game.card_effects.attacks_common import snipe_attack, self_energy_discard_attack
 
 
 card = PokemonCardDef(
@@ -28,7 +24,6 @@ card = PokemonCardDef(
             title="Sharpshooting",
             game_text="This attack does 30 damage to 1 of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.WATER: 1},
-            # STUB: attack effect not implemented
             effect=snipe_attack(30, pool='any', count=1),
         ),
         Attack(
@@ -36,8 +31,7 @@ card = PokemonCardDef(
             game_text="Discard 1 Water Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1},
             damage=120,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=self_energy_discard_attack(count=1, energy_type=PokemonTypes.WATER),
         ),
     ],
 )

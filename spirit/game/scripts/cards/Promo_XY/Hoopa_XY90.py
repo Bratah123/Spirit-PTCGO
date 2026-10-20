@@ -1,10 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Hoopa (Promo_XY #XY90): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+
+
+def _named(p, *names):
+    return getattr(def_for(p.archetype_id), "display_name", None) in names
+
+
+async def _summoning_draw(ctx):
+    """If Pikachu is on your Bench, draw 3 cards."""
+    if any(_named(p, "Pikachu") for p in ctx.my_bench()):
+        await ctx.draw_cards(3)
 
 
 card = PokemonCardDef(
@@ -28,8 +35,7 @@ card = PokemonCardDef(
             title="Summoning Draw",
             game_text="If Pikachu is on your Bench, draw 3 cards.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_summoning_draw,
         ),
         Attack(
             title="Double Spin",
@@ -37,7 +43,6 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             damage_operator="x",
-            # STUB: attack effect not implemented
             effect=flip_damage(coins=2, per_heads=30),
         ),
     ],

@@ -1,9 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Honedge (Promo_XY #XY12): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="be661dc6-3b79-5a00-9338-a4856a058c2a",
@@ -28,8 +26,7 @@ card = PokemonCardDef(
             title="Swords Dance",
             game_text="During your next turn, this Pok\u00e9mon's Slash attack's base damage is 40.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=boost_own_next_turn(20, attack_title='Slash'),
         ),
         Attack(
             title="Slash",

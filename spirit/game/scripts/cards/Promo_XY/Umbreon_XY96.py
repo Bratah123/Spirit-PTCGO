@@ -1,14 +1,30 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Umbreon (Promo_XY #XY96): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
-
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, GameSequence
+from spirit.game.session.effects import is_pokemon_card
 
 
 async def feint(ctx):
     """30. This attack's damage isn't affected by Resistance."""
     await ctx.deal_damage(ignore_resistance=True)
+import random
+
+
+async def _lunatic_sense(ctx):
+    """60+; turn 1 of your face-down Prize cards face up (it stays face up):
+    +60 if it is a Pokemon. The pick is blind, so a random face-down Prize."""
+    area = ctx.board.find_player_area(ctx.player_id, "prizePile")
+    pool = [c for c in (area.children if area else []) if not getattr(c, "face_up_prize", False)]
+    bonus = 0
+    if pool:
+        card = random.choice(pool)
+        await ctx.flush_choreography()
+        card.face_up_prize = True
+        session = ctx.session
+        await session.send_game_sequence(list(session.players.values()), GameSequence.GROUPED_MOVE,
+                                         [session._entity_introduced_msg(card)])
+        if is_pokemon_card(card):
+            bonus = 60
+    await ctx.deal_damage(ctx.ability.damage + bonus)
 
 
 card = PokemonCardDef(
@@ -36,7 +52,6 @@ card = PokemonCardDef(
             game_text="This attack's damage isn't affected by Resistance.",
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
-            # STUB: attack effect not implemented
             effect=feint,
         ),
         Attack(
@@ -45,8 +60,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=_lunatic_sense,
         ),
     ],
 )

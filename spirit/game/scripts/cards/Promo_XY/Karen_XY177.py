@@ -1,13 +1,15 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Karen (Promo_XY #XY177): trainer effect stubbed.
-
-Card text:
-  - Each player shuffles all Pokémon in his or her discard pile into his or her deck.
-  - You may play only 1 Supporter card during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.session.effects import is_pokemon_card
+
+
+async def karen(ctx):
+    """Each player shuffles all Pokemon in their discard pile into their deck."""
+    for pid in (ctx.player_id, ctx.opponent_id):
+        pool = [c for c in ctx.discard_pile(pid) if is_pokemon_card(c)]
+        if pool:
+            await ctx.shuffle_into_deck(pool, pid)
+
 
 card = SupporterCardDef(
     guid="c84a5de9-5c43-5ec4-997e-5c6dfb670cf0",
@@ -19,6 +21,5 @@ card = SupporterCardDef(
     collector_number=177,
     set_code="Promo_XY",
     rarity=Rarities.RarePromo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=karen
 )
