@@ -119,6 +119,11 @@ class Triggers:
     # evolution_card.
     ON_BEING_EVOLVED = "on_being_evolved"
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
+    # This Pokemon is about to be Knocked Out (Celebi Leap Through Time):
+    # fires before prizes and stack moves; a trigger that sets
+    # ctx.ko_replaced = True (and moved the stack itself) cancels the KO's
+    # discard and prizes.
+    ON_KNOCKED_OUT_REPLACEMENT = "on_knocked_out_replacement"
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
     # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
     # ctx carries damaged_by / damage_amount / pre_hit_hp.
