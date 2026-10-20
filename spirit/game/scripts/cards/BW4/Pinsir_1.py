@@ -1,6 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _power_pinch(ctx):
+    """Flip 2 coins. For each heads, discard an Energy from the Defending Pokémon."""
+    results = await ctx.flip_coins(2, "Power Pinch")
+    heads = sum(1 for r in results if r)
+    defender = ctx.defender
+    if not heads or defender is None or ctx.effects_blocked(defender):
+        return
+    await ctx.discard_energy_from(
+        defender, heads, prompt="Choose Energy to discard from the Defending Pokémon")
 
 
 card = PokemonCardDef(
@@ -24,7 +35,7 @@ card = PokemonCardDef(
             title="Power Pinch",
             game_text="Flip 2 coins. For each heads, discard an Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
-            effect=unimplemented,
+            effect=_power_pinch,
         ),
         Attack(
             title="Grip and Squeeze",

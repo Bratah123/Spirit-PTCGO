@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="d1a3148a-2c6f-595d-8d38-7ffb3a0394da",
@@ -23,7 +25,7 @@ card = PokemonCardDef(
             title="Sand Jet",
             game_text="Does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1},
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
         Attack(
             title="Bite",

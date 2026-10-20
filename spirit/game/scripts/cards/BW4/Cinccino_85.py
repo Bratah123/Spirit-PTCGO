@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
-from spirit.game.card_effects.passives_common import flip_prevent_damage_passive
+from spirit.game.card_effects.passives_common import flip_prevent_damage_passive, boost_own_next_turn
 
 
 card = PokemonCardDef(
@@ -32,7 +32,7 @@ card = PokemonCardDef(
             game_text="During your next turn, this Pok\u00e9mon's Echoed Voice attack does 50 more damage (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 3},
             damage=50,
-            effect=unimplemented,
+            effect=boost_own_next_turn(50, attack_title='Echoed Voice'),
         ),
     ],
 )

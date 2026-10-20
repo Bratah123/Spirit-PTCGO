@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.attacks_common import flip_bonus, flip_or_nothing
+from spirit.game.card_effects.support_common import search_attach_energy
+from spirit.game.card_effects.pokemon import is_energy_card, energy_provides_type
+
+
+def _is_fire_energy(card):
+    return is_energy_card(card) and energy_provides_type(card, PokemonTypes.FIRE.value)
 
 
 card = PokemonCardDef(
@@ -24,7 +30,8 @@ card = PokemonCardDef(
             title="Stoke",
             game_text="Flip a coin. If heads, search your deck for a Fire Energy card and attach it to this Pok\u00e9mon. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=flip_or_nothing(then=search_attach_energy(
+                predicate=_is_fire_energy, count=1, to_self=True)),
         ),
         Attack(
             title="Firebreathing",

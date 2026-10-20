@@ -1,5 +1,20 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage, count_energy
+
+
+async def _synchrodraw(ctx):
+    """Shuffle your hand into your deck, then draw as many cards as your
+    opponent has in hand."""
+    count = ctx.hand_size(ctx.opponent_id)
+    hand = list(ctx.hand())
+    if hand:
+        await ctx.shuffle_into_deck(hand)
+    else:
+        await ctx.shuffle_deck()
+    if count > 0:
+        await ctx.draw_cards(count)
+
 
 card = PokemonCardDef(
     guid="42758e19-f82c-57be-90a3-681fe55469ef",
@@ -23,7 +38,7 @@ card = PokemonCardDef(
             title="Synchrodraw",
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of cards in your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_synchrodraw,
         ),
         Attack(
             title="DarMAXitan",
@@ -31,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=50,
             damage_operator="x",
-            effect=unimplemented,
+            effect=flip_damage(coins_from=count_energy(), per_heads=50),
         ),
     ],
 )

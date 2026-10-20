@@ -1,6 +1,16 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.support_common import draw_attack
+
+
+async def _stadium_burn(ctx):
+    """30+. If any Stadium is in play: +30 damage and the Defending Pokémon is Burned."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(60)
+    if ctx.defender is not None and not ctx.effects_blocked(ctx.defender):
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
 
 
 card = PokemonCardDef(
@@ -33,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_stadium_burn,
         ),
     ],
 )

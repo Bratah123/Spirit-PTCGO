@@ -1,6 +1,13 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import heal_attack
+
+
+async def _vengeful_wish(ctx):
+    """Deal the damage this Pokémon took from attacks last turn."""
+    amount = ctx.damage_taken_last_turn(ctx.attacker)
+    if amount > 0:
+        await ctx.deal_damage(amount)
 
 
 card = PokemonCardDef(
@@ -25,7 +32,7 @@ card = PokemonCardDef(
             title="Vengeful Wish",
             game_text="If this Pok\u00e9mon was damaged by an attack during your opponent's last turn, this attack does the same amount of damage done to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=_vengeful_wish,
         ),
         Attack(
             title="Absorb Life",

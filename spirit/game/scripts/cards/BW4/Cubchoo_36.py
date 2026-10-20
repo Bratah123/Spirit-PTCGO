@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import boost_own_next_turn
+
 
 card = PokemonCardDef(
     guid="b9b1be01-eb6d-5106-9603-7ecb0904be43",
@@ -22,7 +24,7 @@ card = PokemonCardDef(
             title="Sniffle",
             game_text="During your next turn, this Pok\u00e9mon's Belt attack's base damage is 40.",
             cost={PokemonTypes.WATER: 1},
-            effect=unimplemented,
+            effect=boost_own_next_turn(20, attack_title='Belt'),
         ),
         Attack(
             title="Belt",

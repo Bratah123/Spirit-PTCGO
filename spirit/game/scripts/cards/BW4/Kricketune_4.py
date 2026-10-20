@@ -1,6 +1,17 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _draining_cut(ctx):
+    """Flip 2 coins: 40x heads; heal this Pokémon by the damage done."""
+    results = await ctx.flip_coins(2, "Draining Cut")
+    heads = sum(1 for r in results if r)
+    if not heads:
+        return
+    dealt = await ctx.deal_damage(40 * heads)
+    if dealt > 0:
+        await ctx.heal(dealt, ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -34,7 +45,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=40,
             damage_operator="x",
-            effect=unimplemented,
+            effect=_draining_cut,
         ),
     ],
 )

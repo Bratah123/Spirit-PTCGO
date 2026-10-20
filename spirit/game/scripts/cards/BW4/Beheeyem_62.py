@@ -1,6 +1,19 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack
+
+
+async def _brain_control(ctx):
+    """Opponent reveals their hand; put a chosen card on the bottom of their deck."""
+    hand = ctx.hand(ctx.opponent_id)
+    if not hand:
+        return
+    picks = await ctx.choose_cards(
+        hand, 1, minimum=1,
+        prompt="Choose a card to put on the bottom of your opponent's deck.",
+    )
+    for card in picks:
+        await ctx.put_on_bottom_of_deck(card)
 
 
 card = PokemonCardDef(
@@ -25,7 +38,7 @@ card = PokemonCardDef(
             title="Brain Control",
             game_text="Your opponent reveals his or her hand. Choose a card from there and put it on the bottom of your opponent's deck.",
             cost={PokemonTypes.PSYCHIC: 1},
-            effect=unimplemented,
+            effect=_brain_control,
         ),
         Attack(
             title="Psybeam",

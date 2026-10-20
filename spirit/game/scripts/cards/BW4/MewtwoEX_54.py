@@ -1,6 +1,14 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack, damage_per, count_energy
+
+
+_self_energy = count_energy('self')
+_defender_energy = count_energy('defender')
+
+
+def _x_ball_count(ctx):
+    return _self_energy(ctx) + _defender_energy(ctx)
 
 
 card = PokemonCardDef(
@@ -26,7 +34,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             damage_operator="x",
-            effect=unimplemented,
+            effect=damage_per(_x_ball_count, 20),
         ),
         Attack(
             title="Psydrive",

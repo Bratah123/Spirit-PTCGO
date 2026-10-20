@@ -1,6 +1,15 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.support_common import draw_attack
+
+
+async def _stadium_drain(ctx):
+    """30+. If any Stadium is in play: +30 damage and heal 30 from this Pokémon."""
+    if ctx.stadium_in_play() is None:
+        await ctx.deal_damage()
+        return
+    await ctx.deal_damage(60)
+    await ctx.heal(30, ctx.attacker)
 
 
 card = PokemonCardDef(
@@ -34,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=unimplemented,
+            effect=_stadium_drain,
         ),
     ],
 )

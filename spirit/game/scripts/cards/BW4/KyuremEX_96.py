@@ -1,5 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import discard_opponent_energy_attack
+
 
 card = PokemonCardDef(
     guid="27a61d6c-53d8-559a-b792-bca0a0865dd9",
@@ -23,14 +25,14 @@ card = PokemonCardDef(
             game_text="Discard a Special Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
-            effect=unimplemented,
+            effect=discard_opponent_energy_attack(special_only=True),
         ),
         Attack(
             title="Hail Blizzard",
             game_text="This Pok\u00e9mon can't use Hail Blizzard during your next turn.",
             cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 2},
             damage=120,
-            effect=unimplemented,
+            locks_next_turn=True,
         ),
     ],
 )

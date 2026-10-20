@@ -1,6 +1,15 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 
+
+async def _fire_spin(ctx):
+    """Printed damage. Flip a coin. If tails, discard 2 Energy from this Pokémon."""
+    await ctx.deal_damage()
+    results = await ctx.flip_coins(1, "Fire Spin")
+    if results and not results[0]:
+        await ctx.discard_energy_from(ctx.attacker, 2)
+
+
 card = PokemonCardDef(
     guid="f04248f7-a04a-5720-bfba-cc97dbb50df4",
     key="BW4",
@@ -30,7 +39,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If tails, discard 2 Energy attached to this Pok\u00e9mon.",
             cost={PokemonTypes.FIRE: 2, PokemonTypes.COLORLESS: 1},
             damage=100,
-            effect=unimplemented,
+            effect=_fire_spin,
         ),
     ],
 )

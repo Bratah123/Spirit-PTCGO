@@ -1,6 +1,8 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.attacks_common import flip_bonus, flip_or_nothing
+from spirit.game.card_effects.support_common import search_to_hand
+from spirit.game.session.effects import is_pokemon_card
 
 
 card = PokemonCardDef(
@@ -25,7 +27,9 @@ card = PokemonCardDef(
             title="Find a Friend",
             game_text="Flip a coin. If heads, search your deck for a Pok\u00e9mon, reveal it, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=flip_or_nothing(then=search_to_hand(
+                is_pokemon_card, count=1, reveal=True,
+                prompt='Choose a Pokémon to put into your hand.')),
         ),
         Attack(
             title="Rising Lunge",

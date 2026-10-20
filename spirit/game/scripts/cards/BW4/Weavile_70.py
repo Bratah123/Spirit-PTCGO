@@ -1,6 +1,6 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
-from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.card_effects.attacks_common import flip_damage, bonus_if, active_is, has_tool
 
 
 card = PokemonCardDef(
@@ -27,7 +27,7 @@ card = PokemonCardDef(
             game_text="If the Defending Pok\u00e9mon has no Pok\u00e9mon Tool card attached to it, this attack does nothing.",
             cost={PokemonTypes.DARKNESS: 1},
             damage=90,
-            effect=unimplemented,
+            effect=bonus_if(active_is(has_tool), 0, else_nothing=True),
         ),
         Attack(
             title="Fury Swipes",

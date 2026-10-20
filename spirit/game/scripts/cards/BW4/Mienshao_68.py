@@ -1,6 +1,12 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, unimplemented
-from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, TrainerType
 from spirit.game.card_effects.attacks_common import damage_per, damage_counters_on
+from spirit.game.card_effects.support_common import search_to_hand
+
+
+def _is_tool_card(card) -> bool:
+    return card.get_attribute(AttrID.TRAINER_TYPE) in (
+        TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
 
 
 card = PokemonCardDef(
@@ -25,7 +31,8 @@ card = PokemonCardDef(
             title="Haul In",
             game_text="Search your deck for 2 Pok\u00e9mon Tool cards, reveal them, and put them into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            effect=unimplemented,
+            effect=search_to_hand(_is_tool_card, count=2, reveal=True,
+                                  prompt='Choose up to 2 Pokémon Tool cards to put into your hand.'),
         ),
         Attack(
             title="Meditate",

@@ -1,6 +1,7 @@
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Triggers
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Triggers
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.pokemon import in_active_spot
+from spirit.game.card_effects.attacks_common import snipe_attack
 
 
 async def rough_skin(ctx):
@@ -43,7 +44,7 @@ card = PokemonCardDef(
             game_text="Does 20 damage to 1 of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 2},
             damage=50,
-            effect=unimplemented,
+            effect=snipe_attack(20, also_base=True),
         ),
     ],
 )
