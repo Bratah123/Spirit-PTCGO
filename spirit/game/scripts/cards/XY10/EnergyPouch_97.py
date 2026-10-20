@@ -1,14 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Energy Pouch (XY10 #97): trainer effect stubbed.
-
-Card text:
-  - Attach a Pokémon Tool to 1 of your Pokémon that doesn't already have a Pokémon Tool attached to it.
-  - If the Pokémon this card is attached to is Knocked Out by damage from an opponent's attack, put all basic Energy attached to that Pokémon into your hand.
-  - You may play as many Item cards as you like during your turn (before your attack).
-"""
-
-from spirit.game.data_utils import PokemonToolCardDef, unimplemented
+from spirit.game.data_utils import PokemonToolCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import is_basic_energy_card
+
+
+async def energy_pouch_on_ko(ctx):
+    """Holder Knocked Out by damage from an opponent's attack: put all basic
+    Energy that was attached to it into your hand."""
+    discard = ctx.discard_pile(ctx.player_id)
+    cards = [e for e in getattr(ctx, "ko_energies", []) or []
+             if e in discard and is_basic_energy_card(e)]
+    if cards:
+        await ctx.put_in_hand(cards)
+
 
 card = PokemonToolCardDef(
     guid="8067bf07-1cd5-588d-b3b2-dfd6ab99c2ff",
@@ -20,6 +23,5 @@ card = PokemonToolCardDef(
     collector_number=97,
     set_code="XY10",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    on_carrier_knocked_out=energy_pouch_on_ko
 )
