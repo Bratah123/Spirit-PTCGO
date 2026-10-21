@@ -3,8 +3,7 @@ import sys
 import logging
 import subprocess
 import json
-import math
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw
 
 from spirit.game.attributes import AttrID, TrainerType
 from spirit.game.content.definitions import def_for
@@ -16,6 +15,7 @@ from spirit.server import foil_mask_gen
 ASSETS_DIR = "spirit/assets"
 BUNDLE_CACHE_DIR = os.path.join(ASSETS_DIR, "bundleCache")
 PIP_CACHE_DIR = os.path.join(BUNDLE_CACHE_DIR, "pips")
+PIP_BORDER_DIR = os.path.join(BUNDLE_CACHE_DIR, "pips_borders")
 CARDS_IMG_DIR = os.path.join(ASSETS_DIR, "cards")
 CREATE_BUNDLE_SCRIPT = "re_tools/create_card_bundle.py"
 # The default template used by create_card_bundle.py
@@ -133,127 +133,83 @@ def _is_pokemon_tool(card_def) -> bool:
     )
 
 
-def _detect_emblem_circle(img):
-    """(cx, cy, r) of the special energy's circular emblem, or None.
-
-    Hough-gradient vote on the art window: edge pixels vote along their
-    gradient for circle centers; only centers near the art middle compete,
-    and a radius bonus prefers the full ball over sharp inner details.
-    """
-
-    w, h = img.size
-    # Art window of an energy card: skip border, title bar and text box.
-    rx0, ry0 = int(w * 0.08), int(h * 0.13)
-    rx1, ry1 = int(w * 0.92), int(h * 0.66)
-    region = img.crop((rx0, ry0, rx1, ry1)).convert("L")
-
-    ds = 150
-    scale = ds / region.width
-    resample = getattr(Image, "LANCZOS", getattr(Image, "ANTIALIAS", 1))
-    small = region.resize((ds, max(3, int(region.height * scale))),
-                          resample).filter(ImageFilter.GaussianBlur(1))
-    sw, sh = small.size
-    px = list(small.getdata())
-
-    def p(x, y):
-        return px[y * sw + x]
-
-    edges = []
-    for y in range(1, sh - 1):
-        for x in range(1, sw - 1):
-            gx = (p(x+1, y-1) + 2*p(x+1, y) + p(x+1, y+1)
-                  - p(x-1, y-1) - 2*p(x-1, y) - p(x-1, y+1))
-            gy = (p(x-1, y+1) + 2*p(x, y+1) + p(x+1, y+1)
-                  - p(x-1, y-1) - 2*p(x, y-1) - p(x+1, y-1))
-            mag = gx*gx + gy*gy
-            if mag > 0:
-                edges.append((x, y, gx, gy, mag))
-    edges.sort(key=lambda e: -e[4])
-    edges = edges[:max(1, len(edges) // 4)]
-
-    rmin = max(6, int(min(sw, sh) * 0.16))
-    rmax = int(min(sw, sh) * 0.60)
-    acc = {}
-    for x, y, gx, gy, mag in edges:
-        norm = math.sqrt(gx*gx + gy*gy)
-        ux, uy = gx / norm, gy / norm
-        for r in range(rmin, rmax + 1, 2):
-            for sgn in (1, -1):
-                cx = int(round(x + sgn * ux * r))
-                cy = int(round(y + sgn * uy * r))
-                if 0 <= cx < sw and 0 <= cy < sh:
-                    acc.setdefault((cx, cy), {})
-                    acc[(cx, cy)][r] = acc[(cx, cy)].get(r, 0) + 1
-
-    cx_lo, cx_hi = sw * 0.25, sw * 0.75
-    cy_lo, cy_hi = sh * 0.15, sh * 0.85
-    min_votes = len(edges) * 0.02
-    best, best_weighted = None, -1
-    for (cx, cy) in list(acc.keys()):
-        if not (cx_lo <= cx <= cx_hi and cy_lo <= cy <= cy_hi):
-            continue
-        pooled = {}
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for r, v in acc.get((cx+dx, cy+dy), {}).items():
-                    pooled[r] = pooled.get(r, 0) + v
-        for r in pooled:
-            score = pooled.get(r-2, 0) + pooled[r] + pooled.get(r+2, 0)
-            weighted = score * (1 + 1.5 * r / rmax)
-            if weighted > best_weighted and score >= min_votes:
-                best, best_weighted = (cx, cy, r), weighted
-
-    if best is None:
-        return None
-    inv = 1 / scale
-    return (rx0 + best[0] * inv, ry0 + best[1] * inv, best[2] * inv)
-
-
-def _generate_pip_png(png_path, set_code, asset_name, suffix, detect,
-                      art_window=(0.12, 0.68), out_dir=None):
+def generate_energy_pip_png(png_path, set_code, asset_name, card_def, out_dir=None):
+    """Crop the energypip, resize it, and put the border over it."""
     out_dir = out_dir or PIP_CACHE_DIR
-    out_path = os.path.join(out_dir, f"{set_code}_{asset_name}_{suffix}.png")
-    # Regenerate when the source art OR this module (the crop logic) changes.
-    stale_after = max(os.path.getmtime(png_path), os.path.getmtime(__file__))
-    if os.path.exists(out_path) and os.path.getmtime(out_path) >= stale_after:
-        return out_path
-    os.makedirs(out_dir, exist_ok=True)
-    img = Image.open(png_path).convert("RGBA")
-    w, h = img.size
-    # Keep the crop inside the art window (title above, text box below).
-    art_top, art_bottom = int(h * art_window[0]), int(h * art_window[1])
-    found = _detect_emblem_circle(img) if detect else None
-    if found:
-        cx, cy, r = found
-        side = int(2 * r * 1.16)
+    pip_path = os.path.join(out_dir, f"{set_code}_{asset_name}_energypip.png")
+    icon_path = os.path.join(out_dir, f"{set_code}_{asset_name}_energyicon.png")
+    if getattr(card_def, "inherits", None):
+        # Gold should be added as a reprint so the pip defaults to
+        # Common via "inherits" and uses its artwork.
+        artwork_path = os.path.join(CARDS_IMG_DIR, f"{card_def.inherits}.png")
     else:
-        cx, cy, side = w / 2, (art_top + art_bottom) / 2, art_bottom - art_top
-    side = min(side, w, art_bottom - art_top)
-    left = int(min(max(cx - side / 2, 0), w - side))
-    top = int(min(max(cy - side / 2, art_top), art_bottom - side))
-    img.crop((left, top, left + side, top + side)).save(out_path)
-    return out_path
+        artwork_path = png_path
+    pip_border_path = os.path.join(PIP_BORDER_DIR, "energypip_border.png")
+    icon_border_path = os.path.join(PIP_BORDER_DIR, "energyicon_border.png")
+
+    stale_after = max(os.path.getmtime(artwork_path), os.path.getmtime(__file__))
+    if (
+        os.path.exists(pip_path)
+        and os.path.exists(icon_path)
+        and os.path.getmtime(pip_path) >= stale_after
+        and os.path.getmtime(icon_path) >= stale_after
+    ):
+        return pip_path, icon_path
+
+    os.makedirs(out_dir, exist_ok=True)
+    img = Image.open(artwork_path).convert("RGBA")
+    artwork = img.crop((29, 140, 704, 662))
+    crop_width, crop_height = artwork.size
+    square_size = crop_height
+    left_trim = (crop_width - square_size) // 2
+    artwork = artwork.crop((left_trim, 0, left_trim + square_size, square_size))
+    artwork = artwork.resize((117, 117), Image.Resampling.LANCZOS)
+    mask = Image.new("L", (117, 117), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, 116, 116), fill=255)
+    artwork.putalpha(mask)
+
+    # Generate the pip and icon.
+    border_outputs = [(pip_border_path, pip_path), (icon_border_path, icon_path)]
+    for border_path, output_path in border_outputs:
+        output = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+        output.alpha_composite(artwork, (7, 5))
+        border = Image.open(border_path).convert("RGBA")
+        border = border.resize((122, 122), Image.Resampling.LANCZOS)
+        output.alpha_composite(border, (2, 2))
+        output.save(output_path)
+    return pip_path, icon_path
 
 
-def generate_energy_pip_png(png_path, set_code, asset_name, out_dir=None):
-    """Crops the emblem shared by the attachment pip and right-click icon."""
-    return _generate_pip_png(png_path, set_code, asset_name, "energypip",
-                             detect=True, out_dir=out_dir)
+def generate_tool_pip_png(png_path, set_code, asset_name, card_def, out_dir=None):
+    """Crop the toolpip, resize it, and put the border over it."""
+    out_dir = out_dir or PIP_CACHE_DIR
+    pip_path = os.path.join(out_dir, f"{set_code}_{asset_name}_toolpip.png")
+    if getattr(card_def, "inherits", None):
+        # Gold should be added as a reprint so the pip defaults to
+        # Common via "inherits" and uses its artwork with the appropriate border.
+        artwork_path = os.path.join(CARDS_IMG_DIR, f"{card_def.inherits}.png")
+        border_path = os.path.join(PIP_BORDER_DIR, "toolpip_gold_border.png")
+    else:
+        artwork_path = png_path
+        border_path = os.path.join(PIP_BORDER_DIR, "toolpip_border.png")
 
+    stale_after = max(os.path.getmtime(artwork_path), os.path.getmtime(__file__))
+    if os.path.exists(pip_path) and os.path.getmtime(pip_path) >= stale_after:
+        return pip_path
 
-def generate_tool_pip_png(png_path, set_code, asset_name, out_dir=None):
-    """Art-window crop for an attached tool's pip.
-
-    ToolPipTextureRenderer requests "{set}/{num}_toolpip" for every attached
-    tool; without it the generic wrench icon shows. Tool art has no fixed
-    emblem shape, so the crop is a centered window (no detection). The band
-    0.21-0.51h is text-free on BOTH tool layouts: regular tools put the
-    "Pokemon Tool" reminder box at ~0.52h, full-arts put it at ~0.14-0.20h.
-    """
-    return _generate_pip_png(png_path, set_code, asset_name, "toolpip",
-                             detect=False, art_window=(0.21, 0.51),
-                             out_dir=out_dir)
-
+    os.makedirs(out_dir, exist_ok=True)
+    img = Image.open(artwork_path).convert("RGBA")
+    artwork = img.crop((33, 120, 695, 548))
+    artwork = artwork.resize((130, 85), Image.Resampling.LANCZOS)
+    output = Image.new("RGBA", (138, 91), (0, 0, 0, 0))
+    output.alpha_composite(artwork, (4, 3))
+    # Resize and overlay the border.
+    border = Image.open(border_path).convert("RGBA")
+    border = border.resize((138, 91), Image.Resampling.LANCZOS)
+    output.alpha_composite(border)
+    output.save(pip_path)
+    return pip_path
 
 def check_and_generate_bundles(set_codes=None) -> int:
     """Builds missing/stale card bundles; an optional set filter skips cosmetics."""
@@ -347,12 +303,12 @@ def check_and_generate_bundles(set_codes=None) -> int:
                                 kind_map[asset_name] = gen_path
 
                     if _is_special_energy(card_def) and os.path.exists(png_path):
-                        pip_path = generate_energy_pip_png(png_path, set_code, asset_name)
+                        pip_path, icon_path = generate_energy_pip_png(png_path, set_code, asset_name, declaration)
                         if pip_path:
                             card_assets[f"{asset_name}_energypip"] = pip_path
-                            card_assets[f"{asset_name}_energyicon"] = pip_path
+                            card_assets[f"{asset_name}_energyicon"] = icon_path
                     elif _is_pokemon_tool(card_def) and os.path.exists(png_path):
-                        pip_path = generate_tool_pip_png(png_path, set_code, asset_name)
+                        pip_path = generate_tool_pip_png(png_path, set_code, asset_name, declaration)
                         if pip_path:
                             card_assets[f"{asset_name}_toolpip"] = pip_path
 
