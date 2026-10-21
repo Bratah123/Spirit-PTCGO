@@ -79,7 +79,7 @@ def main():
 
     # 2. Run the auto bundle generation
     check_and_generate_bundles()
-    strip_stale_bundles(BUNDLE_CACHE_DIR)    
+    strip_stale_bundles(BUNDLE_CACHE_DIR)
     
     logging.info("[Main] Refreshing manifest manager...")
     # Reload asset map and refresh manifest to capture all compiled cards and cosmetics
