@@ -10,6 +10,7 @@ import uuid
 import os
 import re
 import hashlib
+import shutil
 import UnityPy
 from typing import Any
 from spirit import config
@@ -19,13 +20,15 @@ from spirit.server.state import issue_ticket
 from spirit.database.accounts import get_account_by_username, verify_password, create_account
 from spirit.server import metrics
 from spirit.server.manifest_manager import ManifestManager
-from spirit.server.bundle_variants import PACKER, DiskBundleCache, trim_textures, variant_cache_key
+from spirit.server.bundle_variants import (
+    PACKER, DiskBundleCache, android_cache_key, file_crc, retarget_android, trim_textures, variant_cache_key)
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 # Global manifest manager instance
 ASSET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
 BUNDLE_CACHE_DIR = os.path.join(ASSET_DIR, 'bundleCache')
+OBB_DIR = os.path.join(ASSET_DIR, 'obb')
 VARIANT_DISK_CACHE = DiskBundleCache(
     os.environ.get("SPIRIT_BUNDLE_DISK_CACHE_DIR", os.path.join(ASSET_DIR, "generatedBundleCache")),
     int(os.environ.get("SPIRIT_BUNDLE_DISK_CACHE_BYTES", str(8 * 1024**3))))
@@ -139,6 +142,47 @@ def prepare_virtual_bundles():
     logging.info("[HTTP] Artwork ready: %d built, %d reused, %.1f MiB on disk",
                  result["built"], result["reused"], result["bytes"] / 1024**2)
     return result
+
+def _cached_bundle(key, build):
+    """Memory -> disk -> build lookup"""
+    data = _bundle_cache_get(key)
+    if data is not None:
+        return data
+    with _bundle_build_lock(key):
+        data = _bundle_cache_get(key)
+        if data is None:
+            data = VARIANT_DISK_CACHE.get(key)
+            if data is None:
+                data = build()
+                VARIANT_DISK_CACHE.put(key, data)
+            _bundle_cache_put(key, data)
+    return data
+
+
+def _retarget_android(data):
+    with _VIRTUAL_BUILD_SEMAPHORE:
+        return retarget_android(data)
+
+
+_FILE_MD5 = {}
+
+
+def _file_md5(path):
+    stat = os.stat(path)
+    key = (path, stat.st_size, stat.st_mtime_ns)
+    if key not in _FILE_MD5:
+        digest = hashlib.md5()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                digest.update(chunk)
+        _FILE_MD5[key] = digest.hexdigest()
+    return _FILE_MD5[key]
+
+
+def _read_bytes(path):
+    with open(path, 'rb') as f:
+        return f.read()
+
 
 def _bundle_cache_get(key):
     with _VIRTUAL_BUNDLE_LOCK:
@@ -261,6 +305,8 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         # The client adds dynamic GUIDs to the path, so we catch anything ending in .unity3d
         if parsed_path.endswith(".unity3d"):
             return self.handle_cdn_asset(parsed_path)
+        if parsed_path.endswith(".obb"):
+            return self.handle_obb(parsed_path)
 
         # Routing dictionary
         routes = {
@@ -308,6 +354,33 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return handler()
 
         return self.handle_default()
+
+    def do_HEAD(self):
+        parsed_path = urlparse(self.path).path
+        if parsed_path.endswith(".obb"):
+            return self.handle_obb(parsed_path, head=True)
+        self.send_response(404)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
+    def handle_obb(self, path, head=False):
+        """Android OBB download"""
+        obb_path = os.path.join(OBB_DIR, os.path.basename(path))
+        if not os.path.isfile(obb_path):
+            logging.warning(f"[HTTP] OBB not found: {obb_path}")
+            self.send_response(404)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header('Content-type', 'application/octet-stream')
+        self.send_header('Content-Length', str(os.path.getsize(obb_path)))
+        self.send_header('x-amz-meta-s3cmd-attrs', f"md5:{_file_md5(obb_path)}")
+        self.end_headers()
+        if head:
+            return
+        with open(obb_path, 'rb') as f:
+            shutil.copyfileobj(f, self.wfile, 256 * 1024)
 
     def handle_eula_us_agreement(self):
         eula_path = os.path.join(ASSET_DIR, "eula", "en_us_agreement_pc.txt")
@@ -406,10 +479,14 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         host = self.headers.get("Host", state.SERVER_HOST)
         self.send_json_response({"cdn_url": f"http://{host}/", "messaging": []})
 
+    def _is_android(self):
+        return "/android/" in urlparse(self.path).path.lower()
+
     def handle_manifest_version(self):
         """Source Logic: LoadManifestVersion.cs"""
-        logging.info(f"[HTTP] Sending Manifest Version: {manifest_manager.manifest_version}")
-        payload = str(manifest_manager.manifest_version).encode('utf-8')
+        version = manifest_manager.version_for(self._is_android())
+        logging.info(f"[HTTP] Sending Manifest Version: {version}")
+        payload = str(version).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.send_header('Content-Length', str(len(payload)))
@@ -419,7 +496,8 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def handle_asset_manifest(self):
         """Source Logic: LoadManifest.cs (Requires GZip compression)"""
         logging.info("[HTTP] Sending Full Asset Manifest (GZipped)...")
-        payload = manifest_manager.generate_manifest()
+        manifest_manager.generate_manifest()
+        payload = manifest_manager.manifest_for(self._is_android())
         self.send_response(200)
         self.send_header('Content-type', 'application/x-gzip')
         self.send_header('Content-Length', str(len(payload)))
@@ -517,30 +595,20 @@ class MockHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         if asset_full_path and os.path.exists(asset_full_path):
             is_virtual_split = (clean_base_stripped != clean_base)
-            if not is_virtual_split:
+            android = self._is_android()
+            if not is_virtual_split and not android:
                 return self.serve_static_file(asset_full_path, 'application/vnd.unity', 'public, max-age=31536000')
-            cache_key = _virtual_cache_key(asset_full_path, clean_base)
-
-            cached_bytes = _bundle_cache_get(cache_key)
-            if cached_bytes is not None:
-                file_bytes = cached_bytes
-                logging.debug(f"[HTTP] Serving customized CAB for {filename} from MEMORY CACHE")
+            if is_virtual_split:
+                cache_key = _virtual_cache_key(asset_full_path, clean_base)
+                file_bytes = _cached_bundle(cache_key, lambda: self._build_virtual_split(
+                    filename, asset_full_path, clean_base))
             else:
-                # Serialize concurrent first-requests for this key onto ONE rebuild.
-                build_lock = _bundle_build_lock(cache_key)
-                with build_lock:
-                    cached_bytes = _bundle_cache_get(cache_key)
-                    if cached_bytes is None:
-                        cached_bytes = VARIANT_DISK_CACHE.get(cache_key)
-                        if cached_bytes is not None:
-                            _bundle_cache_put(cache_key, cached_bytes)
-                    if cached_bytes is not None:
-                        file_bytes = cached_bytes
-                    else:
-                        file_bytes = self._build_virtual_split(
-                            filename, asset_full_path, clean_base)
-                        VARIANT_DISK_CACHE.put(cache_key, file_bytes)
-                        _bundle_cache_put(cache_key, file_bytes)
+                cache_key = f"{asset_full_path}:{file_crc(asset_full_path)}"
+                file_bytes = None
+            if android:
+                source = file_bytes
+                file_bytes = _cached_bundle(android_cache_key(cache_key), lambda: _retarget_android(
+                    source if source is not None else _read_bytes(asset_full_path)))
 
             self.send_response(200)
             self.send_header('Content-type', 'application/vnd.unity')

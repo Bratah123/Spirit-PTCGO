@@ -1,3 +1,4 @@
+import copy
 import os
 import json
 import hashlib
@@ -9,7 +10,7 @@ import UnityPy
 
 from spirit import config
 from spirit.server.bundle_variants import (
-    SPLIT_TYPES, asset_number, card_partitions, content_version, file_crc, variant_cache_key, variant_version)
+    SPLIT_TYPES, android_version, asset_number, card_partitions, content_version, file_crc, variant_cache_key, variant_version)
 
 class ManifestManager:
     """
@@ -345,7 +346,25 @@ class ManifestManager:
 
         json_data = json.dumps(manifest_data).encode('utf-8')
         self.manifest_cache = gzip.compress(json_data)
+        self._build_android_manifest(manifest_data)
         return self.manifest_cache
+
+    def _build_android_manifest(self, manifest_data):
+        android = copy.deepcopy(manifest_data)
+        android["platform"] = "android"
+        for bundle in android["bundles"]:
+            for versioning in bundle["versionings"]:
+                versioning["platform"] = "android"
+                versioning["version"] = android_version(versioning["version"])
+        android["version"] = android_version(manifest_data["version"])
+        self.android_manifest_version = android["version"]
+        self.android_manifest_cache = gzip.compress(json.dumps(android).encode('utf-8'))
+
+    def manifest_for(self, android):
+        return self.android_manifest_cache if android else self.manifest_cache
+
+    def version_for(self, android):
+        return self.android_manifest_version if android else self.manifest_version
 
     def refresh(self):
         """Rescans assets; the manifest version changes only when its content does."""

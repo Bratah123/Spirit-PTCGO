@@ -12,6 +12,8 @@ import threading
 import zlib
 
 import UnityPy
+from UnityPy.enums import BuildTarget
+from UnityPy.files import SerializedFile
 
 from spirit import config
 from spirit.game.attributes import AttrID, CardType, PokemonTypes
@@ -84,6 +86,31 @@ def variant_version(source, membership):
 
 def variant_cache_key(source, name, membership):
     return f"{name}:{variant_version(source, membership)}"
+
+
+def android_version(version):
+    """Distinct per-bundle version so Android clients never reuse desktop-tagged cached bytes."""
+    return content_version(zlib.crc32(f"android:{version}".encode()))
+
+
+def android_cache_key(key):
+    return f"android:{key}"
+
+
+def retarget_android(data):
+    """Retag a texture-only bundle as an Android build."""
+    env = UnityPy.load(data)
+    if _texture_bundle(env) is None:
+        logging.warning("[Bundles] Not retagging non-texture bundle for Android")
+        return data
+    files = [f for f in env.file.files.values() if isinstance(f, SerializedFile)]
+    if all(f.target_platform == BuildTarget.Android for f in files):
+        return data
+    for f in files:
+        f.target_platform = BuildTarget.Android
+        f._m_target_platform = int(BuildTarget.Android)
+        f.mark_changed()
+    return env.file.save(packer=PACKER)
 
 
 def _texture_bundle(env):
