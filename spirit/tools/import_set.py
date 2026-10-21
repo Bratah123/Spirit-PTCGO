@@ -4,6 +4,7 @@ import re
 import sys
 import uuid
 import argparse
+import unicodedata
 import requests
 from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor
@@ -52,6 +53,7 @@ STAGE_MAP = {
     "Basic": "PokemonStage.BASIC",
     "Stage 1": "PokemonStage.STAGE1",
     "Stage 2": "PokemonStage.STAGE2",
+    "Restored": "PokemonStage.RESTORED",
     "VMAX": "PokemonStage.VMAX",
     "VSTAR": "PokemonStage.VSTAR",
     "V-UNION": "PokemonStage.VUNION",
@@ -60,7 +62,83 @@ STAGE_MAP = {
 }
 
 def clean_name(name: str) -> str:
-    return re.sub(r'[^a-zA-Z0-9]', '', name)
+    """ASCII stem for filenames: Flabébé -> Flabebe, Pokémon -> Pokemon."""
+    decomposed = unicodedata.normalize("NFKD", name or "")
+    ascii_only = decomposed.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r'[^a-zA-Z0-9]', '', ascii_only)
+
+# Unique int collector numbers. Spirit keys cards (art bundle asset names,
+# "SET/number" deck refs, the starter index) by (set, int number), so every
+# printed number of a set must map to its own int:
+#   "57"   -> 57
+#   "RC3"  -> highest plain number + 3   (prefix subsets: Radiant Collection,
+#             promo "BW04"; a second prefix group continues after the first)
+#   "28a"  -> after everything above, in data order (alternate prints)
+# Any other collision also moves past the top. Set per import by
+# set_numbering(cards); unknown numbers fall back to their digits.
+NUMBER_MAP: Dict[str, int] = {}
+SUBSET_RE = re.compile(r"^([A-Za-z]+)0*(\d+)$")
+
+def assign_collector_numbers(cards: List[Dict[str, Any]]) -> Dict[str, int]:
+    raws = [str(c.get("number", "0")).strip() for c in cards]
+    out: Dict[str, int] = {}
+    taken = set()
+    for raw in raws:
+        if raw.isdigit() and int(raw) not in taken:
+            out[raw] = int(raw)
+            taken.add(int(raw))
+    offset = max(taken, default=0)
+    groups: Dict[str, List[str]] = {}
+    for raw in raws:
+        match = SUBSET_RE.match(raw)
+        if match and raw not in out:
+            groups.setdefault(match[1].upper(), []).append(raw)
+    for prefix, members in groups.items():
+        top = offset
+        for raw in members:
+            value = offset + int(SUBSET_RE.match(raw)[2])
+            if value in taken:
+                continue
+            out[raw] = value
+            taken.add(value)
+            top = max(top, value)
+        offset = top
+    top = max(taken, default=0)
+    for raw in raws:
+        if raw not in out:
+            top += 1
+            out[raw] = top
+            taken.add(top)
+    return out
+
+def set_numbering(cards: List[Dict[str, Any]]) -> Dict[str, int]:
+    global NUMBER_MAP
+    NUMBER_MAP = assign_collector_numbers(cards)
+    return NUMBER_MAP
+
+def collector_number_int(number: Any) -> int:
+    """Unique int collector number for a printed number (see NUMBER_MAP)."""
+    raw = str(number or "0").strip()
+    if raw in NUMBER_MAP:
+        return NUMBER_MAP[raw]
+    digits = re.sub(r"\D", "", raw)
+    return int(digits) if digits else 0
+
+def stub_header(reason: str, rules: Optional[List[str]] = None) -> str:
+    """Module docstring marking a card (or effect) as intentionally stubbed."""
+    lines = [
+        "STUB: effect not implemented — do not guess mechanics.",
+        reason,
+    ]
+    if rules:
+        lines.append("")
+        lines.append("Card text:")
+        for rule in rules:
+            text = fix_text(rule).strip()
+            if text:
+                lines.append(f"  - {text}")
+    body = "\n".join(lines)
+    return f'"""{body}\n"""\n\n'
 
 def get_guid(card_id: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"spirit.ptcgo.{card_id}"))
@@ -102,6 +180,7 @@ def build_abilities_src(card: Dict[str, Any]) -> tuple:
             "        Ability(",
             f"            title={py_str(fix_text(ability.get('name', '')))},",
             f"            game_text={py_str(fix_text(ability.get('text', '')))},",
+            "            # STUB: ability effect not implemented",
             "            effect=unimplemented,",
             "        ),",
         ])
@@ -119,6 +198,7 @@ def build_abilities_src(card: Dict[str, Any]) -> tuple:
             lines.append(f"            damage_operator={py_str(operator)},")
         if text:
             # Attacks with effect text stay playable (base damage only) until scripted.
+            lines.append("            # STUB: attack effect not implemented")
             lines.append("            effect=unimplemented,")
             uses_unimplemented = True
         lines.append("        ),")
@@ -158,9 +238,11 @@ def get_family_id(card: Dict[str, Any]) -> Optional[int]:
 def render_script(card: Dict[str, Any]) -> Optional[str]:
     """Renders the card definition script source for one API card dict."""
     supertype = card.get("supertype", "")
-    name = card.get("name", "Unknown")
-    number = card.get("number", "0")
+    name = fix_text(card.get("name", "Unknown"))
+    number_raw = card.get("number", "0")
+    number = collector_number_int(number_raw)
     safe_name = clean_name(name)
+    rules = [fix_text(r) for r in (card.get("rules") or []) if r]
 
     # Prepare script content
     raw_rarity = card.get("rarity", "Common")
@@ -202,7 +284,14 @@ def render_script(card: Dict[str, Any]) -> Optional[str]:
         if uses_unimplemented:
             imports += ", unimplemented"
 
-        content = f"""from spirit.game.data_utils import {imports}
+        header = ""
+        if uses_unimplemented:
+            header = stub_header(
+                f"{name} ({SET_CODE} #{number_raw}): one or more attacks/abilities use "
+                "effect=unimplemented until a matching prefab or known script exists."
+            )
+
+        content = f"""{header}from spirit.game.data_utils import {imports}
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 
 card = PokemonCardDef(
@@ -229,6 +318,9 @@ card = PokemonCardDef(
             resist_type = TYPE_MAP.get(resistances[0].get("type"))
             if resist_type:
                 content += f"    resistance_type={resist_type},\n"
+                amount = abs(int(re.sub(r"[^0-9-]", "", str(resistances[0].get("value", "-30"))) or -30))
+                if amount != 30:
+                    content += f"    resistance_amount={amount},\n"
 
         if evolves_from:
             content += f"    evolves_from=\"com.direwolfdigital.cake.data.archetypes.pokemon.{clean_name(evolves_from)}.Name\",\n"
@@ -251,7 +343,11 @@ card = PokemonCardDef(
         else:
             trainer_class = "ItemCardDef"
 
-        content = f"""from spirit.game.data_utils import {trainer_class}, unimplemented
+        header = stub_header(
+            f"{name} ({SET_CODE} #{number_raw}): trainer effect stubbed.",
+            rules=rules,
+        )
+        content = f"""{header}from spirit.game.data_utils import {trainer_class}, unimplemented
 from spirit.game.attributes import Rarities
 
 card = {trainer_class}(
@@ -264,6 +360,7 @@ card = {trainer_class}(
     collector_number={number},
     set_code="{SET_CODE}",
     rarity={rarity},
+    # STUB: trainer effect not implemented
     effect=unimplemented
 )
 """
@@ -276,7 +373,21 @@ card = {trainer_class}(
                     energy_type = t_enum
                     break
 
-        content = f"""from spirit.game.data_utils import EnergyCardDef
+        header = ""
+        extra_lines = ""
+        # Known special energy with no conditional text beyond provides.
+        if name == "Double Colorless Energy":
+            extra_lines = (
+                "    provides=[[PokemonTypes.COLORLESS, PokemonTypes.COLORLESS]],\n"
+            )
+        elif is_special:
+            header = stub_header(
+                f"{name} ({SET_CODE} #{number_raw}): special energy provides/passive/attach "
+                "rules stubbed until matched to a known energy pattern.",
+                rules=rules,
+            )
+            extra_lines = "    # STUB: special energy mechanics not implemented\n"
+        content = f"""{header}from spirit.game.data_utils import EnergyCardDef
 from spirit.game.attributes import PokemonTypes, Rarities
 
 card = EnergyCardDef(
@@ -290,8 +401,8 @@ card = EnergyCardDef(
     set_code="{SET_CODE}",
     rarity={rarity},
     energy_type={energy_type},
-    is_special={is_special}
-)
+    is_special={is_special},
+{extra_lines})
 """
 
     return content or None
@@ -321,9 +432,10 @@ def main():
 
     JSON_PATH = args.json_path
     
-    # Determine the set code
+    # Determine the set code. Preserve caller casing when --set-code is given
+    # (sets.json uses mixed-case names like TwentiethAnn).
     if args.set_code:
-        SET_CODE = args.set_code.upper()
+        SET_CODE = args.set_code
     else:
         # Get uppercase filename without extension
         SET_CODE = os.path.splitext(os.path.basename(JSON_PATH))[0].upper()
@@ -343,6 +455,12 @@ def main():
     with open(JSON_PATH, "r") as f:
         cards = json.load(f)
     
+    set_numbering(cards)
+    numbers = [collector_number_int(c.get("number", "0")) for c in cards]
+    if len(set(numbers)) != len(numbers):
+        print("Error: collector numbers collide after subset mapping")
+        sys.exit(1)
+
     # Build name map for family resolution
     for card in cards:
         if "Pok" in card.get("supertype", ""):
