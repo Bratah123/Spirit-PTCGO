@@ -93,8 +93,10 @@ def main():
     prepare_virtual_bundles()
 
     # ============================================================================
-    # ONLY THE TWO REQUIRED LINES: If the file is missing, 'except' silently ignores it
-    # You can use this to disable the card granter by simply renaming it to grant_all_cards_false.py
+    # ONLY THE TWO REQUIRED LINES: If the file is missing, 'except' silently ignores it.
+    # You can use this to activate or disable the card granter by simply renaming the file 
+    # to grant_all_cards_true.py to activate it or grant_all_cards_false.py to disable it.
+    # The file comes named grant_all_cards_false.py (disabled by default).
     # ============================================================================
     try: from spirit.grant_all_cards_true import grant_all_cards_startup; grant_all_cards_startup()
     except ImportError: pass
