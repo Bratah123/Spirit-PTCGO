@@ -91,6 +91,7 @@ from spirit.game.attributes import (
     SpecialConditions,
     TrainerType,
 )
+from spirit.game.content.definitions import with_sort_order
 from spirit.game.data_utils import (
     ABILITIES_BY_ID, Ability, Activations, Triggers, def_for, prize_value,
     subtypes_for, unimplemented,
@@ -4229,6 +4230,8 @@ class GameSession:
     async def _broadcast_entity_attribute(self, entity, attr: AttrID, value: Any):
         """Sets `attr` on `entity` and broadcasts a standalone AttributeModified
         to both viewers; the client re-renders on the version bump."""
+        if attr == AttrID.PIE_ABILITIES:
+            value = with_sort_order(value)
         entity.set_attribute(attr, value)
         envelope = self._sequence_envelope(
             EMPTY_SEQUENCE_ID,
@@ -4279,7 +4282,7 @@ class GameSession:
             if key not in seen:
                 seen.add(key)
                 entries.append(row)
-        return entries
+        return with_sort_order(entries)
 
     async def refresh_granted_abilities(self, pokemon: PokemonEntity):
         """Rebroadcasts `pokemon`'s canonical PIE_ABILITIES (also sheds any

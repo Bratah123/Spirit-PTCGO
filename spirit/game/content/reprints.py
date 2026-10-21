@@ -10,7 +10,7 @@ from spirit.game.attributes import AttrID
 from spirit.game.content.definitions import (
     ABILITIES_BY_ID, CARD_DEFS_BY_GUID, TRAINER_EFFECTS_BY_GUID,
     CardDefinition, PokemonCardDef, TrainerCardDef, EnergyCardDef,
-    Foil, ability_id_for, unimplemented,
+    Foil, ability_id_for, unimplemented, with_sort_order,
 )
 
 
@@ -85,7 +85,8 @@ class ReprintCardDef:
             ability.ability_id = ability_id_for(card.guid, slot)
         if str(AttrID.PIE_ABILITIES.value) in attrs:
             attrs[str(AttrID.PIE_ABILITIES.value)] = {
-                "type": "json", "value": json.dumps([a.to_dict() for a in abilities]),
+                "type": "json",
+                "value": json.dumps(with_sort_order([a.to_dict() for a in abilities])),
             }
         for ability, _ in bindings:
             ABILITIES_BY_ID[ability.ability_id] = ability

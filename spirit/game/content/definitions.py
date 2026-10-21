@@ -170,6 +170,14 @@ ABILITY_TYPE_HINTS = {
     AbilityTypes.ANCIENT_TRAIT: "AncientTrait",
 }
 
+def with_sort_order(entries: List[dict]) -> List[dict]:
+    """Stamps PIE_ABILITIES `sortOrder` so the ability panel keeps printed order, abilities first."""
+    ranked = sorted(range(len(entries)),
+                    key=lambda i: entries[i].get("abilityType") == "Attack")
+    order = {index: rank for rank, index in enumerate(ranked)}
+    return [{**entry, "sortOrder": order[i]} for i, entry in enumerate(entries)]
+
+
 class Ability:
     """Represents a Pokemon Ability (Poke-Power, Poke-Body, etc.)
 
@@ -538,7 +546,7 @@ class PokemonCardDef(CardDefinition):
                 ABILITIES_BY_ID[a.ability_id] = a
                 ability_list.append(a.to_dict())
             self.extra_attributes[str(AttrID.PIE_ABILITIES.value)] = {
-                "type": "json", "value": json.dumps(ability_list)
+                "type": "json", "value": json.dumps(with_sort_order(ability_list))
             }
         else:
             self.extra_attributes[str(AttrID.PIE_ABILITIES.value)] = {
@@ -620,7 +628,7 @@ class FossilItemCardDef(ItemCardDef):
             str(AttrID.RETREAT_COST.value): {"type": "int", "value": 0},
             str(AttrID.PIE_ABILITIES.value): {
                 "type": "json",
-                "value": json.dumps([a.to_dict() for a in self.abilities]),
+                "value": json.dumps(with_sort_order([a.to_dict() for a in self.abilities])),
             },
         })
 
