@@ -233,6 +233,21 @@ class PokemonEntity(CardEntity):
         self.set_attribute(AttrID.HP, hp_val)
         self.attribute_originals[AttrID.HP.value] = hp_val
 
+    def serialize_attributes(self) -> List[Dict[str, Any]]:
+        serialized = super().serialize_attributes()
+        # Fossils (plays_as_pokemon) are Trainer archetypes: server-side rules
+        # keep reading CARD_TYPE=TRAINER off the archetype (setup/mulligan,
+        # deck validation, is_trainer_card in hand), but the client must see
+        # a Pokemon in play or its knockout path (EntityUtil.IsLegendPokemon)
+        # throws. Spoof POKEMON on the wire for those entities only.
+        if getattr(def_for(self.archetype_id), "plays_as_pokemon", False):
+            for entry in serialized:
+                if entry.get("name") == AttrID.CARD_TYPE.value:
+                    entry["value"] = CardType.POKEMON.value
+                    entry["originalValue"] = CardType.POKEMON.value
+                    entry["modValue"] = CardType.POKEMON.value
+        return serialized 
+
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.Pokemon"
 
