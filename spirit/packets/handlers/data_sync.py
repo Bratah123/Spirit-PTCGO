@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 import os
@@ -10,7 +11,7 @@ import time
 from spirit.game.models.avatar import get_avatar_items, get_default_avatar_items_list, AvatarArchetype
 from spirit.database.player_data import merge_account_settings
 from spirit.game.progression.account import build_account_attributes
-from spirit.network.protocol import WargFlags
+from spirit.network.protocol import WargFlags, WargProtocol
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.economy_data import list_dynamic_pages
 from .base import BaseHandler, handle
@@ -647,8 +648,13 @@ class DataSyncHandler(BaseHandler):
         if p_count > 0:
             logging.info(f"[TCP] Included {p_count} products for key: {key}")
 
-        logging.info(f"[TCP] Sent {count} archetypes for key: {key}")
-        await self.client.send_packet(proto, request_id, flags=WargFlags.PROTOBUF)
+        flags = WargFlags.PROTOBUF | WargFlags.COMPRESSED
+        body = await asyncio.to_thread(WargProtocol.encode_body, proto, flags)
+        outbound = self.client.outbound
+        if not await outbound.wait_below(outbound.max_bytes // 2):
+            return
+        logging.info(f"[TCP] Sent {count} archetypes for key: {key} ({len(body)} bytes compressed)")
+        await self.client.send_packet(body, request_id, flags=flags)
 
     @handle(InboundMsg.GET_WALLET)
     async def handle_get_wallet(self, message, request_id, flags):

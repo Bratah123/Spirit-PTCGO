@@ -96,7 +96,21 @@ class WargProtocol:
                 return body
 
     @staticmethod
+    def compress_body(body):
+        """the client skips its 2-byte header and inflates the raw deflate"""
+        return zlib.compress(body, 6)
+
+    @staticmethod
     def encode_body(data, flags):
+        if isinstance(data, (bytes, bytearray)) and flags & WargFlags.PROTOBUF:
+            return bytes(data)
+        body = WargProtocol._encode_body(data, flags)
+        if flags & WargFlags.COMPRESSED:
+            return WargProtocol.compress_body(body)
+        return body
+
+    @staticmethod
+    def _encode_body(data, flags):
         if flags & WargFlags.PROTOBUF:
             
             # The PTCGO client expects a ProtoMessage wrapper
@@ -194,6 +208,12 @@ class OutboundQueue:
     def _notify_progress(self):
         self._progress.set()
         self._progress = asyncio.Event()
+
+    async def wait_below(self, limit):
+        """Wait until at most limit bytes are pending"""
+        while not self._closed and self.pending_bytes > limit:
+            await self._progress.wait()
+        return not self._closed
 
     async def flush(self):
         """Wait for bytes accepted before this call to drain, not for peer acknowledgment."""
