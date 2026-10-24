@@ -6,6 +6,37 @@ from spirit.game.progression.seasons import VersusSeasonManager
 
 # Client setting numbers inside the account-settings dict (attr 10230, K.L.GetSetting)
 VERSUS_LAST_SEEN_POINTS_SETTING = 109  # LastKnownSeasonPointTotal (ladder animation anchor)
+VERSUS_SEEN_SEASON_SETTINGS = (111, 112, 113, 114)  # start hi/lo, end hi/lo
+FALLBACK_SEASON = {
+    "seasonID": "Season1",
+    "startTime": 1,
+    "endTime": 4102444800000,
+    "description": {"id": "SpiritPTCGO Season"},
+    "tiers": [],
+    "resetRewardID": "",
+}
+
+
+def client_season_payload():
+    """CurrentVersusSeason payload for the active season."""
+    season = VersusSeasonManager().get_active_season()
+    return season.client_dict() if season else dict(FALLBACK_SEASON)
+
+
+def _split_long(value):
+    low = ((value & 0xFFFFFFFF) ^ 0x80000000) - 0x80000000
+    return value >> 32, low
+
+
+def acknowledge_versus_season(account_id):
+    """LOGIN-ONLY, after attributes are built: store the season the new-season dialog compares against."""
+    payload = client_season_payload()
+    start_hi, start_lo = _split_long(payload["startTime"])
+    end_hi, end_lo = _split_long(payload["endTime"])
+    seen = dict(zip(VERSUS_SEEN_SEASON_SETTINGS, (start_hi, start_lo, end_hi, end_lo)))
+    stored = get_account_settings(account_id)
+    if any(stored.get(str(key)) != value for key, value in seen.items()):
+        merge_account_settings(account_id, seen)
 
 
 def anchor_versus_animation(account_id):

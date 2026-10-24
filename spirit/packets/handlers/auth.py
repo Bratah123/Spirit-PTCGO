@@ -4,8 +4,9 @@ from spirit.network.protocol import WargFlags
 from spirit.network.message_names import InboundMsg, OutboundMsg
 from spirit.database.accounts import get_account_by_username, create_account, verify_password
 from spirit.game.attributes import AttrID
-from spirit.game.progression.seasons import VersusSeasonManager
-from spirit.game.progression.account import build_account_attributes, anchor_versus_animation
+from spirit.game.progression.account import (
+    acknowledge_versus_season, anchor_versus_animation, build_account_attributes, client_season_payload,
+)
 from spirit.database.quests import get_quests
 from .base import BaseHandler, handle
 from spirit.server.state import consume_ticket, sweep_expired_tickets
@@ -161,6 +162,7 @@ class AuthHandler(BaseHandler):
             # attributes, so a relog never replays the points/reward animation.
             anchor_versus_animation(account_id)
             attributes = build_account_attributes(account_id)
+            acknowledge_versus_season(account_id)
             daily_info = process_daily_login(account_id)
             quest_snapshot = get_quests(account_id)
             return player, attributes, daily_info, quest_snapshot
@@ -230,15 +232,7 @@ class AuthHandler(BaseHandler):
         }, 0)
 
         # CurrentVersusSeason
-        active_season = VersusSeasonManager().get_active_season()
-        season_payload = active_season.to_dict() if active_season else {
-            "seasonID": "Season1",
-            "startTime": 0,
-            "endTime": 4102444800000, # Year 2100
-            "description": {"id": "SpiritPTCGO Season"},
-            "tiers": [],
-            "resetRewardID": ""
-        }
+        season_payload = client_season_payload()
         await self.client.send_packet({
             "messageName": OutboundMsg.CURRENT_VERSUS_SEASON.value,
             "versusSeason": season_payload

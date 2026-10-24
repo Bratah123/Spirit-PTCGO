@@ -140,3 +140,10 @@ class VersusSeason:
             "tiers": [t.to_dict() for t in self.tiers],
             "resetRewardID": self.reset_reward_id
         }
+
+    def client_dict(self) -> Dict[str, Any]:
+        """A 0 start/end makes the client pop its new-season dialog on every login."""
+        payload = self.to_dict()
+        payload["startTime"] = max(1, int(self.start_time or 0))
+        payload["endTime"] = max(payload["startTime"] + 1, int(self.end_time or 0))
+        return payload
