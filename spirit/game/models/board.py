@@ -235,11 +235,7 @@ class PokemonEntity(CardEntity):
 
     def serialize_attributes(self) -> List[Dict[str, Any]]:
         serialized = super().serialize_attributes()
-        # Fossils (plays_as_pokemon) are Trainer archetypes: server-side rules
-        # keep reading CARD_TYPE=TRAINER off the archetype (setup/mulligan,
-        # deck validation, is_trainer_card in hand), but the client must see
-        # a Pokemon in play or its knockout path (EntityUtil.IsLegendPokemon)
-        # throws. Spoof POKEMON on the wire for those entities only.
+        # Ensures fossil cards' behavior (plays_as_pokemon).
         if getattr(def_for(self.archetype_id), "plays_as_pokemon", False):
             for entry in serialized:
                 if entry.get("name") == AttrID.CARD_TYPE.value:
