@@ -233,6 +233,17 @@ class PokemonEntity(CardEntity):
         self.set_attribute(AttrID.HP, hp_val)
         self.attribute_originals[AttrID.HP.value] = hp_val
 
+    def serialize_attributes(self) -> List[Dict[str, Any]]:
+        serialized = super().serialize_attributes()
+        # Ensures fossil cards' behavior (plays_as_pokemon).
+        if getattr(def_for(self.archetype_id), "plays_as_pokemon", False):
+            for entry in serialized:
+                if entry.get("name") == AttrID.CARD_TYPE.value:
+                    entry["value"] = CardType.POKEMON.value
+                    entry["originalValue"] = CardType.POKEMON.value
+                    entry["modValue"] = CardType.POKEMON.value
+        return serialized 
+
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.Pokemon"
 
