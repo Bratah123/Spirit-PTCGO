@@ -119,6 +119,7 @@ from .effects import (
     resolve_triggered_ability,
 )
 from .passives import (
+    flip_coin_for,
     ability_locked, active_passives, active_to_bench_counters,
     burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
@@ -3249,8 +3250,12 @@ class GameSession:
         await self.enforce_bench_capacity()
 
     async def _checkup_poison(self, active):
-        """Poison tick: 10 * poison_counters (default 1) raw damage."""
-        amount = 10 * self.poison_counters.get(active.entity_id, 1)
+        """Poison tick: 10 * poison_counters (default 1) raw damage; passives
+        may add counters (Virbank City Gym)."""
+        counters = self.poison_counters.get(active.entity_id, 1)
+        for passive, carrier in active_passives(self.board_state):
+            counters = passive.modify_poison_counters(counters, active, carrier)
+        amount = 10 * max(0, counters)
         knocked_out = await self._apply_raw_damage(
             active, amount, GameSequence.POISON_DAMAGE.value
         )
@@ -3273,7 +3278,7 @@ class GameSession:
             return
         if burn_recovery_blocked(self.board_state, active):
             return
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -3302,7 +3307,7 @@ class GameSession:
     async def _checkup_sleep(self, player_id: str, active):
         """Sleep flip: all heads wakes (Thumping Snore's rider flips 2 coins)."""
         coins = self.sleep_checkup_coins.get(active.entity_id, 1)
-        flips = [random.choice([0, 1]) for _ in range(coins)]
+        flips = [flip_coin_for(self.board_state, player_id) for _ in range(coins)]
         woke = all(f == 0 for f in flips)
         self.stat_add(player_id, "headsflipped", flips.count(0))
         self.stat_add(player_id, "tailsflipped", flips.count(1))
@@ -4153,7 +4158,7 @@ class GameSession:
     async def _resolve_attach_tax_flip(self, player_id: str, energy, taxer) -> bool:
         """Slimy Room flip on a manual energy attach: heads (True) proceeds;
         tails discards the energy from hand (revealed) and returns False."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -4835,6 +4840,9 @@ class GameSession:
         pile with the outgoing card and the new Pokemon enters fresh
         (Phantom Transformation). With ctx the choreography is QUEUED on it
         (so the ability announce/orb bracket plays first) instead of sent.
+        destination_name="underneath" (requires transfer=True) tucks the
+        outgoing card under the new Pokemon like a pre-evolution (BW7 Ditto
+        Transform); it then leaves play with that stack.
         Returns `incoming`, or None on failure.
         """
         area = outgoing.parent
@@ -4845,7 +4853,11 @@ class GameSession:
         if isinstance(outgoing, CompositePokemonEntity)                 or isinstance(incoming, (ComponentCardEntity, CompositePokemonEntity)):
             return None
         source_area = incoming._containing_area_name()
-        dest = self.board_state.find_player_area(owner_id, destination_name)
+        underneath = destination_name == "underneath"
+        if underneath and not transfer:
+            return None
+        dest = incoming if underneath else \
+            self.board_state.find_player_area(owner_id, destination_name)
         out_of_play = self.board_state.find_global_area("outOfPlay")
         if dest is None or out_of_play is None or source_area is None:
             return None
@@ -4876,9 +4888,12 @@ class GameSession:
                 self.board_state.move_card(other.entity_id, dest.entity_id)
                 stack_moves.append(self._entity_moved_msg(
                     other.entity_id, dest.entity_id, position))
-        # ...and the old card leaves play.
+        # ...and the old card leaves play (or is tucked under the new one).
         position = len(dest.children)
-        self.board_state.move_card(outgoing.entity_id, dest.entity_id)
+        if underneath:
+            self.board_state.attach_card(outgoing.entity_id, incoming.entity_id)
+        else:
+            self.board_state.move_card(outgoing.entity_id, dest.entity_id)
         outgoing_move = self._entity_moved_msg(
             outgoing.entity_id, dest.entity_id, position)
 
@@ -5224,7 +5239,7 @@ class GameSession:
         not happen (no damage, no lock/VSTAR bookkeeping; the turn still
         ends). PokeAbility bracket: M.s runs the L.x flip with no condition
         pop-in (FlipToWakeUp would stamp the Asleep pop-in)."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
@@ -5249,7 +5264,7 @@ class GameSession:
     async def _resolve_confusion_flip(self, player_id: str, attacker) -> bool:
         """Confused Pokemon flip before attacking: heads proceeds into the
         normal attack; tails hurts the attacker for 30 raw damage instead."""
-        flip = random.choice([0, 1])
+        flip = flip_coin_for(self.board_state, player_id)
         heads = flip == 0
         self.stat_add(player_id, "headsflipped", 1 if heads else 0)
         self.stat_add(player_id, "tailsflipped", 0 if heads else 1)

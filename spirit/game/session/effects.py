@@ -43,6 +43,7 @@ from spirit.game.session.sequence_packets import NestedSequence
 from spirit.game.content.visualizations import VisualizationArrow, VisualizationLifetime, VisualizationType
 from .constants import PROMPT_NO, PROMPT_YES
 from .passives import (
+    flip_coin_for,
     TempPassive,
     ability_effects_blocked,
     ability_locked,
@@ -929,10 +930,12 @@ class EffectContext:
         the results, True = heads. `source` re-anchors the flip visual."""
         if count <= 0:
             return []
-        results = [random.choice([0, 1]) for _ in range(count)]
+        def _flip() -> int:
+            return flip_coin_for(self.board, self.player_id)
+        results = [_flip() for _ in range(count)]
         final = await self._maybe_reroll_attack_coins(
             results, title, source,
-            lambda: [random.choice([0, 1]) for _ in range(count)])
+            lambda: [_flip() for _ in range(count)])
         if final is None:
             await self._queue_coin_results(results, title, source)
         else:
@@ -943,9 +946,9 @@ class EffectContext:
         """"Flip a coin until you get tails": one coin screen shows the whole
         run; returns the heads count."""
         def _run() -> List[int]:
-            run = [random.choice([0, 1])]
+            run = [flip_coin_for(self.board, self.player_id)]
             while run[-1] == 0:
-                run.append(random.choice([0, 1]))
+                run.append(flip_coin_for(self.board, self.player_id))
             return run
         results = _run()
         final = await self._maybe_reroll_attack_coins(results, title, None, _run)
@@ -1529,6 +1532,26 @@ class EffectContext:
                         owner, card, Triggers.ON_DISCARDED_FROM_HAND)
                 self.deferred_actions.append(_fire_hand_discard)
 
+    async def turn_prizes_face_up(self, player_id: Optional[str] = None) -> int:
+        """Town Map: turn all of a player's Prize cards face up for the rest
+        of the game. Each card is introduced to BOTH viewers now and keeps
+        serializing face-up while it stays a Prize (reconnect-safe); cards put
+        into the Prizes later stay face down. Returns how many were turned."""
+        pid = player_id or self.player_id
+        prize_area = self.board.find_player_area(pid, "prizePile")
+        prizes = [c for c in (prize_area.children if prize_area else [])
+                  if isinstance(c, CardEntity) and not c.face_up_prize]
+        if not prizes:
+            return 0
+        await self.flush_choreography()
+        for card in prizes:
+            card.face_up_prize = True
+        session = self.session
+        await session.send_game_sequence(
+            list(session.players.values()), GameSequence.GROUPED_MOVE,
+            [session._entity_introduced_msg(c) for c in prizes])
+        return len(prizes)
+
     async def look_at_prizes_take_basic(self) -> bool:
         """Hisuian Heavy Ball: look at your face-down Prizes; you may reveal a
         Basic Pokemon to your hand and put the source card in its place as a
@@ -1888,7 +1911,8 @@ class EffectContext:
                             destination: str = "discard",
                             transfer: bool = True) -> bool:
         """Switches an in-play Pokemon with a hand/discard card; see
-        GameSession.perform_identity_swap. transfer=True carries attachments/
+        GameSession.perform_identity_swap (destination="underneath" tucks the
+        outgoing card under the new one). transfer=True carries attachments/
         damage/conditions/turn stamps onto the new Pokemon; a transferred
         damage total covering its HP queues a knockout. The TransformSwap
         choreography queues on this ctx so the announce/orb bracket (aimed at
@@ -2259,11 +2283,35 @@ def is_basic_pokemon(card: CardEntity) -> bool:
     )
 
 
+def is_stage1_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE1.value
+    )
+
+
+def is_stage2_pokemon(card: CardEntity) -> bool:
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.STAGE2.value
+    )
+
+
 def is_evolution_pokemon(card: CardEntity) -> bool:
     return (
         is_pokemon_card(card)
         and card.get_attribute(AttrID.STAGE) not in (
-            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value)
+            PokemonStage.BASIC.value, PokemonStage.LEGEND.value, PokemonStage.VUNION.value,
+            PokemonStage.RESTORED.value)
+    )
+
+
+def is_restored_pokemon(card: CardEntity) -> bool:
+    """BW Restored Pokemon (Archen, Tirtouga, Aerodactyl...): neither Basic
+    nor Evolution; they enter play only via their Fossil Item."""
+    return (
+        is_pokemon_card(card)
+        and card.get_attribute(AttrID.STAGE) == PokemonStage.RESTORED.value
     )
 
 
@@ -2286,6 +2334,49 @@ def is_supporter_card(card: CardEntity) -> bool:
 
 def is_special_energy(card: CardEntity) -> bool:
     return bool(card.get_attribute(AttrID.IS_SPECIAL_ENERGY))
+
+
+TEAM_PLASMA_SUBTYPE = "Team Plasma"
+
+
+def _has_subtype(card: Optional[CardEntity], subtype: str) -> bool:
+    if card is None:
+        return False
+    from spirit.game.content.definitions import subtypes_for
+    return subtype in (subtypes_for(card.archetype_id) or [])
+
+
+def is_team_plasma_card(card: CardEntity) -> bool:
+    """Any card printed as Team Plasma (Pokemon, Trainer or Plasma Energy)."""
+    return _has_subtype(card, TEAM_PLASMA_SUBTYPE)
+
+
+def is_team_plasma_pokemon(card: CardEntity) -> bool:
+    """A Team Plasma Pokemon. In play, an attached card whose definition sets
+    grants_team_plasma=True (BW9 Team Plasma Badge) also makes it one; tucked
+    pre-evolutions are ignored."""
+    if not is_pokemon_card(card):
+        return False
+    if is_team_plasma_card(card):
+        return True
+    from spirit.game.content.definitions import def_for
+    for child in getattr(card, "children", None) or []:
+        if isinstance(child, PokemonEntity):
+            continue
+        if getattr(def_for(getattr(child, "archetype_id", None)), "grants_team_plasma", False):
+            return True
+    return False
+
+
+def is_plasma_energy(card: CardEntity) -> bool:
+    """Plasma Energy: the Team Plasma Special Energy (BW8-BW10)."""
+    return is_special_energy(card) and is_team_plasma_card(card)
+
+
+def plasma_energy_attached(pokemon: PokemonEntity) -> List[CardEntity]:
+    return [c for c in (getattr(pokemon, "children", None) or [])
+            if isinstance(c, CardEntity) and not isinstance(c, PokemonEntity)
+            and is_plasma_energy(c)]
 
 
 def full_stack(pokemon: PokemonEntity) -> List[CardEntity]:
