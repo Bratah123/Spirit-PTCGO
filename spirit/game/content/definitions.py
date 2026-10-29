@@ -46,8 +46,34 @@ def subtypes_for(archetype_id: Optional[str]) -> List[str]:
 
 
 # Rule-box subtypes and the prizes an attacker takes for knocking one out.
-_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2}
-_RULE_BOX_SUBTYPES = set(_MULTI_PRIZE_SUBTYPES) | {"Radiant"}
+# TAG TEAM cards are also "GX"; prize_value takes the max, so they give 3.
+_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2,
+                         "TAG TEAM": 3}
+_RULE_BOX_SUBTYPES = set(_MULTI_PRIZE_SUBTYPES) | {"Radiant", "Prism Star"}
+
+PRISM_STAR_SUBTYPE = "Prism Star"
+ULTRA_BEAST_SUBTYPE = "Ultra Beast"
+TAG_TEAM_SUBTYPE = "TAG TEAM"
+
+
+def is_prism_star(archetype_id: Optional[str]) -> bool:
+    """Prism Star card (Pokemon, Trainer or Energy): 1 per name per deck and
+    it goes to the Lost Zone instead of the discard pile."""
+    return PRISM_STAR_SUBTYPE in subtypes_for(archetype_id)
+
+
+def is_ultra_beast(archetype_id: Optional[str]) -> bool:
+    return ULTRA_BEAST_SUBTYPE in subtypes_for(archetype_id)
+
+
+def is_tag_team(archetype_id: Optional[str]) -> bool:
+    return TAG_TEAM_SUBTYPE in subtypes_for(archetype_id)
+
+
+def looks_like_gx_attack(title: str, game_text: str) -> bool:
+    """SM GX attacks: title ends in 'GX' and the text carries the GX reminder."""
+    return (title or "").rstrip().endswith("GX") \
+        and "more than 1 GX attack" in (game_text or "")
 
 
 def is_pokemon_v(archetype_id: Optional[str]) -> bool:
@@ -114,7 +140,16 @@ class Triggers:
     """Events the game session fires scripted abilities on (Ability.trigger)."""
     ON_PLAY = "on_play"  # the Pokemon is played from hand onto the bench
     ON_EVOLVE = "on_evolve"  # the Pokemon evolves into this card
+    # This in-play Pokemon is about to evolve (Alakazam-EX Kinesis: "before it
+    # evolves"); fires on the PRE-evolution before the card moves; ctx carries
+    # evolution_card.
+    ON_BEING_EVOLVED = "on_being_evolved"
     ON_KNOCKED_OUT = "on_knocked_out"  # this Pokemon is Knocked Out
+    # This Pokemon is about to be Knocked Out (Celebi Leap Through Time):
+    # fires before prizes and stack moves; a trigger that sets
+    # ctx.ko_replaced = True (and moved the stack itself) cancels the KO's
+    # discard and prizes.
+    ON_KNOCKED_OUT_REPLACEMENT = "on_knocked_out_replacement"
     BETWEEN_TURNS = "between_turns"  # fires on every Pokemon Checkup
     # An opponent's attack damaged this Pokemon (Rocky Helmet); the trigger
     # ctx carries damaged_by / damage_amount / pre_hit_hp.
@@ -148,6 +183,10 @@ class Triggers:
     # effect (Amoonguss "Surprise Spores"); fires via the acting ctx's
     # deferred_actions, after that effect's choreography flushes.
     ON_DISCARDED_FROM_HAND = "on_discarded_from_hand"
+    # The OPPOSING player's Active retreated (Toxapex "Toxic Spikes"); fires
+    # for each in-play Pokemon of the retreating player's opponent after the
+    # swap; ctx carries retreating_player_id / retreated_pokemon / new_active.
+    ON_OPPONENT_RETREAT = "on_opponent_retreat"
 
 
 class Activations:
@@ -275,10 +314,14 @@ class Attack(Ability):
         locks_next_turn: bool = False,
         condition: Optional[Callable] = None,
         usable_first_turn: bool = False,
-        usable_despite_conditions: bool = False
+        usable_despite_conditions: bool = False,
+        gx: Optional[bool] = None,
     ):
         super().__init__(title, game_text, ability_type, effect, vstar=vstar,
                          condition=condition)
+        # GX attack: once per game per player (shared with every GX attack).
+        # None = infer from the printed title/text.
+        self.gx = looks_like_gx_attack(title, game_text) if gx is None else bool(gx)
         self.cost = cost or {}
         self.damage = damage
         self.damage_operator = damage_operator
@@ -661,10 +704,19 @@ class PokemonToolCardDef(TrainerCardDef):
     restricts legal attach targets (Hero's Medal)."""
     def __init__(self, passive: Optional[Any] = None,
                  granted_abilities: Optional[List[Ability]] = None,
-                 attach_to: Optional[Callable] = None, **kwargs):
+                 attach_to: Optional[Callable] = None,
+                 on_carrier_knocked_out: Optional[Any] = None,
+                 attach_to_opponent: bool = False, **kwargs):
         kwargs['trainer_type'] = TrainerType.POKEMON_TOOL
         super().__init__(**kwargs)
         self.passive = passive
+        # Team Flare Hyper Gear: attaches to the OPPONENT's Pokemon; the card
+        # keeps its owner (home_player_id) and returns to its owner's discard
+        # pile when it leaves that Pokemon for any reason.
+        self.attach_to_opponent = attach_to_opponent
+        # async (ctx) run after the holder is Knocked Out by damage from an
+        # opponent's attack; ctx.ko_energies lists its Energy pre-discard.
+        self.on_carrier_knocked_out = on_carrier_knocked_out
         self.attach_to = attach_to
         self.granted_abilities: List[Ability] = granted_abilities or []
         for idx, a in enumerate(self.granted_abilities):
@@ -692,6 +744,19 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    on_carrier_damaged_by_attack -- async (ctx) run when the carrier is damaged
+                        by an opponent's attack (even if Knocked Out); ctx.source
+                        is the energy, ctx.attached_to the carrier, ctx.damaged_by
+                        the attacker (Dangerous Energy).
+    discard_unless_attach_to -- XY type-locked energies: "(If this card is
+                        attached to anything other than a X Pokemon, discard
+                        this card.)" -- checked before every action offer.
+    discard_end_of_attach_turn -- "Discard this card at the end of the turn you
+                        attached it" (Double Aqua/Magma Energy).
+    reattach_after_own_attack -- "If this card is discarded by an attack of the
+                        Pokemon this card is attached to, attach this card from
+                        your discard pile to that Pokemon after attacking"
+                        (Burning Energy).
     """
     def __init__(
         self,
@@ -710,6 +775,10 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        on_carrier_damaged_by_attack: Optional[Any] = None,
+        discard_unless_attach_to: bool = False,
+        discard_end_of_attach_turn: bool = False,
+        reattach_after_own_attack: bool = False,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -726,6 +795,10 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        self.on_carrier_damaged_by_attack = on_carrier_damaged_by_attack
+        self.discard_unless_attach_to = discard_unless_attach_to
+        self.discard_end_of_attach_turn = discard_end_of_attach_turn
+        self.reattach_after_own_attack = reattach_after_own_attack
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]
