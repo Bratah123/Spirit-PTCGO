@@ -36,13 +36,19 @@ from .constants import (
 from .vunion import summon_pieces
 from .passives import (
     ability_locked,
+    stadium_suppressed,
+    energy_attach_blocked,
+    attacks_blocked,
     can_attack_despite_conditions,
     can_evolve_early,
+    can_retreat_despite_conditions,
     effective_attack_cost,
     effective_bench_capacity,
+    effective_supporter_limit,
     effective_retreat_cost,
     energy_provided_options,
     evolution_blocked,
+    gx_attacks_blocked,
     retreat_blocked,
     tool_slots_free,
     trainer_play_blocked,
@@ -99,6 +105,8 @@ class TurnState:
     supporter_played: bool = False
     stadium_played: bool = False
     energy_attached: bool = False
+    # alpha Growth: the Pokemon whose trait allows a 2nd manual attachment this turn.
+    alpha_growth_target: Optional[str] = None
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
     # placed during setup are absent and default to turn 0.
@@ -110,6 +118,14 @@ class TurnState:
     used_named_abilities: Set[str] = field(default_factory=set)
     # Players who already used their once-per-game VSTAR Power.
     vstar_used: Set[str] = field(default_factory=set)
+    # Players who already used their once-per-game GX attack.
+    gx_used: Set[str] = field(default_factory=set)
+    # EVOLUTION_LOGIC_NAME values that may use a GX attack this turn even if
+    # gx_used is set (Bonnie: Zygarde-GX).
+    gx_unlocked: Set[str] = field(default_factory=set)
+    # player_id -> turn number during which that player may attach any number
+    # of Energy cards from hand (Dragonair "Dragon's Wish").
+    unlimited_energy_attach: Dict[str, int] = field(default_factory=dict)
     # (player_id, combined guid) per V-UNION already combined this game.
     vunions_assembled: Set[Tuple[str, str]] = field(default_factory=set)
     # (entity_id, ability_id) -> last turn number the attack stays locked
@@ -135,6 +151,9 @@ class TurnState:
     retreated_entities: Set[str] = field(default_factory=set)
     healed_entities: Set[str] = field(default_factory=set)
     turn_draw_entity_ids: Set[str] = field(default_factory=set)
+    # True while the between-turns Pokemon Checkup runs (not "during"
+    # either player's turn).
+    in_checkup: bool = False
     trainers_played_last_turn: List[Tuple[str, str, int]] = field(default_factory=list)
     attacks_used_last_turn: List[Tuple[str, str, str]] = field(default_factory=list)
     kos_by_attack_last_turn: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
@@ -169,6 +188,12 @@ class TurnState:
     # {player_id, attacker_predicate, target_predicate, prizes}; consulted by
     # resolve_knockouts on attack-damage KOs, cleared every begin_turn.
     extra_prize_watchers: List[Dict[str, Any]] = field(default_factory=list)
+    # owner_id -> chooser_id: who picks the replacement Active after a KO
+    # (Hypno Hypnotic Pendulum). Consumed by _promote_new_active.
+    promotion_chooser: Dict[str, str] = field(default_factory=dict)
+    # player_id -> hand size to draw up to at the end of that player's turn
+    # (Blue's Tactics). Consumed by _fire_end_of_turn_triggers.
+    end_of_turn_draw_until: Dict[str, int] = field(default_factory=dict)
 
     def begin_turn(self, player_id: str, board: Optional[Any] = None):
         """Advances to the next turn, resets the once-per-turn flags, rotates
@@ -182,9 +207,11 @@ class TurnState:
         self.supporter_played = False
         self.stadium_played = False
         self.energy_attached = False
+        self.alpha_growth_target = None
         self.retreated = False
         self.used_abilities = set()
         self.used_named_abilities = set()
+        self.gx_unlocked = set()
         self.damage_modifiers = [
             m for m in self.damage_modifiers
             if getattr(m, "expires_after_turn", None) is not None
@@ -223,12 +250,20 @@ class TurnState:
         }
         self.ignore_target_effects_entities = set()
         self.extra_prize_watchers = []
+        self.promotion_chooser = {}
         if board is not None:
             board.temporary_passives = [
                 tp for tp in (getattr(board, "temporary_passives", None) or [])
                 if tp.expires_after_turn is None
                 or tp.expires_after_turn >= self.turn_number
             ]
+
+    def allow_unlimited_energy_attach(self, player_id: str, turn_number: int):
+        """`player_id` may attach any number of Energy from hand during `turn_number`."""
+        self.unlimited_energy_attach[player_id] = turn_number
+
+    def energy_attach_unlimited(self, player_id: str) -> bool:
+        return self.unlimited_energy_attach.get(player_id) == self.turn_number
 
     def mark_entered_play(self, entity_id: str):
         self.entered_play_turn[entity_id] = self.turn_number
@@ -273,12 +308,14 @@ class TurnState:
         return self.turn_number <= self.attach_restrictions.get(entity_id, -1)
 
     def set_attack_flip_check(self, entity_id: str, through_turn: Optional[int] = None,
-                              title: str = ""):
-        """Requires a coin flip before `entity_id` attacks (tails = the attack
-        doesn't happen); default lifetime: through the opponent's next turn."""
+                              title: str = "", coins: int = 1):
+        """Requires coin flip(s) before `entity_id` attacks (any tails = the
+        attack doesn't happen); default lifetime: through the opponent's
+        next turn. `coins` > 1 is Sticky Smokescreen's two-coin check."""
         self.attack_flip_checks[entity_id] = (
             self.turn_number + 1 if through_turn is None else through_turn,
             title,
+            max(1, int(coins)),
         )
 
     def attack_flip_check(self, entity_id: str) -> Optional[str]:
@@ -287,6 +324,13 @@ class TurnState:
         if entry is not None and self.turn_number <= entry[0]:
             return entry[1]
         return None
+
+    def attack_flip_coins(self, entity_id: str) -> int:
+        """How many coins the smokescreen-family check flips (default 1)."""
+        entry = self.attack_flip_checks.get(entity_id)
+        if entry is not None and self.turn_number <= entry[0]:
+            return entry[2] if len(entry) > 2 else 1
+        return 1
 
     def may_evolve_target(self, entity_id: str) -> bool:
         """A Pokemon may evolve only if it has been in play since a previous
@@ -454,13 +498,17 @@ def compute_legal_actions(
             continue
         if isinstance(card, PokemonEntity):
             stage = card.get_attribute(AttrID.STAGE)
+            if stage == PokemonStage.RESTORED.value:
+                continue  # Restored Pokemon enter play only via their Fossil Item
             if stage == PokemonStage.BASIC.value:
                 if getattr(def_for(card.archetype_id), "unplayable_from_hand", False):
                     continue  # Shedinja: enters play only via an effect
                 # Fossils stay Item cards in hand: Item locks gate the bench play.
+                # Heavy Rock-GX / Bell of Silence also lock Basic Pokemon plays.
+                if state.play_locked(player_id, card):
+                    continue
                 if card.get_attribute(AttrID.TRAINER_TYPE) is not None \
-                        and (state.play_locked(player_id, card)
-                             or trainer_play_blocked(board, player_id, card)):
+                        and trainer_play_blocked(board, player_id, card):
                     continue
                 if bench_has_space:
                     # The bench area is the drop target; without it the drag
@@ -472,16 +520,23 @@ def compute_legal_actions(
                     ))
                 continue
 
+            if state.play_locked(player_id, card):
+                continue  # Heavy Rock-GX / Bell of Silence lock evolve-from-hand
             evolves_from = card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
             if not evolves_from:
                 continue
+            # delta Evolution: ignores the first-turn / just-played gates
+            # (a Pokemon that already evolved this turn still can't).
+            from spirit.game.card_effects.ancient_traits import DELTA_EVOLUTION, definition_has_trait
+            delta_evolution = definition_has_trait(card.archetype_id, DELTA_EVOLUTION)
             evolve_targets = [
                 p.entity_id for p in in_play
                 if not isinstance(p, CompositePokemonEntity)
                 and p.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == evolves_from
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
-                     or can_evolve_early(board, p))
+                     or can_evolve_early(board, p)
+                     or delta_evolution)
             ]
             if evolve_targets:
                 entries.append(_target_map_entry(
@@ -491,7 +546,11 @@ def compute_legal_actions(
                 ))
 
         elif isinstance(card, EnergyEntity):
-            if state.energy_attached or not in_play_ids:
+            if not in_play_ids:
+                continue
+            unlimited = state.energy_attach_unlimited(player_id)
+            if state.energy_attached and state.alpha_growth_target is None \
+                    and not unlimited:
                 continue
             if state.play_locked(player_id, card):
                 continue
@@ -504,6 +563,9 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and not energy_attach_blocked(board, player_id, card, p)
+                and (not state.energy_attached or unlimited
+                     or p.entity_id == state.alpha_growth_target)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -538,7 +600,11 @@ def compute_legal_actions(
                     target_infos,
                 ))
             elif trainer_type == TrainerType.SUPPORTER.value:
-                if not state.supporter_played and state.turn_number > 1:
+                supporters_played = sum(
+                    1 for r in state.trainers_played
+                    if r[2] == TrainerType.SUPPORTER.value)
+                if state.turn_number > 1 and (not state.supporter_played or
+                        supporters_played < effective_supporter_limit(board, player_id)):
                     entries.append(_target_map_entry(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "supporter"), ACTION_USE_TRAINER,
@@ -552,8 +618,12 @@ def compute_legal_actions(
                     ))
             elif trainer_type == TrainerType.POKEMON_TOOL.value:
                 tool_attach_to = getattr(definition, "attach_to", None)
+                tool_pool = in_play
+                if getattr(definition, "attach_to_opponent", False):
+                    tool_pool = [p for pid in board.player_ids if pid != player_id
+                                 for p in board.pokemon_in_play(pid)]
                 tool_targets = [
-                    p.entity_id for p in in_play
+                    p.entity_id for p in tool_pool
                     if tool_slots_free(board, p) > 0
                     and (tool_attach_to is None or tool_attach_to(p))
                 ]
@@ -571,7 +641,9 @@ def compute_legal_actions(
     # Asleep/Paralyzed gates attacks per-attack (Attack(usable_despite_conditions)).
     immobilized = _active_immobilized(board, player_id)
     entries.extend(_attack_entries(board, state, player_id, game_id, immobilized))
-    if not immobilized:
+    active = board.active_pokemon(player_id)
+    if not immobilized or (
+            active is not None and can_retreat_despite_conditions(board, active)):
         entries.extend(_retreat_entry(board, state, player_id, game_id))
     # A turn kept alive past an attack (Fluffy Barrage's second strike) stays
     # in the attack phase: only attacking (or End Turn) remains legal.
@@ -700,6 +772,8 @@ def _stadium_ability_entries(
             continue
         if (stadium.entity_id, ability.ability_id) in state.used_abilities:
             continue
+        if stadium_suppressed(board, stadium):
+            continue  # Wicked Wind: the Stadium has no effect
         if ability.condition and not ability.condition(board, player_id, stadium):
             continue
         entries.append(_target_map_entry(
@@ -789,6 +863,8 @@ def _attack_entries(
     active = board.active_pokemon(player_id)
     if not active:
         return []
+    if attacks_blocked(board, active):
+        return []
     # A passive (Windup Arm) can exempt the whole Pokemon from the gate.
     if immobilized and can_attack_despite_conditions(board, active):
         immobilized = False
@@ -822,6 +898,15 @@ def _attack_entries(
         if definition is not None and definition.vstar \
                 and player_id in state.vstar_used:
             continue
+        if definition is not None and getattr(definition, "gx", False):
+            unlocked = (
+                (active.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) or "")
+                in state.gx_unlocked
+            )
+            if gx_attacks_blocked(board, player_id, active):
+                continue
+            if player_id in state.gx_used and not unlocked:
+                continue
         # Attack usage restriction ("You can use this attack only if...").
         if definition is not None and definition.condition is not None \
                 and not definition.condition(board, player_id, active):
