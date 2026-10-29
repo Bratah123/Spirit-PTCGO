@@ -1,0 +1,5 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.sm11 import mysterious_noise
+
+card = PokemonCardDef(guid='a111207e-943d-5fc5-9692-8eeb86a1fe16', key='SM11', name='com.direwolfdigital.cake.data.archetypes.pokemon.Beheeyem.Name', display_name='Beheeyem', searchable_by=['Beheeyem', 'Stage 1', 'Beheeyem'], subtypes=['Stage 1'], collector_number=91, set_code='SM11', rarity=Rarities.Rare, hp=80, elements=[PokemonTypes.PSYCHIC], stage=PokemonStage.STAGE1, retreat_cost=1, weakness_type=PokemonTypes.PSYCHIC, evolves_from='com.direwolfdigital.cake.data.archetypes.pokemon.Elgyem.Name', family_id=605, abilities=[Attack(title='Psypunch', cost={PokemonTypes.PSYCHIC: 1}, damage=20), Attack(title='Mysterious Noise', game_text="Shuffle this Pokémon and all cards attached to it into your deck. Your opponent can't play any Item cards from their hand during their next turn.", cost={PokemonTypes.COLORLESS: 3}, damage=90, effect=mysterious_noise)])

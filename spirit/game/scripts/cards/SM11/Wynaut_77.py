@@ -1,0 +1,5 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.sm11 import peppy_pick
+
+card = PokemonCardDef(guid='a9f5c617-0107-593c-b3fe-744d95b993a7', key='SM11', name='com.direwolfdigital.cake.data.archetypes.pokemon.Wynaut.Name', display_name='Wynaut', searchable_by=['Wynaut', 'Basic', 'Wynaut'], subtypes=['Basic'], collector_number=77, set_code='SM11', rarity=Rarities.Uncommon, hp=60, elements=[PokemonTypes.PSYCHIC], stage=PokemonStage.BASIC, retreat_cost=0, family_id=360, abilities=[Ability(title='Peppy Pick', game_text="Once during your turn (before your attack), you may flip a coin. If heads, choose a random card from your opponent's hand. Your opponent reveals that card and shuffles it into their deck. If you use this Ability, your turn ends.", ability_type=AbilityTypes.POKE_ABILITY, effect=peppy_pick, activation=Activations.ONCE_PER_TURN, ends_turn=True)])
