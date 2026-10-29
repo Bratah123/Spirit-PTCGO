@@ -9,6 +9,10 @@ from spirit.game.decks.theme_decks import theme_decks
 
 DECK_SIZE = 60
 MAX_COPIES = 4
+MAX_ACE_SPEC = 1
+MAX_PRISM_STAR_PER_NAME = 1
+PRISM_STAR_SUBTYPE = "Prism Star"
+ACE_SPEC_SUBTYPE = "ACE SPEC"
 
 
 def _detail(failure_type: str, text: str, offenders: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -39,6 +43,11 @@ def _copy_limit_key(card) -> str:
     if card.get_attribute_value(AttrID.CARD_TYPE) == CardType.LEGEND_HALF.value             and card.get_attribute_value(AttrID.STAGE) == PokemonStage.VUNION.value:
         return f"{name} #{card.get_attribute_value(AttrID.COLLECTOR_NUMBER)}"
     return name
+
+
+def _is_ace_spec(card) -> bool:
+    """BW/XY-era ACE SPEC Trainers carry the subtype flag (no dedicated CardDef)."""
+    return ACE_SPEC_SUBTYPE in (getattr(card, "subtypes", None) or [])
 
 
 def _is_basic_pokemon_card(card) -> bool:
@@ -103,6 +112,26 @@ class DeckValidator:
                 "MaxDuplicates",
                 f"A deck can't contain more than {MAX_COPIES} cards with the same name: {names}.",
                 offenders))
+
+        ace_specs = [c for c in self.cards if _is_ace_spec(c)]
+        if len(ace_specs) > MAX_ACE_SPEC:
+            details.append(_detail(
+                "MaxDuplicates",
+                f"A deck can't contain more than {MAX_ACE_SPEC} ACE SPEC card "
+                f"(this deck has {len(ace_specs)}).",
+                sorted({c.guid.lower() for c in ace_specs})))
+
+        prism: Dict[str, List[str]] = {}
+        for card in self.cards:
+            if PRISM_STAR_SUBTYPE in (getattr(card, "subtypes", None) or []):
+                prism.setdefault(card_display_name(card), []).append(card.guid.lower())
+        prism_over = {n: g for n, g in prism.items() if len(g) > MAX_PRISM_STAR_PER_NAME}
+        if prism_over:
+            details.append(_detail(
+                "MaxDuplicates",
+                "A deck can't contain more than 1 Prism Star card with the same name: "
+                f"{', '.join(sorted(prism_over))}.",
+                sorted({g for guids in prism_over.values() for g in guids})))
 
         if not any(_is_basic_pokemon_card(c) for c in self.cards):
             details.append(_detail(
