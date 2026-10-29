@@ -1,7 +1,7 @@
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AttrID, CardType
 
-LUNATONE_NAME = "com.direwolfdigital.cake.data.archetypes.pokemon.Lunatone.Name"
+LUNATONE_NAME = "Lunatone"  # EVOLUTION_LOGIC_NAME holds the short logic name
 
 
 def _is_psychic_energy_card(card):
