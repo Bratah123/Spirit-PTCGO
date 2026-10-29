@@ -1,0 +1,36 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
+
+card = PokemonCardDef(
+    guid="5b55da59-6a12-59e4-9eef-5d69994f245f",
+    key="SM7",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Metang.Name",
+    display_name="Metang",
+    searchable_by=["Metang", "Stage 1", "Metang"],
+    subtypes=["Stage 1"],
+    collector_number=94,
+    set_code="SM7",
+    rarity=Rarities.Uncommon,
+    hp=90,
+    elements=[PokemonTypes.METAL],
+    stage=PokemonStage.STAGE1,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.FIRE,
+    resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Beldum.Name",
+    family_id=374,
+    abilities=[
+        Attack(
+            title="Bullet Punch",
+            game_text="Flip 2 coins. This attack does 20 more damage for each heads.",
+            cost={PokemonTypes.METAL: 1},
+            damage=20,
+            damage_operator="+",
+            # STUB: attack effect not implemented
+            effect=flip_damage(coins=2, bonus_per_heads=20),
+        ),
+    ],
+)

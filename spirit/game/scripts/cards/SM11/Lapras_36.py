@@ -1,0 +1,5 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.sm11 import mermaids_call, mermaids_call_condition
+
+card = PokemonCardDef(guid='37096c4c-61f1-5470-8b6d-fedd139f1d95', key='SM11', name='com.direwolfdigital.cake.data.archetypes.pokemon.Lapras.Name', display_name='Lapras', searchable_by=['Lapras', 'Basic', 'Lapras'], subtypes=['Basic'], collector_number=36, set_code='SM11', rarity=Rarities.Uncommon, hp=110, elements=[PokemonTypes.WATER], stage=PokemonStage.BASIC, retreat_cost=1, weakness_type=PokemonTypes.GRASS, family_id=131, abilities=[Ability(title="Mermaid's Call", game_text="Once during your turn (before your attack), you may put a Misty's Favor card from your discard pile into your hand.", ability_type=AbilityTypes.POKE_ABILITY, effect=mermaids_call, activation=Activations.ONCE_PER_TURN, condition=mermaids_call_condition), Attack(title='Surf', cost={PokemonTypes.WATER: 2, PokemonTypes.COLORLESS: 1}, damage=90)])

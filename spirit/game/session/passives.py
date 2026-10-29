@@ -8,9 +8,10 @@ or max HP, so effects switch on/off purely by board position.
 """
 
 from dataclasses import dataclass
+import random
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from spirit.game.attributes import AttrID, PokemonTypes, TrainerType
+from spirit.game.attributes import AbilityTypes, AttrID, PokemonTypes, TrainerType
 from spirit.game.data_utils import ABILITIES_BY_ID, def_for, subtypes_for
 from spirit.game.models.board import (
     BENCH_SLOT_COUNT,
@@ -52,6 +53,9 @@ class TempPassive:
     passive: "Passive"
     carrier_entity_id: str
     expires_after_turn: Optional[int] = None
+    # Player-level lifetime (Hex Maniac): the carrier is a player area, so
+    # the in-play check is skipped; only expires_after_turn ends it.
+    global_scope: bool = False
 
 
 class DamageCalc:
@@ -86,6 +90,10 @@ class DamageCalc:
             target.get_attribute(AttrID.WEAKNESS_TYPES) or []
         )
         self.resistance_applies = True
+        # Era-correct Resistance: the target's printed amount (XY/BW -20,
+        # SWSH -30); modify_resistance hooks may rewrite it (Klefki -40).
+        self.resistance_amount = target.get_attribute(AttrID.RESISTANCE_AMOUNT) \
+            or RESISTANCE_REDUCTION
         self.weakness_hit = False
         self.resistance_hit = False
         self.prevented = False
@@ -151,6 +159,14 @@ class Passive:
         """True to prevent the hit entirely (calc.amount becomes 0)."""
         return False
 
+    def prevents_damage_counters(
+        self, target: PokemonEntity, carrier: BoardEntity,
+        source_player_id: Optional[str] = None,
+    ) -> bool:
+        """True to stop putting damage counters on `target` (Machoke's
+        Daunting Pose: opponent attacks/Abilities vs your Bench)."""
+        return False
+
     def modify_attack_cost(
         self,
         cost: Dict[str, int],
@@ -177,6 +193,18 @@ class Passive:
         """True to shield `target` from opponents' attack EFFECTS (not damage)."""
         return False
 
+    def blocks_attack_effects_from(
+        self, target: PokemonEntity, attacker: Optional[PokemonEntity],
+        carrier: BoardEntity,
+    ) -> bool:
+        """Attacker-aware effect shield (Alolan Ninetales vs GX/EX). Defaults
+        to blocks_attack_effects when the attacker is unknown."""
+        return self.blocks_attack_effects(target, carrier)
+
+    def blocks_attacks(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
+        """True to forbid `pokemon` from attacking (Vileplume Disgusting Pollen)."""
+        return False
+
     def blocks_abilities(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to turn off `pokemon`'s Abilities (Path to the Peak style)."""
         return False
@@ -187,6 +215,10 @@ class Passive:
 
     def attacks_despite_conditions(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to let `pokemon` attack even while Asleep/Paralyzed (Windup Arm)."""
+        return False
+
+    def retreats_despite_conditions(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
+        """True to let `pokemon` retreat even while Asleep/Paralyzed (Escape Board)."""
         return False
 
     def blocks_special_conditions(
@@ -202,6 +234,19 @@ class Passive:
     def knockout_destination(self, pokemon: PokemonEntity, carrier: BoardEntity) -> Optional[str]:
         """Area name replacing "discard" for a knocked-out Pokemon (e.g. "lostZone")."""
         return None
+
+    def knockout_whole_stack(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
+        """True to send attached Energy/Tools to knockout_destination with the
+        Pokemon (Tyranitar Lost Out); Lost City leaves attachments in discard."""
+        return False
+
+    def allows_second_energy_attach(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to let the owner attach a second Energy from hand to `pokemon`
+        this turn after the first manual attach (Primarina Harmonics; Alpha
+        Growth uses the ancient-trait check instead)."""
+        return False
 
     def modify_prizes_for_knockout(
         self, pokemon: PokemonEntity, ctx: Any, count: int, carrier: BoardEntity
@@ -247,6 +292,11 @@ class Passive:
         (Tool Jammer); evaluated on the unfiltered set like ability locks."""
         return False
 
+    def suppresses_stadium(self, stadium: BoardEntity, carrier: BoardEntity) -> bool:
+        """True to neutralize a Stadium in play (Wicked Wind): its passive
+        hooks and its once-per-turn abilities are off."""
+        return False
+
     def granted_attacks(
         self, board: BoardState, pokemon: PokemonEntity, carrier: BoardEntity
     ) -> List[Any]:
@@ -255,7 +305,8 @@ class Passive:
         return []
 
     def blocks_trainer_play(
-        self, card: BoardEntity, player_id: str, carrier: BoardEntity
+        self, card: BoardEntity, player_id: str, carrier: BoardEntity,
+        board: Optional[BoardState] = None,
     ) -> bool:
         """True to forbid `player_id` playing `card` from hand (Vileplume)."""
         return False
@@ -277,8 +328,57 @@ class Passive:
         """Damage counters the Burn checkup tick places (default 2)."""
         return counters
 
+    def modify_poison_counters(
+        self, counters: int, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> int:
+        """Damage counters the Poison checkup tick places (Virbank City Gym +2);
+        `counters` starts at the Pokemon's recorded poison multiplier."""
+        return counters
+
+    def supporter_limit(self, player_id: str, carrier: BoardEntity) -> int:
+        """Supporter cards `player_id` may play per turn (Magnezone Dual
+        Brains 2); the highest wins."""
+        return 1
+
+    def blocks_energy_attach(
+        self, energy: BoardEntity, player_id: str, target: PokemonEntity,
+        carrier: BoardEntity
+    ) -> bool:
+        """True to forbid `player_id` attaching `energy` from hand to `target`
+        as their manual attachment (Froslass Cursed Glare)."""
+        return False
+
+    def blocks_gx_attacks(self, player_id: str, pokemon: PokemonEntity,
+                          carrier: BoardEntity) -> bool:
+        """True to forbid `player_id`'s `pokemon` using GX attacks ("your
+        opponent can't use any GX attacks")."""
+        return False
+
+    def forces_coin_tails(self, player_id: str, carrier: BoardEntity) -> bool:
+        """True when every coin `player_id` flips comes up tails (Cofagrigus
+        Slap of Misfortune); covers effect flips and Checkup/attack flips."""
+        return False
+
+    def forces_coin_tails_during_own_turn(self, player_id: str, carrier: BoardEntity) -> bool:
+        """True when every coin `player_id` flips DURING THEIR OWN TURN comes
+        up tails (Malamar Contrary); Checkup flips are between turns."""
+        return False
+
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
+        return False
+
+    def sleep_checkup_coins(self, pokemon: PokemonEntity, carrier: BoardEntity) -> int:
+        """Coins `pokemon` flips to wake up between turns (Snorlax Stir and
+        Snooze: 2, all heads wakes); 0 = no opinion. Highest wins."""
+        return 0
+
+    def ends_turn_on_energy_attach(
+        self, pokemon: PokemonEntity, attaching_player_id: str, energy: BoardEntity,
+        carrier: BoardEntity,
+    ) -> bool:
+        """True to end the attaching player's turn after a manual Energy
+        attach from hand to `pokemon` (Slakoth Lazy Howl)."""
         return False
 
     def tool_capacity(self, pokemon: PokemonEntity, carrier: BoardEntity) -> int:
@@ -315,6 +415,12 @@ class Passive:
         card's effects (Dew Guard); trainer_type is the TrainerType value.
         affected_entity is the primitive's direct object (None for
         player-level effects like draws/hand shuffles)."""
+        return False
+
+    def blocks_player_attack_effects(self, affected_player_id: str,
+                                     carrier: BoardEntity) -> bool:
+        """True to shield a PLAYER and their hand from the effects of the
+        opponent's Pokemon's attacks (Marowak XY10 Bodyguard)."""
         return False
 
     def replace_supporter_effect(
@@ -354,6 +460,49 @@ class Passive:
         (Wyndon Stadium)."""
         return 0
 
+    def damage_counters_on_evolve(
+        self, evolved: PokemonEntity, pre_evolution: BoardEntity,
+        player_id: str, carrier: BoardEntity,
+    ) -> int:
+        """Damage counters put on a Pokemon just evolved from hand (Po Town)."""
+        return 0
+
+    def keeps_conditions_on_evolve(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to keep Special Conditions on `pokemon` when it evolves or
+        devolves (Sea of Nothingness)."""
+        return False
+
+    def keeps_condition_on_evolve(
+        self, pokemon: PokemonEntity, condition: str, carrier: BoardEntity
+    ) -> bool:
+        """True to keep one named Special Condition on `pokemon` through
+        evolve/devolve (Muk Poison Sacs: Poisoned only)."""
+        return False
+
+    def keeps_condition_on_trainer_switch(
+        self, pokemon: PokemonEntity, condition: str, carrier: BoardEntity
+    ) -> bool:
+        """True to copy one named Special Condition from a leaving Active
+        onto the new Active when a Trainer card switches them (Dust Island:
+        Poisoned only). `pokemon` is the Pokemon leaving the Active spot."""
+        return False
+
+    def blocks_return_to_hand(
+        self, card: BoardEntity, carrier: BoardEntity,
+        board: Optional[BoardState] = None,
+    ) -> bool:
+        """True to keep an in-play `card` (or its attachments) from being
+        put into its owner's hand (Mr. Mime Scoop-Up Block)."""
+        return False
+
+    def trainer_play_flip(self, card: BoardEntity, player_id: str,
+                          carrier: BoardEntity) -> Optional[str]:
+        """A coin title when `player_id` must flip as they play `card` from
+        hand, tails = the card has no effect (Venomoth Dizzying Wind)."""
+        return None
+
     def offers_attack_coin_reroll(self, player_id: str, carrier: BoardEntity) -> bool:
         """True to let `player_id` re-flip an attack's coins once during
         their turn (Glimwood Tangle)."""
@@ -391,12 +540,20 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
                 if ability is not None and ability.passive is not None:
                     # A Tool-granted ability's passive rides the tool, not the
                     # Pokemon, so Path to the Peak can't switch it off.
-                    triples.append((ability.passive, pokemon, not ability.is_granted))
+                    # Ancient Traits aren't Abilities: locks never switch them off.
+                    triples.append((ability.passive, pokemon,
+                                    not ability.is_granted
+                                    and ability.ability_type != AbilityTypes.ANCIENT_TRAIT))
             for attachment in _descendants(pokemon):
                 if isinstance(attachment, PokemonEntity):
                     continue  # tucked pre-evolutions contribute nothing
-                definition = def_for(attachment.archetype_id)
-                passive = getattr(definition, "passive", None)
+                mask = getattr(attachment, "masquerade", None)
+                if mask is not None:
+                    # A Pokemon attached as a Tool/Energy: only the passive
+                    # it carries in that role counts (not its card passive).
+                    passive = mask.get("passive")
+                else:
+                    passive = getattr(def_for(attachment.archetype_id), "passive", None)
                 if passive is not None:
                     triples.append((passive, attachment, False))
     stadium_area = board.find_global_area("activeStadium")
@@ -408,7 +565,7 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
     # Effect-granted temporary passives; dead carriers are silently skipped.
     for temp in getattr(board, "temporary_passives", None) or []:
         carrier = board.get_entity(temp.carrier_entity_id)
-        if carrier is None or not _carrier_in_play(carrier):
+        if carrier is None or not (temp.global_scope or _carrier_in_play(carrier)):
             continue
         triples.append((temp.passive, carrier, False))
     return triples
@@ -454,6 +611,24 @@ def _suppressed_tool(
     return any(p.suppresses_tool(entity, c) for p, c, _ in triples)
 
 
+def _suppressed_stadium(
+    triples: List[Tuple[Passive, BoardEntity, bool]], entity: BoardEntity
+) -> bool:
+    """Whether `entity` is a Stadium in play neutralized by a suppression
+    passive (Wicked Wind), evaluated on the UNFILTERED set."""
+    if entity.get_attribute(AttrID.TRAINER_TYPE) != TrainerType.STADIUM.value:
+        return False
+    parent = getattr(entity, "parent", None)
+    if parent is None or parent.get_attribute(AttrID.NAME) != "activeStadium":
+        return False
+    return any(p.suppresses_stadium(entity, c) for p, c, _ in triples)
+
+
+def stadium_suppressed(board: BoardState, stadium: BoardEntity) -> bool:
+    """Whether the Stadium in play has no effect right now (Wicked Wind)."""
+    return _suppressed_stadium(_collect_passives(board), stadium)
+
+
 def active_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity]]:
     """All (passive, carrier) pairs currently switched on by board position.
 
@@ -471,7 +646,8 @@ def active_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity]]:
     return [(p, c) for p, c, is_ability in triples
             if not (is_ability and blocked(c))
             and not _suppressed_special_energy(triples, c)
-            and not _suppressed_tool(triples, c)]
+            and not _suppressed_tool(triples, c)
+            and not _suppressed_stadium(triples, c)]
 
 
 def tool_suppressed(board: BoardState, tool: BoardEntity) -> bool:
@@ -563,7 +739,7 @@ def compute_damage(
         resist_type = target.get_attribute(AttrID.RESISTANCE_TYPES)
         if calc.resistance_applies and resist_type in attacker_types:
             calc.resistance_hit = True
-            calc.amount = max(0, calc.amount - RESISTANCE_REDUCTION)
+            calc.amount = max(0, calc.amount - calc.resistance_amount)
 
     for passive, carrier in passives:
         if calc.ignore_target_effects and carrier_pokemon(carrier) is calc.target:
@@ -617,10 +793,19 @@ def effective_max_hp(board: BoardState, pokemon: PokemonEntity) -> int:
     return printed + bonus
 
 
-def attack_effects_blocked(board: BoardState, target: PokemonEntity) -> bool:
+def attack_effects_blocked(board: BoardState, target: PokemonEntity,
+                           attacker: Optional[PokemonEntity] = None) -> bool:
     """Whether a passive shields `target` from opposing attack effects."""
     return any(
-        passive.blocks_attack_effects(target, carrier)
+        passive.blocks_attack_effects_from(target, attacker, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def attacks_blocked(board: BoardState, pokemon: PokemonEntity) -> bool:
+    """Whether a passive forbids `pokemon` from attacking (Disgusting Pollen)."""
+    return any(
+        passive.blocks_attacks(pokemon, carrier)
         for passive, carrier in active_passives(board)
     )
 
@@ -637,6 +822,14 @@ def can_attack_despite_conditions(board: BoardState, pokemon: PokemonEntity) -> 
     """Whether a passive lets `pokemon` attack while Asleep/Paralyzed."""
     return any(
         passive.attacks_despite_conditions(pokemon, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def can_retreat_despite_conditions(board: BoardState, pokemon: PokemonEntity) -> bool:
+    """Whether a passive lets `pokemon` retreat while Asleep/Paralyzed."""
+    return any(
+        passive.retreats_despite_conditions(pokemon, carrier)
         for passive, carrier in active_passives(board)
     )
 
@@ -667,8 +860,31 @@ def ability_effects_blocked(board: BoardState, target: PokemonEntity) -> bool:
 
 def trainer_play_blocked(board: BoardState, player_id: str, card: BoardEntity) -> bool:
     """Whether a continuous passive forbids playing `card` from hand."""
+    def _blocked(passive, carrier) -> bool:
+        fn = passive.blocks_trainer_play
+        try:
+            return fn(card, player_id, carrier, board=board)
+        except TypeError:
+            return fn(card, player_id, carrier)
     return any(
-        passive.blocks_trainer_play(card, player_id, carrier)
+        _blocked(passive, carrier) for passive, carrier in active_passives(board)
+    )
+
+
+def energy_attach_blocked(board: BoardState, player_id: str, energy: BoardEntity,
+                          target: PokemonEntity) -> bool:
+    """Whether a continuous passive forbids attaching `energy` from hand to `target`."""
+    return any(
+        passive.blocks_energy_attach(energy, player_id, target, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def gx_attacks_blocked(board: BoardState, player_id: str,
+                       pokemon: PokemonEntity) -> bool:
+    """Whether a passive forbids `player_id`'s `pokemon` from using GX attacks."""
+    return any(
+        passive.blocks_gx_attacks(player_id, pokemon, carrier)
         for passive, carrier in active_passives(board)
     )
 
@@ -693,6 +909,13 @@ def trainer_effects_blocked(board: BoardState, affected_player_id: str,
             affected_entity=affected_entity, board=board)
         for passive, carrier in active_passives(board)
     )
+
+
+def player_attack_effects_blocked(board: BoardState, affected_player_id: str) -> bool:
+    """Whether a passive shields `affected_player_id` (and their hand) from
+    the effects of opposing attacks (Bodyguard)."""
+    return any(passive.blocks_player_attack_effects(affected_player_id, carrier)
+               for passive, carrier in active_passives(board))
 
 
 def supporter_effect_replacement(board: BoardState, card: BoardEntity,
@@ -722,6 +945,65 @@ def evolve_heal_amount(board: BoardState, evolved: PokemonEntity,
         passive.heal_on_evolve(evolved, pre_evolution, player_id, carrier)
         for passive, carrier in active_passives(board)
     )
+
+
+def evolve_damage_counters(board: BoardState, evolved: PokemonEntity,
+                           pre_evolution: BoardEntity, player_id: str) -> int:
+    """Damage counters put on a Pokemon just evolved from hand (Po Town)."""
+    return sum(
+        passive.damage_counters_on_evolve(evolved, pre_evolution, player_id, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def keeps_conditions_on_evolve(board: BoardState, pokemon: PokemonEntity) -> bool:
+    """Whether a stadium/passive keeps Special Conditions through evolve/devolve."""
+    return any(
+        passive.keeps_conditions_on_evolve(pokemon, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def conditions_kept_on_evolve(board: BoardState, pokemon: PokemonEntity) -> List[str]:
+    """Special Condition names that survive evolve/devolve on `pokemon`."""
+    names = list(pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+    if not names:
+        return []
+    if keeps_conditions_on_evolve(board, pokemon):
+        return names
+    kept: List[str] = []
+    pairs = list(active_passives(board))
+    for name in names:
+        if any(passive.keeps_condition_on_evolve(pokemon, name, carrier)
+               for passive, carrier in pairs):
+            kept.append(name)
+    return kept
+
+
+def return_to_hand_blocked(board: BoardState, card: BoardEntity) -> bool:
+    """Whether an in-play card (or its attachments) cannot go to hand."""
+    pokemon = carrier_pokemon(card)
+    if pokemon is None:
+        return False
+    parent = getattr(pokemon, "parent", None)
+    if parent is None or isinstance(parent, CardEntity):
+        return False
+    if parent.get_attribute(AttrID.NAME) not in ("activePokemonArea", "bench"):
+        return False
+    return any(
+        passive.blocks_return_to_hand(card, carrier, board)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def trainer_play_flip_title(board: BoardState, card: BoardEntity,
+                            player_id: str) -> Optional[str]:
+    """First passive demanding a no-effect-on-tails flip for this play."""
+    for passive, carrier in active_passives(board):
+        title = passive.trainer_play_flip(card, player_id, carrier)
+        if title:
+            return title
+    return None
 
 
 def attack_coin_reroll_offered(board: BoardState, player_id: str) -> bool:
@@ -766,6 +1048,12 @@ def can_evolve_early(board: BoardState, pokemon: PokemonEntity) -> bool:
         passive.may_evolve_early(pokemon, carrier)
         for passive, carrier in active_passives(board)
     )
+
+
+def passive_sleep_coins(board: BoardState, pokemon: PokemonEntity) -> int:
+    """Highest Sleep-checkup coin count any passive asks for (0 = none)."""
+    return max((passive.sleep_checkup_coins(pokemon, carrier)
+                for passive, carrier in active_passives(board)), default=0)
 
 
 def burn_recovery_blocked(board: BoardState, pokemon: PokemonEntity) -> bool:
@@ -814,6 +1102,17 @@ def energy_provided_options(board: Optional[BoardState], energy: BoardEntity) ->
     return options
 
 
+def damage_counters_prevented(
+    board: BoardState, target: PokemonEntity,
+    source_player_id: Optional[str] = None,
+) -> bool:
+    """Whether a passive blocks putting damage counters on `target`."""
+    return any(
+        passive.prevents_damage_counters(target, carrier, source_player_id)
+        for passive, carrier in active_passives(board)
+    )
+
+
 def effective_bench_capacity(board: BoardState, player_id: str) -> int:
     """Bench size for `player_id` after capacity passives; the smallest
     override wins (Collapsed Stadium caps an Eternatus board at 4)."""
@@ -822,6 +1121,35 @@ def effective_bench_capacity(board: BoardState, player_id: str) -> int:
         for v in [passive.bench_capacity(player_id, carrier)] if v is not None
     ]
     return max(1, min(values)) if values else BENCH_SLOT_COUNT
+
+
+def effective_supporter_limit(board: BoardState, player_id: str) -> int:
+    """Supporters `player_id` may play this turn (default 1; highest wins)."""
+    return max([1] + [passive.supporter_limit(player_id, carrier)
+                      for passive, carrier in active_passives(board)])
+
+
+def coin_forced_tails(board: Optional[BoardState], player_id: Optional[str]) -> bool:
+    """Whether a forces_coin_tails passive applies to `player_id`'s flips."""
+    if board is None or player_id is None:
+        return False
+    pairs = active_passives(board)
+    if any(passive.forces_coin_tails(player_id, carrier) for passive, carrier in pairs):
+        return True
+    state = getattr(board, "turn_state", None)
+    if state is None or state.active_player_id != player_id \
+            or getattr(state, "in_checkup", False):
+        return False
+    return any(passive.forces_coin_tails_during_own_turn(player_id, carrier)
+               for passive, carrier in pairs)
+
+
+def flip_coin_for(board: Optional[BoardState], player_id: Optional[str]) -> int:
+    """One coin flip in wire form (0 = heads, 1 = tails), honouring
+    forces_coin_tails."""
+    if coin_forced_tails(board, player_id):
+        return 1
+    return random.choice([0, 1])
 
 
 def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:

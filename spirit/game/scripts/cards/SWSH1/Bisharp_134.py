@@ -29,7 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=damage_per(count_bench("mine", pred=_is_pawniard), 30, base=0),
+            effect=damage_per(count_bench("mine", pred=_is_pawniard), 30, base=30),
         ),
         Attack(
             title="Slicing Blade",
