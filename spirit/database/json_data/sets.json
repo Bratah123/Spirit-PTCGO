@@ -497,7 +497,7 @@
     "name": "SL",
     "externalId": "SLG",
     "number": 790,
-    "count": 73,
+    "count": 81,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -632,7 +632,7 @@
     "name": "SM3",
     "externalId": "BUS",
     "number": 780,
-    "count": 147,
+    "count": 177,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -894,7 +894,7 @@
     "name": "SM4",
     "externalId": "CIN",
     "number": 800,
-    "count": 111,
+    "count": 126,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1114,7 +1114,7 @@
     "name": "SM2",
     "externalId": "GRI",
     "number": 760,
-    "count": 145,
+    "count": 180,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1550,7 +1550,7 @@
     "name": "SM1",
     "externalId": "SUM",
     "number": 750,
-    "count": 149,
+    "count": 173,
     "filter": true,
     "block": "SM",
     "legalFormats": [
