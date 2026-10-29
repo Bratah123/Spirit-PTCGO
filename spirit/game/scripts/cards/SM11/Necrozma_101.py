@@ -1,0 +1,6 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.passives_common import protect_next_turn
+from spirit.game.card_effects.sm11 import special_laser
+
+card = PokemonCardDef(guid='0b888e01-f61b-59e7-9b2d-773ab2161213', key='SM11', name='com.direwolfdigital.cake.data.archetypes.pokemon.Necrozma.Name', display_name='Necrozma', searchable_by=['Necrozma', 'Basic', 'Necrozma'], subtypes=['Basic'], collector_number=101, set_code='SM11', rarity=Rarities.Rare, hp=130, elements=[PokemonTypes.PSYCHIC], stage=PokemonStage.BASIC, retreat_cost=2, weakness_type=PokemonTypes.PSYCHIC, family_id=800, abilities=[Attack(title='Barrier Attack', game_text="During your opponent's next turn, this Pokémon takes 30 less damage from attacks (after applying Weakness and Resistance).", cost={PokemonTypes.COLORLESS: 2}, damage=30, effect=protect_next_turn(reduce=30)), Attack(title='Special Laser', game_text='If this Pokémon has any Special Energy attached to it, this attack does 60 more damage.', cost={PokemonTypes.PSYCHIC: 2, PokemonTypes.COLORLESS: 1}, damage=100, damage_operator='+', effect=special_laser)])

@@ -1,0 +1,6 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import self_energy_discard_attack
+from spirit.game.card_effects.sm11 import avenging_heart
+
+card = PokemonCardDef(guid='8b313b52-b4f7-5519-9620-81526b9b6f6d', key='SM11', name='com.direwolfdigital.cake.data.archetypes.pokemon.Silvally.Name', display_name='Silvally', searchable_by=['Silvally', 'Stage 1', 'Silvally'], subtypes=['Stage 1'], collector_number=184, set_code='SM11', rarity=Rarities.RareHolo, hp=130, elements=[PokemonTypes.COLORLESS], stage=PokemonStage.STAGE1, retreat_cost=2, weakness_type=PokemonTypes.FIGHTING, evolves_from='com.direwolfdigital.cake.data.archetypes.pokemon.TypeNull.Name', family_id=772, abilities=[Attack(title='Avenging Heart', game_text='This attack does 50 more damage for each Prize card your opponent took on their last turn.', cost={PokemonTypes.COLORLESS: 2}, damage=30, damage_operator='+', effect=avenging_heart), Attack(title='Air Slash', game_text='Discard an Energy from this Pokémon.', cost={PokemonTypes.COLORLESS: 3}, damage=120, effect=self_energy_discard_attack(count=1))])
