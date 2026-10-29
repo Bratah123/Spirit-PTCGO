@@ -1882,6 +1882,28 @@ async def test_ignore_target_effects_turn_flag():
         assert await ctx.deal_damage(30) == 0, "a new turn must clear the flag"
 
 
+async def test_prevents_damage_counters():
+    rig, e = new_rig()
+    bench_area = rig.board.find_player_area(P1, "bench")
+    bench = bench_area.children[0]
+    pre = bench.get_attribute(AttrID.HP, 0)
+
+    class BlockBenchCounters(Passive):
+        def prevents_damage_counters(self, target, carrier, source_player_id=None):
+            parent = getattr(target, "parent", None)
+            return bool(parent) and parent.get_attribute(AttrID.NAME) == "bench" \
+                and target.owning_player_id == carrier.owning_player_id
+
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(e["p1_active"], BlockBenchCounters())
+    assert await ctx.deal_damage(40, target=bench, as_counters=True) == 0
+    assert bench.get_attribute(AttrID.HP, 0) == pre
+    # Attack damage to the same bench Pokemon is not gated by this hook.
+    dealt = await ctx.deal_damage(20, target=bench, apply_modifiers=False)
+    assert dealt == 20
+    assert bench.get_attribute(AttrID.HP, 0) == pre - 20
+
+
 async def test_usable_despite_conditions():
     rig, e = new_rig()
     board, ts = rig.board, rig.session.turn_state
@@ -1964,6 +1986,53 @@ async def test_extra_prize_watchers():
     assert ts.extra_prize_watchers == [], "watchers are this-turn only"
 
 
+async def test_blocks_attacks():
+    rig, e = new_rig()
+    board, ts = rig.board, rig.session.turn_state
+    game_id = rig.session.game_id
+    active = e["p1_active"]
+    blast = Attack("Test Blast", cost={}, damage=10)
+    blast_id = register_ability(blast)
+    try:
+        active.set_attribute(AttrID.PIE_ABILITIES, [
+            {"abilityID": blast_id, "abilityType": "Attack", "cost": {}},
+        ])
+        actions = compute_legal_actions(board, ts, P1, game_id)
+        ids = {a["selectableAction"]["actionID"] for a in actions}
+        assert blast_id in ids, "attacks are offered without a lock"
+
+        class NoAttack(Passive):
+            def blocks_attacks(self, pokemon, carrier):
+                return pokemon is carrier
+
+        ctx = attack_ctx(rig, e)
+        ctx.add_temporary_passive(active, NoAttack())
+        actions = compute_legal_actions(board, ts, P1, game_id)
+        ids = {a["selectableAction"]["actionID"] for a in actions}
+        assert blast_id not in ids, "blocks_attacks hides every attack"
+    finally:
+        ABILITIES_BY_ID.pop(blast_id, None)
+
+
+async def test_damage_counters_on_evolve():
+    rig, e = new_rig()
+    session, board = rig.session, rig.board
+    ctx = attack_ctx(rig, e)
+
+    class PoTown(Passive):
+        def damage_counters_on_evolve(self, evolved, pre_evolution, player_id, carrier):
+            return 3
+
+    ctx.add_global_passive(PoTown(), 99)
+    target = e["p1_active"]
+    max_hp = passives.effective_max_hp(board, target)
+    evo = next(c for c in ctx.hand(P1) if isinstance(c, PokemonEntity))
+    evo_max = passives.effective_max_hp(board, evo)
+    assert await session.perform_evolution(P1, evo, target)
+    assert evo.get_attribute(AttrID.HP) == evo_max - 30, \
+        "Po Town-shape hook puts 3 damage counters on a hand-played evolution"
+
+
 async def test_setup_as_active():
     from spirit.game.data_utils import def_for
     luxray = def_for("ef8ca3ef-7c49-55f9-8a3b-0bf871f8e524")  # CZ Luxray
@@ -2044,10 +2113,13 @@ TESTS = [
     test_scheduled_effects,
     test_retreat_cost_board_param,
     test_ignore_target_effects_turn_flag,
+    test_prevents_damage_counters,
     test_usable_despite_conditions,
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_blocks_attacks,
+    test_damage_counters_on_evolve,
 ]
 
 
