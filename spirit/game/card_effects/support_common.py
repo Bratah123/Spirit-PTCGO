@@ -18,7 +18,7 @@ from spirit.game.session.effects import (
     is_basic_pokemon,
     is_trainer_card,
 )
-from spirit.game.session.passives import effective_max_hp
+from spirit.game.session.passives import effective_bench_capacity, effective_max_hp
 from spirit.game.card_effects.trainers import is_energy_card
 
 # Spec-friendly aliases used as factory defaults.
@@ -431,7 +431,8 @@ async def opponent_switches(ctx):
     target = await ctx.choose_pokemon(
         bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 
@@ -459,7 +460,8 @@ def switch_self_attack(damage=None, optional=False, bench_predicate=None):
 
 async def _gust(ctx, opponent_chooses=False):
     """Switch one of the opponent's Benched Pokémon with their Active;
-    returns the new Active or None (no bench / effect-shielded Active)."""
+    returns the new Active or None (no bench / effect-shielded Active /
+    switch blocked), so "damage to the new Active" is skipped when no switch happens."""
     old_active = ctx.opponent_active()
     bench = ctx.opponent_bench()
     if old_active is None or not bench:
@@ -471,7 +473,8 @@ async def _gust(ctx, opponent_chooses=False):
     target = await ctx.choose_pokemon(
         bench, "Choose the opponent's new Active Pokémon"
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 
@@ -548,6 +551,34 @@ def remove_self_from_play(destination="hand", with_attachments="same",
     return effect
 
 
+# --- BW Fossil Items (Restored Pokemon) -----------------------------------------
+
+def restore_fossil(pokemon_name: str, look: int = 7):
+    """BW Fossil Item (Plume/Cover/Root Fossil, Old Amber): look at the bottom
+    `look` cards of your deck, you may reveal a `pokemon_name` there and put
+    it onto your Bench, then shuffle. Matches EVOLUTION_LOGIC_NAME, so pass
+    the importer's logic name (e.g. "Archen")."""
+    async def effect(ctx):
+        bottom = ctx.deck()[:look]
+        if not bottom:
+            return
+        matches = [c for c in bottom
+                   if c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == pokemon_name]
+        if len(ctx.my_bench()) >= effective_bench_capacity(ctx.board, ctx.player_id):
+            matches = []
+        # Shows the bottom cards even when nothing there is selectable.
+        picks = await ctx.choose_cards(
+            matches, 1, minimum=0,
+            prompt=f"Choose a {pokemon_name} to put onto your Bench.",
+            display_cards=bottom,
+        )
+        if picks:
+            await ctx.reveal_cards(picks)
+            await ctx.bench_pokemon(picks[0])
+        await ctx.shuffle_deck()
+    return effect
+
+
 # --- Playability condition factories ---------------------------------------------
 # Each returns a check accepting BOTH call shapes: trainers/energies call
 # (board, player_id), abilities call (board, player_id, pokemon).
@@ -596,8 +627,13 @@ def requires_hand(predicate=None, n=1, exclude_self=True):
         matches = [c for c in (hand.children if hand else [])
                    if predicate is None or predicate(c)]
         discount = 0
-        if exclude_self and pokemon is None:
-            if predicate is None or any(is_trainer_card(c) for c in matches):
+        if exclude_self:
+            if pokemon is not None:
+                # Trainer play conditions get the played copy itself as the
+                # third argument (trainer_condition_met): drop exactly it.
+                # Ability conditions pass the in-play Pokemon, never in hand.
+                matches = [c for c in matches if c is not pokemon]
+            elif predicate is None or any(is_trainer_card(c) for c in matches):
                 discount = 1
         return len(matches) - discount >= n
     return check
