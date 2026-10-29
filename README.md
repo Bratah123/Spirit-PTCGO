@@ -91,6 +91,35 @@ The reason is that the login handshake redirects the client to a follow-up addre
 
 SpiritPTCGO supports a modular card injection system. You add a custom card by dropping an image and a python script into the designated folders, and the server handles the Unity AssetBundle generation automatically on startup. A card is two things: a **data definition** (its name, HP, cost, weakness, etc.) and, if you want it to actually *do* something in a match, a bit of **scripted behavior**. We'll cover both.
 
+### Importing a Black & White set
+
+Bulk-import card scripts (and art) from [PokemonTCG/pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data) with `spirit/tools/import_set.py`. Source JSON lives at `cards/en/<setid>.json` in that repo (set ids `bw1`…`bw11`, `dv1`). Spirit set codes are uppercase (`BW1`…`BW11`, `DV1`).
+
+```powershell
+# From the Spirit repo root; adjust DATA to your pokemon-tcg-data clone.
+$env:PYTHONPATH=(Get-Location).Path
+python spirit/tools/import_set.py path\to\pokemon-tcg-data\cards\en\bw1.json --set-code BW1 --skip-existing
+```
+
+Use `--skip-existing` so hand-written scripts (e.g. `BW1/Potion_100.py`, `BW1/Watchog_79.py`) are not overwritten. Per-set commands (`<DATA>` = pokemon-tcg-data root):
+
+```text
+python spirit/tools/import_set.py <DATA>/cards/en/bw1.json  --set-code BW1  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw2.json  --set-code BW2  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw3.json  --set-code BW3  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw4.json  --set-code BW4  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw5.json  --set-code BW5  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw6.json  --set-code BW6  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw7.json  --set-code BW7  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw8.json  --set-code BW8  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw9.json  --set-code BW9  --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw10.json --set-code BW10 --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/bw11.json --set-code BW11 --skip-existing
+python spirit/tools/import_set.py <DATA>/cards/en/dv1.json  --set-code DV1  --skip-existing
+```
+
+Series work lands on `feat/bw-series`; per-set import branches follow `set/<code>` (e.g. `set/bw1`).
+
 ### 1. Place the Card Image
 Save your card art as a **1024x1024 PNG** in the following directory:
 `spirit/assets/cards/<SET_CODE>/<NAME>_<NUMBER>.png`
@@ -217,6 +246,14 @@ A couple of things worth knowing as you go deeper: an `Ability` can be a passive
 If you want to see what's already scripted versus stubbed across a set, there's a tool:
 ```powershell
 python -m spirit.tools.effect_coverage
+```
+
+When scripting a whole imported set, a few more tools help (each takes `--help`):
+```powershell
+python -m spirit.tools.reuse_effects --set BW11 --dry-run   # copy effects from reprints / identical card text
+python -m spirit.tools.card_lint --set BW11                 # import errors, undefined names, duplicate GUIDs/numbers
+python -m spirit.tools.numcheck --set BW11                  # numbers vs pokemon-tcg-data JSON (SPIRIT_TCG_DATA_DIR)
+python -m spirit.tools.effect_smoke --set BW11 --all        # exercise every scripted effect headlessly
 ```
 
 ### 3. Get the Card Into a Collection

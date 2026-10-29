@@ -100,7 +100,7 @@
     "name": "DM",
     "externalId": "DRM",
     "number": 840,
-    "count": 70,
+    "count": 80,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -114,7 +114,7 @@
     "name": "SM6",
     "externalId": "FLI",
     "number": 820,
-    "count": 131,
+    "count": 150,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -308,7 +308,7 @@
     "name": "SM7",
     "externalId": "CES",
     "number": 830,
-    "count": 168,
+    "count": 187,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -497,7 +497,7 @@
     "name": "SL",
     "externalId": "SLG",
     "number": 790,
-    "count": 73,
+    "count": 81,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -583,7 +583,7 @@
     "name": "SM8",
     "externalId": "LOT",
     "number": 850,
-    "count": 214,
+    "count": 240,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -632,7 +632,7 @@
     "name": "SM3",
     "externalId": "BUS",
     "number": 780,
-    "count": 147,
+    "count": 177,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -894,7 +894,7 @@
     "name": "SM4",
     "externalId": "CIN",
     "number": 800,
-    "count": 111,
+    "count": 126,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1114,7 +1114,7 @@
     "name": "SM2",
     "externalId": "GRI",
     "number": 760,
-    "count": 145,
+    "count": 180,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1459,7 +1459,7 @@
     "name": "SM5",
     "externalId": "UPR",
     "number": 810,
-    "count": 156,
+    "count": 178,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1550,7 +1550,7 @@
     "name": "SM1",
     "externalId": "SUM",
     "number": 750,
-    "count": 149,
+    "count": 173,
     "filter": true,
     "block": "SM",
     "legalFormats": [
