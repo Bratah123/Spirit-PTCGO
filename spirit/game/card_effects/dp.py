@@ -9,6 +9,7 @@ from spirit.game.attributes import (
 from spirit.game.data_utils import Activations, Triggers
 from spirit.game.card_effects.attacks_common import *  # noqa: F401,F403
 from spirit.game.card_effects.passives_common import *  # noqa: F401,F403
+from spirit.game.card_effects.trainers import is_basic_energy_card  # noqa: F401
 from spirit.game.card_effects.support_common import *  # noqa: F401,F403
 from spirit.game.card_effects.ex import (  # noqa: F401
     baby_evolution, baby_evolution_condition, baby_evolution_ex7,
@@ -2935,3 +2936,1203 @@ def armor_stone_passive() -> Passive:
 
 def skull_stone_passive() -> Passive:
     return Passive()
+
+# === DP3 Secret Wonders helpers ===
+def bonus_energy_water_50_20(base: int = 50, per: int = 20):
+    async def effect(ctx):
+        a = ctx.attacker
+        n = 0
+        if a is not None:
+            for c in list(a.children):
+                if is_energy_card(c) and energy_provides_type(c, PokemonTypes.WATER.value):
+                    n += 1
+        await ctx.deal_damage(base + per * n)
+    return effect
+
+
+def damage_then_snipe(base: int, snipe: int):
+    async def effect(ctx):
+        await ctx.deal_damage(base)
+        await snipe_attack(snipe, pool="bench")(ctx)
+    return effect
+
+
+def discard_random_from_hand():
+    async def effect(ctx):
+        await ctx.deal_damage()
+        hand = list(ctx.hand(ctx.opponent_id) or [])
+        if hand:
+            import random
+            c = random.choice(hand)
+            await ctx.discard_cards([c])
+    return effect
+
+
+def dp3_absol_21_raid():
+    """Raid: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_ampharos_1_cluster_bolt():
+    """Cluster Bolt: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(70)
+    return effect
+
+
+def dp3_ampharos_1_jamming():
+    """Jamming: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_ampharos_1_jamming_passive() -> Passive:
+    """Jamming passive (approx)."""
+    return Passive()
+
+
+def dp3_arcanine_22_flame_dash():
+    """Flame Dash: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_banette_23_ghost_head():
+    """Ghost Head: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_banette_23_spiteful_pain():
+    """Spiteful Pain: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_blastoise_2_waterlog():
+    """Waterlog: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_breloom_45_drain_punch():
+    """Drain Punch: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_breloom_45_homing_uppercut():
+    """Homing Uppercut: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_burmyplantcloak_78_plant_cloak_tackle():
+    """Plant Cloak Tackle: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_burmyplantcloak_78_wear_cloak():
+    """Wear Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_burmysandycloak_79_sandy_cloak_tackle():
+    """Sandy Cloak Tackle: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_burmysandycloak_79_wear_cloak():
+    """Wear Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_burmytrashcloak_80_trash_cloak_tackle():
+    """Trash Cloak Tackle: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_burmytrashcloak_80_wear_cloak():
+    """Wear Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_carvanha_81_bite_away():
+    """Bite Away: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Bite Away')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_charizard_3_blast_burn():
+    """Blast Burn: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Blast Burn')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(120)
+    return effect
+
+
+def dp3_charizard_3_fury_blaze():
+    """Fury Blaze: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_charmeleon_46_flare_tail():
+    """Flare Tail: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Flare Tail')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_cloyster_47_spine_missile():
+    """Spine Missile: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_corsola_84_rally():
+    """Rally: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_diglett_85_down_draw():
+    """Down Draw: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_donphan_48_bash_in():
+    """Bash In: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(70)
+    return effect
+
+
+def dp3_donphan_48_rapid_spin():
+    """Rapid Spin: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_dugtrio_24_pit_trap():
+    """Pit Trap: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_duskull_86_astonish():
+    """Astonish: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Astonish')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_electabuzz_87_thunder():
+    """Thunder: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Thunder')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_electivire_25_discharge():
+    """Discharge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Discharge')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_electivire_25_motor_drive():
+    """Motor Drive: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_electrode_26_energy_shift():
+    """Energy Shift: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_electrode_26_ion_blast():
+    """Ion Blast: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_entei_4_burning_coat():
+    """Burning Coat: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_entei_4_burning_coat_passive() -> Passive:
+    """Burning Coat passive (approx)."""
+    return Passive()
+
+
+def dp3_farfetchd_49_leek_slap():
+    """Leek Slap: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp3_farfetchd_49_swords_dance():
+    """Swords Dance: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_flaaffy_50_attract_current():
+    """Attract Current: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_flaaffy_50_electromagnetic_kick():
+    """Electromagnetic Kick: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Electromagnetic Kick')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_flygon_5_irritating_buzz():
+    """Irritating Buzz: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_flygon_5_irritating_buzz_passive() -> Passive:
+    """Irritating Buzz passive (approx)."""
+    return Passive()
+
+
+def dp3_flygon_5_sand_sonic():
+    """Sand Sonic: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_furret_27_baton_pass():
+    """Baton Pass: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_furret_27_keen_eye():
+    """Keen Eye: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_gallade_6_psychic_cut():
+    """Psychic Cut: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_gallade_6_sonic_blade():
+    """Sonic Blade: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_gardevoir_7_psychic_lock():
+    """Psychic Lock: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_gardevoir_7_telepass():
+    """Telepass: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_gardevoirlvx_131_bring_down():
+    """Bring Down: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_gardevoirlvx_131_teleportation():
+    """Teleportation: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_gastrodoneastsea_8_osmotic_pressure():
+    """Osmotic Pressure: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_gastrodonwestsea_9_wild_waves():
+    """Wild Waves: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp3_golduck_28_encore():
+    """Encore: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_golem_29_double_throw():
+    """Double Throw: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_golem_29_megaton_rock():
+    """Megaton Rock: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp3_honchkrowlvx_132_darkness_wing():
+    """Darkness Wing: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_honchkrowlvx_132_feint_attack():
+    """Feint Attack: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_hooh_10_phoenix_turn():
+    """Phoenix Turn: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_hooh_10_rainbow_wing():
+    """Rainbow Wing: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_hoppip_90_cottonweed():
+    """Cottonweed: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_hoppip_90_hover_heal():
+    """Hover Heal: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_jumpluff_11_cotton_spore():
+    """Cotton Spore: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_jumpluff_11_cotton_spore_passive() -> Passive:
+    """Cotton Spore passive (approx)."""
+    return Passive()
+
+
+def dp3_jumpluff_11_cottonweed_punch():
+    """Cottonweed Punch: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_jynx_30_lovely_kiss():
+    """Lovely Kiss: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_kecleon_52_camouflage():
+    """Camouflage: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_kirlia_53_psychic_research():
+    """Psychic Research: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_kirlia_53_telekinesis():
+    """Telekinesis: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_lickilicky_12_boundless_power():
+    """Boundless Power: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp3_lotad_92_water_sport():
+    """Water Sport: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_ludicolo_13_rain_dish():
+    """Rain Dish: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_lugia_14_psychic_destruction():
+    """Psychic Destruction: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(120)
+    return effect
+
+
+def dp3_lugia_14_silver_wing():
+    """Silver Wing: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Silver Wing')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_magmortar_31_fireball_bazooka():
+    """Fireball Bazooka: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_magmortar_31_flame_blast():
+    """Flame Blast: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_magmortar_31_flame_body():
+    """Flame Body: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_mew_15_psychic_balance():
+    """Psychic Balance: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_mew_15_re_creation():
+    """Re-creation: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_miltank_55_continuous_tumble():
+    """Continuous Tumble: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Continuous Tumble')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_miltank_55_healing_milk():
+    """Healing Milk: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_minun_32_minus_charge():
+    """Minus Charge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_minun_32_tag_play():
+    """Tag Play —: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_mothim_33_raging_scales():
+    """Raging Scales: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp3_muk_56_panic_liquid():
+    """Panic Liquid: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+    return effect
+
+
+def dp3_muk_56_toxic_sludge():
+    """Toxic Sludge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_natu_96_future_sight():
+    """Future Sight: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_nidoking_34_pride_attack():
+    """Pride Attack: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Pride Attack')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_nidoran_97_poison_skin():
+    """Poison Skin: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    return effect
+
+
+def dp3_nidorino_57_spirited_drill():
+    """Spirited Drill: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_pidgeot_35_mirror_move():
+    """Mirror Move: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_pinsir_59_power_guillotine():
+    """Power Guillotine: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(100)
+    return effect
+
+
+def dp3_plusle_36_plus_charge():
+    """Plus Charge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_plusle_36_tag_play():
+    """Tag Play +: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_psyduck_100_delusion():
+    """Delusion: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_quagsire_60_aqua_healing():
+    """Aqua Healing: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_qwilfish_101_balloon_sting():
+    """Balloon Sting: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_raikou_16_thunder_climb():
+    """Thunder Climb: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_raikou_16_thunder_rumble():
+    """Thunder Rumble: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_raticate_61_gnaw_off():
+    """Gnaw Off: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Gnaw Off')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_raticate_61_sneaky_attack():
+    """Sneaky Attack: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_roserade_17_magical_leaf():
+    """Magical Leaf: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Magical Leaf')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_sableye_63_rummage():
+    """Rummage: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sableye_63_shadow_sneak():
+    """Shadow Sneak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_salamence_18_direct_hit():
+    """Direct Hit: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_salamence_18_dragon_finish():
+    """Dragon Finish: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sentret_104_grope():
+    """Grope: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sharpedo_37_rough_skin():
+    """Rough Skin: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sharpedo_37_strike_wound():
+    """Strike Wound: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_shelgon_64_focus_energy():
+    """Focus Energy: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_shelgon_64_protect_charge():
+    """Protect Charge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp3_shelloseastsea_106_shell_hunting():
+    """Shell Hunting: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_shuckle_109_ferment_poison():
+    """Ferment Poison: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    return effect
+
+
+def dp3_shuckle_109_pot_shell():
+    """Pot Shell: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_shuckle_109_pot_shell_passive() -> Passive:
+    """Pot Shell passive (approx)."""
+    return Passive()
+
+
+def dp3_skiploom_65_cotton_balloon():
+    """Cotton Balloon: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_skiploom_65_u_turn():
+    """U-turn: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_smeargle_66_color_pick():
+    """Color Pick: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_smeargle_66_trace():
+    """Trace: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Trace')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_smoochum_67_psykiss():
+    """Psykiss: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Psykiss')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_spinda_111_dish_out():
+    """Dish Out: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_spinda_111_synchro_punch():
+    """Synchro Punch: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp3_squirtle_112_aqua_tail():
+    """Aqua Tail: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Aqua Tail')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp3_suicune_19_aqua_recover():
+    """Aqua Recover: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sunflora_38_grass_whistle():
+    """Grass Whistle: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_sunkern_114_sun_soak():
+    """Sun Soak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Sun Soak')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_unownk_68_kind():
+    """Kind: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unownn_69_nod():
+    """Nod: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unowno_70_one():
+    """ONE: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unowns_39_set():
+    """Set: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unownx_71_x_ray():
+    """X-RAY: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unownz_72_hidden_power():
+    """Hidden Power: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_unownz_72_zero():
+    """ZERO: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_venomoth_73_dangerous_scales():
+    """Dangerous Scales: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_venomoth_73_disturbance_dive():
+    """Disturbance Dive: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp3_venusaur_20_giant_bloom():
+    """Giant Bloom: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Giant Bloom')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp3_venusaur_20_miracle_aroma():
+    """Miracle Aroma: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+        await ctx.apply_special_condition(ctx.defender, SpecialConditions.ASLEEP)
+    return effect
+
+
+def dp3_vibrava_74_hyper_beam():
+    """Hyper Beam: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Hyper Beam')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_wartortle_75_giant_wave():
+    """Giant Wave: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_weavile_40_chip_off():
+    """Chip Off: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_weavile_40_dark_engage():
+    """Dark Engage: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_weavile_40_shadow_charge():
+    """Shadow Charge: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        # search handled best-effort
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp3_wooper_118_splatter():
+    """Splatter: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_wormadamplantcloak_41_plant_cloak():
+    """Plant Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_wormadamsandycloak_42_push_over():
+    """Push Over: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp3_wormadamsandycloak_42_sandy_cloak():
+    """Sandy Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_wormadamsandycloak_42_sandy_cloak_passive() -> Passive:
+    """Sandy Cloak passive (approx)."""
+    return Passive()
+
+
+def dp3_wormadamtrashcloak_43_trash_cloak():
+    """Trash Cloak: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_xatu_44_energy_singe():
+    """Energy Singe: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp3_xatu_44_psychic_shift():
+    """Psychic Shift: auto stub — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def minus_self_counters(base: int, per: int):
+    async def effect(ctx):
+        n = damage_counters_on("self")(ctx)
+        await ctx.deal_damage(max(0, base - per * n))
+    return effect
+
+
+def multi_flip_damage(coins: int, per: int):
+    async def effect(ctx):
+        results = await ctx.flip_coins(coins, "Multi Flip")
+        heads = sum(1 for r in results if r)
+        await ctx.deal_damage(per * heads)
+    return effect
+
+
+def scaled_self_counters(base: int, per: int):
+    async def effect(ctx):
+        n = damage_counters_on("self")(ctx)
+        await ctx.deal_damage(base + per * n)
+    return effect
+
+
+def professor_oaks_visit():
+    """Draw 3, then put 1 from hand on bottom of deck."""
+    async def effect(ctx):
+        await ctx.draw_cards(3)
+        hand = list(ctx.hand(ctx.player_id) or [])
+        if not hand:
+            return
+        picks = await ctx.choose_cards(
+            hand, 1, minimum=1, player_id=ctx.player_id,
+            prompt="Put a card on the bottom of your deck")
+        if picks and hasattr(ctx, "put_on_bottom_of_deck"):
+            await ctx.put_on_bottom_of_deck(picks[0])
+        elif picks:
+            await ctx.shuffle_into_deck(picks, ctx.player_id)
+    return effect
+
+
+def roseannes_research():
+    """Search deck for up to 2 Basic Pokémon and/or basic Energy."""
+    async def effect(ctx):
+        def pred(c):
+            if is_energy_card(c):
+                return is_basic_energy_card(c)
+            stage = c.get_attribute(AttrID.STAGE)
+            hp = c.get_attribute(AttrID.HP)
+            return hp is not None and stage in (None, 0, PokemonStage.BASIC, getattr(PokemonStage, "BASIC", 0))
+        picks = await ctx.search_deck(pred, count=2, minimum=0,
+                                     prompt="Choose up to 2 Basic Pokémon and/or basic Energy")
+        if picks:
+            await ctx.put_in_hand(picks, reveal=True)
+        await ctx.shuffle_deck()
+    return effect
+
+
+def team_galactics_mars():
+    """Draw 2; put 1 random opponent hand card on bottom of their deck."""
+    async def effect(ctx):
+        await ctx.draw_cards(2)
+        hand = list(ctx.hand(ctx.opponent_id) or [])
+        if not hand:
+            return
+        import random
+        card = random.choice(hand)
+        if hasattr(ctx, "put_on_bottom_of_deck"):
+            await ctx.put_on_bottom_of_deck(card)
+        else:
+            await ctx.shuffle_into_deck([card], ctx.opponent_id)
+    return effect

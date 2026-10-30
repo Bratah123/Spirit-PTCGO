@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Team Galactic's Mars (DP3 #126): trainer effect stubbed.
-
-Card text:
-  - You can play only one Supporter card each turn. When you play this card, put it next to your Active Pokémon. When your turn ends, discard this card.
-  - Draw 2 cards. Then, choose a card from your opponent's hand without looking and put it on the bottom of his or her deck.
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+"""Team Galactic's Mars (DP3 #126)."""
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import team_galactics_mars
 
 card = SupporterCardDef(
     guid="3ebd3900-f6d2-51bb-a8ce-032dbdf3ffdb",
@@ -19,6 +13,5 @@ card = SupporterCardDef(
     collector_number=126,
     set_code="DP3",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=team_galactics_mars(),
 )

@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Shuppet (DP3 #110): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP3 Secret Wonders — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.attacks_common import place_counters
 

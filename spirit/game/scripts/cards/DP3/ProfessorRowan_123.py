@@ -1,6 +1,6 @@
 """Wired DP1 trainer."""
 
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
 from spirit.game.card_effects.dp import professor_rowan, professor_rowan_condition
 
