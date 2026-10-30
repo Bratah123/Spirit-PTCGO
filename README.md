@@ -219,6 +219,14 @@ If you want to see what's already scripted versus stubbed across a set, there's 
 python -m spirit.tools.effect_coverage
 ```
 
+When scripting a whole imported set, a few more tools help (each takes `--help`):
+```powershell
+python -m spirit.tools.reuse_effects --set BW11 --dry-run   # copy effects from reprints / identical card text
+python -m spirit.tools.card_lint --set BW11                 # import errors, undefined names, duplicate GUIDs/numbers
+python -m spirit.tools.numcheck --set BW11                  # numbers vs pokemon-tcg-data JSON (SPIRIT_TCG_DATA_DIR)
+python -m spirit.tools.effect_smoke --set BW11 --all        # exercise every scripted effect headlessly
+```
+
 ### 3. Get the Card Into a Collection
 A fresh account only starts with the two starter decks and some booster packs. To give yourself your custom card in for testing, start the server and open the **Admin Dashboard** at `http://127.0.0.1:8000/admin`. Log in with the seeded admin account (`brandon` / `password`), go to the **Accounts** tab, and hit **Grant All Cards** on your account.
 

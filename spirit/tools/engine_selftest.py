@@ -1984,6 +1984,33 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_pokemon_ranger_clears_both_sides():
+    """Pokémon Ranger clears attack effects on BOTH players (Channeler × 2)."""
+    from spirit.game.card_effects.support_common import pokemon_ranger
+    rig, entities = new_rig()
+    state = rig.session.turn_state
+    p1 = entities["p1_active"]
+    p2 = entities["p2_active"]
+    state.attack_locks[(p1.entity_id, "atk")] = True
+    state.attack_locks[(p2.entity_id, "atk")] = True
+    state.retreat_locks[p1.entity_id] = True
+    state.retreat_locks[p2.entity_id] = True
+    state.ignore_target_effects_entities.add(p1.entity_id)
+    state.ignore_target_effects_entities.add(p2.entity_id)
+    state.play_locks[P1] = [("x", None)]
+    state.play_locks[P2] = [("y", None)]
+    ctx = EffectContext(rig.session, P1, p1, None)
+    await pokemon_ranger(ctx)
+    assert (p1.entity_id, "atk") not in state.attack_locks
+    assert (p2.entity_id, "atk") not in state.attack_locks
+    assert p1.entity_id not in state.retreat_locks
+    assert p2.entity_id not in state.retreat_locks
+    assert p1.entity_id not in state.ignore_target_effects_entities
+    assert p2.entity_id not in state.ignore_target_effects_entities
+    assert P1 not in state.play_locks
+    assert P2 not in state.play_locks
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2075,7 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_pokemon_ranger_clears_both_sides,
 ]
 
 
