@@ -1,9 +1,11 @@
 """STUB: effect not implemented — do not guess mechanics.
-Shinx (DPP #DP15): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+Shinx (DP1 #98): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="d9e7fcfc-60da-5dec-b098-6505b163e7e6",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=10,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(10, also_base=True),
         ),
     ],
 )

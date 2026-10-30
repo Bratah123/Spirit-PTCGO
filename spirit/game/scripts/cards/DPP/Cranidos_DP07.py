@@ -1,9 +1,10 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Cranidos (DPP #DP07): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP2 Mysterious Treasures — wired.
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="fc7375c6-9d3c-54e0-b41e-7e21b89c4be3",
@@ -34,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
     ],
 )

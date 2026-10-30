@@ -1,9 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Piplup (DPP #DP03): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
-"""
+"""Piplup (POP8 #15)."""
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="5ac25201-43b9-5845-9ea1-abaff85cabbc",
@@ -33,8 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(10),
         ),
     ],
 )

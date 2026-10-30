@@ -1,9 +1,12 @@
 """STUB: effect not implemented — do not guess mechanics.
-Infernape LV.X (DPP #DP10): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+Infernape LV.X (DP1 #121): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented, Activations
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import look_at_top
+from spirit.game.card_effects.dp import burning_head, flare_up, poke_power_condition
+from spirit.game.data_utils import Activations
 
 card = PokemonCardDef(
     guid="48a532f7-c721-5c49-ac06-141d1395b4fa",
@@ -21,22 +24,22 @@ card = PokemonCardDef(
     retreat_cost=0,
     weakness_type=PokemonTypes.WATER,
     evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Infernape.Name",
-    family_id=392,
+    family_id=390,
     abilities=[
         Ability(
             title="Burning Head",
             game_text="Once during your turn (before your attack), you may look at the top 3 cards of your deck, choose 1 of them, and put it into your hand. Discard the other 2 cards. This power can't be used if Infernape is affected by a Special Condition.",
             ability_type=AbilityTypes.POKE_POWER,
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            condition=poke_power_condition(),
+            activation=Activations.ONCE_PER_TURN,
+            effect=burning_head(),
         ),
         Attack(
             title="Flare Up",
             game_text="Search your discard pile for 8 Fire Energy cards, show them to your opponent, and shuffle them into your deck. (This attack does nothing if you don't have 8 Fire Energy cards in your discard pile.)",
             cost={PokemonTypes.FIRE: 2},
             damage=150,
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flare_up(8),
         ),
     ],
 )

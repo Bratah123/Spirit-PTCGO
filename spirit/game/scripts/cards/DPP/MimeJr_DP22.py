@@ -1,9 +1,10 @@
 """STUB: effect not implemented — do not guess mechanics.
-Mime Jr. (DPP #DP22): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+Mime Jr. (DP1 #90): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import baby_evolution, baby_evolution_condition, mime_draw_equal_opponent
 
 card = PokemonCardDef(
     guid="4609e6f8-e345-5c04-ba14-b4344405f38a",
@@ -26,15 +27,14 @@ card = PokemonCardDef(
             title="Baby Evolution",
             game_text="Once during your turn (before your attack), you may put Mr. Mime from your hand onto Mime Jr. (this counts as evolving Mime Jr.) and remove all damage counters from Mime Jr.",
             ability_type=AbilityTypes.POKE_POWER,
-            # STUB: ability effect not implemented
-            effect=unimplemented,
+            condition=baby_evolution_condition('Mr. Mime'),
+            effect=baby_evolution('Mr. Mime'),
         ),
         Attack(
             title="Mime",
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of cards in your opponent's hand.",
             cost={PokemonTypes.PSYCHIC: 1},
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mime_draw_equal_opponent(),
         ),
     ],
 )

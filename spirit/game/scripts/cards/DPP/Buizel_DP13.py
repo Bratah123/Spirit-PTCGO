@@ -1,9 +1,10 @@
 """STUB: effect not implemented — do not guess mechanics.
-Buizel (DPP #DP13): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+Buizel (DP1 #72): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
 """
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import splash_about
 
 card = PokemonCardDef(
     guid="8d3f66c1-0aba-5e0a-862a-68a1b36bf4a2",
@@ -28,8 +29,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=10,
             damage_operator="+",
-            # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=splash_about(10, 10),
         ),
     ],
 )

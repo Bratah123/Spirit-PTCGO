@@ -4,6 +4,8 @@ Darkrai (DPP #DP24): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import spacial_rend
+
 
 card = PokemonCardDef(
     guid="16f6f3bd-3789-5db2-a9b3-6f3b42ee9a63",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1},
             damage=10,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=spacial_rend(),
         ),
         Attack(
             title="Roar of Time",
