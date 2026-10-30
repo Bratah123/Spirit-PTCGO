@@ -538,6 +538,9 @@ async def run_energy_carrier_ko(rig: Rig, entities) -> None:
     board.attach_card(energy.entity_id, carrier.entity_id)
     hook = rig.target_def.on_carrier_knocked_out
     ctx = EffectContext(session, P2, entities["p1_active"], None)
+    ctx.was_active_at_ko = True
+    ctx.ko_from_attack = True
+    ctx.ko_energies = list(board.attached_energies(carrier))
     await hook(ctx)
     await _flush_ctx(session, ctx)
 
@@ -592,6 +595,8 @@ def _plan_tests(definition) -> List[Tuple[str, str, Any, bool]]:
                           callable(ability.effect)))
         if definition.passive is not None:
             plans.append(("passive", "(tool passive)", "tool-passive", True))
+        if callable(getattr(definition, "on_carrier_knocked_out", None)):
+            plans.append(("energy-ko", "(carrier KO hook)", "energy-ko", True))
         if callable(definition.effect):
             plans.append(("trainer", "(on play)", "trainer", True))
     elif isinstance(definition, TrainerCardDef):

@@ -598,36 +598,60 @@ def energy_attach_tax_passive(opponents_only=True, while_active=True) -> Passive
 # at damage 0), then the rider. The apply_* helpers are riders only.
 
 class TempShieldPassive(Passive):
-    """reduce-N / prevent / effects_too shield on its carrier vs opposing attacks."""
+    """reduce-N / prevent / effects_too shield on its carrier vs opposing attacks.
 
-    def __init__(self, reduce=None, prevent=False, effects_too=False):
+    only_ex=True: only attacks from Pokémon-ex are blocked (Speed Stroke /
+    Ice Barrier / Psychic Shield).
+    """
+
+    def __init__(self, reduce=None, prevent=False, effects_too=False, only_ex=False):
         self.reduce = reduce
         self.prevent = prevent
         self.effects_too = effects_too
+        self.only_ex = only_ex
+
+    def _attacker_ok(self, attacker) -> bool:
+        if not self.only_ex:
+            return True
+        if attacker is None:
+            return False
+        from spirit.game.card_effects.ex import is_pokemon_ex
+        return is_pokemon_ex(attacker)
 
     def modify_damage_taken(self, calc, carrier):
         if (self.reduce and calc.is_attack and calc.is_opposing
-                and carrier_pokemon(carrier) is calc.target):
+                and carrier_pokemon(carrier) is calc.target
+                and self._attacker_ok(calc.attacker)):
             calc.amount = max(0, calc.amount - self.reduce)
 
     def prevents_damage(self, calc, carrier):
         return bool(self.prevent and calc.is_attack and calc.is_opposing
-                    and carrier_pokemon(carrier) is calc.target)
+                    and carrier_pokemon(carrier) is calc.target
+                    and self._attacker_ok(calc.attacker))
 
     def blocks_attack_effects(self, target, carrier):
-        return bool(self.effects_too and carrier_pokemon(carrier) is target)
+        # Unconditional effect shield only when not ex-filtered.
+        return bool(self.effects_too and not self.only_ex
+                    and carrier_pokemon(carrier) is target)
+
+    def blocks_attack_effects_from(self, target, carrier, attacker):
+        return bool(self.effects_too and self.only_ex
+                    and carrier_pokemon(carrier) is target
+                    and self._attacker_ok(attacker))
 
 
 async def apply_protection(ctx, target=None, reduce=None, prevent=False,
-                           effects_too=False, through_own_next_turn=False):
+                           effects_too=False, through_own_next_turn=False,
+                           only_ex=False):
     """Rider: shield `target` (default the attack's user) through the
     opponent's next turn; the shield ends early if the carrier leaves the
-    Active spot / play (clear_pokemon_effects)."""
+    Active spot / play (clear_pokemon_effects). only_ex limits the shield
+    to attacks from Pokémon-ex."""
     target = target if target is not None else ctx.attacker
     if target is None:
         return False
     shield = TempShieldPassive(reduce=reduce, prevent=prevent,
-                               effects_too=effects_too)
+                               effects_too=effects_too, only_ex=only_ex)
     if through_own_next_turn:
         ctx.add_passive_through_own_next_turn(target, shield)
     else:
