@@ -1984,6 +1984,23 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_neo1_classic_energies_wired():
+    checks = {
+        "MetalEnergy_19": ("passive", "METAL"),
+        "DarknessEnergy_104": ("passive", "DARKNESS"),
+        "RecycleEnergy_105": ("recycle", None),
+    }
+    for stem, (kind, typ) in checks.items():
+        if stem not in card_loader.cards_by_stem:
+            continue
+        d = CARD_DEFS_BY_GUID[card_loader.cards_by_stem[stem].lower()]
+        if kind == "recycle":
+            assert d.return_to_hand_when_discarded_from_play is True
+        else:
+            assert d.passive is not None
+            assert d.energy_type.name == typ
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2065,7 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_neo1_classic_energies_wired,
 ]
 
 
