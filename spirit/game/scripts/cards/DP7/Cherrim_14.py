@@ -4,6 +4,8 @@ Cherrim (DP7 #14): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import lively_heal_draw
+
 
 card = PokemonCardDef(
     guid="91f571d2-b41d-5498-b3f5-f365fd9dc61a",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             cost={},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=lively_heal_draw(),
         ),
         Attack(
             title="Solarbeam",

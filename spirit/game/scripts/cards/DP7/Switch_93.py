@@ -1,11 +1,5 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Switch (DP7 #93): trainer effect stubbed.
-
-Card text:
-  - Switch 1 of your Active Pokémon with 1 of your Benched Pokémon.
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import switch, player_has_bench, play_targets
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
 
 card = ItemCardDef(
@@ -18,6 +12,9 @@ card = ItemCardDef(
     collector_number=93,
     set_code="DP7",
     rarity=Rarities.Common,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=switch,
+    play_targets=play_targets(opponent=False, bench_only=True),
+    play_target_prompt="",
+    condition=player_has_bench
 )
+

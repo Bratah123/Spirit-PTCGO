@@ -4,6 +4,8 @@ Staravia (DP7 #52): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_linoone_43_overrun
+
 
 card = PokemonCardDef(
     guid="18fe410a-0e89-580e-b2aa-dc10318d0332",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_linoone_43_overrun(),
         ),
     ],
 )

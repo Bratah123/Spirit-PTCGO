@@ -4,6 +4,8 @@ Farfetch'd (DP7 #38): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp5_scyther_46_fury_cutter
+
 
 card = PokemonCardDef(
     guid="4fb6f6a9-7ed6-528b-ba16-98cda62dee1e",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp5_scyther_46_fury_cutter(),
         ),
     ],
 )

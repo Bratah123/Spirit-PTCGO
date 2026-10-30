@@ -4,6 +4,8 @@ Electrode (DP7 #36): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp3_salamence_18_direct_hit
+
 
 card = PokemonCardDef(
     guid="e0aa5208-ea40-5f36-98d9-429f4c2f2e9c",
@@ -46,7 +48,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_salamence_18_direct_hit(),
         ),
     ],
 )

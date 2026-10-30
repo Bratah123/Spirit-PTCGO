@@ -4,6 +4,8 @@ Electrode (DP7 #37): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import smokescreen_attack
+
 
 card = PokemonCardDef(
     guid="953426bd-3253-521b-8f53-77213b783cce",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=smokescreen_attack(),
         ),
         Attack(
             title="Electro Diffusion",

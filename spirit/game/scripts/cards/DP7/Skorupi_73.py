@@ -4,6 +4,8 @@ Skorupi (DP7 #73): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="a078ef33-d74e-5f2b-ae68-a19388c3ded5",
@@ -28,7 +30,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=10,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
         Attack(
             title="Dangerous Claw",

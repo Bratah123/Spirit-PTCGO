@@ -4,6 +4,8 @@ Stunky (DP7 #76): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+
 
 card = PokemonCardDef(
     guid="823cc3b4-1fe4-56c3-85a7-f3f653f6a4b0",
@@ -39,7 +41,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_damage(2, per_heads=20),
         ),
     ],
 )

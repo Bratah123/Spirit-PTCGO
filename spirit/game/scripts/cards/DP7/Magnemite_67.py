@@ -4,6 +4,8 @@ Magnemite (DP7 #67): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_loudred_44_bass_control
+
 
 card = PokemonCardDef(
     guid="f147d63c-6c43-5a69-83c8-42cd8c416ef8",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of your opponent's Pok\u00e9mon. This attack does 20 damage to that Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_loudred_44_bass_control(),
         ),
     ],
 )

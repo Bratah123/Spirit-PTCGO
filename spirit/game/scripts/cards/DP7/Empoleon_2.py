@@ -4,6 +4,8 @@ Empoleon (DP7 #2): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp3_vibrava_74_hyper_beam
+
 
 card = PokemonCardDef(
     guid="e739f37e-a495-568a-9ba2-04a6adbc0982",
@@ -44,7 +46,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_vibrava_74_hyper_beam(),
         ),
     ],
 )

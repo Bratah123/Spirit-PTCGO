@@ -4,6 +4,8 @@ Bagon (DP7 #53): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_huntail_42_scary_face
+
 
 card = PokemonCardDef(
     guid="a406e4eb-0556-538b-b395-d084e5258f35",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon can't attack or retreat during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_huntail_42_scary_face(),
         ),
         Attack(
             title="Headbutt",

@@ -4,6 +4,8 @@ Cherubi (DP7 #56): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import pin_missile
+
 
 card = PokemonCardDef(
     guid="ea07e0ac-0bdd-5911-91c3-9f8d40bfa172",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=pin_missile(4, 10),
         ),
     ],
 )

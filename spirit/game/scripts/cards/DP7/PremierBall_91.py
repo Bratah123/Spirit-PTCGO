@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Premier Ball (DP7 #91): trainer effect stubbed.
-
-Card text:
-  - Search your deck or your discard pile for a Pokémon LV.X, show it to your opponent, and put it into your hand. If you search your deck, shuffle your deck afterward.
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+"""Premier Ball (DP4 #101)."""
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import premier_ball
 
 card = ItemCardDef(
     guid="949300da-ddee-5966-92e3-cdc060912465",
@@ -18,6 +13,5 @@ card = ItemCardDef(
     collector_number=91,
     set_code="DP7",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=premier_ball(),
 )

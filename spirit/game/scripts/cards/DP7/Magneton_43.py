@@ -4,6 +4,10 @@ Magneton (DP7 #43): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.attributes import SpecialConditions
+from spirit.game.card_effects.dp import dp3_vibrava_74_hyper_beam
+
 
 card = PokemonCardDef(
     guid="76c497b2-7e93-530a-93cf-b35eb3700133",
@@ -31,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
         Attack(
             title="Removal Pulse",
@@ -39,7 +43,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_vibrava_74_hyper_beam(),
         ),
     ],
 )

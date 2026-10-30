@@ -4,6 +4,8 @@ Larvitar (DP7 #63): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp5_prinplup_44_wash_over
+
 
 card = PokemonCardDef(
     guid="fa046c81-ff2c-5a47-92ee-c732cc299f96",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp5_prinplup_44_wash_over(),
         ),
     ],
 )

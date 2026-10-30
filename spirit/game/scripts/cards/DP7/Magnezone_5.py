@@ -4,6 +4,8 @@ Magnezone (DP7 #5): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="c4c74e14-81c6-5634-95f7-06ed349c5572",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             game_text="Choose 1 of your opponent's Pok\u00e9mon. This attack does 30 damage to that Pok\u00e9mon. This attack's damage isn't affected by Weakness, Resistance, Pok\u00e9-Powers, Pok\u00e9-Bodies, or any other effects on that Pok\u00e9mon.",
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(30, pool='any'),
         ),
         Attack(
             title="Crush Volt",

@@ -4,6 +4,9 @@ Pichu (DP7 #45): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.data_utils import Activations
+from spirit.game.card_effects.ex import baby_evolution, baby_evolution_condition
+
 
 card = PokemonCardDef(
     guid="a6a2a64f-6b1f-5ba7-b371-bbdb2732e625",
@@ -29,7 +32,9 @@ card = PokemonCardDef(
             game_text="Once during your turn (before your attack), you may put Pikachu from your hand onto Pichu (this counts as evolving Pichu) and remove all damage counters from Pichu.",
             ability_type=AbilityTypes.POKE_POWER,
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            effect=baby_evolution('Pikachu'),
+            activation=Activations.ONCE_PER_TURN,
+            condition=baby_evolution_condition('Pikachu'),
         ),
         Attack(
             title="Electric Circuit",

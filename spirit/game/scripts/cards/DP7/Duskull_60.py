@@ -4,6 +4,8 @@ Duskull (DP7 #60): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_or_nothing
+
 
 card = PokemonCardDef(
     guid="7861a072-ebb1-5094-b833-cace865c681f",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_or_nothing(),
         ),
     ],
 )

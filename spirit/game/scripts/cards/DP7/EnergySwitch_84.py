@@ -1,12 +1,20 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Energy Switch (DP7 #84): trainer effect stubbed.
-
-Card text:
-  - Move a basic Energy card attached to 1 of your Pokémon to another of your Pokémon.
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+from spirit.game.card_effects.trainers import is_basic_energy_card
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+
+
+def energy_switch_condition(board, player_id):
+    pokemon = board.pokemon_in_play(player_id)
+    if len(pokemon) < 2:
+        return False
+    return any(any(is_basic_energy_card(e) for e in p.children) for p in pokemon)
+
+
+async def energy_switch(ctx):
+    """Move a basic Energy from 1 of your Pokemon to another of your Pokemon."""
+    pokemon = ctx.my_pokemon_in_play()
+    await ctx.move_energy_freely(pokemon, pokemon, predicate=is_basic_energy_card, max_count=1)
+
 
 card = ItemCardDef(
     guid="69ab3162-be0e-5a32-afb0-59a1ad2d76fa",
@@ -18,6 +26,6 @@ card = ItemCardDef(
     collector_number=84,
     set_code="DP7",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    condition=energy_switch_condition,
+    effect=energy_switch,
 )

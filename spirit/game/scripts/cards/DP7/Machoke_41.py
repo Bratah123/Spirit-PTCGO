@@ -4,6 +4,9 @@ Machoke (DP7 #41): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+from spirit.game.card_effects.dp import dp5_glaceon_5_speed_slide
+
 
 card = PokemonCardDef(
     guid="be96786e-c170-5939-8bed-50b77daaa391",
@@ -30,7 +33,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
         Attack(
             title="Brick Break",
@@ -38,7 +41,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp5_glaceon_5_speed_slide(),
         ),
     ],
 )

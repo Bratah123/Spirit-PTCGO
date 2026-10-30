@@ -4,6 +4,9 @@ Onix (DP7 #69): one or more attacks/abilities use effect=unimplemented until a m
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.attributes import SpecialConditions
+
 
 card = PokemonCardDef(
     guid="e29cee0e-15b2-593d-88e5-53c6bc74f287",
@@ -35,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],
 )

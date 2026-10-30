@@ -4,6 +4,8 @@ Machop (DP7 #64): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import gust_attack
+
 
 card = PokemonCardDef(
     guid="959da002-c733-5322-b725-300aaaa3cf76",
@@ -33,7 +35,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=gust_attack(opponent_chooses=True),
         ),
     ],
 )

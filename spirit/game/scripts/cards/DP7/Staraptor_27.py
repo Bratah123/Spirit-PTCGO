@@ -4,6 +4,8 @@ Staraptor (DP7 #27): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="3cb656c9-c8e9-5817-9337-a51367a83217",
@@ -45,7 +47,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
     ],
 )

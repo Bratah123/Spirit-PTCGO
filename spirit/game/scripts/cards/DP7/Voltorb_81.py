@@ -4,6 +4,8 @@ Voltorb (DP7 #81): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import outlet_search
+
 
 card = PokemonCardDef(
     guid="7773956e-27da-58e0-9946-48fddc795f89",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a Lightning Energy card, show it to your opponent, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=outlet_search(),
         ),
         Attack(
             title="Bouncing Ball",

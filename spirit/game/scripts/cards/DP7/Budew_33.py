@@ -4,6 +4,8 @@ Budew (DP7 #33): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import baby_evolution, baby_evolution_condition
+
 
 card = PokemonCardDef(
     guid="8148d161-27a5-5fad-b5c1-181d59e77a39",
@@ -34,7 +36,8 @@ card = PokemonCardDef(
             game_text="Once during your turn (before your attack), you may put Roselia from your hand onto Budew (this counts as evolving Budew) and remove all damage counters from Budew.",
             ability_type=AbilityTypes.POKE_POWER,
             # STUB: ability effect not implemented
-            effect=unimplemented,
+            condition=baby_evolution_condition('Roselia'),
+            effect=baby_evolution('Roselia'),
         ),
         Attack(
             title="Buddy-buddy",

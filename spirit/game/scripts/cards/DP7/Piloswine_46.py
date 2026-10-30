@@ -4,6 +4,8 @@ Piloswine (DP7 #46): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import snipe_attack
+
 
 card = PokemonCardDef(
     guid="c082f2f1-7530-57e7-926a-ca4f506c2668",
@@ -40,7 +42,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=snipe_attack(20),
         ),
     ],
 )

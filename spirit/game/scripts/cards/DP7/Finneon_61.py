@@ -4,6 +4,8 @@ Finneon (DP7 #61): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="a54a50c7-3aa0-57d8-a71c-6122f515adf5",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(10),
         ),
     ],
 )

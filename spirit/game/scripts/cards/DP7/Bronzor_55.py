@@ -4,6 +4,9 @@ Bronzor (DP7 #55): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import condition_attack
+from spirit.game.attributes import SpecialConditions
+
 
 card = PokemonCardDef(
     guid="c860cfe2-17b2-5241-b44c-b2c521f70d1b",
@@ -37,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],
 )

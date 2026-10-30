@@ -4,6 +4,9 @@ Misdreavus (DP7 #68): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.attributes import SpecialConditions
+from spirit.game.card_effects.attacks_common import condition_attack
+
 
 card = PokemonCardDef(
     guid="27e88686-3359-53e8-a2a8-d0feddc0fbc1",
@@ -29,7 +32,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon is now Asleep.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=condition_attack(SpecialConditions.ASLEEP),
         ),
         Attack(
             title="Nightmare Feast",
