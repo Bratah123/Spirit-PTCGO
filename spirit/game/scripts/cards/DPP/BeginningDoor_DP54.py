@@ -1,12 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Beginning Door (DPP #DP54): trainer effect stubbed.
-
-Card text:
-  - Search your deck for Arceus, show it to your opponent, and put it into your hand. Shuffle your deck afterward.
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+"""Beginning Door (DPP #DP54)."""
+from spirit.game.data_utils import ItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import beginning_door
 
 card = ItemCardDef(
     guid="975b44be-db60-524a-bfcd-ffcb09eb1e61",
@@ -18,6 +13,5 @@ card = ItemCardDef(
     collector_number=54,
     set_code="DPP",
     rarity=Rarities.RarePromo,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=beginning_door(),
 )
