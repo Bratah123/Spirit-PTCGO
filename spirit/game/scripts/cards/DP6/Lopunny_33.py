@@ -4,6 +4,8 @@ Lopunny (DP6 #33): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.support_common import draw_attack
+
 
 card = PokemonCardDef(
     guid="b8d78a4f-ffd7-5c96-b28a-d78546a83d2c",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             game_text="Draw 3 cards.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=draw_attack(3),
         ),
         Attack(
             title="Cross-Cut",

@@ -4,6 +4,8 @@ Tentacool (DP6 #125): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp3_vibrava_74_hyper_beam
+
 
 card = PokemonCardDef(
     guid="1217b174-e5bf-54c0-9eed-9f41a29dc6dc",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy card attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_vibrava_74_hyper_beam(),
         ),
     ],
 )

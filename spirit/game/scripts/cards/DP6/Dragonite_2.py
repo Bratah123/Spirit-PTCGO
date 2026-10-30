@@ -4,6 +4,8 @@ Dragonite (DP6 #2): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp3_vibrava_74_hyper_beam
+
 
 card = PokemonCardDef(
     guid="3ee89cc3-3935-5393-a219-099cb7e98b67",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=40,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_vibrava_74_hyper_beam(),
         ),
         Attack(
             title="Draco Meteor",

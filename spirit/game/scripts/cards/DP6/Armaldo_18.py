@@ -4,6 +4,8 @@ Armaldo (DP6 #18): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.ex import silver_wind
+
 
 card = PokemonCardDef(
     guid="7550a1f7-0f5f-5fbc-8ad5-7184b47109c5",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.FIGHTING: 2, PokemonTypes.COLORLESS: 1},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=silver_wind(40),
         ),
     ],
 )

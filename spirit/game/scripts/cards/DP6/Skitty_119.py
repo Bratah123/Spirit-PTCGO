@@ -4,6 +4,8 @@ Skitty (DP6 #119): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import charm_reduce_defender_next
+
 
 card = PokemonCardDef(
     guid="0b4cd32a-75d0-5386-b880-dd6728546b5b",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 20 (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=charm_reduce_defender_next(20),
         ),
         Attack(
             title="Scratch",

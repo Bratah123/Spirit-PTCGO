@@ -4,6 +4,8 @@ Nincada (DP6 #108): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="d6b7e8dd-72b9-5a57-8f78-82bbc44092d3",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.GRASS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
     ],
 )

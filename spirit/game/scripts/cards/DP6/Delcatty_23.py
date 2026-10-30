@@ -4,6 +4,8 @@ Delcatty (DP6 #23): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp4_solrock_85_sol_charge
+
 
 card = PokemonCardDef(
     guid="23149dd4-dfb6-5796-8814-a77de41d2b3e",
@@ -36,7 +38,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_solrock_85_sol_charge(),
         ),
     ],
 )

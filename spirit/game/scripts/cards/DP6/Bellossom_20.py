@@ -4,6 +4,8 @@ Bellossom (DP6 #20): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp5_cresselia_2_healing_light
+
 
 card = PokemonCardDef(
     guid="af8a2d70-7798-5c2a-b9cf-dc5825c4508d",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp5_cresselia_2_healing_light(),
         ),
         Attack(
             title="Blend Pollen",

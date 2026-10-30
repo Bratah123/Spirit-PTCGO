@@ -4,6 +4,8 @@ Misdreavus (DP6 #107): one or more attacks/abilities use effect=unimplemented un
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import minor_errand_running
+
 
 card = PokemonCardDef(
     guid="d59a6e9d-39c0-5a76-8074-8303b150d090",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a basic Energy card, show it to your opponent, and put it into your hand. Shuffle your deck afterward.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=minor_errand_running(1),
         ),
         Attack(
             title="Payback",

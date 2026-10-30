@@ -4,6 +4,8 @@ Azelf (DP6 #19): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="d8e35115-b718-5a85-b387-e8b9348694b8",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
     ],
 )

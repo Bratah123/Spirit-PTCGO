@@ -4,6 +4,8 @@ Ledian (DP6 #60): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import multi_flip_damage
+
 
 card = PokemonCardDef(
     guid="870af73b-8933-5c8a-84cd-6c8f47d0fb76",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             damage=20,
             damage_operator="x",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=multi_flip_damage(4, 20),
         ),
         Attack(
             title="Baton Pass",

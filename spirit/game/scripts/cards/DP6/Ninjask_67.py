@@ -4,6 +4,8 @@ Ninjask (DP6 #67): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp3_weavile_40_chip_off
+
 
 card = PokemonCardDef(
     guid="80f62e61-eaab-5f4c-897d-15bb9e64f5e6",
@@ -38,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_weavile_40_chip_off(),
         ),
     ],
 )

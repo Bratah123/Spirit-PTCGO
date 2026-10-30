@@ -4,6 +4,8 @@ Unown [V] (DP6 #79): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp5_torterra_30_earthquake
+
 
 card = PokemonCardDef(
     guid="61039d44-3ae7-591d-a294-715f4f711a92",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.PSYCHIC: 1},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp5_torterra_30_earthquake(),
         ),
     ],
 )

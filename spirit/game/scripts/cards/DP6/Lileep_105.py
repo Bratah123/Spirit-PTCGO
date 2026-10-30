@@ -4,6 +4,8 @@ Lileep (DP6 #105): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_rotom_7_astonish
+
 
 card = PokemonCardDef(
     guid="66a65646-2daa-537f-a6c2-b13e89a095d6",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_rotom_7_astonish(),
         ),
         Attack(
             title="Absorb",

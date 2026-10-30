@@ -4,6 +4,9 @@ Poochyena (DP6 #116): one or more attacks/abilities use effect=unimplemented unt
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+from spirit.game.card_effects.attacks_common import flip_bonus
+
 
 card = PokemonCardDef(
     guid="8f844a46-5c58-5d35-9747-ee8073ac8081",
@@ -29,7 +32,7 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.DARKNESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
         Attack(
             title="Ambush",
@@ -38,7 +41,7 @@ card = PokemonCardDef(
             damage=10,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=flip_bonus(20),
         ),
     ],
 )

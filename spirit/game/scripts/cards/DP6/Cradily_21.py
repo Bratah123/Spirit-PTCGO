@@ -4,6 +4,8 @@ Cradily (DP6 #21): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="31384d96-a4ef-5d3f-99bd-b23f353ba5c0",
@@ -37,7 +39,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.GRASS: 1, PokemonTypes.COLORLESS: 2},
             damage=50,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
     ],
 )
