@@ -111,3 +111,11 @@ class VGuardPassive(Passive):
         ):
             calc._v_guard_applied = True
             calc.amount = max(0, calc.amount - 30)
+
+
+async def rainbow_energy_on_attach(ctx):
+    """Put 1 damage counter on the Pokémon this was attached to."""
+    target = ctx.attached_to
+    if target is not None:
+        await ctx.deal_damage(amount=10, target=target, as_counters=True)
+
