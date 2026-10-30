@@ -1984,6 +1984,29 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_miracle_energy_attach_gate_and_provides():
+    from spirit.game.card_effects.energies import (
+        ALL_TYPES_TWO_AT_A_TIME,
+        attach_to_shining_or_light,
+    )
+    assert all(len(opt) == 2 for opt in ALL_TYPES_TWO_AT_A_TIME)
+    # Synthetic pokemon-like objects
+    class _P:
+        def __init__(self, name):
+            self._n = name
+        def get_attribute(self, *_a, **_k):
+            return self._n
+    assert attach_to_shining_or_light(_P("LightArcanine"))
+    assert attach_to_shining_or_light(_P("ShiningMewtwo"))
+    assert not attach_to_shining_or_light(_P("DarkFeraligatr"))
+    stem = "MiracleEnergy_16"
+    if stem in card_loader.cards_by_stem:
+        d = CARD_DEFS_BY_GUID[card_loader.cards_by_stem[stem].lower()]
+        assert d.attach_to is attach_to_shining_or_light
+        assert d.provides == ALL_TYPES_TWO_AT_A_TIME
+        assert d.granted_abilities
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2071,7 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_miracle_energy_attach_gate_and_provides,
 ]
 
 

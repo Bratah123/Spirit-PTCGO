@@ -111,3 +111,36 @@ class VGuardPassive(Passive):
         ):
             calc._v_guard_applied = True
             calc.amount = max(0, calc.amount - 30)
+
+
+# Miracle / Double Rainbow: every type, two at a time.
+ALL_TYPES_TWO_AT_A_TIME = [
+    [t, t] for t in (
+        PokemonTypes.GRASS, PokemonTypes.FIRE, PokemonTypes.WATER,
+        PokemonTypes.LIGHTNING, PokemonTypes.PSYCHIC, PokemonTypes.FIGHTING,
+        PokemonTypes.DARKNESS, PokemonTypes.METAL, PokemonTypes.FAIRY,
+        PokemonTypes.DRAGON, PokemonTypes.COLORLESS,
+    )
+]
+
+
+def attach_to_shining_or_light(pokemon) -> bool:
+    """Miracle Energy: only Shining or Light Pokémon (EVOLUTION_LOGIC_NAME)."""
+    name = pokemon.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) or ""
+    return name.startswith("Shining") or name.startswith("Light")
+
+
+def discard_energy_end_of_turn(energy_guid: str):
+    """END_OF_TURN granted ability: discard this Energy from the holder."""
+    async def effect(ctx):
+        pokemon = ctx.source
+        if pokemon is None:
+            return
+        energy = next(
+            (c for c in pokemon.children
+             if (c.archetype_id or "").lower() == energy_guid.lower()),
+            None)
+        if energy is not None:
+            await ctx.discard_cards([energy])
+    return effect
+

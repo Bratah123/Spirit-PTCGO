@@ -175,7 +175,7 @@
   "ptcgo_code": "EX",
   "era": "wotc",
   "promo": false,
-  "script_dirs": [],
+  "script_dirs": ["ECARD1"],
   "subsets": [],
   "total": 165
  },
@@ -199,7 +199,7 @@
   "ptcgo_code": "AQ",
   "era": "wotc",
   "promo": false,
-  "script_dirs": [],
+  "script_dirs": ["ECARD2"],
   "subsets": [],
   "total": 182
  },
@@ -211,7 +211,7 @@
   "ptcgo_code": "SK",
   "era": "wotc",
   "promo": false,
-  "script_dirs": [],
+  "script_dirs": ["ECARD3"],
   "subsets": [],
   "total": 182
  },
