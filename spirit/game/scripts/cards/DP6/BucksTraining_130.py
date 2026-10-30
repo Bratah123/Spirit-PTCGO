@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Buck's Training (DP6 #130): trainer effect stubbed.
-
-Card text:
-  - You can play only one Supporter card each turn. When you play this card, put it next to your Active Pokémon. When your turn ends, discard this card.
-  - Draw 2 cards. As long as Buck's Training is next to your Active Pokémon, each of your Active Pokémon's attacks does 10 more damage to the Active Pokémon (before applying Weakness and Resistance).
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+"""Buck's Training (DP6 #130)."""
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import bucks_training
 
 card = SupporterCardDef(
     guid="fa368c4f-f5f1-568a-abd6-199c9a693d29",
@@ -19,6 +13,5 @@ card = SupporterCardDef(
     collector_number=130,
     set_code="DP6",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=bucks_training(),
 )

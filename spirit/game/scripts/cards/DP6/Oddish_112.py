@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Oddish (DP6 #112): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP6 Legends Awakened — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.attributes import SpecialConditions
 from spirit.game.card_effects.attacks_common import condition_attack

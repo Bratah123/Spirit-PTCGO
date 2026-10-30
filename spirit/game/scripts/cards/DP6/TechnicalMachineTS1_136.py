@@ -1,14 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Technical Machine TS-1 (DP6 #136): trainer effect stubbed.
+"""Technical Machine TS-1 (DP6 #136)."""
+from spirit.game.data_utils import PokemonToolCardDef, Attack
+from spirit.game.attributes import Rarities, PokemonTypes
+from spirit.game.card_effects.dp import tm_ts1_evoluter, tm_grants_attack_passive
 
-Card text:
-  - Attach this card to 1 of your Pokémon in play. That Pokémon may use this card's attack instead of its own.
-"""
+def _evoluter():
+    return Attack(
+        title="Evoluter",
+        game_text="Search your deck for a card that evolves from 1 of your Pokémon and put it onto that Pokémon. (This counts as evolving that Pokémon.) Shuffle your deck afterward.",
+        cost={},
+        effect=tm_ts1_evoluter(),
+    )
 
-from spirit.game.data_utils import TrainerCardDef, unimplemented
-from spirit.game.attributes import Rarities, TrainerType
-
-card = TrainerCardDef(
+card = PokemonToolCardDef(
     guid="65de453d-0f58-56c9-8c0e-1c3996e89f3f",
     key="DP6",
     name="com.direwolfdigital.cake.data.archetypes.trainer.TechnicalMachineTS1.Name",
@@ -18,7 +21,5 @@ card = TrainerCardDef(
     collector_number=136,
     set_code="DP6",
     rarity=Rarities.Uncommon,
-    trainer_type=TrainerType.TECHNICAL_MACHINE,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=tm_grants_attack_passive(_evoluter),
 )

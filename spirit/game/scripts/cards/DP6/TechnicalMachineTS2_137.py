@@ -1,14 +1,17 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Technical Machine TS-2 (DP6 #137): trainer effect stubbed.
+"""Technical Machine TS-2 (DP6 #137)."""
+from spirit.game.data_utils import PokemonToolCardDef, Attack
+from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import tm_ts2_devoluter, tm_grants_attack_passive
 
-Card text:
-  - Attach this card to 1 of your Pokémon in play. That Pokémon may use this card's attack instead of its own.
-"""
+def _devoluter():
+    return Attack(
+        title="Devoluter",
+        game_text="Choose 1 of your opponent's Evolved Pokémon (excluding Pokémon LV.X). Remove the highest Stage Evolution card from that Pokémon and put that card back into your opponent's hand.",
+        cost={},
+        effect=tm_ts2_devoluter(),
+    )
 
-from spirit.game.data_utils import TrainerCardDef, unimplemented
-from spirit.game.attributes import Rarities, TrainerType
-
-card = TrainerCardDef(
+card = PokemonToolCardDef(
     guid="ddee6153-1201-58c8-a1ff-be620ae99d18",
     key="DP6",
     name="com.direwolfdigital.cake.data.archetypes.trainer.TechnicalMachineTS2.Name",
@@ -18,7 +21,5 @@ card = TrainerCardDef(
     collector_number=137,
     set_code="DP6",
     rarity=Rarities.Uncommon,
-    trainer_type=TrainerType.TECHNICAL_MACHINE,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=tm_grants_attack_passive(_devoluter),
 )

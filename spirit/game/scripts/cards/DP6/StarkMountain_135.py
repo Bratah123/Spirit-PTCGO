@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Stark Mountain (DP6 #135): trainer effect stubbed.
-
-Card text:
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-  - Once during each player's turn, that player may choose a Fire or Fighting Energy attached to 1 of his or her Pokémon and move that Energy to 1 of his or her Pokémon.
-"""
-
-from spirit.game.data_utils import StadiumCardDef, unimplemented
-from spirit.game.attributes import Rarities
+"""Stark Mountain (DP6 #135)."""
+from spirit.game.data_utils import StadiumCardDef, Ability, Activations
+from spirit.game.attributes import Rarities, AbilityTypes
+from spirit.game.card_effects.dp import stark_mountain_ability
 
 card = StadiumCardDef(
     guid="5a1c2410-eb89-569e-9709-ba7f582a1d06",
@@ -19,6 +13,11 @@ card = StadiumCardDef(
     collector_number=135,
     set_code="DP6",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    ability=Ability(
+        title="Stark Mountain",
+        game_text="Once during each player's turn, that player may choose a Fire or Fighting Energy attached to 1 of his or her Pokémon and move that Energy to 1 of his or her Pokémon.",
+        ability_type=AbilityTypes.POKE_BODY,
+        activation=Activations.ONCE_PER_TURN,
+        effect=stark_mountain_ability(),
+    ),
 )
