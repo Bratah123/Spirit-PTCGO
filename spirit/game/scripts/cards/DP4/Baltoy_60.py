@@ -4,6 +4,8 @@ Baltoy (DP4 #60): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp3_mew_15_psychic_balance
+
 
 card = PokemonCardDef(
     guid="f9afea4a-5b83-52d6-a81a-2476a3d4dda8",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="If you have less cards in your hand than your opponent, draw cards until you have the same number of cards as your opponent. (If you have more or the same number of cards in your hand as your opponent, this attack does nothing.)",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_mew_15_psychic_balance(),
         ),
         Attack(
             title="Spin Turn",

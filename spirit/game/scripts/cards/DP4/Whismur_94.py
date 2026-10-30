@@ -4,6 +4,8 @@ Whismur (DP4 #94): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import mud_spit_snipe
+
 
 card = PokemonCardDef(
     guid="b1cf1f58-5bcd-5954-b2d1-78c1c4e1fc73",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, this attack does 10 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mud_spit_snipe(10),
         ),
     ],
 )

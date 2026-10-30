@@ -4,6 +4,8 @@ Feebas (DP4 #67): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import evolution_impulse_search
+
 
 card = PokemonCardDef(
     guid="9e71bfba-ffb3-5840-8137-d28c9b57a14a",
@@ -32,7 +34,7 @@ card = PokemonCardDef(
             game_text="Search your deck for an Evolution card, show it to your opponent, and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.WATER: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=evolution_impulse_search(),
         ),
     ],
 )

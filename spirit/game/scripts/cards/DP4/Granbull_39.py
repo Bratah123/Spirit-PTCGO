@@ -4,6 +4,8 @@ Granbull (DP4 #39): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import charm_reduce_defender_next
+
 
 card = PokemonCardDef(
     guid="6031f5f2-f84a-567b-a34a-9002a3ca46e7",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=30,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=charm_reduce_defender_next(20),
         ),
         Attack(
             title="Rage",

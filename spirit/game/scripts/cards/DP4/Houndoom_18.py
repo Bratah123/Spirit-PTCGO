@@ -4,6 +4,8 @@ Houndoom (DP4 #18): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import knock_off_random_hand
+
 
 card = PokemonCardDef(
     guid="5f66d68b-775a-5410-826b-8fc06d387cd1",
@@ -31,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.DARKNESS: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=knock_off_random_hand(),
         ),
         Attack(
             title="Black Fire",

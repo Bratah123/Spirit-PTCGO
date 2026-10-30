@@ -4,6 +4,8 @@ Skarmory (DP4 #53): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import may_discard_defender_energy_on_heads
+
 
 card = PokemonCardDef(
     guid="9940e169-dcb2-5fee-8d23-9a40f437ad97",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.METAL: 1},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=may_discard_defender_energy_on_heads(),
         ),
         Attack(
             title="Steel Wing",
