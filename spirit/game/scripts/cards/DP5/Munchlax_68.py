@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Munchlax (DP5 #68): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.card_effects.dp import baby_evolution, baby_evolution_condition
 from spirit.game.card_effects.attacks_common import condition_attack
@@ -30,7 +29,6 @@ card = PokemonCardDef(
             title="Baby Evolution",
             game_text="Once during your turn (before your attack), you may put Snorlax from your hand onto Munchlax (this counts as evolving Munchlax) and remove all damage counters from Munchlax.",
             ability_type=AbilityTypes.POKE_POWER,
-            # STUB: ability effect not implemented
             condition=baby_evolution_condition('Snorlax'),
             effect=baby_evolution('Snorlax'),
         ),
@@ -39,7 +37,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon is now Paralyzed.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
-            # STUB: attack effect not implemented
             effect=condition_attack(SpecialConditions.PARALYZED, flip=True),
         ),
     ],

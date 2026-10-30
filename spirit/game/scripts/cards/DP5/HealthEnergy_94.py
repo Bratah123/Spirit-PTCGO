@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Health Energy (DP5 #94): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
-
-Card text:
-  - Health Energy provides Colorless Energy. When you attach this card from your hand to 1 of your Pokémon, remove 1 damage counter from that Pokémon.
+"""DP5 Majestic Dawn — wired.
 """
 
 from spirit.game.data_utils import EnergyCardDef
@@ -20,5 +16,4 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
 )

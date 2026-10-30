@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chatot (DP5 #55): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.dp import mime_draw_equal_opponent
 from spirit.game.card_effects.ex import magma_ring_no_retreat
@@ -31,7 +30,6 @@ card = PokemonCardDef(
             title="Mimic",
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of cards in your opponent's hand.",
             cost={},
-            # STUB: attack effect not implemented
             effect=mime_draw_equal_opponent(),
         ),
         Attack(
@@ -39,7 +37,6 @@ card = PokemonCardDef(
             game_text="The Defending Pok\u00e9mon can't retreat during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
-            # STUB: attack effect not implemented
             effect=magma_ring_no_retreat(),
         ),
     ],

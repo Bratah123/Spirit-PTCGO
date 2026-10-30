@@ -1,14 +1,9 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Dome Fossil (DP5 #89): trainer effect stubbed.
-
-Card text:
-  - Play Dome Fossil as if it were a Colorless Basic Pokémon. (Dome Fossil counts as a Trainer card as well, but if Dome Fossil is Knocked Out, this counts as a Knocked Out Pokémon.) Dome Fossil can't be affected by any Special Conditions and can't retreat. At any time during your turn before your attack, you may discard Dome Fossil from play. (This doesn't count as a Knocked Out Pokémon.)
-"""
-
-from spirit.game.data_utils import ItemCardDef, unimplemented
+"""Dome Fossil (DP5 #89)."""
+from spirit.game.data_utils import FossilItemCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.trainers import FossilBodyPassive, fossil_discard_ability
 
-card = ItemCardDef(
+card = FossilItemCardDef(
     guid="e0327650-e169-57b9-abdb-fbf3e5a73c32",
     key="DP5",
     name="com.direwolfdigital.cake.data.archetypes.trainer.DomeFossil.Name",
@@ -18,6 +13,7 @@ card = ItemCardDef(
     collector_number=89,
     set_code="DP5",
     rarity=Rarities.Common,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    hp=50,
+    passive=FossilBodyPassive(blocks_conditions=True),
+    abilities=[fossil_discard_ability()],
 )

@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Glameow (DP5 #65): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ex import call_for_family_basic, may_discard_defender_energy_on_heads
 
@@ -28,7 +27,6 @@ card = PokemonCardDef(
             title="Call for Family",
             game_text="Search your deck for a Basic Pok\u00e9mon and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=call_for_family_basic(),
         ),
         Attack(
@@ -36,7 +34,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=10,
-            # STUB: attack effect not implemented
             effect=may_discard_defender_energy_on_heads(),
         ),
     ],

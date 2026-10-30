@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Chingling (DP5 #58): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
 from spirit.game.data_utils import Activations
 from spirit.game.card_effects.ex import baby_evolution, baby_evolution_condition
@@ -30,7 +29,6 @@ card = PokemonCardDef(
             title="Baby Evolution",
             game_text="Once during your turn (before your attack), you may put Chimecho from your hand onto Chingling (this counts as evolving Chingling) and remove all damage counters from Chingling.",
             ability_type=AbilityTypes.POKE_POWER,
-            # STUB: ability effect not implemented
             effect=baby_evolution('Chimecho'),
             activation=Activations.ONCE_PER_TURN,
             condition=baby_evolution_condition('Chimecho'),
@@ -39,7 +37,6 @@ card = PokemonCardDef(
             title="Uproar",
             game_text="Flip a coin. If heads, this attack does 10 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={},
-            # STUB: attack effect not implemented
             effect=mud_spit_snipe(10),
         ),
     ],

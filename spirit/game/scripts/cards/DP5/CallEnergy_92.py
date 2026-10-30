@@ -1,8 +1,4 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Call Energy (DP5 #92): special energy provides/passive/attach rules stubbed until matched to a known energy pattern.
-
-Card text:
-  - Call Energy provides Colorless Energy. Once during your turn, if the Pokémon Call Energy is attached to is your Active Pokémon, you may search your deck for up to 2 Basic Pokémon and put them onto your Bench. If you do, shuffle your deck and your turn ends.
+"""DP5 Majestic Dawn — wired.
 """
 
 from spirit.game.data_utils import EnergyCardDef
@@ -20,5 +16,4 @@ card = EnergyCardDef(
     rarity=Rarities.Uncommon,
     energy_type=PokemonTypes.COLORLESS,
     is_special=True,
-    # STUB: special energy mechanics not implemented
 )

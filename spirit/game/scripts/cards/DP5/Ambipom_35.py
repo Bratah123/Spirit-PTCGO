@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Ambipom (DP5 #35): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.dp import dp4_rotom_7_astonish
 from spirit.game.card_effects.attacks_common import snipe_attack
@@ -31,14 +30,12 @@ card = PokemonCardDef(
             game_text="Choose 1 card from your opponent's hand without looking. Look at that card you chose, then have your opponent shuffle that card into his or her deck.",
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
-            # STUB: attack effect not implemented
             effect=dp4_rotom_7_astonish(),
         ),
         Attack(
             title="Hang High",
             game_text="Choose 1 of your opponent's Pok\u00e9mon. This attack does 40 damage to that Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.COLORLESS: 3},
-            # STUB: attack effect not implemented
             effect=snipe_attack(40, pool='any'),
         ),
     ],

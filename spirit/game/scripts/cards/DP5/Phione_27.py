@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Phione (DP5 #27): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP5 Majestic Dawn — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.ex import charm_reduce_defender_next
 from spirit.game.card_effects.dp import dp3_vibrava_74_hyper_beam
@@ -29,7 +28,6 @@ card = PokemonCardDef(
             title="Charm",
             game_text="During your opponent's next turn, any damage done by attacks from the Defending Pok\u00e9mon is reduced by 20 (before applying Weakness and Resistance).",
             cost={PokemonTypes.COLORLESS: 1},
-            # STUB: attack effect not implemented
             effect=charm_reduce_defender_next(20),
         ),
         Attack(
@@ -37,7 +35,6 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, discard an Energy card attached to the Defending Pok\u00e9mon.",
             cost={PokemonTypes.WATER: 2},
             damage=30,
-            # STUB: attack effect not implemented
             effect=dp3_vibrava_74_hyper_beam(),
         ),
     ],

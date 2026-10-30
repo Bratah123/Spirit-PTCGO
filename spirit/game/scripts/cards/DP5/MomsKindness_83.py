@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Mom's Kindness (DP5 #83): trainer effect stubbed.
-
-Card text:
-  - You can play only one Supporter card each turn. When you play this card, put it next to your Active Pokémon. When your turn ends, discard this card.
-  - Draw 2 cards.
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+"""Mom's Kindness (DP5 #83)."""
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import moms_kindness
 
 card = SupporterCardDef(
     guid="b9049447-56cf-5789-a078-177bfe40243d",
@@ -19,6 +13,5 @@ card = SupporterCardDef(
     collector_number=83,
     set_code="DP5",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=moms_kindness(),
 )
