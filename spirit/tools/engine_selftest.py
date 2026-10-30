@@ -1984,6 +1984,24 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_promo_xy_named_in_play_ex_logic_names():
+    """Xerneas XY31 / Yveltal XY32 match EX via EVOLUTION_LOGIC_NAME (no hyphen)."""
+    from pathlib import Path as _Path
+    for stem, needed in (
+        ("Xerneas_XY31", ("Yveltal", "YveltalEX")),
+        ("Yveltal_XY32", ("Xerneas", "XerneasEX")),
+    ):
+        path = _Path("spirit/game/scripts/cards/Promo_XY") / f"{stem}.py"
+        if not path.exists():
+            continue
+        text = path.read_text()
+        # Use the call site (last named_in_play), not the import.
+        chunk = text.rsplit("named_in_play", 1)[1].split(")", 1)[0]
+        for n in needed:
+            assert ("'" + n + "'") in chunk or ('"' + n + '"') in chunk, (stem, n, chunk)
+        assert "-EX" not in chunk, chunk
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2066,7 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_promo_xy_named_in_play_ex_logic_names,
 ]
 
 
