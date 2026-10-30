@@ -46,7 +46,8 @@ def subtypes_for(archetype_id: Optional[str]) -> List[str]:
 
 
 # Rule-box subtypes and the prizes an attacker takes for knocking one out.
-_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2}
+_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2,
+                         "ex": 2, "Star": 2}
 _RULE_BOX_SUBTYPES = set(_MULTI_PRIZE_SUBTYPES) | {"Radiant"}
 
 
@@ -692,6 +693,8 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    granted_abilities -- Abilities granted to the holder while attached
+                        (END_OF_TURN self-discard, BETWEEN_TURNS checks).
     """
     def __init__(
         self,
@@ -710,6 +713,7 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        granted_abilities: Optional[List["Ability"]] = None,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -726,6 +730,16 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        # Optional Abilities granted to the holder while this Energy is
+        # attached (END_OF_TURN discard, BETWEEN_TURNS stage checks). Same
+        # wiring as PokemonToolCardDef — _pie_ability_entries already reads
+        # granted_abilities from every attached child.
+        self.granted_abilities: List[Ability] = granted_abilities or []
+        for idx, a in enumerate(self.granted_abilities):
+            if not a.ability_id:
+                a.ability_id = ability_id_for(guid, idx)
+            a.is_granted = True
+            ABILITIES_BY_ID[a.ability_id] = a
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]
