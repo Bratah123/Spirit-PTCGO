@@ -218,6 +218,26 @@ def opponent_has_energy_attached(board, player_id) -> bool:
     return bool(_opponent_energies(board, player_id))
 
 
+def flip_discard_opponent_energy(title: str = "Energy Removal"):
+    """Flip a coin. If heads, discard 1 Energy from 1 of the opponent's Pokémon
+    (Energy Removal 2 / Crushing Hammer)."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, title)
+        if not results or not results[0]:
+            return
+        candidates = [
+            p for p in ctx.opponent_pokemon_in_play() if ctx.attached_energies(p)
+        ]
+        if not candidates:
+            return
+        target = await ctx.choose_pokemon(
+            candidates, "Choose 1 of your opponent's Pokémon")
+        if target is None:
+            return
+        await ctx.discard_energy_from(target, 1)
+    return effect
+
+
 def _my_vmax_pokemon(board, player_id):
     return [p for p in board.pokemon_in_play(player_id) if is_pokemon_vmax(p.archetype_id)]
 
@@ -1336,6 +1356,14 @@ def _is_hisuian_pokemon(card) -> bool:
         return False
     name = getattr(def_for(card.archetype_id), "display_name", "") or ""
     return "Hisuian" in name
+
+
+def professor_birch_playable(board, player_id) -> bool:
+    """Deck remains and the hand (excluding this card) has fewer than 6 cards."""
+    if not deck_nonempty(board, player_id):
+        return False
+    hand = board.find_player_area(player_id, "hand")
+    return (len(hand.children) if hand else 0) < 7
 
 
 def professor_laventon_playable(board, player_id) -> bool:
