@@ -120,7 +120,7 @@ from .effects import (
 )
 from .passives import (
     ability_locked, active_passives, active_to_bench_counters,
-    burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
+    burn_recovery_blocked, condition_removal_blocked, effective_bench_capacity, effective_max_hp,
     effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
     granted_extra_attacks, retreat_energy_destination, tool_slots_free,
     tool_suppressed,
@@ -2157,7 +2157,7 @@ class GameSession:
         ko_triggers: List[Tuple[PokemonEntity, str, Ability, bool]] = []
         for pokemon in ctx.knockouts:
             owner_id = pokemon.owning_player_id
-            if owner_id is None or ability_locked(self.board_state, pokemon):
+            if owner_id is None:
                 continue
             was_active = self.board_state.active_pokemon(owner_id) is pokemon
             for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
@@ -2165,8 +2165,11 @@ class GameSession:
                     continue
                 ability_id = entry.get("abilityID")
                 ability = ABILITIES_BY_ID.get(ability_id) if ability_id else None
-                if ability is not None and ability.has_trigger(Triggers.ON_KNOCKED_OUT):
-                    ko_triggers.append((pokemon, owner_id, ability, was_active))
+                if ability is None or not ability.has_trigger(Triggers.ON_KNOCKED_OUT):
+                    continue
+                if ability_locked(self.board_state, pokemon, ability):
+                    continue
+                ko_triggers.append((pokemon, owner_id, ability, was_active))
 
         # Special-energy leave-play hooks (Gift Energy's draw) snapshotted with
         # the KO'd carrier before any stack moves; run only for attack KOs.
@@ -2224,7 +2227,6 @@ class GameSession:
             for ally in self.board_state.pokemon_in_play(owner_id):
                 if ally is pokemon or ally in ctx.knockouts:
                     continue
-                locked = ability_locked(self.board_state, ally)
                 for entry in ally.get_attribute(AttrID.PIE_ABILITIES) or []:
                     if not isinstance(entry, dict):
                         continue
@@ -2232,7 +2234,8 @@ class GameSession:
                     if ability is None \
                             or not ability.has_trigger(Triggers.ON_ALLY_KNOCKED_OUT):
                         continue
-                    if locked and not ability.is_granted:
+                    if ability_locked(self.board_state, ally, ability) \
+                            and not ability.is_granted:
                         continue
                     ally_triggers.append(
                         (ally, owner_id, ability, pokemon, ko_from_attack))
@@ -3302,6 +3305,17 @@ class GameSession:
     async def _checkup_sleep(self, player_id: str, active):
         """Sleep flip: all heads wakes (Thumping Snore's rider flips 2 coins)."""
         coins = self.sleep_checkup_coins.get(active.entity_id, 1)
+        # Deep Sleep / similar: passives may require extra coins while Active.
+        for passive, carrier in active_passives(self.board_state):
+            override = getattr(passive, "asleep_coins_required", None)
+            if not callable(override):
+                continue
+            try:
+                v = override(active, carrier)
+            except TypeError:
+                v = override(self, active, carrier)
+            if v is not None:
+                coins = max(coins, int(v))
         flips = [random.choice([0, 1]) for _ in range(coins)]
         woke = all(f == 0 for f in flips)
         self.stat_add(player_id, "headsflipped", flips.count(0))
@@ -4042,10 +4056,12 @@ class GameSession:
 
     async def _fire_end_of_turn_triggers(self, active_id: str):
         """END_OF_TURN for the turn player's in-play Pokemon, after their turn
-        ends and before the checkup (Radiant Venusaur's Sunny Bloom)."""
+        ends and before the checkup (Radiant Venusaur's Sunny Bloom). Also
+        fires END_OF_TURN on the in-play Stadium (Championship Arena)."""
         for pokemon in list(self.board_state.pokemon_in_play(active_id)):
             await self._fire_triggered_abilities(
                 active_id, pokemon, Triggers.END_OF_TURN)
+        await self._fire_stadium_triggers(active_id, Triggers.END_OF_TURN)
 
     async def _fire_stadium_triggers(self, acting_player_id: str, trigger: str,
                                      ctx_setup=None):
@@ -4094,8 +4110,11 @@ class GameSession:
         if target is None:
             return
         definition = def_for(card.archetype_id)
-        if definition is not None and getattr(definition, "attach_to", None) \
-                and not definition.attach_to(target):
+        _attach_to = None
+        if definition is not None:
+            _attach_to = getattr(definition, "energy_attach_to", None) \
+                or getattr(definition, "attach_to", None)
+        if _attach_to is not None and not _attach_to(target):
             logging.warning(
                 f"[Session {self.game_id}] Energy {card.entity_id} may not "
                 f"attach to {target_id}; re-offering."
@@ -4670,12 +4689,26 @@ class GameSession:
             f"evolved {target.entity_id} into {card.entity_id}."
         )
 
-        # needs live client verification: condition marker clears on evolve
+        # Condition markers clear on evolve, except Full Flame-style keeps
+        # (Burned can't be cured by evolving — move kept conditions onto the
+        # evolution card).
+        kept = []
+        for cond in list(target.get_attribute(AttrID.SPECIAL_CONDITIONS) or []):
+            if condition_removal_blocked(
+                    self.board_state, target, cond, "evolve"):
+                kept.append(cond)
         if self.clear_pokemon_effects(target):
             await self.send_game_sequence(
                 list(self.players.values()), GameSequence.REMOVE_SPECIAL_CONDITION,
                 [self._entity_id_data_effect_msg("Target", target.entity_id),
                  self._condition_attr_msg(target)],
+            )
+        if kept:
+            card.set_attribute(AttrID.SPECIAL_CONDITIONS, list(kept))
+            await self.send_game_sequence(
+                list(self.players.values()), GameSequence.ADD_SPECIAL_CONDITION,
+                [self._entity_id_data_effect_msg("Target", card.entity_id),
+                 self._condition_attr_msg(card)],
             )
 
         # Wyndon Stadium: heal a Pokemon just evolved from hand (deck-sourced
@@ -4742,9 +4775,16 @@ class GameSession:
         self.board_state.move_card(pokemon.entity_id, dest.entity_id)
         moves.append(self._entity_moved_msg(pokemon.entity_id, dest.entity_id, position))
 
-        # Devolving removes Special Conditions (not damage); the removed card
-        # leaves play as a fresh card.
+        # Devolving removes Special Conditions (not damage), except Full Flame
+        # keeps Burned. The removed card leaves play as a fresh card.
+        kept = []
+        for cond in list(pokemon.get_attribute(AttrID.SPECIAL_CONDITIONS) or []):
+            if condition_removal_blocked(
+                    self.board_state, pokemon, cond, "devolve"):
+                kept.append(cond)
         self.clear_pokemon_effects(pokemon)
+        if kept:
+            prev.set_attribute(AttrID.SPECIAL_CONDITIONS, list(kept))
         self.reset_pokemon_damage(pokemon)
         self.reset_ability_usage(pokemon)
         prev_max = effective_max_hp(self.board_state, prev)
@@ -4992,6 +5032,27 @@ class GameSession:
             # untagged rides a plain GroupedMove.
             await self._flush_effect_runs(ctx)
 
+        # Jamming-style: after a Supporter resolves, opposing passives may put
+        # damage counters on each of the Supporter player's Pokémon (once/turn).
+        if (card.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.SUPPORTER.value
+                and "jamming_supporter" not in self.turn_state.used_named_abilities):
+            jam_n = 0
+            for passive, carrier in active_passives(self.board_state):
+                n = passive.after_supporter_played(
+                    self.board_state, player_id, card, carrier)
+                if n and n > 0:
+                    jam_n = max(jam_n, int(n))
+            if jam_n > 0:
+                self.turn_state.used_named_abilities.add("jamming_supporter")
+                jam_ctx = ctx if ctx is not None else EffectContext(
+                    self, player_id, None, None)
+                for poke in list(self.board_state.pokemon_in_play(player_id)):
+                    await jam_ctx.deal_damage(
+                        jam_n * 10, target=poke,
+                        apply_modifiers=False, as_counters=True)
+                if ctx is None:
+                    await self._flush_effect_runs(jam_ctx)
+
         # Normally the trainer discards after resolving; skip when the effect
         # relocated it elsewhere (Hisuian Heavy Ball swaps itself into prizes).
         if card.parent is trainer_area:
@@ -5143,6 +5204,14 @@ class GameSession:
         self.turn_state.became_active_turn[new_active.entity_id] = \
             self.turn_state.turn_number
         await self._apply_active_to_bench_counters(player_id, card)
+        # Tool passives may discard themselves on retreat (Balloon Berry).
+        from spirit.game.session.effects import EffectContext
+        ctx = EffectContext(self, player_id, card, None)
+        for child in list(card.children):
+            child_def = def_for(child.archetype_id)
+            passive = getattr(child_def, "passive", None) if child_def else None
+            if passive is not None and callable(getattr(passive, "on_retreated", None)):
+                await passive.on_retreated(ctx, card, child)
         await self.fire_move_to_active_triggers(new_active)
         # An Active-spot change can flip suppression passives (Tool Jammer).
         await self.resync_effective_max_hp()
@@ -5182,6 +5251,18 @@ class GameSession:
         # Smokescreen-family check, also before any bookkeeping: a cancelled
         # attack never happened for VSTAR usage or attack locks either.
         flip_title = self.turn_state.attack_flip_check(card.entity_id)
+        if flip_title is None:
+            # Pattern Distraction-style: a single opposing Active Poké-Body may
+            # force a flip (at most one such flip per turn).
+            used_key = "pattern_distraction_flip"
+            if used_key not in self.turn_state.used_named_abilities:
+                for passive, carrier in active_passives(self.board_state):
+                    title = passive.requires_attack_attempt_flip(
+                        card, carrier, self.board_state)
+                    if title:
+                        flip_title = title
+                        self.turn_state.used_named_abilities.add(used_key)
+                        break
         if flip_title is not None:
             if not await self._resolve_attack_attempt_flip(player_id, card, flip_title):
                 return True  # tails: the attack does not happen; the turn ends

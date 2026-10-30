@@ -151,14 +151,42 @@ class Passive:
         """True to prevent the hit entirely (calc.amount becomes 0)."""
         return False
 
+    def requires_attack_attempt_flip(
+        self, attacker: BoardEntity, carrier: BoardEntity, board: BoardState
+    ):
+        """Optional smokescreen-style title: when non-None, the attacker must
+        flip before the attack resolves (Pattern Distraction). None = no flip."""
+        return None
+
+    def after_poke_power(
+        self, board: BoardState, power_user: BoardEntity, carrier: BoardEntity
+    ) -> int:
+        """Damage counters to put on `power_user` after it uses a Poké-Power
+        (Dark Eyes). 0 = no effect."""
+        return 0
+
+    def after_supporter_played(
+        self, board: BoardState, player_id: str, card: BoardEntity,
+        carrier: BoardEntity,
+    ) -> int:
+        """Damage counters to put on EACH of `player_id`'s Pokémon after that
+        player plays a Supporter (Jamming). 0 = no effect. Callers enforce
+        once-per-turn stacking across multiple Jamming Bodies."""
+        return 0
+
     def modify_attack_cost(
         self,
         cost: Dict[str, int],
         pokemon: PokemonEntity,
         carrier: BoardEntity,
         board: BoardState,
+        ability=None,
+        **kwargs,
     ) -> Dict[str, int]:
-        """Returns the (possibly reduced) cost dict, client-name keyed."""
+        """Returns the (possibly reduced) cost dict, client-name keyed.
+
+        Optional `ability` is the Attack being costed (def or PIE dict).
+        """
         return cost
 
     def max_hp_bonus(self, pokemon: PokemonEntity, carrier: BoardEntity) -> int:
@@ -177,8 +205,29 @@ class Passive:
         """True to shield `target` from opponents' attack EFFECTS (not damage)."""
         return False
 
+    def blocks_attack_effects_from(
+        self, target: PokemonEntity, carrier: BoardEntity, attacker: BoardEntity
+    ) -> bool:
+        """True to shield `target` from this attacker's attack EFFECTS
+        (Safeguard vs Pokémon-ex). Unconditional shields use
+        ``blocks_attack_effects`` instead."""
+        return False
+
     def blocks_abilities(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to turn off `pokemon`'s Abilities (Path to the Peak style)."""
+        return False
+
+    def blocks_ability(
+        self, pokemon: PokemonEntity, ability: Any, carrier: BoardEntity,
+        board: BoardState = None,
+    ) -> bool:
+        """True to disable this specific ability (Lazy: opponent Poké-Powers).
+
+        Checked in addition to `blocks_abilities`; passives and other ability
+        types stay on unless that whole-Pokemon hook also returns True.
+        Optional `board` lets partner-in-play gates (Dual Aura, Sol/Luna Shade)
+        resolve correctly.
+        """
         return False
 
     def blocks_retreat(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
@@ -188,6 +237,10 @@ class Passive:
     def attacks_despite_conditions(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to let `pokemon` attack even while Asleep/Paralyzed (Windup Arm)."""
         return False
+
+    def asleep_coins_required(self, pokemon: PokemonEntity, carrier: BoardEntity):
+        """Override coin count for Asleep checkup (Deep Sleep); None = no change."""
+        return None
 
     def blocks_special_conditions(
         self, target: PokemonEntity, condition: Any, carrier: BoardEntity
@@ -255,7 +308,8 @@ class Passive:
         return []
 
     def blocks_trainer_play(
-        self, card: BoardEntity, player_id: str, carrier: BoardEntity
+        self, card: BoardEntity, player_id: str, carrier: BoardEntity,
+        board: BoardState = None,
     ) -> bool:
         """True to forbid `player_id` playing `card` from hand (Vileplume)."""
         return False
@@ -276,6 +330,15 @@ class Passive:
     ) -> int:
         """Damage counters the Burn checkup tick places (default 2)."""
         return counters
+
+    def prevents_condition_removal(
+        self, pokemon: PokemonEntity, condition: Any, reason: str,
+        carrier: BoardEntity,
+    ) -> bool:
+        """True to keep `condition` on `pokemon` through evolve/devolve
+        (Full Flame: Burned can't be cured by evolving or devolving)."""
+        return False
+
 
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
@@ -330,6 +393,14 @@ class Passive:
     ) -> bool:
         """True to coin-flip `attaching_player_id`'s manual energy attach
         (Slimy Room): tails discards the energy instead of attaching."""
+        return False
+
+    def blocks_energy_attach(
+        self, attaching_player_id: str, energy: BoardEntity,
+        target: PokemonEntity, carrier: BoardEntity,
+    ) -> bool:
+        """True to forbid attaching `energy` from hand to `target`
+        (Cursed Glare)."""
         return False
 
     def retreat_cost_destination(
@@ -424,14 +495,39 @@ def _carrier_in_play(entity: BoardEntity) -> bool:
         and parent.get_attribute(AttrID.NAME) in _IN_PLAY_AREAS
 
 
-def ability_locked(board: BoardState, pokemon: PokemonEntity) -> bool:
+def condition_removal_blocked(
+    board: BoardState, pokemon: PokemonEntity, condition: Any, reason: str
+) -> bool:
+    """Whether a passive keeps `condition` through evolve/devolve."""
+    return any(
+        p.prevents_condition_removal(pokemon, condition, reason, c)
+        for p, c in active_passives(board)
+    )
+
+
+def ability_locked(
+    board: BoardState, pokemon: PokemonEntity, ability: Any = None
+) -> bool:
     """Whether a passive (Path to the Peak) is disabling `pokemon`'s Abilities.
 
     Evaluated on the UNFILTERED set: a lock contributed by a Pokemon ability
     is never itself disabled by another lock (Garbotoxin-style recursion is
     out of scope -- Path to the Peak rides a Stadium so this is safe).
+
+    When `ability` is given, type-specific locks (Poké-Power-only) also apply.
+    Without `ability`, only whole-Pokemon locks count.
     """
-    return any(p.blocks_abilities(pokemon, c) for p, c, _ in _collect_passives(board))
+    for p, c, _ in _collect_passives(board):
+        if p.blocks_abilities(pokemon, c):
+            return True
+        if ability is not None:
+            try:
+                blocked = p.blocks_ability(pokemon, ability, c, board)
+            except TypeError:
+                blocked = p.blocks_ability(pokemon, ability, c)
+            if blocked:
+                return True
+    return False
 
 
 def _suppressed_special_energy(
@@ -582,11 +678,20 @@ def compute_damage(
 
 
 def effective_attack_cost(
-    board: BoardState, pokemon: PokemonEntity, cost: Dict[str, int]
+    board: BoardState, pokemon: PokemonEntity, cost: Dict[str, int],
+    ability=None,
 ) -> Dict[str, int]:
-    """An attack's cost after cost-modifying passives (e.g. Excited Heart)."""
+    """An attack's cost after cost-modifying passives (e.g. Excited Heart).
+
+    `ability` is the Attack/Ability def or PIE dict being costed so passives
+    can scope reductions to a named attack (Delta Aura).
+    """
     for passive, carrier in active_passives(board):
-        cost = passive.modify_attack_cost(dict(cost), pokemon, carrier, board)
+        try:
+            cost = passive.modify_attack_cost(
+                dict(cost), pokemon, carrier, board, ability=ability)
+        except TypeError:
+            cost = passive.modify_attack_cost(dict(cost), pokemon, carrier, board)
     return cost
 
 
@@ -617,12 +722,18 @@ def effective_max_hp(board: BoardState, pokemon: PokemonEntity) -> int:
     return printed + bonus
 
 
-def attack_effects_blocked(board: BoardState, target: PokemonEntity) -> bool:
+def attack_effects_blocked(
+    board: BoardState, target: PokemonEntity, attacker: Optional[BoardEntity] = None
+) -> bool:
     """Whether a passive shields `target` from opposing attack effects."""
-    return any(
-        passive.blocks_attack_effects(target, carrier)
-        for passive, carrier in active_passives(board)
-    )
+    for passive, carrier in active_passives(board):
+        if passive.blocks_attack_effects(target, carrier):
+            return True
+        if attacker is not None and passive.blocks_attack_effects_from(
+            target, carrier, attacker
+        ):
+            return True
+    return False
 
 
 def retreat_blocked(board: BoardState, pokemon: PokemonEntity) -> bool:
@@ -665,10 +776,17 @@ def ability_effects_blocked(board: BoardState, target: PokemonEntity) -> bool:
     )
 
 
+def _blocks_trainer_play(passive, card, player_id, carrier, board) -> bool:
+    try:
+        return bool(passive.blocks_trainer_play(card, player_id, carrier, board))
+    except TypeError:
+        return bool(passive.blocks_trainer_play(card, player_id, carrier))
+
+
 def trainer_play_blocked(board: BoardState, player_id: str, card: BoardEntity) -> bool:
     """Whether a continuous passive forbids playing `card` from hand."""
     return any(
-        passive.blocks_trainer_play(card, player_id, carrier)
+        _blocks_trainer_play(passive, card, player_id, carrier, board)
         for passive, carrier in active_passives(board)
     )
 
@@ -708,11 +826,24 @@ def supporter_effect_replacement(board: BoardState, card: BoardEntity,
 
 def active_to_bench_counters(board: BoardState, pokemon: PokemonEntity) -> int:
     """Damage counters for an Active that moved to its owner's Bench during
-    the owner's turn (Spikemuth); callers gate on whose turn it is."""
-    return sum(
-        passive.counters_on_active_to_bench(pokemon, carrier)
-        for passive, carrier in active_passives(board)
-    )
+    the owner's turn (Spikemuth); callers gate on whose turn it is.
+
+    Passives that share a ``stacking_key`` contribute at most once (Metal
+    Gravity: "You can't use more than 1 Metal Gravity Poké-Body each turn").
+    """
+    total = 0
+    seen_keys: set = set()
+    for passive, carrier in active_passives(board):
+        n = passive.counters_on_active_to_bench(pokemon, carrier)
+        if n <= 0:
+            continue
+        key = getattr(passive, "stacking_key", None)
+        if key is not None:
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+        total += n
+    return total
 
 
 def evolve_heal_amount(board: BoardState, evolved: PokemonEntity,
@@ -739,6 +870,15 @@ def energy_attach_taxer(board: BoardState, attaching_player_id: str,
         if passive.taxes_energy_attach(attaching_player_id, energy, target, carrier):
             return carrier
     return None
+
+
+def energy_attach_blocked(board: BoardState, attaching_player_id: str,
+                          energy: BoardEntity, target: PokemonEntity) -> bool:
+    """Whether a passive forbids attaching `energy` from hand to `target`."""
+    return any(
+        passive.blocks_energy_attach(attaching_player_id, energy, target, carrier)
+        for passive, carrier in active_passives(board)
+    )
 
 
 def retreat_energy_destination(board: BoardState, pokemon: PokemonEntity,
