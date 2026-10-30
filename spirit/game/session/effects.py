@@ -8,6 +8,7 @@ inline before any choreography is flushed.
 """
 
 import logging
+import contextvars
 import random
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
 from .legal_actions import energy_provided_count
@@ -70,6 +71,16 @@ CLIENT_TYPE_NAMES = {t.value: name for t, name in CLIENT_POKEMON_TYPE_NAMES.item
 VISUAL_DAMAGING = 0
 VISUAL_NON_DAMAGING = 1
 
+# Current board for zone-aware card queries (Holon Veil δ treatment in
+# deck/hand/discard). Set while an EffectContext is live.
+_BOARD_CTX: contextvars.ContextVar = contextvars.ContextVar("spirit_board", default=None)
+
+
+def current_board():
+    """BoardState for the active EffectContext, or None outside effects."""
+    return _BOARD_CTX.get()
+
+
 # Asleep/Confused/Paralyzed replace each other; Poisoned/Burned stack with everything.
 _MUTUALLY_EXCLUSIVE = {
     SpecialConditions.ASLEEP, SpecialConditions.CONFUSED, SpecialConditions.PARALYZED,
@@ -95,6 +106,7 @@ class EffectContext:
                  play_target: Optional[BoardEntity] = None):
         self.session = session
         self.board = session.board_state
+        _BOARD_CTX.set(self.board)
         self.game_id = session.game_id
         self.player_id = player_id
         self.opponent_id = session._opponent_id(player_id)
@@ -270,7 +282,7 @@ class EffectContext:
         if target.owning_player_id == self.player_id:
             return False
         if self.is_attack_effect():
-            return attack_effects_blocked(self.board, target)
+            return attack_effects_blocked(self.board, target, self.attacker)
         if self.is_ability_effect():
             return ability_effects_blocked(self.board, target)
         return False
@@ -1263,6 +1275,28 @@ class EffectContext:
                 move["entity_id"], move["destination_id"], move["position"]
             ) for move in moved
         ]), bracket=GameSequence.DRAW.value)
+        return len(moved)
+
+    async def draw_from_bottom(self, count: int, player_id: Optional[str] = None) -> int:
+        """Draws from the bottom of the deck (Dunsparce Down Draw); returns how many."""
+        pid = player_id or self.player_id
+        if self._trainer_blocked(pid):
+            return 0
+        moved = self.board.draw_from_bottom(pid, count)
+        if moved:
+            self.session.stat_add(pid, "cardsdrawn", len(moved))
+        deck = self.board.find_player_area(pid, "deck")
+        if moved and deck and deck.entity_id not in self._visual_sources:
+            self._visual_sources.append(deck.entity_id)
+        for move in moved:
+            self._queue(self.session._entity_introduced_msg(move["card"]),
+                        viewer_id=pid, bracket=GameSequence.DRAW.value)
+        if moved:
+            self._queue(NestedSequence(GameSequence.GROUPED_MOVE, [
+                self.session._entity_moved_msg(
+                    move["entity_id"], move["destination_id"], move["position"]
+                ) for move in moved
+            ]), bracket=GameSequence.DRAW.value)
         return len(moved)
 
     async def draw_until(self, hand_size: int, player_id: Optional[str] = None) -> int:
@@ -2384,14 +2418,13 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
         owner_id = pokemon.owning_player_id
         if owner_id is None:
             continue
-        locked = ability_locked(board, pokemon)
         for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
             if not isinstance(entry, dict):
                 continue
             ability = ABILITIES_BY_ID.get(entry.get("abilityID"))
             if ability is None or not ability.has_trigger(Triggers.ON_DAMAGED_BY_ATTACK):
                 continue
-            if locked and not ability.is_granted:
+            if ability_locked(board, pokemon, ability) and not ability.is_granted:
                 continue
             snapshot.append((pokemon, owner_id, ability, dealt, pre_hit))
     for pokemon, owner_id, ability, dealt, pre_hit in snapshot:
@@ -2411,7 +2444,7 @@ async def resolve_triggered_ability(
     """Runs a triggered ability (on-play/on-evolve/on-knocked-out/between-turns)
     with the full activation choreography; returns its ctx, or None when the
     ability didn't run (locked, or no scripted effect)."""
-    if ability_locked(session.board_state, pokemon) and not ability.is_granted:
+    if ability_locked(session.board_state, pokemon, ability) and not ability.is_granted:
         return None
     if ability.effect is None or ability.effect is unimplemented:
         if ability.effect is unimplemented:
@@ -2452,6 +2485,16 @@ async def resolve_activated_ability(session, player_id: str, pokemon: PokemonEnt
         )
     elif ability.effect is not None:
         await ability.effect(ctx)
+    # Dark Eyes-style: after a Poké-Power resolves, opposing passives may
+    # put damage counters on the Pokémon that used the Power.
+    from spirit.game.attributes import AbilityTypes as _AT
+    if getattr(ability, "ability_type", None) == _AT.POKE_POWER:
+        from spirit.game.session.passives import active_passives
+        for passive, carrier in active_passives(session.board_state):
+            n = passive.after_poke_power(session.board_state, pokemon, carrier)
+            if n and n > 0:
+                await ctx.deal_damage(
+                    n * 10, target=pokemon, apply_modifiers=False, as_counters=True)
     # Ability(ends_turn=True) only bites when the effect actually did
     # something (a declined "you may" queues no messages).
     if getattr(ability, "ends_turn", False) and ctx._messages:
@@ -2599,7 +2642,7 @@ async def resolve_energy_attach_cost(session, player_id: str, energy: EnergyEnti
     attach entirely.
     """
     definition = def_for(energy.archetype_id)
-    cost = getattr(definition, "attach_cost", None)
+    cost = getattr(definition, "energy_attach_cost", None) or getattr(definition, "attach_cost", None)
     if cost is None:
         return EffectContext(session, player_id, energy, None, attached_to=target)
     ctx = EffectContext(session, player_id, energy, None, attached_to=target)
@@ -2611,7 +2654,7 @@ async def resolve_energy_on_attach(session, player_id: str, energy: EnergyEntity
                                    target: PokemonEntity) -> Optional[EffectContext]:
     """Runs an energy's on_attach hook after it attached from hand."""
     definition = def_for(energy.archetype_id)
-    hook = getattr(definition, "on_attach", None)
+    hook = getattr(definition, "energy_on_attach", None) or getattr(definition, "on_attach", None)
     if hook is None or hook is unimplemented:
         return None
     ctx = EffectContext(session, player_id, energy, None, attached_to=target)
