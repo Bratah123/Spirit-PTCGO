@@ -46,7 +46,8 @@ def subtypes_for(archetype_id: Optional[str]) -> List[str]:
 
 
 # Rule-box subtypes and the prizes an attacker takes for knocking one out.
-_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2}
+_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2,
+                         "ex": 2, "Star": 2}
 _RULE_BOX_SUBTYPES = set(_MULTI_PRIZE_SUBTYPES) | {"Radiant"}
 
 
@@ -475,7 +476,13 @@ class PokemonCardDef(CardDefinition):
         passive: Optional[Any] = None,
         unplayable_from_hand: bool = False,
         setup_as_active: bool = False,
-        foil: Optional[Foil] = None
+        foil: Optional[Foil] = None,
+        # Holon's Pokémon dual-mode: may also be attached from hand as Energy.
+        attachable_as_energy: bool = False,
+        energy_provides: Optional[List[List[PokemonTypes]]] = None,
+        energy_attach_to: Optional[Callable] = None,
+        energy_attach_cost: Optional[Any] = None,
+        energy_on_attach: Optional[Any] = None,
     ):
         if stage == PokemonStage.LEGEND and not self.runtime_only:
             raise ValueError("Use LegendHalfCardDef for physical halves and LegendPokemonDef for the combined Pokemon")
@@ -490,6 +497,11 @@ class PokemonCardDef(CardDefinition):
         # Luxray CZ's Explosiveness: may be placed as the opening Active
         # despite its stage (setup only; bench plays stay Basics-only).
         self.setup_as_active = setup_as_active
+        self.attachable_as_energy = attachable_as_energy
+        self.energy_provides = energy_provides
+        self.energy_attach_to = energy_attach_to
+        self.energy_attach_cost = energy_attach_cost
+        self.energy_on_attach = energy_on_attach
 
         # Add Pokemon-specific defaults to extra_attributes
         self.extra_attributes.update({
@@ -551,6 +563,19 @@ class PokemonCardDef(CardDefinition):
         else:
             self.extra_attributes[str(AttrID.PIE_ABILITIES.value)] = {
                 "type": "json", "value": "[]"
+            }
+
+        if attachable_as_energy:
+            # Keep CARD_TYPE=Pokemon so the card can still be played as a Pokémon;
+            # ENERGY_INFO + IS_SPECIAL_ENERGY let it attach and pay costs.
+            opts = energy_provides or [[PokemonTypes.COLORLESS]]
+            options = [[t.value for t in option] for option in opts]
+            self.extra_attributes[str(AttrID.ENERGY_INFO.value)] = {
+                "type": "json",
+                "value": json.dumps({"options": options}),
+            }
+            self.extra_attributes[str(AttrID.IS_SPECIAL_ENERGY.value)] = {
+                "type": "bool", "value": True,
             }
 
 class TrainerCardDef(CardDefinition):
@@ -692,6 +717,8 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    granted_abilities -- Abilities granted to the holder while attached
+                        (END_OF_TURN self-discard, BETWEEN_TURNS checks).
     """
     def __init__(
         self,
@@ -710,6 +737,7 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        granted_abilities: Optional[List["Ability"]] = None,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -726,6 +754,16 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        # Optional Abilities granted to the holder while this Energy is
+        # attached (END_OF_TURN discard, BETWEEN_TURNS stage checks). Same
+        # wiring as PokemonToolCardDef — _pie_ability_entries already reads
+        # granted_abilities from every attached child.
+        self.granted_abilities: List[Ability] = granted_abilities or []
+        for idx, a in enumerate(self.granted_abilities):
+            if not a.ability_id:
+                a.ability_id = ability_id_for(guid, idx)
+            a.is_granted = True
+            ABILITIES_BY_ID[a.ability_id] = a
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]
