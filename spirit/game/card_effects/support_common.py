@@ -435,6 +435,16 @@ async def opponent_switches(ctx):
     return target
 
 
+def flip_opponent_switches(title=""):
+    """Flip a coin. If heads, the opponent switches their Active with a
+    Benched Pokémon of their choice (Pokémon Reversal)."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, title or "Pokémon Reversal")
+        if results and results[0]:
+            await opponent_switches(ctx)
+    return effect
+
+
 def switch_self_attack(damage=None, optional=False, bench_predicate=None):
     """Damage first (text order), then switch this Pokémon with a Benched one
     of your choice; optional adds the "you may" dialog."""
