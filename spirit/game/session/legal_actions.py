@@ -593,7 +593,6 @@ def _ability_entries(
     """Usable activated abilities on the player's in-play Pokemon."""
     entries = []
     for pokemon in in_play:
-        locked = ability_locked(board, pokemon)
         for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
             if not isinstance(entry, dict):
                 continue
@@ -604,8 +603,9 @@ def _ability_entries(
                 continue
             # Path to the Peak locks a Pokemon's own Abilities, but a Tool-
             # granted ability (Forest Seal Stone) lives on the tool, not the
-            # Pokemon, so it stays usable.
-            if locked and not ability.is_granted:
+            # Pokemon, so it stays usable. Type-specific locks (Lazy) need
+            # the ability so Poké-Bodies stay on.
+            if ability_locked(board, pokemon, ability) and not ability.is_granted:
                 continue
             if ability.activation != Activations.UNLIMITED \
                     and (pokemon.entity_id, ability_id) in state.used_abilities:
