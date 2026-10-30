@@ -1,0 +1,7 @@
+"""DP2 Mysterious Treasures — wired.
+"""
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import damage_counters_on, damage_per, spread_damage
+
+card = PokemonCardDef(guid='5973ea57-4910-54bf-8c25-067ae4858657', key='DP2', name='com.direwolfdigital.cake.data.archetypes.pokemon.Whiscash.Name', display_name='Whiscash', searchable_by=['Whiscash', 'Stage 1', 'Whiscash'], subtypes=['Stage 1'], collector_number=40, set_code='DP2', rarity=Rarities.Rare, hp=90, elements=[PokemonTypes.WATER], stage=PokemonStage.STAGE1, retreat_cost=3, weakness_type=PokemonTypes.GRASS, resistance_type=PokemonTypes.LIGHTNING, resistance_amount=20, evolves_from='com.direwolfdigital.cake.data.archetypes.pokemon.Barboach.Name', family_id=339, abilities=[Attack(title='Fury', game_text='Does 20 damage times the number of damage counters on Whiscash.', cost={PokemonTypes.WATER: 1, PokemonTypes.COLORLESS: 2}, damage=20, damage_operator='x', effect=damage_per(damage_counters_on('self'), 20, base=0)), Attack(title='Magnitude', game_text="Does 20 damage to each Benched Pokémon (both yours and your opponent's). (Don't apply Weakness and Resistance for Benched Pokémon.)", cost={PokemonTypes.FIGHTING: 1, PokemonTypes.COLORLESS: 3}, damage=60, effect=spread_damage(20, side='both'))])
