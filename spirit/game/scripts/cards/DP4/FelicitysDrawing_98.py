@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Felicity's Drawing (DP4 #98): trainer effect stubbed.
-
-Card text:
-  - You can play only one Supporter card each turn. When you play this card, put it next to your Active Pokémon. When your turn ends, discard this card.
-  - Discard up to 2 cards from your hand. If you discard 1 card, draw 3 cards. If you discard 2 cards, draw 4 cards.
-"""
-
-from spirit.game.data_utils import SupporterCardDef, unimplemented
+"""Felicity's Drawing (DP4 #98)."""
+from spirit.game.data_utils import SupporterCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import felicitys_drawing
 
 card = SupporterCardDef(
     guid="c8485c61-52d1-52ce-b276-6540a31c13a7",
@@ -19,6 +13,5 @@ card = SupporterCardDef(
     collector_number=98,
     set_code="DP4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    effect=felicitys_drawing(),
 )

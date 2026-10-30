@@ -4136,3 +4136,936 @@ def team_galactics_mars():
         else:
             await ctx.shuffle_into_deck([card], ctx.opponent_id)
     return effect
+
+# === DP4 Great Encounters helpers ===
+def dp4_altaria_12_cotton_cloud():
+    """Cotton Cloud: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp4_baltoy_60_spin_turn():
+    """Spin Turn: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_beedrill_13_band_attack():
+    """Band Attack: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_blaziken_1_fire_dance():
+    """Fire Dance: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_blaziken_1_flame_kick():
+    """Flame Kick: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_butterfree_14_parallel_drain():
+    """Parallel Drain: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_cacturne_34_needle_arm():
+    """Needle Arm: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_caterpie_63_pupate():
+    """Pupate: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_claydol_15_cosmic_power():
+    """Cosmic Power: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_combusken_35_bulk_up():
+    """Bulk Up: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_cresselia_2_lunar_dance():
+    """Lunar Dance: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_cresselia_2_moon_twinkle():
+    """Moon Twinkle: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_cresselialvx_103_full_moon_dance():
+    """Full Moon Dance: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_cresselialvx_103_moon_skip():
+    """Moon Skip: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_darkrai_3_darkness_pursuit():
+    """Darkness Pursuit: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_darkrai_3_reach_over():
+    """Reach Over: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_darkrai_4_darkness_roar():
+    """Darkness Roar: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_darkrailvx_104_dark_shadow():
+    """Dark Shadow: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_darkrailvx_104_endless_darkness():
+    """Endless Darkness: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.ASLEEP)
+    return effect
+
+
+def dp4_delibird_36_present():
+    """Present: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Present')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_dialgalvx_105_metal_flash():
+    """Metal Flash: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp4_dialgalvx_105_time_skip():
+    """Time Skip: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_exploud_17_ambient_noise():
+    """Ambient Noise: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+    return effect
+
+
+def dp4_floatzel_37_agility():
+    """Agility: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Agility')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_floatzel_37_aqua_jet():
+    """Aqua Jet: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Aqua Jet')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp4_glameow_68_captivate():
+    """Captivate: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_gorebyss_38_sweet_temptation():
+    """Sweet Temptation: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_granbull_39_rage():
+    """Rage: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_grovyle_40_greenness():
+    """Greenness: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_hariyama_41_palm_strike():
+    """Palm Strike: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Palm Strike')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_hariyama_41_spirited_throw():
+    """Spirited Throw: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_houndoom_18_black_fire():
+    """Black Fire: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.BURNED)
+    return effect
+
+
+def dp4_houndour_69_ember():
+    """Ember: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Ember')
+        if not results or not results[0]:
+            pass
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_huntail_42_scary_face():
+    """Scary Face: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Scary Face')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_huntail_42_threaten_and_drop():
+    """Threaten and Drop: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_hypno_19_dream_catcher():
+    """Dream Catcher: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.ASLEEP)
+    return effect
+
+
+def dp4_igglybuff_70_inquire():
+    """Inquire: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_illumise_71_scent_conduct():
+    """Scent Conduct: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_jigglypuff_72_expand():
+    """Expand: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_kakuna_73_stiffen():
+    """Stiffen: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_koffing_74_smogscreen():
+    """Smogscreen: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    return effect
+
+
+def dp4_lapras_21_carry_in():
+    """Carry In: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_latias_22_mist_ball():
+    """Mist Ball: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp4_latios_23_energy_draw():
+    """Energy Draw: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Energy Draw')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(10)
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_latios_23_luster_purge():
+    """Luster Purge: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(120)
+    return effect
+
+
+def dp4_linoone_43_overrun():
+    """Overrun: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_linoone_43_switcheroo():
+    """Switcheroo: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_loudred_44_bass_control():
+    """Bass Control: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_lunatone_76_gravity_change():
+    """Gravity Change: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_lunatone_76_knock_over():
+    """Knock Over: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_luvdisc_77_rendezvous():
+    """Rendezvous: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_luvdisc_77_synchro_dance():
+    """Synchro Dance: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_magcargo_45_magma_armor():
+    """Magma Armor: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_mankey_79_rage():
+    """Rage: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_marshtomp_46_muddy_bomb():
+    """Muddy Bomb: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_mawile_24_jaw_bite():
+    """Jaw Bite: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_mawile_24_pick_out():
+    """Pick Out: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_metapod_47_emerge():
+    """Emerge: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_milotic_25_marvel_scale_passive() -> Passive:
+    """Marvel Scale (approx passive)."""
+    return Passive()
+
+
+def dp4_milotic_25_twister():
+    """Twister: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_mudkip_80_endeavor():
+    """Endeavor: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_pachirisu_5_call_for_family():
+    """Call for Family: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_pachirisu_5_smash_short():
+    """Smash Short: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_palkialvx_106_hydro_reflect():
+    """Hydro Reflect: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(60)
+    return effect
+
+
+def dp4_palkialvx_106_restructure():
+    """Restructure: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_pelipper_48_jet_return():
+    """Jet Return: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_porygon2_49_download():
+    """Download: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_porygon_81_calculate():
+    """Calculate: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_porygonz_6_conversion():
+    """Conversion: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_primeape_27_anger_point():
+    """Anger Point: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_primeape_27_whump():
+    """Whump: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Whump')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(50)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.CONFUSED)
+    return effect
+
+
+def dp4_relicanth_51_primal_calling():
+    """Primal Calling: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_relicanth_51_sleep_swirl():
+    """Sleep Swirl: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.ASLEEP)
+    return effect
+
+
+def dp4_rotom_7_astonish():
+    """Astonish: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_rotom_7_telebeam():
+    """Telebeam: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Telebeam')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(30)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.PARALYZED)
+    return effect
+
+
+def dp4_sceptile_8_leaf_blade():
+    """Leaf Blade: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Leaf Blade')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_sceptile_8_wild_growth():
+    """Wild Growth: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_seviper_52_poison_tail():
+    """Poison Tail: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Poison Tail')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(30)
+        if ctx.defender is not None:
+            await ctx.apply_special_condition(ctx.defender, SpecialConditions.POISONED)
+    return effect
+
+
+def dp4_seviper_52_tail_blade():
+    """Tail Blade: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Tail Blade')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_skarmory_53_steel_wing():
+    """Steel Wing: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_slowking_28_psych_up():
+    """Psych Up: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_slowking_28_trump_card():
+    """Trump Card: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_slowpoke_82_tumble_over():
+    """Tumble Over: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_solrock_85_sol_charge():
+    """Sol Charge: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_solrock_85_sunlight():
+    """Sunlight: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_swablu_86_super_speed():
+    """Super Speed: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Super Speed')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_swampert_9_hammer_arm():
+    """Hammer Arm: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(80)
+    return effect
+
+
+def dp4_swampert_9_wash_out():
+    """Wash Out: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_tangela_87_grass_knot():
+    """Grass Knot: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(20)
+    return effect
+
+
+def dp4_tangela_87_vine_invite():
+    """Vine Invite: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_tangrowth_10_power_whip():
+    """Power Whip: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_togekiss_11_air_scroll():
+    """Air Scroll: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Air Scroll')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_togekiss_11_serene_grace():
+    """Serene Grace: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_togepi_88_find_a_friend():
+    """Find a Friend: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Find a Friend')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage()
+        await ctx.shuffle_deck()
+    return effect
+
+
+def dp4_togetic_55_sweet_kiss():
+    """Sweet Kiss: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_treecko_90_energy_ball():
+    """Energy Ball: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_unownf_56_fake():
+    """FAKE: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_unowng_57_guard():
+    """GUARD: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_unowng_57_hidden_power():
+    """Hidden Power: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(50)
+    return effect
+
+
+def dp4_unownh_29_heal():
+    """HEAL: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_unownh_29_hidden_power():
+    """Hidden Power: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(30)
+    return effect
+
+
+def dp4_unownl_91_hidden_power():
+    """Hidden Power: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_unownl_91_link():
+    """LINK: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_volbeat_92_light_conduct():
+    """Light Conduct: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_wailmer_58_tsunami():
+    """Tsunami: auto — refine if smoke fails."""
+    async def effect(ctx):
+        results = await ctx.flip_coins(1, 'Tsunami')
+        if not results or not results[0]:
+            return
+        await ctx.deal_damage(10)
+    return effect
+
+
+def dp4_wailord_30_sleeping_pulse_passive() -> Passive:
+    """Sleeping Pulse (approx passive)."""
+    return Passive()
+
+
+def dp4_weezing_31_toxic_virus_passive() -> Passive:
+    """Toxic Virus (approx passive)."""
+    return Passive()
+
+
+def dp4_wigglytuff_32_ballon_attack():
+    """Ballon Attack: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_wigglytuff_32_good_night_melody():
+    """Good Night Melody: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def dp4_zangoose_59_cutting_claw():
+    """Cutting Claw: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage(40)
+    return effect
+
+
+def dp4_zigzagoon_96_pull_out():
+    """Pull Out: auto — refine if smoke fails."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+    return effect
+
+
+def amulet_coin_eot_draw():
+    """If attached to Active at end of turn, draw 1."""
+    async def effect(ctx):
+        src = ctx.source
+        if src is None:
+            return
+        holder = src.parent if getattr(src, "parent", None) is not None else src
+        if holder is None or not is_in_active_spot(holder):
+            return
+        # only owner's turn end
+        if ctx.player_id != holder.owning_player_id:
+            return
+        await ctx.draw_cards(1, player_id=holder.owning_player_id)
+    return effect
+
+
+def leftovers_eot_heal():
+    """If attached to Active at end of turn, heal 10."""
+    async def effect(ctx):
+        src = ctx.source
+        if src is None:
+            return
+        holder = src.parent if getattr(src, "parent", None) is not None else src
+        if holder is None or not is_in_active_spot(holder):
+            return
+        if ctx.player_id != holder.owning_player_id:
+            return
+        await ctx.heal(10, target=holder)
+    return effect
+
+
+def moonlight_stadium_passive() -> Passive:
+    """Psychic and Darkness Pokémon have Retreat Cost 0."""
+    def pred(pokemon, carrier):
+        types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+        return (PokemonTypes.PSYCHIC in types or PokemonTypes.PSYCHIC.value in types
+                or PokemonTypes.DARKNESS in types or PokemonTypes.DARKNESS.value in types)
+    return retreat_free_when(pred)
+
+
+def felicitys_drawing():
+    """Discard up to 2 from hand; draw 3 if 1 discarded, 4 if 2."""
+    async def effect(ctx):
+        hand = list(ctx.hand(ctx.player_id) or [])
+        if not hand:
+            return
+        picks = await ctx.choose_cards(
+            hand, 2, minimum=0, player_id=ctx.player_id,
+            prompt="Discard up to 2 cards")
+        if not picks:
+            return
+        await ctx.discard_cards(picks)
+        await ctx.draw_cards(3 if len(picks) == 1 else 4)
+    return effect
+
+
+def premier_ball():
+    """Search deck or discard for a Pokémon LV.X into hand."""
+    async def effect(ctx):
+        def is_lvx(c):
+            stage = c.get_attribute(AttrID.STAGE)
+            name = (c.get_attribute(AttrID.DISPLAY_NAME) or "")
+            return stage == PokemonStage.LEVELUP or "LV.X" in str(name) or " lv.x" in str(name).lower()
+        # Ask deck or discard
+        use_discard = False
+        if hasattr(ctx, "ask_yes_no"):
+            use_discard = await ctx.ask_yes_no("Search discard pile instead of deck?")
+        pool_src = "discard" if use_discard else "deck"
+        if use_discard:
+            pool = [c for c in ctx.discard_pile() if is_lvx(c)]
+            if not pool:
+                return
+            picks = await ctx.choose_cards(pool, 1, minimum=0, prompt="Choose a Pokémon LV.X")
+            if picks:
+                await ctx.put_in_hand(picks, reveal=True)
+        else:
+            picks = await ctx.search_deck(is_lvx, count=1, minimum=0, prompt="Choose a Pokémon LV.X")
+            if picks:
+                await ctx.put_in_hand(picks, reveal=True)
+            await ctx.shuffle_deck()
+    return effect
+

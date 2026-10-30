@@ -1,13 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Moonlight Stadium (DP4 #100): trainer effect stubbed.
-
-Card text:
-  - This card stays in play when you play it. Discard this card if another Stadium card comes into play. If another card with the same name is in play, you can't play this card.
-  - The Retreat Cost for each Psychic and Darkness Pokémon (both yours and your opponent's) is 0.
-"""
-
-from spirit.game.data_utils import StadiumCardDef, unimplemented
+"""Moonlight Stadium (DP4 #100)."""
+from spirit.game.data_utils import StadiumCardDef
 from spirit.game.attributes import Rarities
+from spirit.game.card_effects.dp import moonlight_stadium_passive
 
 card = StadiumCardDef(
     guid="d2e3ee59-6e9b-5d3a-9458-91b129af9275",
@@ -19,6 +13,5 @@ card = StadiumCardDef(
     collector_number=100,
     set_code="DP4",
     rarity=Rarities.Uncommon,
-    # STUB: trainer effect not implemented
-    effect=unimplemented
+    passive=moonlight_stadium_passive(),
 )

@@ -1,8 +1,7 @@
-"""STUB: effect not implemented — do not guess mechanics.
-Feebas (DP4 #67): one or more attacks/abilities use effect=unimplemented until a matching prefab or known script exists.
+"""DP4 Great Encounters — wired.
 """
 
-from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
 from spirit.game.card_effects.dp import evolution_impulse_search
 
