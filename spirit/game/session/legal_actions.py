@@ -41,9 +41,11 @@ from .passives import (
     effective_attack_cost,
     effective_bench_capacity,
     effective_retreat_cost,
+    energy_attach_blocked,
     energy_provided_options,
     evolution_blocked,
     retreat_blocked,
+    tool_attach_allowed,
     tool_slots_free,
     trainer_play_blocked,
 )
@@ -99,6 +101,8 @@ class TurnState:
     supporter_played: bool = False
     stadium_played: bool = False
     energy_attached: bool = False
+    # Pokemon id that may receive a 2nd manual Energy attach this turn.
+    alpha_growth_target: Optional[str] = None
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
     # placed during setup are absent and default to turn 0.
@@ -182,6 +186,7 @@ class TurnState:
         self.supporter_played = False
         self.stadium_played = False
         self.energy_attached = False
+        self.alpha_growth_target = None
         self.retreated = False
         self.used_abilities = set()
         self.used_named_abilities = set()
@@ -491,7 +496,9 @@ def compute_legal_actions(
                 ))
 
         elif isinstance(card, EnergyEntity):
-            if state.energy_attached or not in_play_ids:
+            if not in_play_ids:
+                continue
+            if state.energy_attached and state.alpha_growth_target is None:
                 continue
             if state.play_locked(player_id, card):
                 continue
@@ -504,6 +511,9 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and not energy_attach_blocked(board, player_id, card, p)
+                and (not state.energy_attached
+                     or p.entity_id == state.alpha_growth_target)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -550,12 +560,15 @@ def compute_legal_actions(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "stadium"), ACTION_PLAY_STADIUM,
                     ))
-            elif trainer_type == TrainerType.POKEMON_TOOL.value:
-                tool_attach_to = getattr(definition, "attach_to", None)
+            elif trainer_type in (
+                    TrainerType.POKEMON_TOOL.value,
+                    TrainerType.TECHNICAL_MACHINE.value,
+            ):
+                # e-Card Technical Machines attach like Tools and grant an attack.
                 tool_targets = [
                     p.entity_id for p in in_play
                     if tool_slots_free(board, p) > 0
-                    and (tool_attach_to is None or tool_attach_to(p))
+                    and tool_attach_allowed(board, card, p)
                 ]
                 if tool_targets:
                     entries.append(_target_map_entry(

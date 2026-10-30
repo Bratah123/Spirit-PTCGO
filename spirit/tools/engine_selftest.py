@@ -1984,6 +1984,24 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_base6_heal_energies_on_attach():
+    from spirit.game.card_effects.ecard import (
+        full_heal_energy_on_attach,
+        potion_energy_on_attach,
+    )
+    rig, entities = new_rig()
+    active = entities["p1_active"]
+    max_hp = passives.effective_max_hp(rig.board, active)
+    active.set_attribute(AttrID.HP, max_hp - 30)
+    active.set_attribute(AttrID.SPECIAL_CONDITIONS, ["Poisoned"])
+    ctx = EffectContext(rig.session, P1, None, None)
+    ctx.attached_to = active
+    await potion_energy_on_attach(ctx)
+    assert active.get_attribute(AttrID.HP) == max_hp - 20
+    await full_heal_energy_on_attach(ctx)
+    assert not (active.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2066,7 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_base6_heal_energies_on_attach,
 ]
 
 
