@@ -4,6 +4,8 @@ Leafeon (DP5 #24): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_sceptile_8_leaf_blade
+
 
 card = PokemonCardDef(
     guid="8c3fac4e-1a5f-5498-9ac3-7f1926674684",
@@ -40,7 +42,7 @@ card = PokemonCardDef(
             damage=50,
             damage_operator="+",
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_sceptile_8_leaf_blade(),
         ),
     ],
 )

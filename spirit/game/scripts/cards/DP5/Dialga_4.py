@@ -4,6 +4,8 @@ Dialga (DP5 #4): one or more attacks/abilities use effect=unimplemented until a 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.support_common import draw_until_effect
+
 
 card = PokemonCardDef(
     guid="381d20db-7fdb-5a63-ac5f-86c2b0d9ae38",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Draw cards until you have 6 cards in your hand.",
             cost={PokemonTypes.METAL: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=draw_until_effect(6),
         ),
         Attack(
             title="Diamond Blast",

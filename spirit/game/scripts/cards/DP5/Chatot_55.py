@@ -4,6 +4,9 @@ Chatot (DP5 #55): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import mime_draw_equal_opponent
+from spirit.game.card_effects.ex import magma_ring_no_retreat
+
 
 card = PokemonCardDef(
     guid="024693b1-71c4-5857-bd8d-46a89f0ce5b4",
@@ -29,7 +32,7 @@ card = PokemonCardDef(
             game_text="Shuffle your hand into your deck. Then, draw a number of cards equal to the number of cards in your opponent's hand.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=mime_draw_equal_opponent(),
         ),
         Attack(
             title="Chatter",
@@ -37,7 +40,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 2},
             damage=20,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=magma_ring_no_retreat(),
         ),
     ],
 )

@@ -4,6 +4,8 @@ Manaphy (DP5 #8): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.dp import dp4_delibird_36_present
+
 
 card = PokemonCardDef(
     guid="25117007-4f32-521f-a316-0271d2d846db",
@@ -34,7 +36,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, search your deck for any 1 card and put it into your hand. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_delibird_36_present(),
         ),
         Attack(
             title="Fountain",

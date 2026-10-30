@@ -4,6 +4,8 @@ Combee (DP5 #59): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import lively_heal_draw
+
 
 card = PokemonCardDef(
     guid="04fece48-72a5-56e9-bf90-03b7d7d65f14",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Remove 2 damage counters from 1 of your Pok\u00e9mon.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=lively_heal_draw(),
         ),
         Attack(
             title="Flitter",

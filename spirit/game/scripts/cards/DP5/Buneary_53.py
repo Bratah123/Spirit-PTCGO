@@ -4,6 +4,8 @@ Buneary (DP5 #53): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp4_darkrai_3_reach_over
+
 
 card = PokemonCardDef(
     guid="23d7d52f-5943-5444-bb8d-5df04bd0069e",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Search your deck for an Energy card, show it to your opponent, and put it into your hand. Shuffle your deck afterward.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp4_darkrai_3_reach_over(),
         ),
         Attack(
             title="Extend Ears",

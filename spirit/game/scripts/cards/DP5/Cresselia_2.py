@@ -4,6 +4,8 @@ Cresselia (DP5 #2): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import dp3_natu_96_future_sight
+
 
 card = PokemonCardDef(
     guid="7054406c-c836-5b75-9154-fe6df258caf4",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Look at the top 5 cards of either player's deck and put them back on top of that player's deck in any order.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=dp3_natu_96_future_sight(),
         ),
         Attack(
             title="Healing Light",

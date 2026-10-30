@@ -4,6 +4,8 @@ Plusle (DP5 #28): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import call_for_family_basic
+
 
 card = PokemonCardDef(
     guid="f0ea6328-ff06-5681-869d-d4758001aa2b",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a Basic Pok\u00e9mon and put it onto your Bench. Shuffle your deck afterward.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=call_for_family_basic(),
         ),
         Attack(
             title="\u2013 Boost",
