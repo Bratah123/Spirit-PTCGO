@@ -119,6 +119,9 @@ class PlayMat(BoardEntity):
     def __init__(self, entity_id: Optional[str] = None, theme_name: str = "playmat"):
         super().__init__(entity_id=entity_id)
         self.set_attribute(AttrID.NAME, theme_name)
+        # Here Comes Team Rocket!: Prize cards stay face-up for the rest of
+        # the game once this is set (see CardEntity.is_hidden_from).
+        self.prizes_face_up = False
 
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.CakePlayMat"
@@ -220,6 +223,12 @@ class CardEntity(BoardEntity):
         if viewer_id is None:
             return False
         area_name = self._containing_area_name()
+        if area_name == "prizePile":
+            root = self
+            while root.parent is not None:
+                root = root.parent
+            if getattr(root, "prizes_face_up", False):
+                return False
         if viewer_id != self.owning_player_id:
             return area_name not in self.PUBLIC_AREAS
         return area_name in self.HIDDEN_FROM_OWNER_AREAS
@@ -648,13 +657,24 @@ class BoardState:
 
     @staticmethod
     def attached_energies(pokemon: 'PokemonEntity') -> List['EnergyEntity']:
-        """Every Energy card attached anywhere under a Pokemon's stack."""
+        """Every Energy card attached anywhere under a Pokemon's stack.
+
+        Includes Holon's Pokémon attached as Energy (PokemonEntity with
+        ENERGY_INFO / attachable_as_energy) so they pay attack costs.
+        """
+        from spirit.game.attributes import AttrID
+        from spirit.game.content.definitions import def_for
         energies: List[EnergyEntity] = []
         stack: List[BoardEntity] = list(pokemon.children)
         while stack:
             entity = stack.pop()
             if isinstance(entity, EnergyEntity):
                 energies.append(entity)
+            elif isinstance(entity, PokemonEntity):
+                d = def_for(getattr(entity, "archetype_id", None) or "")
+                if getattr(d, "attachable_as_energy", False) or entity.get_attribute(AttrID.ENERGY_INFO):
+                    # Treat as energy for cost accounting (duck-typed).
+                    energies.append(entity)  # type: ignore[arg-type]
             stack.extend(entity.children)
         return energies
 
