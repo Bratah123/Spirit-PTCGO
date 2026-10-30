@@ -4,6 +4,8 @@ Mothim (DP3 #33): one or more attacks/abilities use effect=unimplemented until a
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import silver_wind
+
 
 card = PokemonCardDef(
     guid="b3972ce7-57a3-5c63-abdb-6430f0efb6f5",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="During your next turn, if an attack does damage to the Defending Pok\u00e9mon (after applying Weakness and Resistance), that attack does 40 more damage.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=silver_wind(40),
         ),
         Attack(
             title="Raging Scales",

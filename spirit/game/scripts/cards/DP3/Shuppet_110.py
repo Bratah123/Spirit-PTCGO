@@ -4,6 +4,8 @@ Shuppet (DP3 #110): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import place_counters
+
 
 card = PokemonCardDef(
     guid="6bdb003a-88ad-5076-9ebc-a67f81a87ec5",
@@ -29,7 +31,7 @@ card = PokemonCardDef(
             game_text="Put 1 damage counter on 1 of your opponent's Pok\u00e9mon.",
             cost={PokemonTypes.PSYCHIC: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=place_counters(1, 'choose_any_opponent'),
         ),
         Attack(
             title="Hang Down",

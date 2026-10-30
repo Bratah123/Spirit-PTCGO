@@ -4,6 +4,8 @@ Stantler (DP3 #113): one or more attacks/abilities use effect=unimplemented unti
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.dp import inviting_bell
+
 
 card = PokemonCardDef(
     guid="a73d1705-7638-5471-ab36-7a9b2d488b6f",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Search your deck for a Supporter card, show it to your opponent, and put it into your hand. Shuffle your deck afterward.",
             cost={},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=inviting_bell(),
         ),
         Attack(
             title="Frighten Horn",

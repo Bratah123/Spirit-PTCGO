@@ -4,6 +4,8 @@ Rattata (DP3 #103): one or more attacks/abilities use effect=unimplemented until
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import tail_whip_lock_attack
+
 
 card = PokemonCardDef(
     guid="cf4135c4-3662-5a48-aee8-a577de7f3385",
@@ -27,7 +29,7 @@ card = PokemonCardDef(
             game_text="Flip a coin. If heads, the Defending Pok\u00e9mon can't attack during your opponent's next turn.",
             cost={PokemonTypes.COLORLESS: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=tail_whip_lock_attack(),
         ),
         Attack(
             title="Bite",

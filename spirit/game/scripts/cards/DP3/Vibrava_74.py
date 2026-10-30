@@ -4,6 +4,8 @@ Vibrava (DP3 #74): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.ex import breaking_sound
+
 
 card = PokemonCardDef(
     guid="9c9f3737-2277-5dca-a8f3-9f22a3b787e0",
@@ -30,7 +32,7 @@ card = PokemonCardDef(
             game_text="Does 10 damage to each of your opponent's Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
             cost={PokemonTypes.FIGHTING: 1},
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=breaking_sound(10),
         ),
         Attack(
             title="Hyper Beam",

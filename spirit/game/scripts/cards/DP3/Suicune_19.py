@@ -4,6 +4,8 @@ Suicune (DP3 #19): one or more attacks/abilities use effect=unimplemented until 
 
 from spirit.game.data_utils import PokemonCardDef, Attack, Ability, unimplemented
 from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.ex import charm_reduce_defender_next
+
 
 card = PokemonCardDef(
     guid="aebbde38-b4c7-5782-866c-4d7fa1fe5b07",
@@ -35,7 +37,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.WATER: 3},
             damage=60,
             # STUB: attack effect not implemented
-            effect=unimplemented,
+            effect=charm_reduce_defender_next(20),
         ),
     ],
 )
