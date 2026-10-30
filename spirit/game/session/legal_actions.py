@@ -46,6 +46,7 @@ from .passives import (
     retreat_blocked,
     tool_slots_free,
     trainer_play_blocked,
+    energy_attach_blocked,
 )
 
 
@@ -470,6 +471,24 @@ def compute_legal_actions(
                         action_id_for(card.entity_id, "play"), ACTION_PLAY_POKEMON,
                         [entity_list_target_info([bench_area.entity_id])],
                     ))
+
+            # Holon's Pokémon: also offer attach-as-Energy from hand.
+            _d = def_for(card.archetype_id)
+            if getattr(_d, "attachable_as_energy", False) and not state.energy_attached and in_play_ids \
+                    and not state.play_locked(player_id, card):
+                _attach_to = getattr(_d, "energy_attach_to", None)
+                _targets = [
+                    p.entity_id for p in in_play
+                    if (_attach_to is None or _attach_to(p))
+                    and not state.attach_restricted(p.entity_id)
+                    and not energy_attach_blocked(board, player_id, card, p)
+                ]
+                if _targets:
+                    entries.append(_target_map_entry(
+                        game_id, card.entity_id,
+                        action_id_for(card.entity_id, "energy"), ACTION_PLAY_ENERGY,
+                        [entity_list_target_info(_targets)],
+                    ))
                 continue
 
             evolves_from = card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
@@ -490,6 +509,24 @@ def compute_legal_actions(
                     [entity_list_target_info(evolve_targets)],
                 ))
 
+            # Holon's Pokémon: also offer attach-as-Energy from hand.
+            _d = def_for(card.archetype_id)
+            if getattr(_d, "attachable_as_energy", False) and not state.energy_attached and in_play_ids \
+                    and not state.play_locked(player_id, card):
+                _attach_to = getattr(_d, "energy_attach_to", None)
+                _targets = [
+                    p.entity_id for p in in_play
+                    if (_attach_to is None or _attach_to(p))
+                    and not state.attach_restricted(p.entity_id)
+                    and not energy_attach_blocked(board, player_id, card, p)
+                ]
+                if _targets:
+                    entries.append(_target_map_entry(
+                        game_id, card.entity_id,
+                        action_id_for(card.entity_id, "energy"), ACTION_PLAY_ENERGY,
+                        [entity_list_target_info(_targets)],
+                    ))
+
         elif isinstance(card, EnergyEntity):
             if state.energy_attached or not in_play_ids:
                 continue
@@ -504,6 +541,7 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and not energy_attach_blocked(board, player_id, card, p)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -593,7 +631,6 @@ def _ability_entries(
     """Usable activated abilities on the player's in-play Pokemon."""
     entries = []
     for pokemon in in_play:
-        locked = ability_locked(board, pokemon)
         for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
             if not isinstance(entry, dict):
                 continue
@@ -604,8 +641,9 @@ def _ability_entries(
                 continue
             # Path to the Peak locks a Pokemon's own Abilities, but a Tool-
             # granted ability (Forest Seal Stone) lives on the tool, not the
-            # Pokemon, so it stays usable.
-            if locked and not ability.is_granted:
+            # Pokemon, so it stays usable. Type-specific locks (Lazy) need
+            # the ability so Poké-Bodies stay on.
+            if ability_locked(board, pokemon, ability) and not ability.is_granted:
                 continue
             if ability.activation != Activations.UNLIMITED \
                     and (pokemon.entity_id, ability_id) in state.used_abilities:
@@ -827,7 +865,7 @@ def _attack_entries(
                 and not definition.condition(board, player_id, active):
             continue
         # Cost-modifying passives (e.g. Excited Heart) apply here.
-        cost = effective_attack_cost(board, active, ability.get("cost") or {})
+        cost = effective_attack_cost(board, active, ability.get("cost") or {}, ability=ability)
         if attack_cost_satisfied(cost, energies, board):
             entries.append(_target_map_entry(
                 game_id, active.entity_id, ability_id, ACTION_USE_ATTACK,
