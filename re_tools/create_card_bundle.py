@@ -45,15 +45,17 @@ def create_card_set_bundle(png_mapping, template_path, target_bundle_name, keep_
     env = UnityPy.load(data_path)
     
     def pad_to_square(img):
+        # Always RGBA + transparent pad. Opaque RGB vintage art padded with
+        # black otherwise becomes a solid square in the client list view.
+        img = img.convert("RGBA")
         width, height = img.size
         if width == height:
             return img
-        
+
         new_size = max(width, height)
-        bg_color = (0, 0, 0, 0) if img.mode == 'RGBA' else (0, 0, 0)
-        padded_img = Image.new(img.mode, (new_size, new_size), bg_color)
+        padded_img = Image.new("RGBA", (new_size, new_size), (0, 0, 0, 0))
         offset = ((new_size - width) // 2, (new_size - height) // 2)
-        padded_img.paste(img, offset)
+        padded_img.paste(img, offset, img)
         return padded_img
 
     # We use the first texture in the template as a blueprint for format and settings
