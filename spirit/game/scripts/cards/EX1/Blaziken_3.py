@@ -1,0 +1,66 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability, Activations
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities, AbilityTypes
+from spirit.game.card_effects.attacks_common import spread_damage
+from spirit.game.card_effects.ex import poke_power_condition
+from spirit.game.card_effects.passives_common import is_in_active_spot
+from spirit.game.card_effects.pokemon import energy_provides_type
+from spirit.game.card_effects.support_common import attach_from_discard, requires_discard
+from spirit.game.card_effects.trainers import player_has_bench
+
+
+def _is_fire_energy(card):
+    return energy_provides_type(card, PokemonTypes.FIRE.value)
+
+
+def _firestarter_extra(board, player_id, pokemon):
+    if not player_has_bench(board, player_id):
+        return False
+    return requires_discard(_is_fire_energy)(board, player_id, pokemon)
+
+
+async def _discard_fire_energy(ctx):
+    await ctx.discard_energy_from(
+        ctx.attacker, 1, predicate=_is_fire_energy,
+        prompt="Discard a Fire Energy card from Blaziken",
+    )
+
+
+card = PokemonCardDef(
+    guid="b8167393-387b-57a6-bd8f-85dd1d575973",
+    key="EX1",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Blaziken.Name",
+    display_name="Blaziken",
+    searchable_by=["Blaziken", "Stage 2", "Blaziken"],
+    subtypes=["Stage 2"],
+    collector_number=3,
+    set_code="EX1",
+    rarity=Rarities.RareHolo,
+    hp=100,
+    elements=[PokemonTypes.FIRE],
+    stage=PokemonStage.STAGE2,
+    retreat_cost=2,
+    weakness_type=PokemonTypes.WATER,
+    evolves_from="com.direwolfdigital.cake.data.archetypes.pokemon.Combusken.Name",
+    family_id=255,
+    abilities=[
+        Ability(
+            title="Firestarter",
+            game_text="Once during your turn (before your attack), you may attach a Fire Energy card from your discard pile to 1 of your Benched Pok\u00e9mon. This power can't be used if Blaziken is affected by a Special Condition.",
+            ability_type=AbilityTypes.POKE_POWER,
+            activation=Activations.ONCE_PER_TURN,
+            condition=poke_power_condition(_firestarter_extra),
+            effect=attach_from_discard(
+                predicate=_is_fire_energy, count=1,
+                target=lambda pokemon: not is_in_active_spot(pokemon),
+                prompt="Choose a Fire Energy card from your discard pile",
+            ),
+        ),
+        Attack(
+            title="Fire Stream",
+            game_text="Discard a Fire Energy card attached to Blaziken. If you do, this attack does 10 damage to each of your opponent's Benched Pok\u00e9mon. (Don't apply Weakness and Resistance for Benched Pok\u00e9mon.)",
+            cost={PokemonTypes.FIRE: 1, PokemonTypes.COLORLESS: 2},
+            damage=50,
+            effect=spread_damage(10, also_base=True, also=_discard_fire_energy),
+        ),
+    ],
+)

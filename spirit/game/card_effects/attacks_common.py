@@ -13,6 +13,7 @@ from spirit.game.attributes import (
     AbilityTypes,
     AttrID,
     CLIENT_SPECIAL_CONDITION_NAMES,
+    SpecialConditions,
     TrainerType,
 )
 from spirit.game.data_utils import Attack, def_for, has_rule_box, is_pokemon_v, subtypes_for
@@ -326,6 +327,16 @@ def damage_all_opponents(amount: int, also=None):
     return spread_damage(amount, side="opponent", include_active=True, also=also)
 
 
+def ignore_resistance_attack(damage: Optional[int] = None, also=None):
+    """Printed (or damage) damage; this attack's damage is not affected by
+    Resistance."""
+    async def effect(ctx):
+        await ctx.deal_damage(damage, ignore_resistance=True)
+        if also is not None:
+            await also(ctx)
+    return effect
+
+
 # ----------------------------------------------------------------------
 # Conditional bonus + predicates
 # ----------------------------------------------------------------------
@@ -449,9 +460,11 @@ def self_energy_discard_attack(count: Optional[int] = None,
 
 def discard_opponent_energy_attack(count: int = 1, special_only: bool = False,
                                    after_damage: bool = True,
-                                   damage: Optional[int] = None, also=None):
+                                   damage: Optional[int] = None, also=None,
+                                   flip: bool = False):
     """Printed (or damage) damage + discard Energy from the opponent's Active;
-    the discard no-ops when the target is shielded from attack effects."""
+    the discard no-ops when the target is shielded from attack effects.
+    flip=True discards only on heads (Removal Beam)."""
     pred = is_special_energy if special_only else None
 
     async def _discard(ctx):
@@ -465,9 +478,13 @@ def discard_opponent_energy_attack(count: int = 1, special_only: bool = False,
     async def effect(ctx):
         if after_damage:
             await ctx.deal_damage(damage)
+        do_discard = True
+        if flip:
+            results = await ctx.flip_coins(1, _title(ctx))
+            do_discard = bool(results) and results[0]
+        if do_discard:
             await _discard(ctx)
-        else:
-            await _discard(ctx)
+        if not after_damage:
             await ctx.deal_damage(damage)
         if also is not None:
             await also(ctx)
@@ -544,6 +561,20 @@ def condition_bonus_attack(bonus: int, *required_conditions,
 # ----------------------------------------------------------------------
 # Recoil / mill
 # ----------------------------------------------------------------------
+
+def rest_attack(counters: int = 4):
+    """Cure this Pokémon, remove `counters` damage counters (all if fewer),
+    then it is Asleep (Rest)."""
+    async def effect(ctx):
+        pokemon = ctx.attacker
+        if pokemon is None:
+            return
+        await ctx.cure_all_conditions(pokemon)
+        if counters > 0:
+            await ctx.heal(counters * 10, pokemon)
+        await ctx.apply_special_condition(pokemon, SpecialConditions.ASLEEP)
+    return effect
+
 
 def recoil_attack(self_damage: int, damage: Optional[int] = None, also=None):
     """Printed (or damage) damage; the attacker then damages itself (no W/R)."""
@@ -671,6 +702,17 @@ def discard_for_bonus(source: str = "hand", predicate=None, max_count: int = 1,
         amount = base_val + per * len(picked) + (flat if picked else 0)
         if amount > 0:
             await ctx.deal_damage(amount)
+        if also is not None:
+            await also(ctx)
+    return effect
+
+
+def swift_attack(damage: Optional[int] = None, also=None):
+    """This attack's damage isn't affected by Weakness, Resistance, Poké-Powers,
+    Poké-Bodies, or any other effects on the Defending Pokémon."""
+    async def effect(ctx):
+        await ctx.deal_damage(
+            damage, apply_modifiers=False, ignore_target_effects=True)
         if also is not None:
             await also(ctx)
     return effect
