@@ -16,9 +16,10 @@ from spirit.game.session.constants import BENCH_CAPACITY
 from spirit.game.session.effects import (
     full_stack,
     is_basic_pokemon,
+    is_pokemon_card,
     is_trainer_card,
 )
-from spirit.game.session.passives import effective_max_hp
+from spirit.game.session.passives import effective_bench_capacity, effective_max_hp
 from spirit.game.card_effects.trainers import is_energy_card
 
 # Spec-friendly aliases used as factory defaults.
@@ -431,7 +432,8 @@ async def opponent_switches(ctx):
     target = await ctx.choose_pokemon(
         bench, "Choose your new Active Pokémon", player_id=ctx.opponent_id
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 
@@ -459,7 +461,8 @@ def switch_self_attack(damage=None, optional=False, bench_predicate=None):
 
 async def _gust(ctx, opponent_chooses=False):
     """Switch one of the opponent's Benched Pokémon with their Active;
-    returns the new Active or None (no bench / effect-shielded Active)."""
+    returns the new Active or None (no bench / effect-shielded Active /
+    switch blocked), so "damage to the new Active" is skipped when no switch happens."""
     old_active = ctx.opponent_active()
     bench = ctx.opponent_bench()
     if old_active is None or not bench:
@@ -471,7 +474,8 @@ async def _gust(ctx, opponent_chooses=False):
     target = await ctx.choose_pokemon(
         bench, "Choose the opponent's new Active Pokémon"
     ) or bench[0]
-    await ctx.switch_active(ctx.opponent_id, target)
+    if not await ctx.switch_active(ctx.opponent_id, target):
+        return None  # switch blocked/failed: nothing became the new Active
     return target
 
 
@@ -548,6 +552,34 @@ def remove_self_from_play(destination="hand", with_attachments="same",
     return effect
 
 
+# --- BW Fossil Items (Restored Pokemon) -----------------------------------------
+
+def restore_fossil(pokemon_name: str, look: int = 7):
+    """BW Fossil Item (Plume/Cover/Root Fossil, Old Amber): look at the bottom
+    `look` cards of your deck, you may reveal a `pokemon_name` there and put
+    it onto your Bench, then shuffle. Matches EVOLUTION_LOGIC_NAME, so pass
+    the importer's logic name (e.g. "Archen")."""
+    async def effect(ctx):
+        bottom = ctx.deck()[:look]
+        if not bottom:
+            return
+        matches = [c for c in bottom
+                   if c.get_attribute(AttrID.EVOLUTION_LOGIC_NAME) == pokemon_name]
+        if len(ctx.my_bench()) >= effective_bench_capacity(ctx.board, ctx.player_id):
+            matches = []
+        # Shows the bottom cards even when nothing there is selectable.
+        picks = await ctx.choose_cards(
+            matches, 1, minimum=0,
+            prompt=f"Choose a {pokemon_name} to put onto your Bench.",
+            display_cards=bottom,
+        )
+        if picks:
+            await ctx.reveal_cards(picks)
+            await ctx.bench_pokemon(picks[0])
+        await ctx.shuffle_deck()
+    return effect
+
+
 # --- Playability condition factories ---------------------------------------------
 # Each returns a check accepting BOTH call shapes: trainers/energies call
 # (board, player_id), abilities call (board, player_id, pokemon).
@@ -596,8 +628,13 @@ def requires_hand(predicate=None, n=1, exclude_self=True):
         matches = [c for c in (hand.children if hand else [])
                    if predicate is None or predicate(c)]
         discount = 0
-        if exclude_self and pokemon is None:
-            if predicate is None or any(is_trainer_card(c) for c in matches):
+        if exclude_self:
+            if pokemon is not None:
+                # Trainer play conditions get the played copy itself as the
+                # third argument (trainer_condition_met): drop exactly it.
+                # Ability conditions pass the in-play Pokemon, never in hand.
+                matches = [c for c in matches if c is not pokemon]
+            elif predicate is None or any(is_trainer_card(c) for c in matches):
                 discount = 1
         return len(matches) - discount >= n
     return check
@@ -610,3 +647,154 @@ def requires_damaged_pokemon(side="mine"):
                    for pid in _side_player_ids(board, player_id, side)
                    for p in board.pokemon_in_play(pid))
     return check
+
+
+# --- Cedric Juniper (BW11): height-guess quiz, draw 3 -------------------------------
+
+_POKEDEX_HEIGHT_DM = (
+7, 10, 20, 6, 11, 17, 5, 10, 16, 3,
+7, 11, 3, 6, 10, 3, 11, 15, 3, 7,
+3, 12, 20, 35, 4, 8, 6, 10, 4, 8,
+13, 5, 9, 14, 6, 13, 6, 11, 5, 10,
+8, 16, 5, 8, 12, 3, 10, 10, 15, 2,
+7, 4, 10, 8, 17, 5, 10, 7, 19, 6,
+10, 13, 9, 13, 15, 8, 15, 16, 7, 10,
+17, 9, 16, 4, 10, 14, 10, 17, 12, 16,
+3, 10, 8, 14, 18, 11, 17, 9, 12, 3,
+15, 13, 16, 15, 88, 10, 16, 4, 13, 5,
+12, 4, 20, 4, 10, 15, 14, 12, 6, 12,
+10, 19, 11, 10, 22, 4, 12, 6, 13, 8,
+11, 13, 15, 14, 11, 13, 15, 14, 9, 65,
+25, 3, 3, 10, 8, 9, 8, 4, 10, 5,
+13, 18, 21, 17, 16, 20, 18, 40, 22, 20,
+4, 9, 12, 18, 5, 9, 17, 6, 11, 23,
+8, 18, 7, 16, 10, 14, 5, 11, 18, 5,
+12, 3, 3, 3, 3, 6, 2, 15, 6, 8,
+14, 4, 4, 8, 12, 11, 4, 6, 8, 8,
+3, 8, 12, 4, 14, 9, 10, 5, 20, 7,
+5, 13, 15, 6, 12, 15, 11, 92, 6, 14,
+5, 18, 6, 15, 9, 6, 18, 7, 8, 4,
+11, 6, 6, 9, 9, 21, 17, 6, 14, 18,
+5, 11, 6, 14, 12, 7, 14, 4, 6, 7,
+12, 15, 19, 21, 20, 6, 12, 20, 52, 38,
+6, 5, 9, 17, 4, 9, 19, 4, 7, 15,
+5, 10, 4, 5, 3, 6, 10, 7, 12, 5,
+12, 15, 5, 10, 13, 3, 7, 6, 12, 4,
+8, 16, 5, 8, 4, 12, 8, 14, 20, 5,
+8, 8, 6, 10, 15, 10, 23, 2, 10, 6,
+11, 5, 6, 4, 9, 21, 6, 13, 6, 15,
+4, 4, 7, 6, 3, 4, 17, 8, 18, 20,
+145, 7, 19, 5, 7, 9, 11, 7, 11, 20,
+4, 13, 4, 11, 13, 27, 10, 12, 4, 9,
+6, 11, 5, 15, 10, 15, 7, 15, 6, 62,
+3, 10, 6, 11, 8, 16, 20, 6, 12, 6,
+7, 15, 8, 11, 14, 4, 17, 18, 10, 6,
+6, 11, 15, 6, 12, 16, 17, 18, 19, 14,
+20, 45, 35, 70, 3, 17, 4, 11, 22, 5,
+9, 12, 4, 8, 17, 3, 6, 12, 5, 10,
+3, 10, 5, 9, 14, 2, 9, 9, 16, 5,
+13, 2, 5, 9, 3, 12, 4, 7, 11, 4,
+5, 3, 9, 12, 4, 12, 4, 12, 9, 9,
+5, 10, 2, 4, 10, 5, 13, 5, 6, 6,
+5, 10, 7, 14, 19, 6, 7, 12, 8, 20,
+8, 13, 7, 13, 14, 4, 12, 10, 10, 22,
+11, 12, 17, 24, 20, 18, 16, 15, 19, 10,
+8, 20, 25, 9, 16, 14, 22, 13, 3, 3,
+3, 3, 54, 42, 17, 37, 45, 15, 4, 3,
+15, 2, 32, 4, 6, 8, 33, 5, 10, 16,
+5, 8, 15, 5, 11, 4, 9, 12, 4, 11,
+6, 11, 6, 10, 6, 10, 6, 11, 3, 6,
+12, 8, 16, 4, 9, 17, 4, 9, 3, 7,
+11, 6, 12, 14, 5, 8, 15, 13, 14, 3,
+5, 12, 4, 12, 25, 3, 7, 5, 11, 10,
+7, 10, 15, 6, 13, 10, 3, 14, 6, 11,
+14, 5, 17, 7, 12, 5, 14, 6, 19, 7,
+16, 4, 5, 4, 7, 15, 3, 6, 10, 5,
+13, 4, 11, 13, 6, 19, 4, 5, 10, 2,
+6, 12, 22, 12, 1, 8, 6, 10, 3, 6,
+6, 2, 12, 21, 5, 10, 3, 6, 10, 6,
+10, 18, 5, 26, 11, 4, 8, 7, 9, 14,
+16, 10, 28, 5, 16, 16, 5, 15, 5, 12,
+14, 3, 8, 14, 18, 11, 16, 21, 19, 20,
+15, 15, 32, 29, 15, 30, 14, 6, 15, 4,
+7, 16, 4, 10, 15, 3, 6, 15, 4, 10,
+3, 7, 12, 3, 3, 12, 6, 15, 1, 2,
+11, 9, 17, 6, 21, 12, 3, 6, 8, 8,
+17, 2, 8, 4, 8, 4, 15, 5, 13, 5,
+18, 5, 13, 5, 10, 8, 25, 13, 27, 10,
+8, 2, 3, 3, 8, 20, 2, 4, 15, 4,
+9, 10, 20, 5, 15, 30, 58, 50, 7, 5,
+17,
+)
+
+
+def _height_ft_in(family_id):
+    """Printed Pokédex height as (feet, inches), or None if unknown."""
+    if not family_id:
+        return None
+    try:
+        idx = int(family_id) - 1
+    except (TypeError, ValueError):
+        return None
+    if idx < 0 or idx >= len(_POKEDEX_HEIGHT_DM):
+        return None
+    inches = int(round(_POKEDEX_HEIGHT_DM[idx] * 3.937))
+    return divmod(inches, 12)
+
+
+def _family_id_of(card) -> int:
+    fid = card.get_attribute(AttrID.FAMILY_ID)
+    if fid:
+        return int(fid)
+    definition = def_for(card.archetype_id)
+    extra = getattr(definition, "extra_attributes", {}) or {}
+    raw = extra.get(str(AttrID.FAMILY_ID.value), {})
+    value = raw.get("value") if isinstance(raw, dict) else raw
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+cedric_juniper_condition = requires_hand(is_pokemon_card)
+
+
+async def cedric_juniper(ctx):
+    """Put a Pokémon from hand face down; opponent guesses its height.
+    Wrong → you draw 3. Right → opponent draws 3. (Exact Cedric Juniper text.)"""
+    matches = [c for c in ctx.hand() if is_pokemon_card(c)]
+    if not matches:
+        return
+    picks = await ctx.choose_cards(
+        matches, 1, minimum=1,
+        prompt="Choose a Pokémon to put face down",
+    )
+    if not picks:
+        return
+    chosen = picks[0]
+    definition = def_for(chosen.archetype_id)
+    name = getattr(definition, "display_name", None) or "Pokémon"
+    feet = await ctx.choose(
+        f"The Pokémon is named {name}. Guess its height (feet).",
+        [str(i) for i in range(41)],
+        player_id=ctx.opponent_id, use_panel=False,
+    )
+    inches = await ctx.choose(
+        f"Guess {name}'s height: {feet} feet and how many inches?",
+        [str(i) for i in range(12)],
+        player_id=ctx.opponent_id, use_panel=False,
+    )
+    await ctx.reveal_cards([chosen], to_player=ctx.opponent_id)
+    actual = _height_ft_in(_family_id_of(chosen))
+    if actual is None:
+        guess = f"{feet}'{inches:02}\""
+        correct = await ctx.ask_yes_no(
+            f"Your opponent guessed {guess}. "
+            f"Does that match {name}'s printed height?",
+        )
+    else:
+        correct = actual == (feet, inches)
+    if correct:
+        await ctx.draw_cards(3, ctx.opponent_id)
+    else:
+        await ctx.draw_cards(3)

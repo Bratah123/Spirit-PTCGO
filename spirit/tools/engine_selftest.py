@@ -1984,6 +1984,25 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+
+async def test_cedric_juniper_height_table():
+    """Cedric Juniper uses Pokédex heights; Bulbasaur 2'04", Unova Snivy 2'00\"."""
+    from spirit.game.card_effects.support_common import _height_ft_in
+    assert _height_ft_in(1) == (2, 4), _height_ft_in(1)  # Bulbasaur 0.7m
+    assert _height_ft_in(495) == (2, 0), _height_ft_in(495)  # Snivy 0.6m
+    assert _height_ft_in(0) is None
+    assert _height_ft_in(9999) is None
+
+
+async def test_cedric_juniper_scripted():
+    stem = "CedricJuniper_110"
+    if stem not in card_loader.cards_by_stem:
+        return
+    guid = card_loader.cards_by_stem[stem]
+    d = CARD_DEFS_BY_GUID[guid.lower()]
+    assert callable(d.effect)
+    assert getattr(d.effect, "__name__", "") == "cedric_juniper"
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2067,8 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_cedric_juniper_height_table,
+    test_cedric_juniper_scripted,
 ]
 
 
