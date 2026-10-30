@@ -475,6 +475,12 @@ def compute_legal_actions(
             evolves_from = card.get_attribute(AttrID.EVOLUTION_LOGIC_FROM)
             if not evolves_from:
                 continue
+            # LV.X / Level-Up: printed rule is Active-only ("Put this card onto
+            # your Active …"). Bench targets stay legal for normal evolves.
+            _level_up = (
+                card.get_attribute(AttrID.STAGE) == PokemonStage.LEVELUP.value
+            )
+            _active = board.active_pokemon(player_id)
             evolve_targets = [
                 p.entity_id for p in in_play
                 if not isinstance(p, CompositePokemonEntity)
@@ -482,6 +488,7 @@ def compute_legal_actions(
                 and not evolution_blocked(board, player_id, p)
                 and (state.may_evolve_target(p.entity_id)
                      or can_evolve_early(board, p))
+                and (not _level_up or p is _active)
             ]
             if evolve_targets:
                 entries.append(_target_map_entry(
@@ -594,10 +601,25 @@ def _ability_entries(
     entries = []
     for pokemon in in_play:
         locked = ability_locked(board, pokemon)
-        for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
+        ability_rows = list(pokemon.get_attribute(AttrID.PIE_ABILITIES) or [])
+        # LV.X: may use Poké-Powers / Poké-Bodies from the previous level.
+        if pokemon.get_attribute(AttrID.STAGE) == PokemonStage.LEVELUP.value:
+            for child in list(getattr(pokemon, "children", []) or []):
+                if not isinstance(child, PokemonEntity):
+                    continue
+                prev = child.get_attribute(AttrID.PIE_ABILITIES) or []
+                if isinstance(prev, list):
+                    ability_rows = ability_rows + [a for a in prev if isinstance(a, dict)]
+                break
+        seen_ability_ids = set()
+        for entry in ability_rows:
             if not isinstance(entry, dict):
                 continue
             ability_id = entry.get("abilityID")
+            if ability_id in seen_ability_ids:
+                continue
+            if ability_id:
+                seen_ability_ids.add(ability_id)
             ability = ABILITIES_BY_ID.get(ability_id) if ability_id else None
             if ability is None or ability.activation not in (
                     Activations.ONCE_PER_TURN, Activations.UNLIMITED):
@@ -798,9 +820,21 @@ def _attack_entries(
             f"[LegalActions] Unparsed PIE_ABILITIES on {active.entity_id}: {abilities!r}"
         )
         return []
+    # LV.X printed rule: may use attacks from the previous level tucked under.
+    if active.get_attribute(AttrID.STAGE) == PokemonStage.LEVELUP.value:
+        for child in list(getattr(active, "children", []) or []):
+            if not isinstance(child, PokemonEntity):
+                continue
+            prev = child.get_attribute(AttrID.PIE_ABILITIES) or []
+            if isinstance(prev, list):
+                abilities = list(abilities) + [
+                    a for a in prev if isinstance(a, dict) and a.get("abilityType") == "Attack"
+                ]
+            break  # only the immediate previous stage
 
     energies = board.attached_energies(active)
     entries = []
+    seen_attack_ids = set()
     for ability in abilities:
         # abilityType carries the PieAbilityDescription class-name hint string.
         if ability.get("abilityType") != "Attack":
@@ -808,6 +842,9 @@ def _attack_entries(
         ability_id = ability.get("abilityID")
         if not ability_id:
             continue  # legacy scripts without ability IDs can't be offered
+        if ability_id in seen_attack_ids:
+            continue
+        seen_attack_ids.add(ability_id)
         if state.attack_locked(active.entity_id, ability_id):
             continue
         definition = ABILITIES_BY_ID.get(ability_id)
