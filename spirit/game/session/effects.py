@@ -117,8 +117,9 @@ class EffectContext:
         # Whether a CakeAttackEffect hit an opponent's Pokemon: gates the
         # non-damaging orb in the Attack bracket (mirrors M.N's flag7).
         self._dealt_opponent_damage = False
-        self._shielded_effect = False
         self._dealt_damage = False
+        self._damage_prevented = False
+        self._shield_animation_queued = False
         # Async callables run AFTER the choreography flushes (promotions and
         # anything else that must not interleave with the pending brackets).
         self.deferred_actions: List[Callable[[], Any]] = []
@@ -330,17 +331,28 @@ class EffectContext:
             self._in_interceptor = False
         return calc.amount
 
-    def _queue_effect_prevented(self, target: PokemonEntity):
+    def _queue_damage_shield(self, target: PokemonEntity):
+        self._queue_shield_animation(target, was_damage=True)
+
+    def _queue_effects_shield(self, target: PokemonEntity):
+        # Avoids queueing the effects shield if the attack already dealt damage
+        # or its damage was prevented. Either outcome takes precedence over the
+        # effects shield and prevents an extra animation.
+        if self._dealt_opponent_damage or self._damage_prevented:
+            return
+        self._queue_shield_animation(target, was_damage=False)
+
+    def _queue_shield_animation(self, target: PokemonEntity, was_damage: bool):
         self._queue(self.session._build_msg(
             OutboundMsg.SHIELD_TARGETS_EFFECT.value,
             {
                 "gameID": self.game_id,
                 "source": self.attacker.entity_id,
                 "targets": [target.entity_id],
-                "wasDamage": False,
+                "wasDamage": was_damage,
             },
         ))
-        self._shielded_effect = True
+        self._shield_animation_queued = True
 
     # ------------------------------------------------------------------
     # Damage / HP primitives
@@ -356,6 +368,7 @@ class EffectContext:
         ignore_weakness: bool = False,
         ignore_resistance: bool = False,
         as_counters: bool = False,
+        queue_shield: bool = True,
     ) -> int:
         """Damages a Pokemon (default: the attack's printed damage onto the
         opponent's Active) and returns the final amount after modifiers.
@@ -410,15 +423,17 @@ class EffectContext:
                     f"[Effects {self.game_id}] Damage to {target.entity_id} "
                     f"prevented by a passive effect."
                 )
-                if target.entity_id not in self.visual_targets:
-                    self.visual_targets.append(target.entity_id)
+                self._damage_prevented = True
+                if queue_shield:
+                    self._queue_damage_shield(target)
                 return 0
             dealt = calc.amount
             if dealt > 0:
                 dealt = await self._run_damage_interceptors(calc, target)
                 if calc.prevented:
-                    if target.entity_id not in self.visual_targets:
-                        self.visual_targets.append(target.entity_id)
+                    self._damage_prevented = True
+                    if queue_shield:
+                        self._queue_damage_shield(target)
                     return 0
         if dealt > 0 and not as_counters:
             # Track any dealt damage (attacks only), so self-damaging attacks 
@@ -488,7 +503,7 @@ class EffectContext:
                 f"[Effects {self.game_id}] Knock Out of {target.entity_id} "
                 f"blocked by an effect shield."
             )
-            self._queue_effect_prevented(target)
+            self._queue_effects_shield(target)
             return False
         target.set_attribute(AttrID.HP, 0)
         self._queue_hp_update(target)
@@ -561,21 +576,20 @@ class EffectContext:
         if target is None:
             return False
         if self._trainer_blocked(target):
-            self._queue_effect_prevented(target)
             return False
         if self.effects_blocked(target):
             logging.info(
                 f"[Effects {self.game_id}] {condition.name} on {target.entity_id} "
                 f"blocked by an effect shield."
             )
-            self._queue_effect_prevented(target)
+            self._queue_effects_shield(target)
             return False
         if conditions_blocked(self.board, target, condition):
             logging.info(
                 f"[Effects {self.game_id}] {condition.name} on {target.entity_id} "
                 f"blocked by a condition-immunity passive."
             )
-            self._queue_effect_prevented(target)
+            self._queue_effects_shield(target)
             return False
         # Register affected targets as visual targets to prevent incorrect 
         # Fizzled animation from playing.
@@ -2653,7 +2667,7 @@ async def _send_attack_bracket(session, ctx: AttackContext, action_id: str, titl
     if not any((
         ctx._dealt_opponent_damage,
         ctx._dealt_damage,
-        ctx._shielded_effect,
+        ctx._shield_animation_queued,
     )):
         targets = (ctx.visual_targets or ctx._visual_sources
                    or [k.entity_id for k in ctx.knockouts])
