@@ -335,9 +335,7 @@ class EffectContext:
         self._queue_shield_animation(target, was_damage=True)
 
     def _queue_effects_shield(self, target: PokemonEntity):
-        # Avoids queueing the effects shield if the attack already dealt damage
-        # or its damage was prevented. Either outcome takes precedence over the
-        # effects shield and prevents an extra animation.
+        # Skip the effects shield when damage was dealt or prevented.
         if self._dealt_opponent_damage or self._damage_prevented:
             return
         self._queue_shield_animation(target, was_damage=False)
