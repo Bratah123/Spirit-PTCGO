@@ -938,7 +938,7 @@ async def delayed_knockout(ctx):
     # Play the orb regardless if the attack was blocked or not (shield trigger)
     ctx.visual_targets = [target.entity_id]
     if target is None or ctx.effects_blocked(target):
-        ctx._queue_effect_prevented(target)
+        ctx._queue_effects_shield(target)
         return
     owner_id = target.owning_player_id
     target_id = target.entity_id

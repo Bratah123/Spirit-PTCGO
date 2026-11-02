@@ -18,7 +18,11 @@ from typing import Any, Dict
 from spirit.game.attributes import (
     AttrID, PokemonStage, PokemonTypes, SpecialConditions, TrainerType,
 )
-from spirit.game.card_effects.attacks_common import smokescreen_attack
+from spirit.game.card_effects.attacks_common import (
+    smokescreen_attack,
+    snipe_attack,
+    spread_damage,
+)
 from spirit.game.card_effects.passives_common import (
     energy_attach_tax_passive,
     flip_prevent_damage_passive,
@@ -40,6 +44,7 @@ from spirit.game.session.effects import (
     resolve_activated_ability,
     resolve_attack,
     resolve_trainer_effect,
+    _send_attack_bracket,
 )
 from spirit.game.session.game_session import GameOver
 from spirit.game.session.legal_actions import (
@@ -82,6 +87,11 @@ ITEM = None
 class Shield(Passive):
     def prevents_damage(self, calc, carrier):
         return carrier_pokemon(carrier) is calc.target
+
+
+class EffShield(Passive):
+    def blocks_attack_effects(self, target, carrier):
+        return carrier_pokemon(carrier) is target
 
 
 class NoRetreat(Passive):
@@ -1984,6 +1994,264 @@ async def test_setup_as_active():
     assert board.player_has_any_basic(P1)
 
 
+async def test_no_effects_shield_after_damage():
+    rig, e = new_rig()
+    target = e["p2_active"]
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(target, EffShield())
+    dealt = await ctx.deal_damage(30, target=target)
+    assert dealt > 0
+    applied = await ctx.apply_special_condition(target, SpecialConditions.ASLEEP)
+    assert applied is False
+    damage_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.CAKE_ATTACK_EFFECT.value
+    ]
+    assert len(damage_messages) == 1
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 0
+
+
+async def test_no_orb_after_damage_prevented():
+    rig, e = new_rig()
+    target = e["p2_active"]
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(target, Shield())
+    dealt = await ctx.deal_damage(30, target=target)
+    assert dealt == 0
+    applied = await ctx.apply_special_condition(target, SpecialConditions.ASLEEP)
+    assert applied is True
+
+    sent_messages = []
+    attacker_viewer = rig.session.players[P1]
+    async def capture_sequence(players, _sequence_type, messages):
+        if attacker_viewer in players:
+            sent_messages.extend(messages)
+    rig.session.send_game_sequence = capture_sequence
+    await _send_attack_bracket(rig.session, ctx, "test-action", ctx.ability.title)
+    shield_messages = [
+        message for message in sent_messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    orb_messages = [
+        message for message in sent_messages
+        if message.get("name") == OutboundMsg.NON_DAMAGING_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+    assert len(orb_messages) == 0
+    
+
+async def test_damage_shield_priority():
+    rig, e = new_rig()
+    target = e["p2_active"]
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(target, Shield())
+    ctx.add_temporary_passive(target, EffShield())
+    dealt = await ctx.deal_damage(30, target=target)
+    assert dealt == 0
+    applied = await ctx.apply_special_condition(target, SpecialConditions.ASLEEP)
+    assert applied is False
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+    
+
+async def test_damage_shield_only():
+    rig, e = new_rig()
+    target = e["p2_active"]
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(target, Shield())
+    dealt = await ctx.deal_damage(30, target=target)
+    assert dealt == 0
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+
+
+async def test_effects_shield_only():
+    rig, e = new_rig()
+    target = e["p2_active"]
+    ctx = attack_ctx(rig, e, damage=0)
+    ctx.add_temporary_passive(target, EffShield())
+    applied = await ctx.apply_special_condition(target, SpecialConditions.ASLEEP)
+    assert applied is False
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is False
+
+
+async def test_snipe_ignores_protected_targets():
+    # Protected Active, unprotected Bench
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench").children
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(active, Shield())
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    bench_hp = {
+        pokemon.entity_id: pokemon.get_attribute(AttrID.HP, 0)
+        for pokemon in bench
+    }
+    await snipe_attack(30, count=2, also_base=True)(ctx)
+    assert active.get_attribute(AttrID.HP) == active_hp
+    for pokemon in bench:
+        assert pokemon.get_attribute(AttrID.HP) < bench_hp[pokemon.entity_id]
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 0
+    # Protected Bench, unprotected Active
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench").children
+    ctx = attack_ctx(rig, e)
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    bench_hp = {
+        pokemon.entity_id: pokemon.get_attribute(AttrID.HP, 0)
+        for pokemon in bench
+    }
+    for pokemon in bench:
+        ctx.add_temporary_passive(pokemon, Shield())
+    await snipe_attack(30, count=2, also_base=True)(ctx)
+    assert active.get_attribute(AttrID.HP) < active_hp
+    for pokemon in bench:
+        assert pokemon.get_attribute(AttrID.HP) == bench_hp[pokemon.entity_id]
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 0
+
+
+async def test_snipe_fizzles_when_all_targets_protected():
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench").children
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(active, Shield())
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    bench_hp = {
+        pokemon.entity_id: pokemon.get_attribute(AttrID.HP, 0)
+        for pokemon in bench
+    }
+    for pokemon in bench:
+        ctx.add_temporary_passive(pokemon, Shield())
+    await snipe_attack(30, count=1, also_base=True)(ctx)
+    assert active.get_attribute(AttrID.HP) == active_hp
+    for pokemon in bench:
+        assert pokemon.get_attribute(AttrID.HP) == bench_hp[pokemon.entity_id]
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 0
+
+    sent_messages = []
+    async def capture_sequence(_players, _sequence_type, messages):
+        sent_messages.extend(messages)
+    rig.session.send_game_sequence = capture_sequence
+    await _send_attack_bracket(rig.session, ctx, "test-action", ctx.ability.title)
+    assert any(
+        message.get("name") == OutboundMsg.CLEANUP_ATTACK_EFFECT.value
+        and message.get("value", {}).get("cleanupCurvePrefix") == "Fizzled"
+        for message in sent_messages
+    )
+    assert not any(
+        message.get("name") == OutboundMsg.NON_DAMAGING_TARGETS_EFFECT.value
+        for message in sent_messages
+    )
+
+
+async def test_snipe_single_target_shield():
+    rig, e = new_rig()
+    bench = rig.board.find_player_area(P2, "bench").children
+    ctx = attack_ctx(rig, e)
+    for pokemon in bench:
+        ctx.add_temporary_passive(pokemon, Shield())
+    await snipe_attack(30, count=1)(ctx)
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+
+
+async def test_spread_ignores_protected_targets():
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench").children
+    ctx = attack_ctx(rig, e)
+    protected = bench[0]
+    unprotected = bench[1]
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    protected_hp = protected.get_attribute(AttrID.HP, 0)
+    unprotected_hp = unprotected.get_attribute(AttrID.HP, 0)
+    ctx.add_temporary_passive(protected, Shield())
+    await spread_damage(30, include_active=True)(ctx)
+    assert active.get_attribute(AttrID.HP) < active_hp
+    assert protected.get_attribute(AttrID.HP) == protected_hp
+    assert unprotected.get_attribute(AttrID.HP) < unprotected_hp
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 0
+
+
+async def test_active_only_target_shield():
+    # snipe_attack
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench")
+    discard = rig.board.find_player_area(P2, "discard")
+    for pokemon in list(bench.children):
+        rig.board.move_card(pokemon.entity_id, discard.entity_id)
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(active, Shield())
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    await snipe_attack(30, count=2, also_base=True)(ctx)
+    assert active.get_attribute(AttrID.HP) == active_hp
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+    # spread_damage
+    rig, e = new_rig()
+    active = e["p2_active"]
+    bench = rig.board.find_player_area(P2, "bench")
+    discard = rig.board.find_player_area(P2, "discard")
+    for pokemon in list(bench.children):
+        rig.board.move_card(pokemon.entity_id, discard.entity_id)
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(active, Shield())
+    active_hp = active.get_attribute(AttrID.HP, 0)
+    await spread_damage(30, include_active=True)(ctx)
+    assert active.get_attribute(AttrID.HP) == active_hp
+    shield_messages = [
+        message for _, message, _ in ctx._messages
+        if message.get("name") == OutboundMsg.SHIELD_TARGETS_EFFECT.value
+    ]
+    assert len(shield_messages) == 1
+    assert shield_messages[0]["value"]["wasDamage"] is True
+
+
 TESTS = [
     test_temp_passive_prevents_then_expires,
     test_temp_passive_cleared_on_leave,
@@ -2048,6 +2316,16 @@ TESTS = [
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
     test_setup_as_active,
+    test_no_effects_shield_after_damage,
+    test_no_orb_after_damage_prevented,
+    test_damage_shield_priority,
+    test_damage_shield_only,
+    test_effects_shield_only,
+    test_snipe_ignores_protected_targets,
+    test_snipe_fizzles_when_all_targets_protected,
+    test_snipe_single_target_shield,
+    test_spread_ignores_protected_targets,
+    test_active_only_target_shield,
 ]
 
 

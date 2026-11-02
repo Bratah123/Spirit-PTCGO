@@ -274,23 +274,29 @@ def snipe_attack(amount: int, pool="bench", count: int = 1,
     apply_modifiers None = engine auto (W/R only when the target is the
     opponent's Active); also_base deals printed damage to the Active first."""
     async def effect(ctx):
-        if also_base:
-            await ctx.deal_damage()
         if pool == "any":
             candidates = _in_play(ctx, side)
         elif pool == "bench":
             candidates = _bench_of(ctx, side)
         else:
             candidates = [p for p in _in_play(ctx, side) if pool(p)]
+        picks = []
         if candidates:
-            text = prompt or (f"Choose a Pokémon to take {amount} damage"
-                              if count == 1 else
-                              f"Choose {count} Pokémon to take {amount} damage")
-            picks = await ctx.choose_cards(
-                candidates, count, minimum=0 if optional else None, prompt=text)
-            for target in picks:
-                await ctx.deal_damage(amount, target=target,
-                                      apply_modifiers=apply_modifiers)
+            if len(candidates) <= count and not optional:
+                picks = candidates
+            else:
+                text = prompt or (f"Choose a Pokémon to take {amount} damage"
+                                  if count == 1 else
+                                  f"Choose {count} Pokémon to take {amount} damage")
+                picks = await ctx.choose_cards(
+                    candidates, count, minimum=0 if optional else None, prompt=text)
+        queue_shield = len(picks) + int(also_base) == 1
+        if also_base:
+            await ctx.deal_damage(queue_shield=queue_shield)
+        for target in picks:
+            await ctx.deal_damage(amount, target=target,
+                                    apply_modifiers=apply_modifiers,
+                                    queue_shield=queue_shield)
         await _finish(ctx, self_damage, also)
     return effect
 
@@ -302,8 +308,6 @@ def spread_damage(amount: int, side: str = "opponent",
     'both'); include_active adds that side's Active(s), own_bench adds your
     bench to an opponent-side spread. Bench damage takes no W/R (engine auto)."""
     async def effect(ctx):
-        if also_base:
-            await ctx.deal_damage()
         targets = {p.entity_id: p for p in _bench_of(ctx, side)}
         if own_bench and side != "mine":
             targets.update((p.entity_id, p) for p in ctx.my_bench())
@@ -314,8 +318,12 @@ def spread_damage(amount: int, side: str = "opponent",
             if side in ("mine", "both"):
                 actives.append(ctx.my_active())
             targets.update((p.entity_id, p) for p in actives if p is not None)
+        queue_shield = len(targets) + int(also_base) == 1
+        if also_base:
+            await ctx.deal_damage(queue_shield=queue_shield)
         for target in targets.values():
-            await ctx.deal_damage(amount, target=target, apply_modifiers=None)
+            await ctx.deal_damage(amount, target=target, apply_modifiers=None,
+                                  queue_shield=queue_shield)
         if also is not None:
             await also(ctx)
     return effect
