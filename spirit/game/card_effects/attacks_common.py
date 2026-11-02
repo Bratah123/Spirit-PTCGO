@@ -280,8 +280,7 @@ def snipe_attack(amount: int, pool="bench", count: int = 1,
             candidates = _bench_of(ctx, side)
         else:
             candidates = [p for p in _in_play(ctx, side) if pool(p)]
-        if also_base:
-            candidates = [p for p in candidates if p is not ctx.defender]
+        picks = []
         if candidates:
             if len(candidates) <= count and not optional:
                 picks = candidates
@@ -291,15 +290,13 @@ def snipe_attack(amount: int, pool="bench", count: int = 1,
                                   f"Choose {count} Pokémon to take {amount} damage")
                 picks = await ctx.choose_cards(
                     candidates, count, minimum=0 if optional else None, prompt=text)
-            target_count = len(picks) + int(also_base)
-            if also_base:
-                await ctx.deal_damage(queue_shield=target_count == 1)
-            for target in picks:
-                await ctx.deal_damage(amount, target=target,
-                                      apply_modifiers=apply_modifiers,
-                                      queue_shield=target_count == 1)
-        elif also_base:
-            await ctx.deal_damage()
+        queue_shield = len(picks) + int(also_base) == 1
+        if also_base:
+            await ctx.deal_damage(queue_shield=queue_shield)
+        for target in picks:
+            await ctx.deal_damage(amount, target=target,
+                                    apply_modifiers=apply_modifiers,
+                                    queue_shield=queue_shield)
         await _finish(ctx, self_damage, also)
     return effect
 
@@ -321,12 +318,12 @@ def spread_damage(amount: int, side: str = "opponent",
             if side in ("mine", "both"):
                 actives.append(ctx.my_active())
             targets.update((p.entity_id, p) for p in actives if p is not None)
-        target_count = len(targets) + int(also_base)
+        queue_shield = len(targets) + int(also_base) == 1
         if also_base:
-            await ctx.deal_damage(queue_shield=target_count == 1)
+            await ctx.deal_damage(queue_shield=queue_shield)
         for target in targets.values():
             await ctx.deal_damage(amount, target=target, apply_modifiers=None,
-                                  queue_shield=target_count == 1)
+                                  queue_shield=queue_shield)
         if also is not None:
             await also(ctx)
     return effect
