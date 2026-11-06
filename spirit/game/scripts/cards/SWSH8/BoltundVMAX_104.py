@@ -26,7 +26,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.LIGHTNING: 1, PokemonTypes.COLORLESS: 1},
             damage=30,
             damage_operator="+",
-            effect=damage_per(count_energy("mine", energy_type=PokemonTypes.LIGHTNING), 30, base=0),
+            effect=damage_per(count_energy("mine", energy_type=PokemonTypes.LIGHTNING), 30, base=30),
         ),
         Attack(
             title="Max Bolt",

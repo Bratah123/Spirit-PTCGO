@@ -1114,7 +1114,7 @@
     "name": "SM2",
     "externalId": "GRI",
     "number": 760,
-    "count": 145,
+    "count": 180,
     "filter": true,
     "block": "SM",
     "legalFormats": [
@@ -1550,7 +1550,7 @@
     "name": "SM1",
     "externalId": "SUM",
     "number": 750,
-    "count": 149,
+    "count": 173,
     "filter": true,
     "block": "SM",
     "legalFormats": [

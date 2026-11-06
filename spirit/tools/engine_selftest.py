@@ -1892,6 +1892,28 @@ async def test_ignore_target_effects_turn_flag():
         assert await ctx.deal_damage(30) == 0, "a new turn must clear the flag"
 
 
+async def test_prevents_damage_counters():
+    rig, e = new_rig()
+    bench_area = rig.board.find_player_area(P1, "bench")
+    bench = bench_area.children[0]
+    pre = bench.get_attribute(AttrID.HP, 0)
+
+    class BlockBenchCounters(Passive):
+        def prevents_damage_counters(self, target, carrier, source_player_id=None):
+            parent = getattr(target, "parent", None)
+            return bool(parent) and parent.get_attribute(AttrID.NAME) == "bench" \
+                and target.owning_player_id == carrier.owning_player_id
+
+    ctx = attack_ctx(rig, e)
+    ctx.add_temporary_passive(e["p1_active"], BlockBenchCounters())
+    assert await ctx.deal_damage(40, target=bench, as_counters=True) == 0
+    assert bench.get_attribute(AttrID.HP, 0) == pre
+    # Attack damage to the same bench Pokemon is not gated by this hook.
+    dealt = await ctx.deal_damage(20, target=bench, apply_modifiers=False)
+    assert dealt == 20
+    assert bench.get_attribute(AttrID.HP, 0) == pre - 20
+
+
 async def test_usable_despite_conditions():
     rig, e = new_rig()
     board, ts = rig.board, rig.session.turn_state
@@ -2312,6 +2334,7 @@ TESTS = [
     test_scheduled_effects,
     test_retreat_cost_board_param,
     test_ignore_target_effects_turn_flag,
+    test_prevents_damage_counters,
     test_usable_despite_conditions,
     test_on_play_trigger_ends_turn,
     test_extra_prize_watchers,
