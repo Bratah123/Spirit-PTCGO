@@ -1,0 +1,59 @@
+from spirit.game.data_utils import PokemonCardDef, Attack, Ability
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.session.passives import effective_retreat_cost
+from spirit.game.content.definitions import def_for
+from spirit.game.card_effects.trainers import _other_player
+
+
+async def _iron_crash(ctx):
+    """20 more damage for each Colorless in the opponent's Active's Retreat Cost."""
+    target = ctx.opponent_active()
+    cost = effective_retreat_cost(ctx.board, target) if target is not None else 0
+    await ctx.deal_damage(ctx.ability.damage + 20 * cost)
+
+
+def _team(p, team):
+    name = getattr(def_for(p.archetype_id), "display_name", "") or ""
+    return name.startswith("Team " + team + "'s ")
+
+
+def _power_saver(board, player_id, pokemon=None):
+    """If there are 4 or fewer Team Aqua Pokemon in play (both sides), this Pokemon can't attack."""
+    n = sum(1 for pid in (player_id, _other_player(board, player_id))
+            for p in board.pokemon_in_play(pid) if _team(p, "Aqua"))
+    return n > 4
+
+
+card = PokemonCardDef(
+    guid="723cda7f-48c1-5abe-a843-987110011893",
+    key="TATM",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.TeamAquasKyogreEX.Name",
+    display_name="Team Aqua's Kyogre-EX",
+    searchable_by=["Team Aqua's Kyogre-EX", "Basic", "EX", "TeamAquasKyogreEX"],
+    subtypes=["Basic", "EX"],
+    collector_number=6,
+    set_code="TATM",
+    rarity=Rarities.RareUltra,
+    hp=190,
+    elements=[PokemonTypes.WATER],
+    stage=PokemonStage.BASIC,
+    retreat_cost=4,
+    weakness_type=PokemonTypes.GRASS,
+    family_id=382,
+    abilities=[
+        Ability(
+            title="Power Saver",
+            game_text="If there are 4 or fewer Team Aqua Pok\u00e9mon in play, this Pok\u00e9mon can't attack.",
+            passive=None  # enforced by _power_saver on this card's attack condition,
+        ),
+        Attack(
+            title="Aqua Impact",
+            game_text="This attack does 20 more damage for each Colorless in your opponent's Active Pok\u00e9mon's Retreat Cost.",
+            cost={PokemonTypes.WATER: 3, PokemonTypes.COLORLESS: 1},
+            damage=80,
+            damage_operator="+",
+            condition=_power_saver,
+            effect=_iron_crash,
+        ),
+    ],
+)
