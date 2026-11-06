@@ -75,6 +75,9 @@ from .constants import (
     TEXT_ATTACH_TAX_CHECK,
     TEXT_ATTACH_TAX_OK,
     TEXT_ATTACH_TAX_DISCARD,
+    TEXT_RETREAT_FLIP_CHECK,
+    TEXT_RETREAT_FLIP_OK,
+    TEXT_RETREAT_FLIP_FAILS,
 )
 from spirit.network.message_names import OutboundMsg
 from spirit.game.session.sequence_packets import NestedSequence
@@ -83,6 +86,7 @@ from spirit.game.content.visualizations import (
     Visualization, VisualizationArrow, VisualizationLifetime, VisualizationType,
 )
 from spirit.game.attributes import (
+    AbilityTypes,
     AttrID,
     CLIENT_SPECIAL_CONDITION_NAMES,
     DeckBoxShape,
@@ -94,7 +98,8 @@ from spirit.game.attributes import (
 from spirit.game.content.definitions import with_sort_order
 from spirit.game.data_utils import (
     ABILITIES_BY_ID, Ability, Activations, Triggers, def_for, prize_value,
-    subtypes_for, unimplemented,
+    subtypes_for,
+    is_baby_pokemon, unimplemented,
 )
 from spirit.database.player_data import COINS_PER_WIN, COINS_PER_LOSS, grant_coins
 from spirit.database.versus_data import award_match_points, get_progress
@@ -121,9 +126,12 @@ from .effects import (
 from .passives import (
     ability_locked, active_passives, active_to_bench_counters,
     burn_recovery_blocked, effective_bench_capacity, effective_max_hp,
-    effective_retreat_cost, energy_attach_taxer, evolve_heal_amount,
-    granted_extra_attacks, retreat_energy_destination, tool_slots_free,
-    tool_suppressed,
+    effective_retreat_cost, energy_attach_blocked, energy_attach_taxer,
+    evolve_heal_amount,
+    granted_extra_attacks, poke_bodies_ignored,
+    retreat_discards_remaining_energy,
+    retreat_energy_destination, retreat_flip_required,
+    tool_attach_allowed, tool_slots_free, tool_suppressed,
 )
 from .legal_actions import (
     ACTION_ATTACH_TOOL,
@@ -3991,7 +3999,10 @@ class GameSession:
             if ability.ability_id not in seen:
                 seen.add(ability.ability_id)
                 abilities.append(ability)
+        ignore_bodies = poke_bodies_ignored(self.board_state)
         for ability in abilities:
+            if ignore_bodies and ability.ability_type == AbilityTypes.POKE_BODY:
+                continue
             if ability.has_trigger(trigger):
                 # "1 per turn" abilities shared by name across copies (Dark Asset).
                 if ability.shared_once_per_turn \
@@ -4042,10 +4053,121 @@ class GameSession:
 
     async def _fire_end_of_turn_triggers(self, active_id: str):
         """END_OF_TURN for the turn player's in-play Pokemon, after their turn
-        ends and before the checkup (Radiant Venusaur's Sunny Bloom)."""
+        ends and before the checkup (Radiant Venusaur's Sunny Bloom).
+
+        Also discards e-Card Technical Machines attached to that player's
+        Pokemon ("At the end of your turn, discard this card").
+        """
         for pokemon in list(self.board_state.pokemon_in_play(active_id)):
             await self._fire_triggered_abilities(
                 active_id, pokemon, Triggers.END_OF_TURN)
+        await self._discard_end_of_attach_turn_energy()
+        await self._discard_technical_machines(active_id)
+        await self._apply_classic_darkness_energy()
+        from spirit.game.card_effects.ecard import clear_crystal_types
+        clear_crystal_types(self.board_state, active_id)
+
+    def _attached_special_energies(self):
+        out = []
+        for pid in self.players:
+            for pokemon in list(self.board_state.pokemon_in_play(pid)):
+                for energy in list(self.board_state.attached_energies(pokemon)):
+                    out.append((pid, pokemon, energy, def_for(energy.archetype_id)))
+        return out
+
+    async def _discard_end_of_attach_turn_energy(self):
+        """Boost Energy etc.: discarded at the end of the turn it was attached,
+        and whenever its holder is no longer an Evolved Pokémon."""
+        from spirit.game.session.effects import EffectContext
+        from spirit.game.card_effects.ecard import BoostEnergyPassive, is_evolved_pokemon
+        turn = self.turn_state.turn_number
+        doomed = []
+        seen = set()
+        for pid, pokemon, energy, d in self._attached_special_energies():
+            if energy.entity_id in seen:
+                continue
+            drop = False
+            if getattr(d, "discard_end_of_attach_turn", False)                     and getattr(energy, "attached_on_turn", None) == turn:
+                drop = True
+            passive = getattr(d, "passive", None)
+            if isinstance(passive, BoostEnergyPassive) and not is_evolved_pokemon(pokemon):
+                drop = True
+            if drop:
+                seen.add(energy.entity_id)
+                doomed.append((pid, energy))
+        for pid, energy in doomed:
+            ctx = EffectContext(self, pid, energy, None)
+            await ctx.discard_cards([energy])
+            await self._flush_effect_runs(ctx)
+
+    async def _discard_technical_machines(self, player_id: str):
+        """Discard every Technical Machine attached to `player_id`'s Pokemon,
+        plus Strength Charm tools that dealt damage this turn and Crystal
+        Shard tools whose holder attacked this turn."""
+        from spirit.game.card_effects.ecard import CrystalShardPassive
+        attacked = {eid for eid, _, _ in self.turn_state.attacks_used}
+        to_discard = []
+        holders = []
+        for pokemon in list(self.board_state.pokemon_in_play(player_id)):
+            for child in list(pokemon.children):
+                ttype = child.get_attribute(AttrID.TRAINER_TYPE)
+                if ttype == TrainerType.TECHNICAL_MACHINE.value:
+                    to_discard.append(child)
+                    holders.append(pokemon)
+                    continue
+                if ttype != TrainerType.POKEMON_TOOL.value:
+                    continue
+                drop = bool(child.get_attribute("_strength_charm_spent"))
+                if not drop:
+                    d = def_for(child.archetype_id)
+                    drop = isinstance(getattr(d, "passive", None), CrystalShardPassive) \
+                        and pokemon.entity_id in attacked
+                if drop:
+                    to_discard.append(child)
+                    holders.append(pokemon)
+        if not to_discard:
+            return
+        discard_area = self.board_state.find_player_area(player_id, "discard")
+        if discard_area is None:
+            return
+        for card, holder in zip(to_discard, holders):
+            self.board_state.move_cards([card.entity_id], discard_area.entity_id)
+            logging.info(
+                f"[Session {self.game_id}] Discarded Technical Machine "
+                f"{card.entity_id} at end of turn."
+            )
+            await self.refresh_granted_abilities(holder)
+
+
+    async def _apply_classic_darkness_energy(self):
+        """e-Card Darkness Energy: at the end of every turn, put 1 damage
+        counter on the attached Pokémon unless it is Darkness-type or has
+        'Dark' in its name."""
+        from spirit.game.card_effects.ecard import ClassicDarknessEnergyPassive
+        from spirit.game.session.passives import active_passives, carrier_pokemon
+        from spirit.game.attributes import PokemonTypes
+        for passive, carrier in active_passives(self.board_state):
+            if not isinstance(passive, ClassicDarknessEnergyPassive):
+                continue
+            pokemon = carrier_pokemon(carrier)
+            if pokemon is None:
+                continue
+            types = pokemon.get_attribute(AttrID.POKEMON_TYPES) or []
+            if PokemonTypes.DARKNESS.value in types:
+                continue
+            name = ""
+            d = def_for(pokemon.archetype_id)
+            if d is not None:
+                name = d.display_name or ""
+            if "Dark" in name:
+                continue
+            # 1 damage counter = 10 HP
+            current = pokemon.get_attribute(AttrID.HP, 0)
+            pokemon.set_attribute(AttrID.HP, max(0, current - 10))
+            logging.info(
+                f"[Session {self.game_id}] Darkness Energy placed a damage "
+                f"counter on {pokemon.entity_id}."
+            )
 
     async def _fire_stadium_triggers(self, acting_player_id: str, trigger: str,
                                      ctx_setup=None):
@@ -4101,6 +4223,12 @@ class GameSession:
                 f"attach to {target_id}; re-offering."
             )
             return
+        if energy_attach_blocked(self.board_state, player_id, card, target):
+            logging.warning(
+                f"[Session {self.game_id}] Energy {card.entity_id} attach to "
+                f"{target_id} blocked by a Poké-Body; re-offering."
+            )
+            return
 
         # Slimy Room tax: the flip runs before anything else; tails discards
         # the energy instead of attaching -- per the card text this does NOT
@@ -4125,7 +4253,16 @@ class GameSession:
         position = len(target.children)
         if not self.board_state.attach_card(card.entity_id, target_id):
             return
+        from spirit.game.session.passives import active_passives
+        if self.turn_state.energy_attached:
+            self.turn_state.alpha_growth_target = None  # 2nd attach used
+        elif any(
+            p.allows_second_energy_attach(target, c)
+            for p, c in active_passives(self.board_state)
+        ):
+            self.turn_state.alpha_growth_target = target.entity_id
         self.turn_state.energy_attached = True
+        card.attached_on_turn = self.turn_state.turn_number
         self.stat_add(player_id, "energyplayed")
         logging.info(
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
@@ -4193,6 +4330,41 @@ class GameSession:
                     [self._entity_moved_msg(
                         energy.entity_id, discard.entity_id, position)],
                 )
+        return False
+
+    async def _resolve_retreat_flip(self, player_id: str, pokemon, taxer) -> bool:
+        """Mirage Stadium flip on a retreat attempt: heads (True) proceeds;
+        tails locks that Pokémon from retreating this turn and returns False."""
+        flip = random.choice([0, 1])
+        heads = flip == 0
+        self.stat_add(player_id, "headsflipped", 1 if heads else 0)
+        self.stat_add(player_id, "tailsflipped", 0 if heads else 1)
+        name = taxer.get_attribute(AttrID.NAME)
+        title = name.get("id", "") if isinstance(name, dict) else (name or "")
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.POKE_ABILITY,
+            [self._build_msg(
+                OutboundMsg.MULTIPLE_COIN_FLIP_WITH_CONTEXT_EFFECT.value,
+                {
+                    "gameID": self.game_id,
+                    "resultLst": [flip],
+                    "title": {"id": title or TEXT_RETREAT_FLIP_CHECK},
+                    "gameText": {"id": TEXT_RETREAT_FLIP_OK if heads
+                                 else TEXT_RETREAT_FLIP_FAILS},
+                    "source": taxer.entity_id,
+                    "targets": [pokemon.entity_id],
+                },
+            )],
+        )
+        await self.choreo_pause(2.5)
+        if heads:
+            return True
+        self.turn_state.lock_retreat(
+            pokemon.entity_id, self.turn_state.turn_number)
+        logging.info(
+            f"[Session {self.game_id}] Retreat flip tails; "
+            f"{pokemon.entity_id} can't retreat this turn."
+        )
         return False
 
     async def _refresh_max_hp(self, pokemon, max_before: int):
@@ -4531,6 +4703,12 @@ class GameSession:
                 f"target ({target_ids}); re-offering."
             )
             return
+        if not tool_attach_allowed(self.board_state, card, target):
+            logging.warning(
+                f"[Session {self.game_id}] Tool {card.entity_id} may not "
+                f"attach to {target_id}; re-offering."
+            )
+            return
         max_before = effective_max_hp(self.board_state, target)
         position = len(target.children)
         if not self.board_state.attach_card(card.entity_id, target_id):
@@ -4549,6 +4727,24 @@ class GameSession:
         )
         await self._refresh_max_hp(target, max_before)
         await self.refresh_granted_abilities(target)
+        definition = def_for(card.archetype_id)
+        if getattr(definition, "discard_end_of_opponent_next_turn", False):
+            # Weakness Guard: discard at the checkup ending opponent's next turn.
+            tool_id = card.entity_id
+            owner = player_id
+            async def _discard_wg(session, _tool_id=tool_id, _owner=owner):
+                tool = session.board_state.get_entity(_tool_id)
+                if tool is None:
+                    return
+                from spirit.game.session.effects import EffectContext
+                ctx = EffectContext(session, _owner, tool, None)
+                await ctx.discard_cards([tool])
+                await session._flush_effect_runs(ctx)
+            self.scheduled_effects.append({
+                "fire_at_checkup_of_turn": self.turn_state.turn_number + 1,
+                "guard": None,
+                "effect": _discard_wg,
+            })
 
     async def _execute_use_ability(self, player_id, card, entry) -> bool:
         """Activates a Pokemon's usable ability (once-per-turn / VSTAR).
@@ -5091,6 +5287,13 @@ class GameSession:
             )
             return
 
+        # Mirage Stadium: the flip runs after the retreat is otherwise legal;
+        # tails locks this Pokémon from retreating this turn and discards nothing.
+        taxer = retreat_flip_required(self.board_state, card)
+        if taxer is not None and \
+                not await self._resolve_retreat_flip(player_id, card, taxer):
+            return
+
         # The Retreat executor (N.P) requires the Retreating/NewActive data
         # effects, applies both Pokemon moves data-only (it plays the swap
         # animations itself), and WrapSequences the energy discards.
@@ -5143,7 +5346,13 @@ class GameSession:
         self.turn_state.became_active_turn[new_active.entity_id] = \
             self.turn_state.turn_number
         await self._apply_active_to_bench_counters(player_id, card)
+        await self._apply_retreat_energy_discard(player_id, card)
         await self.fire_move_to_active_triggers(new_active)
+        # Vine Pull: only while the retreated Pokemon is still in play
+        # (Spikemuth-style bench counters may have just Knocked it Out).
+        if card in self.board_state.pokemon_in_play(player_id):
+            await self._fire_triggered_abilities(
+                player_id, card, Triggers.ON_RETREAT)
         # An Active-spot change can flip suppression passives (Tool Jammer).
         await self.resync_effective_max_hp()
 
@@ -5158,6 +5367,16 @@ class GameSession:
         await self._flush_effect_runs(ctx)
         if ctx.knockouts:
             await self.resolve_knockouts(ctx)
+
+    async def _apply_retreat_energy_discard(self, player_id, pokemon):
+        """Suction Cups: remaining Energy on a retreated Pokémon is discarded."""
+        if not retreat_discards_remaining_energy(self.board_state, pokemon):
+            return
+        if not self.board_state.attached_energies(pokemon):
+            return
+        ctx = EffectContext(self, player_id, pokemon, None)
+        await ctx.discard_energy_from(pokemon, 99)
+        await self._flush_effect_runs(ctx)
 
     async def _execute_attack(self, player_id, card, entry) -> bool:
         """Resolves an attack through the effect engine; attacking ends the turn."""
@@ -5185,6 +5404,14 @@ class GameSession:
         if flip_title is not None:
             if not await self._resolve_attack_attempt_flip(player_id, card, flip_title):
                 return True  # tails: the attack does not happen; the turn ends
+
+        # e-Card Baby Pokemon rule: if the opponent's Active is a Baby, the
+        # attacker flips a coin before doing anything else; tails ends the turn.
+        opp_active = self.board_state.active_pokemon(self._opponent_id(player_id))
+        if opp_active is not None and is_baby_pokemon(opp_active.archetype_id):
+            if not await self._resolve_attack_attempt_flip(
+                    player_id, card, "Baby Pokémon"):
+                return True
 
         if ability is not None:
             if getattr(ability, "locks_next_turn", False):
