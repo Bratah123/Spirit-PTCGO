@@ -86,6 +86,7 @@ class DamageCalc:
             target.get_attribute(AttrID.WEAKNESS_TYPES) or []
         )
         self.resistance_applies = True
+        self.resistance_reduction = RESISTANCE_REDUCTION
         self.weakness_hit = False
         self.resistance_hit = False
         self.prevented = False
@@ -202,6 +203,13 @@ class Passive:
     def knockout_destination(self, pokemon: PokemonEntity, carrier: BoardEntity) -> Optional[str]:
         """Area name replacing "discard" for a knocked-out Pokemon (e.g. "lostZone")."""
         return None
+
+    def allows_second_energy_attach(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to let the owner attach a second Energy from hand to `pokemon`
+        this turn after the first manual attach (Venusaur Harvest Bounty)."""
+        return False
 
     def modify_prizes_for_knockout(
         self, pokemon: PokemonEntity, ctx: Any, count: int, carrier: BoardEntity
@@ -332,6 +340,14 @@ class Passive:
         (Slimy Room): tails discards the energy instead of attaching."""
         return False
 
+    def blocks_energy_attach(
+        self, attaching_player_id: str, energy: BoardEntity,
+        target: PokemonEntity, carrier: BoardEntity,
+    ) -> bool:
+        """True to forbid attaching `energy` from hand to `target`
+        (Zapdos Anti-Lightning)."""
+        return False
+
     def retreat_cost_destination(
         self, pokemon: PokemonEntity, energy: BoardEntity, carrier: BoardEntity
     ) -> Optional[str]:
@@ -345,6 +361,13 @@ class Passive:
         """Damage counters put on an Active that moved to its owner's Bench
         during that owner's turn (Spikemuth)."""
         return 0
+
+    def discard_energy_on_retreat(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to discard remaining Energy on `pokemon` after it retreats
+        from Active to Bench (Suction Cups)."""
+        return False
 
     def heal_on_evolve(
         self, evolved: PokemonEntity, pre_evolution: BoardEntity,
@@ -563,7 +586,7 @@ def compute_damage(
         resist_type = target.get_attribute(AttrID.RESISTANCE_TYPES)
         if calc.resistance_applies and resist_type in attacker_types:
             calc.resistance_hit = True
-            calc.amount = max(0, calc.amount - RESISTANCE_REDUCTION)
+            calc.amount = max(0, calc.amount - calc.resistance_reduction)
 
     for passive, carrier in passives:
         if calc.ignore_target_effects and carrier_pokemon(carrier) is calc.target:
@@ -741,6 +764,16 @@ def energy_attach_taxer(board: BoardState, attaching_player_id: str,
     return None
 
 
+def energy_attach_blocked(board: BoardState, attaching_player_id: str,
+                          energy: BoardEntity, target: PokemonEntity) -> bool:
+    """Whether a continuous passive forbids attaching `energy` from hand to
+    `target` (Zapdos Anti-Lightning)."""
+    return any(
+        passive.blocks_energy_attach(attaching_player_id, energy, target, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
 def retreat_energy_destination(board: BoardState, pokemon: PokemonEntity,
                                energy: BoardEntity) -> Optional[str]:
     """First non-None area a passive redirects a retreat-cost energy to
@@ -750,6 +783,15 @@ def retreat_energy_destination(board: BoardState, pokemon: PokemonEntity,
         if dest is not None:
             return dest
     return None
+
+
+def retreat_discards_remaining_energy(board: BoardState, pokemon: PokemonEntity) -> bool:
+    """Whether remaining Energy on `pokemon` is discarded after it retreats
+    (Suction Cups)."""
+    return any(
+        passive.discard_energy_on_retreat(pokemon, carrier)
+        for passive, carrier in active_passives(board)
+    )
 
 
 def evolution_blocked(board: BoardState, player_id: str, target: PokemonEntity) -> bool:
@@ -833,6 +875,9 @@ def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
             capacity = max(capacity, passive.tool_capacity(pokemon, carrier))
     attached = sum(
         1 for child in pokemon.children
-        if child.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value
+        if child.get_attribute(AttrID.TRAINER_TYPE) in (
+            TrainerType.POKEMON_TOOL.value,
+            TrainerType.TECHNICAL_MACHINE.value,
+        )
     )
     return capacity - attached
