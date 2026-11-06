@@ -203,6 +203,13 @@ class Passive:
         """Area name replacing "discard" for a knocked-out Pokemon (e.g. "lostZone")."""
         return None
 
+    def allows_second_energy_attach(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to let the owner attach a second Energy from hand to `pokemon`
+        this turn after the first manual attach (Venusaur Harvest Bounty)."""
+        return False
+
     def modify_prizes_for_knockout(
         self, pokemon: PokemonEntity, ctx: Any, count: int, carrier: BoardEntity
     ) -> int:
@@ -833,6 +840,9 @@ def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
             capacity = max(capacity, passive.tool_capacity(pokemon, carrier))
     attached = sum(
         1 for child in pokemon.children
-        if child.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value
+        if child.get_attribute(AttrID.TRAINER_TYPE) in (
+            TrainerType.POKEMON_TOOL.value,
+            TrainerType.TECHNICAL_MACHINE.value,
+        )
     )
     return capacity - attached

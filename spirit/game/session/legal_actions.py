@@ -99,6 +99,8 @@ class TurnState:
     supporter_played: bool = False
     stadium_played: bool = False
     energy_attached: bool = False
+    # Pokemon id that may receive a 2nd manual Energy attach this turn.
+    alpha_growth_target: Optional[str] = None
     retreated: bool = False
     # entity_id -> turn number it entered play (or last evolved). Entities
     # placed during setup are absent and default to turn 0.
@@ -182,6 +184,7 @@ class TurnState:
         self.supporter_played = False
         self.stadium_played = False
         self.energy_attached = False
+        self.alpha_growth_target = None
         self.retreated = False
         self.used_abilities = set()
         self.used_named_abilities = set()
@@ -491,7 +494,9 @@ def compute_legal_actions(
                 ))
 
         elif isinstance(card, EnergyEntity):
-            if state.energy_attached or not in_play_ids:
+            if not in_play_ids:
+                continue
+            if state.energy_attached and state.alpha_growth_target is None:
                 continue
             if state.play_locked(player_id, card):
                 continue
@@ -504,6 +509,8 @@ def compute_legal_actions(
                 p.entity_id for p in in_play
                 if (attach_to is None or attach_to(p))
                 and not state.attach_restricted(p.entity_id)
+                and (not state.energy_attached
+                     or p.entity_id == state.alpha_growth_target)
             ]
             if targets:
                 entries.append(_target_map_entry(
@@ -550,7 +557,11 @@ def compute_legal_actions(
                         game_id, card.entity_id,
                         action_id_for(card.entity_id, "stadium"), ACTION_PLAY_STADIUM,
                     ))
-            elif trainer_type == TrainerType.POKEMON_TOOL.value:
+            elif trainer_type in (
+                    TrainerType.POKEMON_TOOL.value,
+                    TrainerType.TECHNICAL_MACHINE.value,
+            ):
+                # e-Card Technical Machines attach like Tools and grant an attack.
                 tool_attach_to = getattr(definition, "attach_to", None)
                 tool_targets = [
                     p.entity_id for p in in_play

@@ -59,6 +59,11 @@ def has_rule_box(archetype_id: Optional[str]) -> bool:
     return any(s in _RULE_BOX_SUBTYPES for s in subtypes_for(archetype_id))
 
 
+def is_baby_pokemon(archetype_id: Optional[str]) -> bool:
+    """WOTC e-Card Baby Pokemon (Pichu, Cleffa, ...)."""
+    return "Baby" in subtypes_for(archetype_id)
+
+
 def prize_value(archetype_id: Optional[str]) -> int:
     """Prizes taken when this Pokemon is knocked out."""
     definition = def_for(archetype_id)
