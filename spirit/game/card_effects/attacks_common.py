@@ -249,6 +249,18 @@ def flip_bonus(bonus: int, coins: int = 1):
 # Scaling damage
 # ----------------------------------------------------------------------
 
+def ignore_effects_attack(ignore_weakness=False, ignore_resistance=False):
+    """Printed damage that ignores effects on the opponent's Active (Shred);
+    optionally also ignores Weakness and/or Resistance (Piercing Strike)."""
+    async def effect(ctx):
+        await ctx.deal_damage(
+            ignore_weakness=ignore_weakness,
+            ignore_resistance=ignore_resistance,
+            ignore_target_effects=True,
+        )
+    return effect
+
+
 def damage_per(count_fn, per: int, base: int = 0, cap: Optional[int] = None,
                self_damage: int = 0, also=None):
     """base + per * count_fn(ctx) damage to the opponent's Active (cap optional)."""

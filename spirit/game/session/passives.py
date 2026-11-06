@@ -8,6 +8,7 @@ or max HP, so effects switch on/off purely by board position.
 """
 
 from dataclasses import dataclass
+import random
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from spirit.game.attributes import AttrID, PokemonTypes, TrainerType
@@ -86,6 +87,10 @@ class DamageCalc:
             target.get_attribute(AttrID.WEAKNESS_TYPES) or []
         )
         self.resistance_applies = True
+        # Era-correct Resistance: the target's printed amount (XY/BW -20,
+        # SWSH -30); modify_resistance hooks may rewrite it (Klefki -40).
+        self.resistance_amount = target.get_attribute(AttrID.RESISTANCE_AMOUNT) \
+            or RESISTANCE_REDUCTION
         self.weakness_hit = False
         self.resistance_hit = False
         self.prevented = False
@@ -276,6 +281,31 @@ class Passive:
     ) -> int:
         """Damage counters the Burn checkup tick places (default 2)."""
         return counters
+
+    def modify_poison_counters(
+        self, counters: int, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> int:
+        """Damage counters the Poison checkup tick places (Virbank City Gym +2);
+        `counters` starts at the Pokemon's recorded poison multiplier."""
+        return counters
+
+    def supporter_limit(self, player_id: str, carrier: BoardEntity) -> int:
+        """Supporter cards `player_id` may play per turn (Magnezone Dual
+        Brains 2); the highest wins."""
+        return 1
+
+    def blocks_energy_attach(
+        self, energy: BoardEntity, player_id: str, target: PokemonEntity,
+        carrier: BoardEntity
+    ) -> bool:
+        """True to forbid `player_id` attaching `energy` from hand to `target`
+        as their manual attachment (Froslass Cursed Glare)."""
+        return False
+
+    def forces_coin_tails(self, player_id: str, carrier: BoardEntity) -> bool:
+        """True when every coin `player_id` flips comes up tails (Cofagrigus
+        Slap of Misfortune); covers effect flips and Checkup/attack flips."""
+        return False
 
     def blocks_burn_recovery(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to skip the Burn recovery flip entirely (stays Burned)."""
@@ -563,7 +593,7 @@ def compute_damage(
         resist_type = target.get_attribute(AttrID.RESISTANCE_TYPES)
         if calc.resistance_applies and resist_type in attacker_types:
             calc.resistance_hit = True
-            calc.amount = max(0, calc.amount - RESISTANCE_REDUCTION)
+            calc.amount = max(0, calc.amount - calc.resistance_amount)
 
     for passive, carrier in passives:
         if calc.ignore_target_effects and carrier_pokemon(carrier) is calc.target:
@@ -669,6 +699,15 @@ def trainer_play_blocked(board: BoardState, player_id: str, card: BoardEntity) -
     """Whether a continuous passive forbids playing `card` from hand."""
     return any(
         passive.blocks_trainer_play(card, player_id, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
+def energy_attach_blocked(board: BoardState, player_id: str, energy: BoardEntity,
+                          target: PokemonEntity) -> bool:
+    """Whether a continuous passive forbids attaching `energy` from hand to `target`."""
+    return any(
+        passive.blocks_energy_attach(energy, player_id, target, carrier)
         for passive, carrier in active_passives(board)
     )
 
@@ -822,6 +861,28 @@ def effective_bench_capacity(board: BoardState, player_id: str) -> int:
         for v in [passive.bench_capacity(player_id, carrier)] if v is not None
     ]
     return max(1, min(values)) if values else BENCH_SLOT_COUNT
+
+
+def effective_supporter_limit(board: BoardState, player_id: str) -> int:
+    """Supporters `player_id` may play this turn (default 1; highest wins)."""
+    return max([1] + [passive.supporter_limit(player_id, carrier)
+                      for passive, carrier in active_passives(board)])
+
+
+def coin_forced_tails(board: Optional[BoardState], player_id: Optional[str]) -> bool:
+    """Whether a forces_coin_tails passive applies to `player_id`'s flips."""
+    if board is None or player_id is None:
+        return False
+    return any(passive.forces_coin_tails(player_id, carrier)
+               for passive, carrier in active_passives(board))
+
+
+def flip_coin_for(board: Optional[BoardState], player_id: Optional[str]) -> int:
+    """One coin flip in wire form (0 = heads, 1 = tails), honouring
+    forces_coin_tails."""
+    if coin_forced_tails(board, player_id):
+        return 1
+    return random.choice([0, 1])
 
 
 def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
