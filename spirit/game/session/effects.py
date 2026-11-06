@@ -595,6 +595,7 @@ class EffectContext:
             self.visual_targets.append(target.entity_id)
         name = CLIENT_SPECIAL_CONDITION_NAMES[condition]
         conditions = list(target.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+        newly_applied = name not in conditions
         if condition in _MUTUALLY_EXCLUSIVE:
             for other in _MUTUALLY_EXCLUSIVE - {condition}:
                 other_name = CLIENT_SPECIAL_CONDITION_NAMES[other]
@@ -622,7 +623,17 @@ class EffectContext:
             self.session._condition_attr_msg(target),
             bracket=GameSequence.ADD_SPECIAL_CONDITION.value,
         )
+        if newly_applied:
+            await self._fire_condition_applied(target, condition)
         return True
+
+    async def _fire_condition_applied(self, target: PokemonEntity,
+                                      condition: SpecialConditions):
+        """Poké-Body hooks that react to a newly applied Special Condition."""
+        for passive, carrier in active_passives(self.board):
+            hook = getattr(passive, "after_condition_applied", None)
+            if hook is not None:
+                await hook(self, target, condition, carrier)
 
     async def cure_all_conditions(self, target: Optional[PokemonEntity]) -> bool:
         """Removes every Special Condition from `target` ("...it recovers from
