@@ -215,3 +215,8 @@ TEXT_ATTACK_FLIP_FAILS = "The attack didn't happen!"
 TEXT_ATTACH_TAX_CHECK = "Energy Attach Check"
 TEXT_ATTACH_TAX_OK = "Attached!"
 TEXT_ATTACH_TAX_DISCARD = "Discarded instead!"
+
+# Mirage Stadium retreat-attempt flip texts.
+TEXT_RETREAT_FLIP_CHECK = "Retreat Check"
+TEXT_RETREAT_FLIP_OK = "Retreat proceeds!"
+TEXT_RETREAT_FLIP_FAILS = "Can't retreat this turn!"
