@@ -1,0 +1,54 @@
+from spirit.game.data_utils import PokemonCardDef, Attack
+from spirit.game.attributes import PokemonTypes, PokemonStage, Rarities
+from spirit.game.card_effects.attacks_common import flip_damage
+from spirit.game.content.definitions import def_for
+
+
+def _is_ex(p):
+    return "EX" in (getattr(def_for(p.archetype_id), "subtypes", None) or [])
+
+
+async def _iron_hammer(ctx):
+    """70; if the opponent's Active is a Pokemon-EX, discard an Energy attached to it."""
+    await ctx.deal_damage()
+    d = ctx.opponent_active()
+    if d is not None and _is_ex(d) and ctx.attached_energies(d) and not ctx.effects_blocked(d):
+        await ctx.discard_energy_from(d, 1, minimum=1, prompt="Choose an Energy to discard")
+
+
+card = PokemonCardDef(
+    guid="f83f7a9a-6c52-5e7f-8bf0-d9808fd7dd3a",
+    key="XY7",
+    name="com.direwolfdigital.cake.data.archetypes.pokemon.Registeel.Name",
+    display_name="Registeel",
+    searchable_by=["Registeel", "Basic", "Registeel"],
+    subtypes=["Basic"],
+    collector_number=51,
+    set_code="XY7",
+    rarity=Rarities.Rare,
+    hp=120,
+    elements=[PokemonTypes.METAL],
+    stage=PokemonStage.BASIC,
+    retreat_cost=3,
+    weakness_type=PokemonTypes.FIRE,
+    resistance_type=PokemonTypes.PSYCHIC,
+    resistance_amount=20,
+    family_id=379,
+    abilities=[
+        Attack(
+            title="Iron Head",
+            game_text="Flip a coin until you get tails. This attack does 30 damage times the number of heads.",
+            cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 1},
+            damage=30,
+            damage_operator="x",
+            effect=flip_damage(until_tails=True, per_heads=30),
+        ),
+        Attack(
+            title="Forbidden Iron Hammer",
+            game_text="If your opponent's Active Pok\u00e9mon is a Pok\u00e9mon-EX, discard an Energy attached to that Pok\u00e9mon.",
+            cost={PokemonTypes.METAL: 1, PokemonTypes.COLORLESS: 2},
+            damage=70,
+            effect=_iron_hammer,
+        ),
+    ],
+)
