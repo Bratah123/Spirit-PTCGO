@@ -308,10 +308,11 @@ def shuffle_hand_into_deck_draw(n, opponent_n=None):
 
 
 def look_at_top(n, take=1, predicate=None, rest="shuffle", minimum=None,
-                prompt=""):
+                prompt="", reveal=False):
     """Look at the top `n` deck cards, put up to `take` matches into hand;
-    rest: 'shuffle' the deck, 'bottom' the others under it, 'back' leaves
-    them on top in order. minimum=None picks exactly `take` (or all if fewer)."""
+    rest: 'shuffle' the deck, 'bottom' the others under it, 'discard' the
+    others, 'back' leaves them on top in order. minimum=None picks exactly
+    `take` (or all if fewer). reveal=True shows the taken cards."""
     async def effect(ctx):
         await _deal_printed(ctx)
         top = ctx.deck_top(n)
@@ -327,13 +328,16 @@ def look_at_top(n, take=1, predicate=None, rest="shuffle", minimum=None,
                 display_cards=top if len(candidates) < len(top) else None,
             )
             if picks:
-                await ctx.put_in_hand(picks, reveal=False)
+                await ctx.put_in_hand(picks, reveal=reveal)
+        leftovers = [c for c in top if c not in picks]
         if rest == "shuffle":
             await ctx.shuffle_deck()
         elif rest == "bottom":
-            for card in top:
-                if card not in picks:
-                    await ctx.put_on_bottom_of_deck(card)
+            for card in leftovers:
+                await ctx.put_on_bottom_of_deck(card)
+        elif rest == "discard":
+            if leftovers:
+                await ctx.discard_cards(leftovers)
     return effect
 
 
