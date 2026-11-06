@@ -53,14 +53,19 @@ from .passives import (
     carrier_pokemon,
     compute_damage,
     conditions_blocked,
+    devolution_blocked,
     discard_blocked,
     effective_bench_capacity,
     effective_max_hp,
     effective_pokemon_types,
     energy_removal_blocked,
+    attached_energy_discard_destination,
     healing_blocked,
     supporter_effect_replacement,
     trainer_effects_blocked,
+    trainer_play_discard_cost,
+    hand_is_public,
+    switch_blocked,
 )
 
 # CakeAttackEffect's damageType is a string array of client type names.
@@ -487,6 +492,7 @@ class EffectContext:
             if is_attack:
                 self.session.stat_max(self.player_id, "biggestattack", dealt)
         self._queue_hp_update(target)
+        await self._fire_hp_changed(target, remaining)
 
         if remaining <= 0 and target not in self.knockouts:
             self.knockouts.append(target)
@@ -553,6 +559,7 @@ class EffectContext:
             },
         ))
         self._queue_hp_update(target)
+        await self._fire_hp_changed(target, current + healed)
         return healed
 
     async def apply_special_condition(
@@ -595,6 +602,7 @@ class EffectContext:
             self.visual_targets.append(target.entity_id)
         name = CLIENT_SPECIAL_CONDITION_NAMES[condition]
         conditions = list(target.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+        newly_applied = name not in conditions
         if condition in _MUTUALLY_EXCLUSIVE:
             for other in _MUTUALLY_EXCLUSIVE - {condition}:
                 other_name = CLIENT_SPECIAL_CONDITION_NAMES[other]
@@ -622,7 +630,24 @@ class EffectContext:
             self.session._condition_attr_msg(target),
             bracket=GameSequence.ADD_SPECIAL_CONDITION.value,
         )
+        if newly_applied:
+            await self._fire_condition_applied(target, condition)
         return True
+
+    async def _fire_condition_applied(self, target: PokemonEntity,
+                                      condition: SpecialConditions):
+        """Poké-Body hooks that react to a newly applied Special Condition."""
+        for passive, carrier in active_passives(self.board):
+            hook = getattr(passive, "after_condition_applied", None)
+            if hook is not None:
+                await hook(self, target, condition, carrier)
+
+    async def _fire_hp_changed(self, target: PokemonEntity, remaining: int):
+        """Poké-Power hooks that react to remaining HP (Scram)."""
+        for passive, carrier in active_passives(self.board):
+            hook = getattr(passive, "after_hp_changed", None)
+            if hook is not None:
+                await hook(self, target, remaining, carrier)
 
     async def cure_all_conditions(self, target: Optional[PokemonEntity]) -> bool:
         """Removes every Special Condition from `target` ("...it recovers from
@@ -968,20 +993,22 @@ class EffectContext:
         return results.count(0)
 
     async def place_damage_counters(
-        self, count: int, candidates: Optional[List[PokemonEntity]] = None
+        self, count: int, candidates: Optional[List[PokemonEntity]] = None,
+        player_id: Optional[str] = None, prompt: Optional[str] = None,
     ) -> None:
         """Distributes `count` damage counters (10 HP each) over `candidates`
         (default: all of the opponent's in-play Pokemon) via the native
         click-to-place picker (one offer, Done gates on exactly `count`
-        clicks)."""
+        clicks). `player_id` is who clicks (default: the acting player)."""
         pool = list(candidates) if candidates is not None else self.opponent_pokemon_in_play()
         in_play_ids = {p.entity_id for p in self.my_pokemon_in_play() + self.opponent_pokemon_in_play()}
         pool = [p for p in pool if p.entity_id in in_play_ids]
         if not pool or count <= 0:
             return
+        chooser = player_id or self.player_id
         placement = await self.session.prompt_damage_counter_placement(
-            self.player_id, self.source.entity_id, pool, count,
-            prompt=f"Place {count} damage counters on your opponent's Pokemon.",
+            chooser, self.source.entity_id, pool, count,
+            prompt=prompt or f"Place {count} damage counters on your opponent's Pokemon.",
         )
         by_id = {p.entity_id: p for p in pool}
         for entity_id, counters in placement.items():
@@ -1000,6 +1027,7 @@ class EffectContext:
         new_hp = max(0, self.max_hp(target) - counters * 10)
         target.set_attribute(AttrID.HP, new_hp)
         self._queue_hp_update(target)
+        await self._fire_hp_changed(target, new_hp)
         if new_hp <= 0 and target not in self.knockouts:
             self.knockouts.append(target)
 
@@ -1335,6 +1363,10 @@ class EffectContext:
             else:
                 self._queue(self.session._entity_introduced_msg(card), viewer_id=owner)
                 self._queue(move, viewer_id=owner)
+                if opponent and hand_is_public(self.board, owner, opponent):
+                    self._queue(
+                        self.session._entity_introduced_msg(card),
+                        viewer_id=opponent)
                 self._queue(move, viewer_id=opponent)
         for vid, entries in reveal_batches.items():
             self._queue_reveal_batch(entries, vid)
@@ -1480,6 +1512,23 @@ class EffectContext:
         await self._move_to_public_pile(cards, "lostZone")
 
     async def _move_to_public_pile(self, cards: List[CardEntity], area_name: str):
+        if area_name == "discard":
+            redirected = []
+            remaining = []
+            for card in cards:
+                owner = card.owning_player_id or self.player_id
+                if owner != self.player_id and discard_blocked(self.board, card):
+                    continue
+                source = getattr(card, "parent", None)
+                dest = attached_energy_discard_destination(
+                    self.board, card, self.player_id, source)
+                if dest == "hand":
+                    redirected.append(card)
+                else:
+                    remaining.append(card)
+            if redirected:
+                await self.put_in_hand(redirected, reveal=True)
+            cards = remaining
         departed = set()
         for card in cards:
             if card.entity_id in departed:
@@ -1876,6 +1925,8 @@ class EffectContext:
         removed: List[CardEntity] = []
         if pokemon is None:
             return removed
+        if devolution_blocked(self.board, pokemon):
+            return removed
         await self.flush_choreography()
         top = pokemon
         for i in range(steps):
@@ -2045,6 +2096,8 @@ class EffectContext:
         bench_area = board.find_player_area(player_id, "bench")
         old_active = board.active_pokemon(player_id)
         if not active_area or not bench_area or old_active is None:
+            return False
+        if switch_blocked(board, old_active):
             return False
         if new_active not in bench_area.children:
             return False
@@ -2599,6 +2652,15 @@ async def resolve_trainer_effect(session, player_id: str, card,
         return None
     ctx = EffectContext(session, player_id, card, None, play_target=play_target)
     ctx.is_trainer_effect = True
+    tax = trainer_play_discard_cost(session.board_state, player_id, card)
+    if tax:
+        name = getattr(def_for(card.archetype_id), "display_name", None) or "this card"
+        discarded = await ctx.discard_from_hand(
+            tax, minimum=tax,
+            prompt=f"Discard {tax} cards from your hand to play {name}.",
+        )
+        if len(discarded) < tax:
+            return ctx
     await effect(ctx)
     return ctx
 
