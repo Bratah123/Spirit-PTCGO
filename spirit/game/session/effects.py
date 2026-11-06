@@ -271,7 +271,7 @@ class EffectContext:
         if target.owning_player_id == self.player_id:
             return False
         if self.is_attack_effect():
-            return attack_effects_blocked(self.board, target)
+            return attack_effects_blocked(self.board, target, self.attacker)
         if self.is_ability_effect():
             return ability_effects_blocked(self.board, target)
         return False
@@ -2396,14 +2396,13 @@ async def _fire_damaged_by_attack_triggers(session, ctx: EffectContext):
         owner_id = pokemon.owning_player_id
         if owner_id is None:
             continue
-        locked = ability_locked(board, pokemon)
         for entry in pokemon.get_attribute(AttrID.PIE_ABILITIES) or []:
             if not isinstance(entry, dict):
                 continue
             ability = ABILITIES_BY_ID.get(entry.get("abilityID"))
             if ability is None or not ability.has_trigger(Triggers.ON_DAMAGED_BY_ATTACK):
                 continue
-            if locked and not ability.is_granted:
+            if ability_locked(board, pokemon, ability) and not ability.is_granted:
                 continue
             snapshot.append((pokemon, owner_id, ability, dealt, pre_hit))
     for pokemon, owner_id, ability, dealt, pre_hit in snapshot:
@@ -2423,7 +2422,7 @@ async def resolve_triggered_ability(
     """Runs a triggered ability (on-play/on-evolve/on-knocked-out/between-turns)
     with the full activation choreography; returns its ctx, or None when the
     ability didn't run (locked, or no scripted effect)."""
-    if ability_locked(session.board_state, pokemon) and not ability.is_granted:
+    if ability_locked(session.board_state, pokemon, ability) and not ability.is_granted:
         return None
     if ability.effect is None or ability.effect is unimplemented:
         if ability.effect is unimplemented:

@@ -177,8 +177,26 @@ class Passive:
         """True to shield `target` from opponents' attack EFFECTS (not damage)."""
         return False
 
+    def blocks_attack_effects_from(
+        self, target: PokemonEntity, carrier: BoardEntity, attacker: BoardEntity
+    ) -> bool:
+        """True to shield `target` from this attacker's attack EFFECTS
+        (Safeguard vs Pokémon-ex). Unconditional shields use
+        ``blocks_attack_effects`` instead."""
+        return False
+
     def blocks_abilities(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
         """True to turn off `pokemon`'s Abilities (Path to the Peak style)."""
+        return False
+
+    def blocks_ability(
+        self, pokemon: PokemonEntity, ability: Any, carrier: BoardEntity
+    ) -> bool:
+        """True to disable this specific ability (Lazy: opponent Poké-Powers).
+
+        Checked in addition to `blocks_abilities`; passives and other ability
+        types stay on unless that whole-Pokemon hook also returns True.
+        """
         return False
 
     def blocks_retreat(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
@@ -424,14 +442,24 @@ def _carrier_in_play(entity: BoardEntity) -> bool:
         and parent.get_attribute(AttrID.NAME) in _IN_PLAY_AREAS
 
 
-def ability_locked(board: BoardState, pokemon: PokemonEntity) -> bool:
+def ability_locked(
+    board: BoardState, pokemon: PokemonEntity, ability: Any = None
+) -> bool:
     """Whether a passive (Path to the Peak) is disabling `pokemon`'s Abilities.
 
     Evaluated on the UNFILTERED set: a lock contributed by a Pokemon ability
     is never itself disabled by another lock (Garbotoxin-style recursion is
     out of scope -- Path to the Peak rides a Stadium so this is safe).
+
+    When `ability` is given, type-specific locks (Poké-Power-only) also apply.
+    Without `ability`, only whole-Pokemon locks count.
     """
-    return any(p.blocks_abilities(pokemon, c) for p, c, _ in _collect_passives(board))
+    for p, c, _ in _collect_passives(board):
+        if p.blocks_abilities(pokemon, c):
+            return True
+        if ability is not None and p.blocks_ability(pokemon, ability, c):
+            return True
+    return False
 
 
 def _suppressed_special_energy(
@@ -617,12 +645,18 @@ def effective_max_hp(board: BoardState, pokemon: PokemonEntity) -> int:
     return printed + bonus
 
 
-def attack_effects_blocked(board: BoardState, target: PokemonEntity) -> bool:
+def attack_effects_blocked(
+    board: BoardState, target: PokemonEntity, attacker: Optional[BoardEntity] = None
+) -> bool:
     """Whether a passive shields `target` from opposing attack effects."""
-    return any(
-        passive.blocks_attack_effects(target, carrier)
-        for passive, carrier in active_passives(board)
-    )
+    for passive, carrier in active_passives(board):
+        if passive.blocks_attack_effects(target, carrier):
+            return True
+        if attacker is not None and passive.blocks_attack_effects_from(
+            target, carrier, attacker
+        ):
+            return True
+    return False
 
 
 def retreat_blocked(board: BoardState, pokemon: PokemonEntity) -> bool:

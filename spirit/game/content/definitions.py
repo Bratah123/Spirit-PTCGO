@@ -46,7 +46,8 @@ def subtypes_for(archetype_id: Optional[str]) -> List[str]:
 
 
 # Rule-box subtypes and the prizes an attacker takes for knocking one out.
-_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2}
+_MULTI_PRIZE_SUBTYPES = {"V": 2, "VSTAR": 2, "V-UNION": 3, "VMAX": 3, "GX": 2, "EX": 2,
+                         "ex": 2, "Star": 2}
 _RULE_BOX_SUBTYPES = set(_MULTI_PRIZE_SUBTYPES) | {"Radiant"}
 
 
