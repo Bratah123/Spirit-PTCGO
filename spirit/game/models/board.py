@@ -119,6 +119,9 @@ class PlayMat(BoardEntity):
     def __init__(self, entity_id: Optional[str] = None, theme_name: str = "playmat"):
         super().__init__(entity_id=entity_id)
         self.set_attribute(AttrID.NAME, theme_name)
+        # Here Comes Team Rocket!: Prize cards stay face-up for the rest of
+        # the game once this is set (see CardEntity.is_hidden_from).
+        self.prizes_face_up = False
 
     def get_entity_name(self) -> str:
         return "com.direwolfdigital.cake.rules.entities.CakePlayMat"
@@ -220,6 +223,12 @@ class CardEntity(BoardEntity):
         if viewer_id is None:
             return False
         area_name = self._containing_area_name()
+        if area_name == "prizePile":
+            root = self
+            while root.parent is not None:
+                root = root.parent
+            if getattr(root, "prizes_face_up", False):
+                return False
         if viewer_id != self.owning_player_id:
             return area_name not in self.PUBLIC_AREAS
         return area_name in self.HIDDEN_FROM_OWNER_AREAS
