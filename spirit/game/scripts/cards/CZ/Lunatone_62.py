@@ -33,7 +33,7 @@ card = PokemonCardDef(
             cost={PokemonTypes.COLORLESS: 3},
             damage=30,
             damage_operator="+",
-            effect=damage_per(count_energy("self", energy_type=PokemonTypes.PSYCHIC.value), 30),
+            effect=damage_per(count_energy("self", energy_type=PokemonTypes.PSYCHIC.value), 30, base=30),
         ),
     ],
 )

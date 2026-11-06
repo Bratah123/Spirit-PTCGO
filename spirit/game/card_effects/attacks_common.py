@@ -12,13 +12,19 @@ from typing import Optional
 from spirit.game.attributes import (
     AbilityTypes,
     AttrID,
+    CLIENT_POKEMON_TYPE_NAMES,
     CLIENT_SPECIAL_CONDITION_NAMES,
+    PokemonTypes,
     TrainerType,
 )
-from spirit.game.data_utils import Attack, def_for, has_rule_box, is_pokemon_v, subtypes_for
+from spirit.game.data_utils import (
+    Attack, def_for, has_rule_box, is_pokemon_v, is_prism_star, is_tag_team,
+    is_ultra_beast, subtypes_for,
+)
 from spirit.game.card_effects.pokemon import energy_provides_type
 from spirit.game.session.effects import is_special_energy
-from spirit.game.session.legal_actions import energy_provided_count
+from spirit.game.session.legal_actions import attack_cost_satisfied, energy_provided_count
+from spirit.game.session.passives import Passive, effective_attack_cost
 
 _TOOL_TYPES = (TrainerType.POKEMON_TOOL.value, TrainerType.POKEMON_TOOL_F.value)
 _ENERGY_SCOPES = ("self", "attacker", "defender", "opponent_active", "my_active",
@@ -131,6 +137,16 @@ def count_discard(side: str = "mine", pred=None):
         piles = [ctx.player_id, ctx.opponent_id] if side == "both" \
             else [_side_pid(ctx, side)]
         return sum(1 for pid in piles for c in ctx.discard_pile(pid)
+                   if pred is None or pred(c))
+    return count
+
+
+def count_lost_zone(side: str = "mine", pred=None):
+    """Cards in a Lost Zone ('mine'|'opponent'|'both'), optionally filtered."""
+    def count(ctx) -> int:
+        piles = [ctx.player_id, ctx.opponent_id] if side == "both" \
+            else [_side_pid(ctx, side)]
+        return sum(1 for pid in piles for c in ctx.lost_zone(pid)
                    if pred is None or pred(c))
     return count
 
@@ -248,6 +264,18 @@ def flip_bonus(bonus: int, coins: int = 1):
 # ----------------------------------------------------------------------
 # Scaling damage
 # ----------------------------------------------------------------------
+
+def ignore_effects_attack(ignore_weakness=False, ignore_resistance=False):
+    """Printed damage that ignores effects on the opponent's Active (Shred);
+    optionally also ignores Weakness and/or Resistance (Piercing Strike)."""
+    async def effect(ctx):
+        await ctx.deal_damage(
+            ignore_weakness=ignore_weakness,
+            ignore_resistance=ignore_resistance,
+            ignore_target_effects=True,
+        )
+    return effect
+
 
 def damage_per(count_fn, per: int, base: int = 0, cap: Optional[int] = None,
                self_damage: int = 0, also=None):
@@ -373,6 +401,16 @@ def defender_is_gx(ctx) -> bool:
 def defender_is_vmax(ctx) -> bool:
     d = ctx.defender
     return d is not None and "VMAX" in subtypes_for(d.archetype_id)
+
+
+def defender_is_tag_team(ctx) -> bool:
+    d = ctx.defender
+    return d is not None and is_tag_team(d.archetype_id)
+
+
+def defender_is_ultra_beast(ctx) -> bool:
+    d = ctx.defender
+    return d is not None and is_ultra_beast(d.archetype_id)
 
 
 def defender_has_rule_box(ctx) -> bool:
@@ -710,3 +748,49 @@ async def discard_random_from_hand(ctx, player_id: Optional[str] = None,
     picks = random.sample(hand, min(count, len(hand)))
     await ctx.discard_cards(picks)
     return picks
+
+
+# ----------------------------------------------------------------------
+# GX attacks (Sun & Moon)
+# ----------------------------------------------------------------------
+
+def has_extra_energy(count: int = 1, energy_type=None):
+    """cond_fn: the attacker has at least `count` extra Energy (of
+    `energy_type`, any type when None) attached in addition to this attack's
+    cost -- the TAG TEAM GX bonus clause. Uses the effective cost and the
+    same payment check as attack legality."""
+    def cond(ctx) -> bool:
+        attacker = ctx.attacker
+        if attacker is None or ctx.ability is None:
+            return False
+        printed = getattr(ctx.ability, "cost", None) or {}
+        cost = {CLIENT_POKEMON_TYPE_NAMES[PokemonTypes(int(k))]: v
+                for k, v in printed.items()}
+        need = dict(effective_attack_cost(ctx.board, attacker, cost))
+        key = CLIENT_POKEMON_TYPE_NAMES[
+            PokemonTypes(int(energy_type)) if energy_type is not None
+            else PokemonTypes.COLORLESS]
+        need[key] = need.get(key, 0) + count
+        return attack_cost_satisfied(need, ctx.board.attached_energies(attacker), ctx.board)
+    return cond
+
+
+class GxAttackLockPassive(Passive):
+    """`locked_player` can't use GX attacks while this passive is live."""
+
+    def __init__(self, locked_player: str):
+        self.locked_player = locked_player
+
+    def blocks_gx_attacks(self, player_id, pokemon, carrier) -> bool:
+        return player_id == self.locked_player
+
+
+def lock_opponent_gx_attacks(ctx) -> None:
+    """"During your opponent's next turn, they can't use GX attacks." """
+    ctx.add_global_passive(GxAttackLockPassive(ctx.opponent_id),
+                           ctx.session.turn_state.turn_number + 1)
+
+
+def gx_used(ctx, player_id: Optional[str] = None) -> bool:
+    """Whether `player_id` (default: the acting player) has used their GX attack."""
+    return (player_id or ctx.player_id) in ctx.session.turn_state.gx_used
