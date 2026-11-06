@@ -59,6 +59,11 @@ def has_rule_box(archetype_id: Optional[str]) -> bool:
     return any(s in _RULE_BOX_SUBTYPES for s in subtypes_for(archetype_id))
 
 
+def is_baby_pokemon(archetype_id: Optional[str]) -> bool:
+    """WOTC e-Card Baby Pokemon (Pichu, Cleffa, ...)."""
+    return "Baby" in subtypes_for(archetype_id)
+
+
 def prize_value(archetype_id: Optional[str]) -> int:
     """Prizes taken when this Pokemon is knocked out."""
     definition = def_for(archetype_id)
@@ -141,6 +146,9 @@ class Triggers:
     # Another of the owner's Pokemon evolved via a hand-played evolution card
     # (Eevee "Resonant Evolution"); ctx carries evolved_pokemon / evolved_from.
     ON_ALLY_EVOLVED = "on_ally_evolved"
+    # Any Pokémon just evolved (Eevee "Chain Reaction"); fires on every other
+    # in-play Pokémon on both sides. ctx carries evolved_pokemon / evolved_from.
+    ON_POKEMON_EVOLVED = "on_pokemon_evolved"
     # Fires for each of the turn player's in-play Pokemon after their turn
     # ends, before the checkup (Radiant Venusaur "Sunny Bloom").
     END_OF_TURN = "end_of_turn"
@@ -148,6 +156,17 @@ class Triggers:
     # effect (Amoonguss "Surprise Spores"); fires via the acting ctx's
     # deferred_actions, after that effect's choreography flushes.
     ON_DISCARDED_FROM_HAND = "on_discarded_from_hand"
+    # A Pokemon just completed a retreat (Active -> Bench via the retreat
+    # action). Fires after the swap on every in-play Pokemon (the retreater
+    # if still in play, plus observers such as Dark Dugtrio Sinkhole).
+    # ctx.retreated_pokemon is the Pokemon that left Active.
+    ON_RETREAT = "on_retreat"
+    # A Benched Pokemon just became Active (retreat, Switch, gust, or
+    # promotion). Fires on every in-play Pokemon each time, with
+    # ctx.moved_to_active set to the Pokemon that entered Active
+    # (Forretress Spikes). Distinct from ON_MOVE_TO_ACTIVE, which fires
+    # only on the mover and at most once per entity per turn.
+    ON_BENCH_TO_ACTIVE = "on_bench_to_active"
 
 
 class Activations:
@@ -692,6 +711,8 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    discard_end_of_attach_turn -- if True, discard at end of the turn it was
+                        attached (Boost Energy / Double Aqua Energy).
     """
     def __init__(
         self,
@@ -710,6 +731,7 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        discard_end_of_attach_turn: bool = False,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -726,6 +748,7 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        self.discard_end_of_attach_turn = discard_end_of_attach_turn
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]

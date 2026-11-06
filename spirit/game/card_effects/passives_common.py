@@ -665,6 +665,22 @@ def flip_protection(prevent=True, reduce=None, effects_too=False, title=None):
     return effect
 
 
+def flip_prevent_next_turn(title=None):
+    """Printed damage, then during the opponent's next turn: if this Pokémon
+    would be damaged by an attack, flip a coin. Heads prevents that damage
+    (other attack effects still happen) (Hitmonchan — Dodge)."""
+    async def effect(ctx):
+        await ctx.deal_damage()
+        attacker = ctx.attacker
+        if attacker is None:
+            return
+        name = title if title is not None else (
+            ctx.ability.title if ctx.ability else "")
+        ctx.add_passive_through_opponents_turn(
+            attacker, FlipPreventDamagePassive(name))
+    return effect
+
+
 class AttackDebuffPassive(Passive):
     """The carrier's attacks do N less damage (dealt-side, before W/R)."""
 

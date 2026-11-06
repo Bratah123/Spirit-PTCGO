@@ -194,12 +194,13 @@ def flip_damage(coins: int = 1, per_heads: int = 0, base: Optional[int] = None,
                 bonus: int = 0, bonus_per_heads: int = 0,
                 until_tails: bool = False, coins_from=None,
                 require_all: bool = False, tails_self_damage: int = 0,
-                self_damage: int = 0, also=None):
+                self_damage: int = 0, also=None, per_tails_self: int = 0):
     """Coin-flip damage: heads*per_heads (base defaults 0), or printed base +
     heads*bonus_per_heads, or base+bonus gated on ALL heads (require_all;
     without a bonus the whole base needs all heads). coins_from=count_fn
     flips one coin per counted thing; until_tails uses one coin screen.
-    tails_self_damage hits the attacker once when any coin lands tails."""
+    tails_self_damage hits the attacker once when any coin lands tails;
+    per_tails_self deals that many per tails to the attacker (no W/R)."""
     async def effect(ctx):
         if until_tails:
             heads = await ctx.flip_until_tails(_title(ctx))
@@ -221,6 +222,9 @@ def flip_damage(coins: int = 1, per_heads: int = 0, base: Optional[int] = None,
             await ctx.deal_damage(amount)
         if tails_self_damage and tails > 0:
             await ctx.deal_damage(tails_self_damage, target=ctx.attacker,
+                                  apply_modifiers=False)
+        if per_tails_self and tails > 0:
+            await ctx.deal_damage(per_tails_self * tails, target=ctx.attacker,
                                   apply_modifiers=False)
         await _finish(ctx, self_damage, also)
     return effect
