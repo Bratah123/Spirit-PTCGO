@@ -10,7 +10,7 @@ or max HP, so effects switch on/off purely by board position.
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from spirit.game.attributes import AttrID, PokemonTypes, TrainerType
+from spirit.game.attributes import AbilityTypes, AttrID, PokemonTypes, TrainerType
 from spirit.game.data_utils import ABILITIES_BY_ID, def_for, subtypes_for
 from spirit.game.models.board import (
     BENCH_SLOT_COUNT,
@@ -86,6 +86,7 @@ class DamageCalc:
             target.get_attribute(AttrID.WEAKNESS_TYPES) or []
         )
         self.resistance_applies = True
+        self.resistance_reduction = RESISTANCE_REDUCTION
         self.weakness_hit = False
         self.resistance_hit = False
         self.prevented = False
@@ -133,6 +134,10 @@ class Passive:
     # by resolve_attack AFTER knockouts/deferred actions resolve (end-of-turn
     # riders like Blunder Policy); queued messages flush as their own brackets.
     attack_followup: Optional[Any] = None
+
+    # Optional awaitable: async (ctx, target, condition, carrier) -> None
+    # Fires after `condition` is newly applied to `target` (Mirror Coat).
+    after_condition_applied: Optional[Any] = None
 
     def modify_damage_dealt(self, calc: DamageCalc, carrier: BoardEntity):
         """Attacker-side "does more/less damage" step (runs before W/R)."""
@@ -202,6 +207,13 @@ class Passive:
     def knockout_destination(self, pokemon: PokemonEntity, carrier: BoardEntity) -> Optional[str]:
         """Area name replacing "discard" for a knocked-out Pokemon (e.g. "lostZone")."""
         return None
+
+    def allows_second_energy_attach(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to let the owner attach a second Energy from hand to `pokemon`
+        this turn after the first manual attach (Venusaur Harvest Bounty)."""
+        return False
 
     def modify_prizes_for_knockout(
         self, pokemon: PokemonEntity, ctx: Any, count: int, carrier: BoardEntity
@@ -332,6 +344,19 @@ class Passive:
         (Slimy Room): tails discards the energy instead of attaching."""
         return False
 
+    def requires_retreat_flip(self, pokemon: PokemonEntity, carrier: BoardEntity) -> bool:
+        """True to coin-flip `pokemon`'s retreat attempt (Mirage Stadium);
+        tails locks that Pokémon from retreating this turn and discards no Energy."""
+        return False
+
+    def blocks_energy_attach(
+        self, attaching_player_id: str, energy: BoardEntity,
+        target: PokemonEntity, carrier: BoardEntity,
+    ) -> bool:
+        """True to forbid attaching `energy` from hand to `target`
+        (Zapdos Anti-Lightning)."""
+        return False
+
     def retreat_cost_destination(
         self, pokemon: PokemonEntity, energy: BoardEntity, carrier: BoardEntity
     ) -> Optional[str]:
@@ -346,6 +371,13 @@ class Passive:
         during that owner's turn (Spikemuth)."""
         return 0
 
+    def discard_energy_on_retreat(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to discard remaining Energy on `pokemon` after it retreats
+        from Active to Bench (Suction Cups)."""
+        return False
+
     def heal_on_evolve(
         self, evolved: PokemonEntity, pre_evolution: BoardEntity,
         player_id: str, carrier: BoardEntity,
@@ -357,6 +389,13 @@ class Passive:
     def offers_attack_coin_reroll(self, player_id: str, carrier: BoardEntity) -> bool:
         """True to let `player_id` re-flip an attack's coins once during
         their turn (Glimwood Tangle)."""
+        return False
+
+    def allows_any_technical_machine(
+        self, pokemon: PokemonEntity, carrier: BoardEntity
+    ) -> bool:
+        """True to let any Technical Machine attach to `pokemon`
+        (Xatu Synchronicity), ignoring the TM's attach_to restriction."""
         return False
 
 
@@ -372,11 +411,23 @@ def carrier_pokemon(carrier: BoardEntity) -> Optional[PokemonEntity]:
     return None
 
 
+def poke_bodies_ignored(board: BoardState) -> bool:
+    """Aerodactyl Ancient Wind: all Poké-Bodies are ignored this turn."""
+    for temp in getattr(board, "temporary_passives", None) or []:
+        if not getattr(temp.passive, "ignores_poke_bodies", False):
+            continue
+        carrier = board.get_entity(temp.carrier_entity_id)
+        if carrier is not None and _carrier_in_play(carrier):
+            return True
+    return False
+
+
 def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, bool]]:
     """All (passive, carrier, is_ability) triples currently switched on by
     board position, before ability locks are applied. is_ability is True only
     for passives contributed by a Pokemon's own PIE_ABILITIES entry."""
     triples: List[Tuple[Passive, BoardEntity, bool]] = []
+    ignore_bodies = poke_bodies_ignored(board)
     for player_id in board.player_ids:
         for pokemon in board.pokemon_in_play(player_id):
             # Card-level PokemonCardDef(passive=): rules text that is not an
@@ -389,6 +440,8 @@ def _collect_passives(board: BoardState) -> List[Tuple[Passive, BoardEntity, boo
                     continue
                 ability = ABILITIES_BY_ID.get(entry.get("abilityID"))
                 if ability is not None and ability.passive is not None:
+                    if ignore_bodies and ability.ability_type == AbilityTypes.POKE_BODY:
+                        continue
                     # A Tool-granted ability's passive rides the tool, not the
                     # Pokemon, so Path to the Peak can't switch it off.
                     triples.append((ability.passive, pokemon, not ability.is_granted))
@@ -563,7 +616,7 @@ def compute_damage(
         resist_type = target.get_attribute(AttrID.RESISTANCE_TYPES)
         if calc.resistance_applies and resist_type in attacker_types:
             calc.resistance_hit = True
-            calc.amount = max(0, calc.amount - RESISTANCE_REDUCTION)
+            calc.amount = max(0, calc.amount - calc.resistance_reduction)
 
     for passive, carrier in passives:
         if calc.ignore_target_effects and carrier_pokemon(carrier) is calc.target:
@@ -741,6 +794,24 @@ def energy_attach_taxer(board: BoardState, attaching_player_id: str,
     return None
 
 
+def retreat_flip_required(board: BoardState, pokemon: PokemonEntity) -> Optional[BoardEntity]:
+    """The carrier requiring a coin flip to retreat `pokemon` (Mirage Stadium), or None."""
+    for passive, carrier in active_passives(board):
+        if passive.requires_retreat_flip(pokemon, carrier):
+            return carrier
+    return None
+
+
+def energy_attach_blocked(board: BoardState, attaching_player_id: str,
+                          energy: BoardEntity, target: PokemonEntity) -> bool:
+    """Whether a continuous passive forbids attaching `energy` from hand to
+    `target` (Zapdos Anti-Lightning)."""
+    return any(
+        passive.blocks_energy_attach(attaching_player_id, energy, target, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
 def retreat_energy_destination(board: BoardState, pokemon: PokemonEntity,
                                energy: BoardEntity) -> Optional[str]:
     """First non-None area a passive redirects a retreat-cost energy to
@@ -750,6 +821,15 @@ def retreat_energy_destination(board: BoardState, pokemon: PokemonEntity,
         if dest is not None:
             return dest
     return None
+
+
+def retreat_discards_remaining_energy(board: BoardState, pokemon: PokemonEntity) -> bool:
+    """Whether remaining Energy on `pokemon` is discarded after it retreats
+    (Suction Cups)."""
+    return any(
+        passive.discard_energy_on_retreat(pokemon, carrier)
+        for passive, carrier in active_passives(board)
+    )
 
 
 def evolution_blocked(board: BoardState, player_id: str, target: PokemonEntity) -> bool:
@@ -824,6 +904,25 @@ def effective_bench_capacity(board: BoardState, player_id: str) -> int:
     return max(1, min(values)) if values else BENCH_SLOT_COUNT
 
 
+def tool_attach_allowed(board: BoardState, card: BoardEntity,
+                        pokemon: PokemonEntity) -> bool:
+    """Whether a Tool/TM `card` may attach to `pokemon`.
+
+    Honors the card's `attach_to` predicate, then lets a Synchronicity
+    Poké-Body bypass Technical Machine type/stage restrictions.
+    """
+    definition = def_for(card.archetype_id)
+    attach_to = getattr(definition, "attach_to", None)
+    if attach_to is None or attach_to(pokemon):
+        return True
+    if card.get_attribute(AttrID.TRAINER_TYPE) != TrainerType.TECHNICAL_MACHINE.value:
+        return False
+    return any(
+        passive.allows_any_technical_machine(pokemon, carrier)
+        for passive, carrier in active_passives(board)
+    )
+
+
 def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
     """Open Pokemon Tool slots on `pokemon` (default capacity 1; the highest
     tool_capacity passive wins)."""
@@ -833,6 +932,9 @@ def tool_slots_free(board: Optional[BoardState], pokemon: PokemonEntity) -> int:
             capacity = max(capacity, passive.tool_capacity(pokemon, carrier))
     attached = sum(
         1 for child in pokemon.children
-        if child.get_attribute(AttrID.TRAINER_TYPE) == TrainerType.POKEMON_TOOL.value
+        if child.get_attribute(AttrID.TRAINER_TYPE) in (
+            TrainerType.POKEMON_TOOL.value,
+            TrainerType.TECHNICAL_MACHINE.value,
+        )
     )
     return capacity - attached

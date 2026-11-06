@@ -595,6 +595,7 @@ class EffectContext:
             self.visual_targets.append(target.entity_id)
         name = CLIENT_SPECIAL_CONDITION_NAMES[condition]
         conditions = list(target.get_attribute(AttrID.SPECIAL_CONDITIONS) or [])
+        newly_applied = name not in conditions
         if condition in _MUTUALLY_EXCLUSIVE:
             for other in _MUTUALLY_EXCLUSIVE - {condition}:
                 other_name = CLIENT_SPECIAL_CONDITION_NAMES[other]
@@ -622,7 +623,17 @@ class EffectContext:
             self.session._condition_attr_msg(target),
             bracket=GameSequence.ADD_SPECIAL_CONDITION.value,
         )
+        if newly_applied:
+            await self._fire_condition_applied(target, condition)
         return True
+
+    async def _fire_condition_applied(self, target: PokemonEntity,
+                                      condition: SpecialConditions):
+        """Poké-Body hooks that react to a newly applied Special Condition."""
+        for passive, carrier in active_passives(self.board):
+            hook = getattr(passive, "after_condition_applied", None)
+            if hook is not None:
+                await hook(self, target, condition, carrier)
 
     async def cure_all_conditions(self, target: Optional[PokemonEntity]) -> bool:
         """Removes every Special Condition from `target` ("...it recovers from
@@ -968,20 +979,22 @@ class EffectContext:
         return results.count(0)
 
     async def place_damage_counters(
-        self, count: int, candidates: Optional[List[PokemonEntity]] = None
+        self, count: int, candidates: Optional[List[PokemonEntity]] = None,
+        player_id: Optional[str] = None, prompt: Optional[str] = None,
     ) -> None:
         """Distributes `count` damage counters (10 HP each) over `candidates`
         (default: all of the opponent's in-play Pokemon) via the native
         click-to-place picker (one offer, Done gates on exactly `count`
-        clicks)."""
+        clicks). `player_id` is who clicks (default: the acting player)."""
         pool = list(candidates) if candidates is not None else self.opponent_pokemon_in_play()
         in_play_ids = {p.entity_id for p in self.my_pokemon_in_play() + self.opponent_pokemon_in_play()}
         pool = [p for p in pool if p.entity_id in in_play_ids]
         if not pool or count <= 0:
             return
+        chooser = player_id or self.player_id
         placement = await self.session.prompt_damage_counter_placement(
-            self.player_id, self.source.entity_id, pool, count,
-            prompt=f"Place {count} damage counters on your opponent's Pokemon.",
+            chooser, self.source.entity_id, pool, count,
+            prompt=prompt or f"Place {count} damage counters on your opponent's Pokemon.",
         )
         by_id = {p.entity_id: p for p in pool}
         for entity_id, counters in placement.items():

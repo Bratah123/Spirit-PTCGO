@@ -59,6 +59,11 @@ def has_rule_box(archetype_id: Optional[str]) -> bool:
     return any(s in _RULE_BOX_SUBTYPES for s in subtypes_for(archetype_id))
 
 
+def is_baby_pokemon(archetype_id: Optional[str]) -> bool:
+    """WOTC e-Card Baby Pokemon (Pichu, Cleffa, ...)."""
+    return "Baby" in subtypes_for(archetype_id)
+
+
 def prize_value(archetype_id: Optional[str]) -> int:
     """Prizes taken when this Pokemon is knocked out."""
     definition = def_for(archetype_id)
@@ -148,6 +153,10 @@ class Triggers:
     # effect (Amoonguss "Surprise Spores"); fires via the acting ctx's
     # deferred_actions, after that effect's choreography flushes.
     ON_DISCARDED_FROM_HAND = "on_discarded_from_hand"
+    # This Pokemon just completed a retreat (Active -> Bench via the retreat
+    # action; Dark Ivysaur "Vine Pull"). Fires after the swap, if it is
+    # still in play.
+    ON_RETREAT = "on_retreat"
 
 
 class Activations:
@@ -692,6 +701,8 @@ class EnergyCardDef(CardDefinition):
                         search, Speed Lightning's draw). ctx.source is the
                         energy, ctx.attached_to the Pokemon.
     passive          -- continuous effect while attached (a passives.Passive).
+    discard_end_of_attach_turn -- if True, discard at end of the turn it was
+                        attached (Boost Energy / Double Aqua Energy).
     """
     def __init__(
         self,
@@ -710,6 +721,7 @@ class EnergyCardDef(CardDefinition):
         on_attach: Optional[Any] = None,
         on_carrier_knocked_out: Optional[Any] = None,
         passive: Optional[Any] = None,
+        discard_end_of_attach_turn: bool = False,
         display_name: Optional[str] = None,
         searchable_by: Optional[List[str]] = None,
         subtypes: Optional[List[str]] = None,
@@ -726,6 +738,7 @@ class EnergyCardDef(CardDefinition):
         # opponent's attack (Gift Energy's draw); ctx.source is the energy.
         self.on_carrier_knocked_out = on_carrier_knocked_out
         self.passive = passive
+        self.discard_end_of_attach_turn = discard_end_of_attach_turn
 
         options = [[t.value for t in option] for option in provides] \
             if provides else [[energy_type.value]]
