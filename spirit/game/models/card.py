@@ -1,7 +1,10 @@
 import json
 import hashlib
 from typing import Any, Optional, Union
-from spirit.game.attributes import AttrID, CardType, TrainerType, PokemonStage, PokemonTypes, Rarities, ProductType
+from spirit.game.attributes import (
+    AttrID, CardType, TrainerType, PokemonStage, PokemonTypes, Rarities, ProductType,
+    CLIENT_CARD_TYPE_NAMES,
+)
 
 def safe_int(value: Any, default: int = 0) -> int:
     """Safely converts a value to an integer, handling None and non-convertible types."""
@@ -11,6 +14,33 @@ def safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except (ValueError, TypeError):
         return default
+
+
+def apply_client_card_type(attrs: dict[str, Any]) -> dict[str, Any]:
+    """Rewrite attr 200300 CardType to Cake member names for the client wire.
+
+    The documented client representation is an enum member name, not an
+    internal IntEnum ordinal. Ordinals caused Trainers to appear on the Energy
+    tab. Only CARD_TYPE is rewritten; Stage, TrainerType,
+    Rarity, PokemonTypes, EnergyInfo, and other attrs stay as upstream ints/JSON.
+    Internal card.attributes remain numeric.
+    """
+    card_type_key = str(AttrID.CARD_TYPE.value)
+    entry = attrs.get(card_type_key)
+    if entry is None:
+        return attrs
+    raw = entry.get("value")
+    try:
+        ct = CardType(int(raw)) if not isinstance(raw, str) else None
+    except (ValueError, TypeError):
+        ct = None
+    if ct in CLIENT_CARD_TYPE_NAMES:
+        attrs[card_type_key] = {
+            "type": "string", "value": CLIENT_CARD_TYPE_NAMES[ct],
+        }
+    elif isinstance(raw, str) and raw in CLIENT_CARD_TYPE_NAMES.values():
+        attrs[card_type_key] = {"type": "string", "value": raw}
+    return attrs
 
 class Card:
     def __init__(
@@ -194,7 +224,7 @@ class Card:
                 "type": "string", "value": name_part
             }
 
-        return final_attrs
+        return apply_client_card_type(final_attrs)
 
 class PokemonCard(Card):
     def __init__(
@@ -233,7 +263,8 @@ class PokemonCard(Card):
         # We start with the base card attributes
         final_attrs = super().to_archetype_attributes(download_key)
 
-        # Force Card Type to Pokemon (0)
+        # Force Card Type to Pokemon, then re-apply wire mapping so the int
+        # overwrite does not undo Card.to_archetype_attributes' client name.
         final_attrs[str(AttrID.CARD_TYPE.value)] = {
             "type": "int", "value": CardType.POKEMON.value
         }
@@ -289,4 +320,4 @@ class PokemonCard(Card):
                 "type": "json", "value": "[]"
             }
 
-        return final_attrs
+        return apply_client_card_type(final_attrs)

@@ -200,6 +200,18 @@ class CardType(IntEnum):
     ENERGY = 3
     UNSET = -1
 
+
+# Attr 200300 CardType. Deck-builder tabs and real PTCGO archetype dumps
+# coerce by Cake enum member NAME ("Pokemon"/"Energy"/"TrainerCard"/
+# "LegendHalf"). Send those documented names rather than internal ordinals
+# so client collection tabs classify each card correctly.
+CLIENT_CARD_TYPE_NAMES = {
+    CardType.POKEMON: "Pokemon",
+    CardType.LEGEND_HALF: "LegendHalf",
+    CardType.TRAINER: "TrainerCard",
+    CardType.ENERGY: "Energy",
+}
+
 class PokemonTypes(IntEnum):
     NO_COLOR = 0
     COLORLESS = 1
