@@ -196,8 +196,10 @@ def _load_localizations():
         CACHED_LOCALIZATIONS_DICT[item["key"].lower()] = item["value"]
     CACHED_LOCALIZATIONS = localizations
 
-# Archetype keys prioritized for Energy sets
-# "Free_Energy" MUST be first to prevent KeyNotFoundException in OwnedStacks
+# Archetype keys prioritized for Energy sets.
+# "Free_Energy" MUST stay first: the client OwnedStacks / CollapseCardStacks
+# path looks that key up first and throws KeyNotFoundException otherwise.
+# order_archetype_keys() preserves this prefix; do not alphabetically sort it.
 ARCHETYPE_KEYS = [
     "Free_Energy", "Energy", "Basic_Energy", "NoSet", "CUSTOM",
     "TK7A", "XY6", "Promo_HGSS", "XY2", "TK5B", "BW10", "BW4", "BW7",
@@ -299,6 +301,23 @@ def _cached_card_archetypes_bytes(key):
         return proto.SerializeToString()
 
     return _cached_payload(f"archproto:{key}", build)
+
+
+def order_archetype_keys(*groups):
+    """Stable-unique key list, first group first.
+
+    The Unity client treats keys[0] as Free_Energy when building owned card
+    stacks. Sorting put AvatarItems first and CollapseCardStacks then threw
+    KeyNotFoundException once Energy cards appeared on the Energy tab.
+    """
+    ordered = []
+    seen = set()
+    for group in groups:
+        for key in group:
+            if key and key not in seen:
+                seen.add(key)
+                ordered.append(key)
+    return ordered
 
 
 class DataSyncHandler(BaseHandler):
@@ -956,11 +975,10 @@ class DataSyncHandler(BaseHandler):
 
     @staticmethod
     def _build_archetype_keys():
-        dynamic_keys = set(ARCHETYPE_KEYS)
-        dynamic_keys.update(card.key for card in CARDS_DB)
-        dynamic_keys.update(p.get("key") for p in PRODUCTS_DB if isinstance(p.get("key"), str))
-        dynamic_keys.update(s.get("name") for s in SETS_DB if isinstance(s.get("name"), str))
-        return sorted(k for k in dynamic_keys if k)
+        extras = [card.key for card in CARDS_DB]
+        extras.extend(p.get("key") for p in PRODUCTS_DB if isinstance(p.get("key"), str))
+        extras.extend(s.get("name") for s in SETS_DB if isinstance(s.get("name"), str))
+        return order_archetype_keys(ARCHETYPE_KEYS, extras)
 
     @handle(InboundMsg.GET_ARCHETYPE_LIST_KEYS)
     async def handle_get_archetype_list_keys(self, message, request_id, flags):
