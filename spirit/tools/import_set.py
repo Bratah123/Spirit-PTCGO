@@ -158,7 +158,7 @@ def get_family_id(card: Dict[str, Any]) -> Optional[int]:
 def render_script(card: Dict[str, Any]) -> Optional[str]:
     """Renders the card definition script source for one API card dict."""
     supertype = card.get("supertype", "")
-    name = card.get("name", "Unknown")
+    name = fix_text(card.get("name", "Unknown"))
     number = card.get("number", "0")
     safe_name = clean_name(name)
 
@@ -176,7 +176,7 @@ def render_script(card: Dict[str, Any]) -> Optional[str]:
     guid = get_guid(card.get("id"))
 
     # Search keywords
-    subtypes = card.get("subtypes", [])
+    subtypes = [fix_text(s) for s in card.get("subtypes", [])]
     search_keywords = [name] + subtypes
     if "Pok" in supertype:
         search_keywords.append(safe_name)
@@ -340,7 +340,7 @@ def main():
         print(f"Error: JSON file not found at {JSON_PATH}")
         sys.exit(1)
         
-    with open(JSON_PATH, "r") as f:
+    with open(JSON_PATH, "r", encoding="utf-8") as f:
         cards = json.load(f)
     
     # Build name map for family resolution
