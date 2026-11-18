@@ -4616,6 +4616,14 @@ class GameSession:
             return False
         moves.append(self._entity_moved_msg(card.entity_id, area.entity_id, slot))
 
+        # needs live client verification: condition marker clears on evolve
+        if self.clear_pokemon_effects(target):
+            await self.send_game_sequence(
+                list(self.players.values()), GameSequence.REMOVE_SPECIAL_CONDITION,
+                [self._entity_id_data_effect_msg("Target", target.entity_id),
+                 self._condition_attr_msg(target)],
+            )
+
         # Re-nest pre-existing attachments, then the pre-evolution card itself.
         for attachment in list(target.children):
             position = len(card.children)
@@ -4669,14 +4677,6 @@ class GameSession:
             f"[Session {self.game_id}] {self.players[player_id].screen_name} "
             f"evolved {target.entity_id} into {card.entity_id}."
         )
-
-        # needs live client verification: condition marker clears on evolve
-        if self.clear_pokemon_effects(target):
-            await self.send_game_sequence(
-                list(self.players.values()), GameSequence.REMOVE_SPECIAL_CONDITION,
-                [self._entity_id_data_effect_msg("Target", target.entity_id),
-                 self._condition_attr_msg(target)],
-            )
 
         # Wyndon Stadium: heal a Pokemon just evolved from hand (deck-sourced
         # evolutions ride from_zone_intro and are not "played from hand").
@@ -5125,9 +5125,6 @@ class GameSession:
             f"retreated {card.entity_id} for {new_active.entity_id} "
             f"(discarded {len(discard_ids)} energy)."
         )
-        await self.send_game_sequence(
-            list(self.players.values()), GameSequence.RETREAT, messages
-        )
 
         # All effects (Special Conditions, attack locks) end when a Pokemon
         # leaves the Active spot; a separate follow-up bracket is the safe
@@ -5138,6 +5135,9 @@ class GameSession:
                 [self._entity_id_data_effect_msg("Target", card.entity_id),
                  self._condition_attr_msg(card)],
             )
+        await self.send_game_sequence(
+            list(self.players.values()), GameSequence.RETREAT, messages
+        )
         # History stamps AFTER the effect clear (it prunes entity-keyed maps).
         self.turn_state.retreated_entities.add(card.entity_id)
         self.turn_state.became_active_turn[new_active.entity_id] = \
